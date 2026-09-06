@@ -48,6 +48,11 @@
             public const string ErpAccountingRead = "erp.accounting.read";
             public const string ErpAccountingWrite = "erp.accounting.write";
             public const string ErpReportingRead = "erp.reporting.read";
+            public const string ErpNotificationRead = "erp.notification.read";
+            public const string ErpNotificationWrite = "erp.notification.write";
+
+            /// <summary>Queueing emails. Granted only to services, never to the user facing client.</summary>
+            public const string ErpNotificationSend = "erp.notification.send";
         }
 
         public static class ScopeDisplayNames
@@ -63,6 +68,9 @@
             public const string AccountingRead = "Accounting — Read";
             public const string AccountingWrite = "Accounting — Write";
             public const string ReportingRead = "Reporting — Read";
+            public const string NotificationRead = "Notification — Read";
+            public const string NotificationWrite = "Notification — Write";
+            public const string NotificationSend = "Notification — Send";
         }
 
         public static class ApiResources
@@ -79,6 +87,8 @@
             public const string AccountingApiDisplayName = "Accounting API";
             public const string ReportingApi = "reporting-api";
             public const string ReportingApiDisplayName = "Reporting API";
+            public const string NotificationApi = "notification-api";
+            public const string NotificationApiDisplayName = "Notification API";
         }
 
         public static class Clients
@@ -103,6 +113,11 @@
             public const string ReportingServiceClientId = "reporting-service";
             public const string ReportingServiceClientName = "Reporting Service (M2M)";
             public const string ReportingServiceSecret = "reporting-service-secret";
+
+            /// <summary>The Identity host itself, when it queues emails on the notification service.</summary>
+            public const string IdentityServiceClientId = "identity-service";
+            public const string IdentityServiceClientName = "Identity Service (M2M)";
+            public const string IdentityServiceSecret = "identity-service-secret";
         }
     }
 }

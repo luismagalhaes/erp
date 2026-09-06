@@ -179,6 +179,32 @@ public class SalesApiClient(HttpClient http)
     }
 }
 
+public class NotificationApiClient(HttpClient http)
+{
+    public HttpClient Http { get; } = http;
+
+    public async Task<IReadOnlyList<NotificationListItem>> GetNotificationsAsync(CancellationToken cancellationToken = default)
+    {
+        var notifications = await Http.GetFromJsonAsync<List<NotificationListItem>>("api/notifications", cancellationToken);
+        return notifications ?? [];
+    }
+
+    public async Task<NotificationDetail?> GetNotificationAsync(Guid id, CancellationToken cancellationToken = default)
+    {
+        var response = await Http.GetAsync($"api/notifications/{id}", cancellationToken);
+        return response.IsSuccessStatusCode
+            ? await response.Content.ReadFromJsonAsync<NotificationDetail>(cancellationToken)
+            : null;
+    }
+
+    /// <summary>Puts a failed email back in the queue. Returns the API message when it refuses.</summary>
+    public async Task<string?> RequeueAsync(Guid id, CancellationToken cancellationToken = default)
+    {
+        var response = await Http.PostAsync($"api/notifications/{id}/requeue", content: null, cancellationToken);
+        return response.IsSuccessStatusCode ? null : await ApiResponse.ReadErrorAsync(response, cancellationToken);
+    }
+}
+
 public class InventoryApiClient(HttpClient http)
 {
     public HttpClient Http { get; } = http;

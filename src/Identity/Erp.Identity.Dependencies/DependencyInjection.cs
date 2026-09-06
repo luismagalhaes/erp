@@ -9,6 +9,9 @@ namespace Erp.Identity.Dependencies;
 
 public static class DependencyInjection
 {
+    /// <summary>Header the notification service uses to authenticate service to service calls.</summary>
+    public const string InternalApiKeyHeader = "X-Internal-Api-Key";
+
     public static IServiceCollection AddIdentityDependencies(this IServiceCollection services, IConfiguration configuration)
     {
         services.Configure<NotificationEmailOptions>(configuration.GetSection("NotificationService"));
@@ -21,6 +24,9 @@ public static class DependencyInjection
                 throw new InvalidOperationException("NotificationService:BaseUrl is not configured.");
 
             httpClient.BaseAddress = new Uri(options.BaseUrl);
+
+            if (!string.IsNullOrWhiteSpace(options.InternalApiKey))
+                httpClient.DefaultRequestHeaders.Add(InternalApiKeyHeader, options.InternalApiKey);
         });
 
         return services;

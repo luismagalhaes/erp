@@ -17,9 +17,8 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\src\Identity\Erp.Identity.Application\Erp.Identity.Application.csproj" />
-    <ProjectReference Include="..\..\src\Identity\Erp.Identity.Dependencies\Erp.Identity.Dependencies.csproj" />
-    <ProjectReference Include="..\..\src\Identity\Erp.Identity.Storage\Erp.Identity.Storage.csproj" />
+    <ProjectReference Include="..\..\src\Notification\Erp.Notification.Api\Erp.Notification.Api.csproj" />
+    <ProjectReference Include="..\..\src\Notification\Erp.Notification.Application\Erp.Notification.Application.csproj" />
   </ItemGroup>
 
   <ItemGroup>

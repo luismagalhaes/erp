@@ -24,6 +24,7 @@
     <Project Path="src/Services/Erp.Inventory.Api/Erp.Inventory.Api.csproj" />
   </Folder>
   <Folder Name="/src/Services/Notification/">
+    <Project Path="src/Notification/Erp.Notification.Api/Erp.Notification.Api.csproj" />
     <Project Path="src/Notification/Erp.Notification.Application/Erp.Notification.Application.csproj" />
     <Project Path="src/Notification/Erp.Notification.Domain/Erp.Notification.Domain.csproj" />
     <Project Path="src/Notification/Erp.Notification.Infrastructure/Erp.Notification.Infrastructure.csproj" />
@@ -53,6 +54,7 @@
     <Project Path="tests/Erp.Core.Tests/Erp.Core.Tests.csproj" />
     <Project Path="tests/Erp.FiscalPT.Tests/Erp.FiscalPT.Tests.csproj" />
     <Project Path="tests/Erp.Identity.Tests/Erp.Identity.Tests.csproj" />
+    <Project Path="tests/Erp.Notification.Tests/Erp.Notification.Tests.csproj" />
     <Project Path="tests/Erp.Sales.Tests/Erp.Sales.Tests.csproj" />
   </Folder>
 </Solution>

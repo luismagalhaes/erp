@@ -67,6 +67,8 @@ builder.Services
         options.Scope.Add("erp.accounting.read");
         options.Scope.Add("erp.accounting.write");
         options.Scope.Add("erp.reporting.read");
+        options.Scope.Add("erp.notification.read");
+        options.Scope.Add("erp.notification.write");
     });
 
 // MudBlazor
@@ -102,6 +104,10 @@ builder.Services.AddHttpClient<AccountingApiClient>(client =>
 
 builder.Services.AddHttpClient<ReportingApiClient>(client =>
     client.BaseAddress = new Uri(builder.Configuration["Services:ReportingApi"]!))
+    .AddHttpMessageHandler<UserAccessTokenHandler>();
+
+builder.Services.AddHttpClient<NotificationApiClient>(client =>
+    client.BaseAddress = new Uri(builder.Configuration["Services:NotificationApi"]!))
     .AddHttpMessageHandler<UserAccessTokenHandler>();
 
 // Company currently selected in the header, shared by every page of the circuit.

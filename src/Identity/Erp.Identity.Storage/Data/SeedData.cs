@@ -101,6 +101,9 @@ public static class SeedData
         new ApiScope(Constants.Scopes.ErpAccountingRead,  Constants.ScopeDisplayNames.AccountingRead),
         new ApiScope(Constants.Scopes.ErpAccountingWrite, Constants.ScopeDisplayNames.AccountingWrite),
         new ApiScope(Constants.Scopes.ErpReportingRead, Constants.ScopeDisplayNames.ReportingRead),
+        new ApiScope(Constants.Scopes.ErpNotificationRead,  Constants.ScopeDisplayNames.NotificationRead),
+        new ApiScope(Constants.Scopes.ErpNotificationWrite, Constants.ScopeDisplayNames.NotificationWrite),
+        new ApiScope(Constants.Scopes.ErpNotificationSend,  Constants.ScopeDisplayNames.NotificationSend),
     ];
 
     public static IEnumerable<ApiResource> ApiResources =>
@@ -129,6 +132,15 @@ public static class SeedData
         {
             Scopes = { Constants.Scopes.ErpReportingRead }
         },
+        new ApiResource(Constants.ApiResources.NotificationApi, Constants.ApiResources.NotificationApiDisplayName)
+        {
+            Scopes =
+            {
+                Constants.Scopes.ErpNotificationRead,
+                Constants.Scopes.ErpNotificationWrite,
+                Constants.Scopes.ErpNotificationSend
+            }
+        },
     ];
 
     public static IEnumerable<Client> Clients =>
@@ -151,7 +163,8 @@ public static class SeedData
                 Constants.Scopes.ErpInventoryRead, Constants.Scopes.ErpInventoryWrite,
                 Constants.Scopes.ErpPurchasingRead, Constants.Scopes.ErpPurchasingWrite,
                 Constants.Scopes.ErpAccountingRead, Constants.Scopes.ErpAccountingWrite,
-                Constants.Scopes.ErpReportingRead
+                Constants.Scopes.ErpReportingRead,
+                Constants.Scopes.ErpNotificationRead, Constants.Scopes.ErpNotificationWrite
             },
             AllowOfflineAccess = true,
             AccessTokenLifetime = 3600,
@@ -192,6 +205,17 @@ public static class SeedData
             AllowedGrantTypes = GrantTypes.ClientCredentials,
             ClientSecrets = { new Secret(Constants.Clients.ReportingServiceSecret.Sha256()) },
             AllowedScopes = { Constants.Scopes.ErpCoreRead, Constants.Scopes.ErpSalesRead, Constants.Scopes.ErpInventoryRead, Constants.Scopes.ErpAccountingRead }
+        },
+        // The Identity host queues emails on the notification service with its own token,
+        // so that call carries a short lived, revocable credential instead of a shared key.
+        new Client
+        {
+            ClientId = Constants.Clients.IdentityServiceClientId,
+            ClientName = Constants.Clients.IdentityServiceClientName,
+            AllowedGrantTypes = GrantTypes.ClientCredentials,
+            ClientSecrets = { new Secret(Constants.Clients.IdentityServiceSecret.Sha256()) },
+            AllowedScopes = { Constants.Scopes.ErpNotificationSend },
+            AccessTokenLifetime = 3600
         },
     ];
 }

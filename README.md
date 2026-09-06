@@ -93,11 +93,12 @@ Core e Sales seguem a mesma divisão em camadas, partilhadas pela respetiva API:
 
 | Projeto | Descrição |
 |---|---|
+| [Erp.Notification.Api](src/Notification/Erp.Notification.Api/) | API do módulo: fila de emails e histórico de envios. Audience JWT `notification-api`. |
 | [Erp.Notification.Domain](src/Notification/Erp.Notification.Domain/) | `EmailNotification`, `EmailNotificationRequest`, estados. |
 | [Erp.Notification.Infrastructure](src/Notification/Erp.Notification.Infrastructure/) | Interfaces de serviço, storage e envio. |
 | [Erp.Notification.Application](src/Notification/Erp.Notification.Application/) | Fila de emails, histórico e envio SMTP. |
 | [Erp.Notification.Storage](src/Notification/Erp.Notification.Storage/) | `NotificationDbContext` e repositório. |
-| [Erp.Notification.Worker](src/Notification/Erp.Notification.Worker/) | Worker de processamento assíncrono. |
+| [Erp.Notification.Worker](src/Notification/Erp.Notification.Worker/) | Worker que drena a fila em intervalos fixos e regista as falhas na própria notificação. |
 
 ### Testes
 
@@ -106,7 +107,8 @@ Core e Sales seguem a mesma divisão em camadas, partilhadas pela respetiva API:
 | [Erp.FiscalPT.Tests](tests/Erp.FiscalPT.Tests/) | Assinatura, ATCUD, código QR e arredondamento fiscal |
 | [Erp.Sales.Tests](tests/Erp.Sales.Tests/) | Emissão, numeração de séries, anulação e ficheiro de artigos |
 | [Erp.Core.Tests](tests/Erp.Core.Tests/) | Empresas e acessos de utilizador |
-| [Erp.Identity.Tests](tests/Erp.Identity.Tests/) | Invariantes do seed (clients, scopes, resources) e serviços |
+| [Erp.Identity.Tests](tests/Erp.Identity.Tests/) | Invariantes do seed (clients, scopes, resources), serviços e o cliente de email |
+| [Erp.Notification.Tests](tests/Erp.Notification.Tests/) | Fila de emails, processamento e histórico |
 
 ---
 
@@ -122,6 +124,7 @@ Core e Sales seguem a mesma divisão em camadas, partilhadas pela respetiva API:
 | Erp.Purchasing.Api | https://localhost:7245 | http://localhost:5289 |
 | Erp.Accounting.Api | https://localhost:7212 | http://localhost:5194 |
 | Erp.Reporting.Api | https://localhost:7156 | http://localhost:5031 |
+| Erp.Notification.Api | https://localhost:7117 | http://localhost:5117 |
 
 Estas portas estão referenciadas em configuração (URLs de callback OIDC, CORS, `Services:*` no [Erp.Main/appsettings.json](src/UI/Erp.Main/appsettings.json) e nos clients semeados). Alterar uma porta implica atualizar também esses pontos.
 
@@ -133,7 +136,7 @@ Todos os microserviços expõem, em desenvolvimento, o documento **OpenAPI** em 
 
 O `Erp.Identity` é o único emissor de tokens. O `Erp.Main` autentica por **Authorization Code + PKCE** com cookie de sessão (30 dias, sliding) e as APIs validam **JWT Bearer**, cada uma com a sua audience.
 
-**Scopes** (definidos em [Constants.cs](src/Identity/Erp.Identity.Common/Constants/Constants.cs)): `erp.core.read/write`, `erp.sales.read/write`, `erp.inventory.read/write`, `erp.purchasing.read/write`, `erp.accounting.read/write`, `erp.reporting.read`.
+**Scopes** (definidos em [Constants.cs](src/Identity/Erp.Identity.Common/Constants/Constants.cs)): `erp.core.read/write`, `erp.sales.read/write`, `erp.inventory.read/write`, `erp.purchasing.read/write`, `erp.accounting.read/write`, `erp.reporting.read`, `erp.notification.read/write`.
 
 **Clients semeados**:
 
@@ -172,7 +175,14 @@ dotnet run --project .\src\Identity\Erp.Identity\Erp.Identity.csproj -- --seed
 dotnet run --project .\src\Identity\Erp.Identity\Erp.Identity.csproj --launch-profile https
 dotnet run --project .\src\Services\Erp.Core.Api\Erp.Core.Api.csproj --launch-profile https
 dotnet run --project .\src\UI\Erp.Main\Erp.Main.csproj --launch-profile https
+
+# 4. Opcional: faturação, notificações e envio de emails
+dotnet run --project .\src\Services\Erp.Sales.Api\Erp.Sales.Api.csproj --launch-profile https
+dotnet run --project .\src\Notification\Erp.Notification.Api\Erp.Notification.Api.csproj --launch-profile https
+dotnet run --project .\src\Notification\Erp.Notification.Worker\Erp.Notification.Worker.csproj
 ```
+
+> A recuperação de password do Identity enfileira o email no `Erp.Notification.Api`. Sem esse serviço a correr, o pedido falha — arranque-o sempre que testar o fluxo de reset.
 
 Abrir https://localhost:7019 — o acesso não autenticado é redirecionado para o login do Identity.
 
@@ -189,7 +199,7 @@ Em Visual Studio existe o perfil de arranque múltiplo **"Main + Id"** ([Erp.sln
 | `ErpPortugal_Identity` | `IdentityDb` | Erp.Identity |
 | `ErpPortugal_Core` | `CoreDb` | Erp.Core.Api |
 | `ErpPortugal_Sales` | `SalesDb` | Erp.Sales.Api |
-| — | `NotificationDb` | Erp.Notification.Storage |
+| `ErpPortugal_Notification` | `NotificationDb` | Erp.Notification.Api e Erp.Notification.Worker |
 
 O Identity usa três contextos (ASP.NET Identity, Configuration Store e Persisted Grant Store) sobre a mesma base de dados, com as migrations no assembly `Erp.Identity.Storage`.
 
@@ -216,7 +226,7 @@ Contextos disponíveis no Identity: `ApplicationDbContext`, `ConfigurationDbCont
 dotnet test Erp.slnx
 ```
 
-109 testes em quatro projetos, sem dependência de base de dados: as camadas Application são testadas com storages substituídos (NSubstitute) e a biblioteca fiscal é testada diretamente.
+131 testes em cinco projetos, sem dependência de base de dados: as camadas Application são testadas com storages substituídos (NSubstitute), a biblioteca fiscal é testada diretamente e o cliente de email do Identity com um `HttpMessageHandler` de teste.
 
 ---
 
@@ -260,6 +270,21 @@ O acesso é por **scope** do token (políticas em [SalesPolicies.cs](src/Service
 
 ---
 
+## API do Notification
+
+| Método | Rota | Autorização |
+|---|---|---|
+| `POST` | `/api/notifications/email` | Chave interna (`X-Internal-Api-Key`) |
+| `GET` | `/api/notifications` | `erp.notification.read` |
+| `GET` | `/api/notifications/{id}` | `erp.notification.read` |
+| `POST` | `/api/notifications/{id}/requeue` | `erp.notification.write` |
+
+O endpoint de enfileiramento é chamado serviço a serviço (o Identity, na recuperação de password) e por isso não traz token de utilizador: é protegido por uma **chave interna** partilhada, configurada em `Notification:InternalApiKey` do lado da API e em `NotificationService:InternalApiKey` do lado do Identity — via *user secrets*, nunca em `appsettings`. Em desenvolvimento, sem chave configurada, a API aceita a chamada e regista um aviso; fora de desenvolvimento, recusa.
+
+O envio efetivo é feito pelo [Erp.Notification.Worker](src/Notification/Erp.Notification.Worker/), que drena a fila no intervalo definido em `NotificationWorker:PollingIntervalSeconds`. Uma falha de entrega marca a notificação como `Failed` com o erro e incrementa as tentativas, sem parar o ciclo.
+
+---
+
 ## Interface (Erp.Main)
 
 A empresa ativa escolhe-se no cabeçalho e é partilhada por todas as páginas ([CompanyState](src/UI/Erp.Main/Services/CompanyState.cs)).
@@ -275,6 +300,8 @@ A empresa ativa escolhe-se no cabeçalho e é partilhada por todas as páginas (
 | `/products/new`, `/products/{id}` | Criar e editar artigo |
 | `/companies` | Empresas |
 | `/companies/new`, `/companies/{id}` | Criar e editar empresa |
+| `/notifications` | Backoffice de notificações: histórico de emails por estado |
+| `/notifications/{id}` | Email enviado, com corpo, erro e reenvio |
 
 As rotas são sempre em **inglês**, mesmo com a interface em português.
 
@@ -308,8 +335,8 @@ Registo honesto do que ainda não está feito, para evitar surpresas:
 
 - **APIs de negócio por implementar** — Inventory, Purchasing, Accounting e Reporting só expõem `/health` e OpenAPI; não têm camadas Domain/Application/Storage próprias. Core e Sales estão implementados.
 - **Sales em construção** — a emissão certificada funciona (numeração por série, assinatura encadeada, ATCUD, QR), mas falta a comunicação automática de séries à AT, a impressão do documento e o SAF-T. Ver [o plano](docs/certificacao-at-sales.md#estado-da-implementação).
-- **Worker de notificações não ligado** — [Program.cs](src/Notification/Erp.Notification.Worker/Program.cs) regista apenas o `Worker` do template; não chama `AddNotificationApplication` nem `AddNotificationStorage`, pelo que a fila de emails ainda não é processada. O `NotificationDb` também não tem migrations.
-- **Portal de notificações inexistente** — o client `notification-ui` (https://localhost:7125) está semeado e o Identity está configurado para chamar um serviço de notificações em `https://localhost:7117`, mas nenhum dos dois projetos existe na solução.
+- **SMTP por configurar** — sem `Smtp:Host` e `Smtp:FromEmail`, o worker marca os emails como `Failed` com essa mensagem. É visível no backoffice de notificações e resolve-se com configuração, não com código.
+- **Portal de notificações inexistente** — o client `notification-ui` (https://localhost:7125) está semeado mas não há projeto correspondente. O histórico de emails vive agora no backoffice do `Erp.Main`, pelo que esse client pode deixar de fazer sentido.
 - **Cobertura de testes desigual** — a lógica fiscal, a emissão e os serviços do Core estão cobertos; as camadas Storage (EF Core) e as páginas Blazor não têm testes.
 - **`csproj` duplicados** — `ErpPortugal.Identity.Application.csproj` e `ErpPortugal.Identity.Storage.csproj` continuam nas pastas do Identity, fora da solução, resto de um rename anterior. Devem ser removidos.
 - **Sem CI** — não há pipelines em `.github/workflows`.

@@ -1,0 +1,138 @@
+@page "/invoices"
+@attribute [Authorize]
+@implements IDisposable
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.AspNetCore.Components.Web
+@using MudBlazor
+@using Erp.Main.Models
+@using Erp.Main.Services
+@inject SalesApiClient SalesApi
+@inject CompanyState Company
+@inject NavigationManager Navigation
+
+<PageTitle>Faturas</PageTitle>
+
+<MudStack Spacing="4">
+    <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center">
+        <MudStack Spacing="0">
+            <MudText Typo="Typo.h4">Faturas</MudText>
+            <MudText Typo="Typo.body2" Color="Color.Secondary">Documentos de venda emitidos</MudText>
+        </MudStack>
+
+        <MudButton Variant="Variant.Filled" Color="Color.Primary"
+                   StartIcon="@Icons.Material.Filled.Add"
+                   Disabled="@(!Company.HasCompany)"
+                   OnClick="@(() => Navigation.NavigateTo("invoices/new"))">
+            Nova fatura
+        </MudButton>
+    </MudStack>
+
+    @if (!string.IsNullOrWhiteSpace(_error))
+    {
+        <MudAlert Severity="Severity.Error" Dense="true">@_error</MudAlert>
+    }
+
+    <MudPaper Elevation="1" Class="pa-2">
+        <MudTable Items="_invoices" Hover="true" Striped="true" Dense="true" Loading="_loading"
+                  Breakpoint="Breakpoint.Sm">
+            <HeaderContent>
+                <MudTh>Documento</MudTh>
+                <MudTh>ATCUD</MudTh>
+                <MudTh>Data</MudTh>
+                <MudTh>Cliente</MudTh>
+                <MudTh>NIF</MudTh>
+                <MudTh Style="text-align: right;">Base</MudTh>
+                <MudTh Style="text-align: right;">IVA</MudTh>
+                <MudTh Style="text-align: right;">Total</MudTh>
+                <MudTh>Estado</MudTh>
+                <MudTh Style="text-align: right;">Ações</MudTh>
+            </HeaderContent>
+            <RowTemplate>
+                <MudTd DataLabel="Documento">
+                    <MudText Typo="Typo.body2" Style="font-family: monospace;">@context.DocumentNumber</MudText>
+                </MudTd>
+                <MudTd DataLabel="ATCUD">
+                    <MudText Typo="Typo.caption" Style="font-family: monospace;">@context.Atcud</MudText>
+                </MudTd>
+                <MudTd DataLabel="Data">@context.DocumentDate.ToString("yyyy-MM-dd")</MudTd>
+                <MudTd DataLabel="Cliente">@context.CustomerName</MudTd>
+                <MudTd DataLabel="NIF">@context.CustomerTaxId</MudTd>
+                <MudTd DataLabel="Base" Style="text-align: right;">@context.NetTotal.ToString("N2")</MudTd>
+                <MudTd DataLabel="IVA" Style="text-align: right;">@context.TaxPayable.ToString("N2")</MudTd>
+                <MudTd DataLabel="Total" Style="text-align: right;">
+                    <strong>@context.GrossTotal.ToString("N2")</strong>
+                </MudTd>
+                <MudTd DataLabel="Estado">
+                    <MudChip T="string" Size="Size.Small" Variant="Variant.Outlined"
+                             Color="@(context.Status == "A" ? Color.Error : Color.Success)">
+                        @DescribeStatus(context.Status)
+                    </MudChip>
+                </MudTd>
+                <MudTd DataLabel="Ações" Style="text-align: right;">
+                    <MudIconButton Icon="@Icons.Material.Filled.Visibility" Size="Size.Small"
+                                   title="Ver documento"
+                                   OnClick="@(() => Navigation.NavigateTo($"invoices/{context.Id}"))" />
+                </MudTd>
+            </RowTemplate>
+            <NoRecordsContent>
+                <MudText Typo="Typo.body2" Color="Color.Secondary">Ainda não há faturas emitidas.</MudText>
+            </NoRecordsContent>
+        </MudTable>
+    </MudPaper>
+</MudStack>
+
+@code {
+    private bool _loading = true;
+    private string? _error;
+    private List<InvoiceListItem> _invoices = [];
+
+    protected override async Task OnInitializedAsync()
+    {
+        Company.Changed += OnCompanyChanged;
+        await Company.EnsureLoadedAsync();
+        await LoadAsync();
+    }
+
+    private async void OnCompanyChanged()
+    {
+        await InvokeAsync(LoadAsync);
+    }
+
+    private async Task LoadAsync()
+    {
+        _loading = true;
+        _error = Company.LoadError;
+
+        if (!Company.HasCompany)
+        {
+            _invoices = [];
+            _loading = false;
+            StateHasChanged();
+            return;
+        }
+
+        try
+        {
+            _invoices = [.. await SalesApi.GetInvoicesAsync(Company.SelectedCompanyId)];
+        }
+        catch (Exception ex)
+        {
+            _error = $"Não foi possível carregar as faturas: {ex.Message}";
+        }
+        finally
+        {
+            _loading = false;
+            StateHasChanged();
+        }
+    }
+
+    private static string DescribeStatus(string status) => status switch
+    {
+        "A" => "Anulado",
+        "F" => "Faturado",
+        "S" => "Autofaturado",
+        _ => "Normal"
+    };
+
+    public void Dispose() => Company.Changed -= OnCompanyChanged;
+}

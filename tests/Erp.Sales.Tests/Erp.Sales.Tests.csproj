@@ -18,6 +18,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\Services\Erp.Sales.Api\Erp.Sales.Api.csproj" />
+    <ProjectReference Include="..\..\src\Services\Erp.Sales.Application\Erp.Sales.Application.csproj" />
   </ItemGroup>
 
   <ItemGroup>

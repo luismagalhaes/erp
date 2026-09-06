@@ -1,15 +1,29 @@
-@page "/backoffice/companies"
+@page "/companies"
 @attribute [Authorize]
 @using Microsoft.AspNetCore.Authorization
+@using Microsoft.AspNetCore.Components.Web
 @using MudBlazor
-@inject Erp.Main.Services.CoreApiClient CoreApi
+@using Erp.Main.Models
+@using Erp.Main.Services
+@inject CoreApiClient CoreApi
+@inject NavigationManager Navigation
 
-<PageTitle>Backoffice - Companies</PageTitle>
+<PageTitle>Empresas</PageTitle>
 
-<MudStack Spacing="3">
+<MudStack Spacing="4">
     <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center">
-        <MudText Typo="Typo.h4">Backoffice</MudText>
-        <MudChip T="string" Color="Color.Primary" Variant="Variant.Filled">Companies</MudChip>
+        <MudStack Spacing="0">
+            <MudText Typo="Typo.h4">Empresas</MudText>
+            <MudText Typo="Typo.body2" Color="Color.Secondary">
+                Entidades emitentes. A empresa ativa escolhe-se no cabeçalho.
+            </MudText>
+        </MudStack>
+
+        <MudButton Variant="Variant.Filled" Color="Color.Primary"
+                   StartIcon="@Icons.Material.Filled.Add"
+                   OnClick="@(() => Navigation.NavigateTo("companies/new"))">
+            Nova empresa
+        </MudButton>
     </MudStack>
 
     @if (!string.IsNullOrWhiteSpace(_error))
@@ -18,27 +32,35 @@
     }
 
     <MudPaper Elevation="1" Class="pa-2">
-        <MudTable Items="_companies" Hover="true" Dense="true" Loading="_loading" Striped="true">
+        <MudTable Items="_companies" Hover="true" Striped="true" Dense="true" Loading="_loading"
+                  Breakpoint="Breakpoint.Sm">
             <HeaderContent>
-                <MudTh>Name</MudTh>
-                <MudTh>Legal Name</MudTh>
-                <MudTh>Tax Id</MudTh>
-                <MudTh>Status</MudTh>
+                <MudTh>Nome</MudTh>
+                <MudTh>Designação legal</MudTh>
+                <MudTh>NIF</MudTh>
+                <MudTh>Estado</MudTh>
+                <MudTh Style="text-align: right;">Ações</MudTh>
             </HeaderContent>
             <RowTemplate>
-                <MudTd DataLabel="Name">@context.Name</MudTd>
-                <MudTd DataLabel="Legal Name">@context.LegalName</MudTd>
-                <MudTd DataLabel="Tax Id">@context.TaxId</MudTd>
-                <MudTd DataLabel="Status">
-                    <MudChip T="string" Color="@(context.IsActive ? Color.Success : Color.Default)"
-                             Variant="Variant.Outlined"
-                             Size="Size.Small">
-                        @(context.IsActive ? "Active" : "Inactive")
+                <MudTd DataLabel="Nome">@context.Name</MudTd>
+                <MudTd DataLabel="Designação legal">@context.LegalName</MudTd>
+                <MudTd DataLabel="NIF">
+                    <MudText Typo="Typo.body2" Style="font-family: monospace;">@context.TaxId</MudText>
+                </MudTd>
+                <MudTd DataLabel="Estado">
+                    <MudChip T="string" Size="Size.Small" Variant="Variant.Outlined"
+                             Color="@(context.IsActive ? Color.Success : Color.Default)">
+                        @(context.IsActive ? "Ativa" : "Inativa")
                     </MudChip>
+                </MudTd>
+                <MudTd DataLabel="Ações" Style="text-align: right;">
+                    <MudIconButton Icon="@Icons.Material.Filled.Edit" Size="Size.Small"
+                                   title="Editar empresa"
+                                   OnClick="@(() => Navigation.NavigateTo($"companies/{context.Id}"))" />
                 </MudTd>
             </RowTemplate>
             <NoRecordsContent>
-                <MudText Typo="Typo.body2" Color="Color.Secondary">No companies found.</MudText>
+                <MudText Typo="Typo.body2" Color="Color.Secondary">Ainda não há empresas criadas.</MudText>
             </NoRecordsContent>
         </MudTable>
     </MudPaper>
@@ -53,18 +75,15 @@
     {
         try
         {
-            var result = await CoreApi.Http.GetFromJsonAsync<List<CompanyListItem>>("api/companies");
-            _companies = result ?? [];
+            _companies = [.. await CoreApi.GetCompaniesAsync()];
         }
         catch (Exception ex)
         {
-            _error = $"Unable to load companies: {ex.Message}";
+            _error = $"Não foi possível carregar as empresas: {ex.Message}";
         }
         finally
         {
             _loading = false;
         }
     }
-
-    private sealed record CompanyListItem(Guid Id, string Name, string? LegalName, string TaxId, bool IsActive);
 }

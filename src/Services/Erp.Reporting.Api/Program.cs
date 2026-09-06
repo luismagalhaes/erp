@@ -1,4 +1,5 @@
-using Microsoft.AspNetCore.Authentication.JwtBearer;
+﻿using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Scalar.AspNetCore;
 using Serilog;
 
 Log.Logger = new LoggerConfiguration().WriteTo.Console().CreateBootstrapLogger();
@@ -12,6 +13,8 @@ try
         .WriteTo.Console()
         .Enrich.FromLogContext()
         .ReadFrom.Configuration(ctx.Configuration));
+
+    builder.Services.AddControllers();
 
     builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
         .AddJwtBearer(options =>
@@ -27,15 +30,21 @@ try
     var app = builder.Build();
 
     if (app.Environment.IsDevelopment())
+    {
         app.MapOpenApi();
+        app.MapScalarApiReference(options =>
+        {
+            options.Title = "ERP Reporting API";
+        });
+
+        app.MapGet("/", () => Results.Redirect("/scalar"));
+    }
 
     app.UseSerilogRequestLogging();
     app.UseHttpsRedirection();
     app.UseAuthentication();
     app.UseAuthorization();
-
-    app.MapGet("/health", () => Results.Ok(new { service = "Reporting.Api", status = "healthy" }))
-       .AllowAnonymous();
+    app.MapControllers();
 
     await app.RunAsync();
 }

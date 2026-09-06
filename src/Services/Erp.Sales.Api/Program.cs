@@ -1,4 +1,8 @@
+using Erp.Sales.Api.Authorization;
+using Erp.Sales.Application;
+using Erp.Sales.Storage;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Scalar.AspNetCore;
 using Serilog;
 
 Log.Logger = new LoggerConfiguration().WriteTo.Console().CreateBootstrapLogger();
@@ -13,6 +17,13 @@ try
         .Enrich.FromLogContext()
         .ReadFrom.Configuration(ctx.Configuration));
 
+    builder.Services.AddSalesStorage(builder.Configuration);
+    builder.Services.AddSalesApplication(
+        builder.Configuration,
+        allowDevelopmentKeyGeneration: builder.Environment.IsDevelopment());
+
+    builder.Services.AddControllers();
+
     builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
         .AddJwtBearer(options =>
         {
@@ -21,21 +32,27 @@ try
             options.RequireHttpsMetadata = !builder.Environment.IsDevelopment();
         });
 
-    builder.Services.AddAuthorization();
+    builder.Services.AddAuthorizationBuilder().AddSalesPolicies();
     builder.Services.AddOpenApi();
 
     var app = builder.Build();
 
     if (app.Environment.IsDevelopment())
+    {
         app.MapOpenApi();
+        app.MapScalarApiReference(options =>
+        {
+            options.Title = "ERP Sales API";
+        });
+
+        app.MapGet("/", () => Results.Redirect("/scalar"));
+    }
 
     app.UseSerilogRequestLogging();
     app.UseHttpsRedirection();
     app.UseAuthentication();
     app.UseAuthorization();
-
-    app.MapGet("/health", () => Results.Ok(new { service = "Sales.Api", status = "healthy" }))
-       .AllowAnonymous();
+    app.MapControllers();
 
     await app.RunAsync();
 }

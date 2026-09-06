@@ -1,0 +1,365 @@
+@page "/invoices/new"
+@attribute [Authorize]
+@implements IDisposable
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.AspNetCore.Components.Web
+@using MudBlazor
+@using Erp.Main.Models
+@using Erp.Main.Services
+@inject SalesApiClient SalesApi
+@inject CompanyState Company
+@inject NavigationManager Navigation
+@inject ISnackbar Snackbar
+
+<PageTitle>Nova fatura</PageTitle>
+
+<MudStack Spacing="4">
+    <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center">
+        <MudStack Spacing="0">
+            <MudText Typo="Typo.h4">Nova fatura</MudText>
+            <MudText Typo="Typo.body2" Color="Color.Secondary">
+                O documento é assinado e numerado no momento da emissão e não pode ser alterado depois.
+            </MudText>
+        </MudStack>
+
+        <MudButton Variant="Variant.Text" StartIcon="@Icons.Material.Filled.ArrowBack"
+                   OnClick="@(() => Navigation.NavigateTo("invoices"))">
+            Voltar
+        </MudButton>
+    </MudStack>
+
+    @if (!string.IsNullOrWhiteSpace(_error))
+    {
+        <MudAlert Severity="Severity.Error" Dense="true">@_error</MudAlert>
+    }
+
+    @if (_loading)
+    {
+        <MudProgressLinear Indeterminate="true" Color="Color.Primary" />
+    }
+    else if (_series.Count == 0)
+    {
+        <MudAlert Severity="Severity.Warning">
+            Não existe nenhuma série comunicada à AT para esta empresa. Sem código de validação não é
+            possível emitir documentos.
+            <MudLink Href="series" Class="ml-2">Gerir séries</MudLink>
+        </MudAlert>
+    }
+    else
+    {
+        <MudPaper Elevation="1" Class="pa-4">
+            <MudGrid>
+                <MudItem xs="12" md="6">
+                    <MudSelect @bind-Value="_seriesId" Label="Série" Variant="Variant.Outlined" Required="true">
+                        @foreach (var series in _series)
+                        {
+                            <MudSelectItem T="Guid" Value="@series.Id">
+                                @series.DocumentType @series.SeriesCode (próximo n.º @(series.CurrentSequence + 1))
+                            </MudSelectItem>
+                        }
+                    </MudSelect>
+                </MudItem>
+
+                <MudItem xs="12" md="6">
+                    <MudDatePicker @bind-Date="_documentDate" Label="Data do documento"
+                                   Variant="Variant.Outlined" DateFormat="yyyy-MM-dd" />
+                </MudItem>
+            </MudGrid>
+        </MudPaper>
+
+        <MudPaper Elevation="1" Class="pa-4">
+            <MudText Typo="Typo.h6" Class="mb-3">Cliente</MudText>
+            <MudGrid>
+                <MudItem xs="12" md="3">
+                    <MudTextField @bind-Value="_customerTaxId" Label="NIF"
+                                  Variant="Variant.Outlined"
+                                  HelperText="Deixe vazio para consumidor final" />
+                </MudItem>
+                <MudItem xs="12" md="5">
+                    <MudTextField @bind-Value="_customerName" Label="Nome" Variant="Variant.Outlined" Required="true" />
+                </MudItem>
+                <MudItem xs="12" md="4">
+                    <MudTextField @bind-Value="_customerAddress" Label="Morada" Variant="Variant.Outlined" />
+                </MudItem>
+            </MudGrid>
+        </MudPaper>
+
+        <MudPaper Elevation="1" Class="pa-4">
+            <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center" Class="mb-3">
+                <MudText Typo="Typo.h6">Linhas</MudText>
+                <MudButton Variant="Variant.Outlined" Color="Color.Primary" Size="Size.Small"
+                           StartIcon="@Icons.Material.Filled.Add" OnClick="AddLine">
+                    Adicionar linha
+                </MudButton>
+            </MudStack>
+
+            <MudTable Items="_lines" Dense="true" Hover="true" Striped="true" Breakpoint="Breakpoint.Sm">
+                <HeaderContent>
+                    <MudTh Style="width: 200px;">Artigo</MudTh>
+                    <MudTh>Descrição</MudTh>
+                    <MudTh Style="width: 100px;">Qtd.</MudTh>
+                    <MudTh Style="width: 130px;">Preço unit.</MudTh>
+                    <MudTh Style="width: 150px;">IVA</MudTh>
+                    <MudTh Style="width: 110px; text-align: right;">Total</MudTh>
+                    <MudTh Style="width: 70px; text-align: right;">Ações</MudTh>
+                </HeaderContent>
+                <RowTemplate>
+                    <MudTd DataLabel="Artigo">
+                        @if (_products.Count > 0)
+                        {
+                            <MudSelect T="Guid?" Value="context.ProductId"
+                                       ValueChanged="@(productId => OnProductChanged(context, productId))"
+                                       Margin="Margin.Dense" Clearable="true" Placeholder="Livre">
+                                @foreach (var product in _products)
+                                {
+                                    <MudSelectItem T="Guid?" Value="@product.Id">
+                                        @product.ProductCode — @product.Description
+                                    </MudSelectItem>
+                                }
+                            </MudSelect>
+                        }
+                        else
+                        {
+                            <MudTextField @bind-Value="context.ProductCode" Margin="Margin.Dense" Placeholder="Código" />
+                        }
+                    </MudTd>
+                    <MudTd DataLabel="Descrição">
+                        <MudTextField @bind-Value="context.ProductDescription" Margin="Margin.Dense" />
+                    </MudTd>
+                    <MudTd DataLabel="Qtd.">
+                        <MudNumericField @bind-Value="context.Quantity" Margin="Margin.Dense" Min="0" />
+                    </MudTd>
+                    <MudTd DataLabel="Preço unit.">
+                        <MudNumericField @bind-Value="context.UnitPrice" Margin="Margin.Dense" Min="0" Format="N2" />
+                    </MudTd>
+                    <MudTd DataLabel="IVA">
+                        <MudSelect T="string" Value="context.TaxCode"
+                                   ValueChanged="@(code => OnTaxCodeChanged(context, code))"
+                                   Margin="Margin.Dense">
+                            @foreach (var rate in TaxRates)
+                            {
+                                <MudSelectItem T="string" Value="@rate.Code">@rate.Label</MudSelectItem>
+                            }
+                        </MudSelect>
+                    </MudTd>
+                    <MudTd DataLabel="Total" Style="text-align: right;">@LineTotal(context).ToString("N2")</MudTd>
+                    <MudTd DataLabel="Ações" Style="text-align: right;">
+                        <MudIconButton Icon="@Icons.Material.Filled.Delete" Size="Size.Small" Color="Color.Error"
+                                       title="Remover linha"
+                                       Disabled="@(_lines.Count == 1)"
+                                       OnClick="@(() => RemoveLine(context))" />
+                    </MudTd>
+                </RowTemplate>
+            </MudTable>
+
+            @if (_lines.Any(x => x.TaxCode == ExemptCode))
+            {
+                <MudTextField @bind-Value="_exemptionReason" Class="mt-4"
+                              Label="Motivo de isenção" Variant="Variant.Outlined"
+                              HelperText="Obrigatório quando alguma linha está isenta de IVA" />
+            }
+        </MudPaper>
+
+        <MudPaper Elevation="1" Class="pa-4">
+            <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center">
+                <MudStack Row="true" Spacing="6">
+                    <MudStack Spacing="0">
+                        <MudText Typo="Typo.caption" Color="Color.Secondary">Base tributável</MudText>
+                        <MudText Typo="Typo.h6">@NetTotal.ToString("N2")</MudText>
+                    </MudStack>
+                    <MudStack Spacing="0">
+                        <MudText Typo="Typo.caption" Color="Color.Secondary">IVA</MudText>
+                        <MudText Typo="Typo.h6">@TaxTotal.ToString("N2")</MudText>
+                    </MudStack>
+                    <MudStack Spacing="0">
+                        <MudText Typo="Typo.caption" Color="Color.Secondary">Total</MudText>
+                        <MudText Typo="Typo.h5" Color="Color.Primary">@GrossTotal.ToString("N2")</MudText>
+                    </MudStack>
+                </MudStack>
+
+                <MudButton Variant="Variant.Filled" Color="Color.Primary" Size="Size.Large"
+                           StartIcon="@Icons.Material.Filled.Receipt"
+                           Disabled="@(_issuing || !CanIssue)"
+                           OnClick="IssueAsync">
+                    @(_issuing ? "A emitir..." : "Emitir fatura")
+                </MudButton>
+            </MudStack>
+        </MudPaper>
+    }
+</MudStack>
+
+@code {
+    private const string ExemptCode = "ISE";
+
+    private static readonly TaxRateOption[] TaxRates =
+    [
+        new("NOR", 23m, "Normal - 23%"),
+        new("INT", 13m, "Intermédia - 13%"),
+        new("RED", 6m, "Reduzida - 6%"),
+        new(ExemptCode, 0m, "Isento")
+    ];
+
+    private bool _loading = true;
+    private bool _issuing;
+    private string? _error;
+
+    private Guid _seriesId;
+    private DateTime? _documentDate = DateTime.Today;
+    private string _customerTaxId = string.Empty;
+    private string _customerName = string.Empty;
+    private string _customerAddress = string.Empty;
+    private string _exemptionReason = string.Empty;
+
+    private List<SalesSeries> _series = [];
+    private List<ProductListItem> _products = [];
+    private readonly List<LineEditor> _lines = [new()];
+
+    private decimal NetTotal => _lines.Sum(LineTotal);
+
+    private decimal TaxTotal => _lines.Sum(line =>
+        Math.Round(LineTotal(line) * line.TaxPercentage / 100m, 2, MidpointRounding.AwayFromZero));
+
+    private decimal GrossTotal => NetTotal + TaxTotal;
+
+    private bool CanIssue =>
+        _seriesId != Guid.Empty
+        && _documentDate is not null
+        && !string.IsNullOrWhiteSpace(_customerName)
+        && _lines.All(line => line.Quantity > 0 && !string.IsNullOrWhiteSpace(line.ProductDescription))
+        && (!_lines.Any(line => line.TaxCode == ExemptCode) || !string.IsNullOrWhiteSpace(_exemptionReason));
+
+    protected override async Task OnInitializedAsync()
+    {
+        Company.Changed += OnCompanyChanged;
+        await Company.EnsureLoadedAsync();
+        await LoadAsync();
+    }
+
+    private async void OnCompanyChanged() => await InvokeAsync(LoadAsync);
+
+    private async Task LoadAsync()
+    {
+        _loading = true;
+        _error = Company.LoadError;
+
+        if (!Company.HasCompany)
+        {
+            _series = [];
+            _products = [];
+            _loading = false;
+            StateHasChanged();
+            return;
+        }
+
+        try
+        {
+            var series = await SalesApi.GetSeriesAsync(Company.SelectedCompanyId);
+            _series = [.. series.Where(x => x.CanIssue)];
+            _seriesId = _series.FirstOrDefault()?.Id ?? Guid.Empty;
+
+            var products = await SalesApi.GetProductsAsync(Company.SelectedCompanyId);
+            _products = [.. products.Where(x => x.IsActive)];
+        }
+        catch (Exception ex)
+        {
+            _error = $"Não foi possível preparar a emissão: {ex.Message}";
+        }
+        finally
+        {
+            _loading = false;
+            StateHasChanged();
+        }
+    }
+
+    private void AddLine() => _lines.Add(new LineEditor());
+
+    private void RemoveLine(LineEditor line)
+    {
+        if (_lines.Count > 1)
+            _lines.Remove(line);
+    }
+
+    private void OnProductChanged(LineEditor line, Guid? productId)
+    {
+        line.ProductId = productId;
+
+        var product = _products.FirstOrDefault(x => x.Id == productId);
+        if (product is null)
+            return;
+
+        line.ProductCode = product.ProductCode;
+        line.ProductDescription = product.Description;
+        line.UnitPrice = product.UnitPrice;
+        line.TaxCode = product.DefaultTaxCode;
+        line.TaxPercentage = product.DefaultTaxPercentage;
+    }
+
+    private static void OnTaxCodeChanged(LineEditor line, string taxCode)
+    {
+        line.TaxCode = taxCode;
+        line.TaxPercentage = TaxRates.First(rate => rate.Code == taxCode).Percentage;
+    }
+
+    private static decimal LineTotal(LineEditor line) =>
+        Math.Round(line.Quantity * line.UnitPrice, 2, MidpointRounding.AwayFromZero);
+
+    private async Task IssueAsync()
+    {
+        _issuing = true;
+        _error = null;
+
+        try
+        {
+            var request = new CreateInvoiceRequest(
+                Company.SelectedCompanyId,
+                _seriesId,
+                DateOnly.FromDateTime(_documentDate!.Value),
+                new CustomerRequest(
+                    string.IsNullOrWhiteSpace(_customerTaxId) ? null : _customerTaxId.Trim(),
+                    _customerName.Trim(),
+                    string.IsNullOrWhiteSpace(_customerAddress) ? null : _customerAddress.Trim()),
+                [.. _lines.Select(line => new CreateInvoiceLineRequest(
+                    string.IsNullOrWhiteSpace(line.ProductCode) ? "GEN" : line.ProductCode,
+                    line.ProductDescription,
+                    line.Quantity,
+                    line.UnitPrice,
+                    line.TaxCode,
+                    line.TaxPercentage,
+                    TaxExemptionReason: line.TaxCode == ExemptCode ? _exemptionReason : null))]);
+
+            var (invoice, error) = await SalesApi.IssueInvoiceAsync(request);
+
+            if (invoice is null)
+            {
+                _error = error ?? "Não foi possível emitir a fatura.";
+                return;
+            }
+
+            Snackbar.Add($"Fatura {invoice.DocumentNumber} emitida.", Severity.Success);
+            Navigation.NavigateTo($"invoices/{invoice.Id}");
+        }
+        catch (Exception ex)
+        {
+            _error = $"Não foi possível emitir a fatura: {ex.Message}";
+        }
+        finally
+        {
+            _issuing = false;
+        }
+    }
+
+    private sealed record TaxRateOption(string Code, decimal Percentage, string Label);
+
+    private sealed class LineEditor
+    {
+        public Guid? ProductId { get; set; }
+        public string ProductCode { get; set; } = string.Empty;
+        public string ProductDescription { get; set; } = string.Empty;
+        public decimal Quantity { get; set; } = 1;
+        public decimal UnitPrice { get; set; }
+        public string TaxCode { get; set; } = "NOR";
+        public decimal TaxPercentage { get; set; } = 23m;
+    }
+
+    public void Dispose() => Company.Changed -= OnCompanyChanged;
+}

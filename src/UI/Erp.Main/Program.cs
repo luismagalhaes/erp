@@ -104,6 +104,9 @@ builder.Services.AddHttpClient<ReportingApiClient>(client =>
     client.BaseAddress = new Uri(builder.Configuration["Services:ReportingApi"]!))
     .AddHttpMessageHandler<UserAccessTokenHandler>();
 
+// Company currently selected in the header, shared by every page of the circuit.
+builder.Services.AddScoped<CompanyState>();
+
 var app = builder.Build();
 
 app.UseStaticFiles();

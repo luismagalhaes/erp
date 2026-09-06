@@ -1,0 +1,190 @@
+@page "/companies/new"
+@page "/companies/{Id:guid}"
+@attribute [Authorize]
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.AspNetCore.Components.Web
+@using MudBlazor
+@using Erp.Main.Models
+@using Erp.Main.Services
+@inject CoreApiClient CoreApi
+@inject CompanyState Company
+@inject NavigationManager Navigation
+@inject ISnackbar Snackbar
+
+<PageTitle>@(IsNew ? "Nova empresa" : "Editar empresa")</PageTitle>
+
+<MudStack Spacing="4">
+    <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center">
+        <MudStack Spacing="0">
+            <MudText Typo="Typo.h4">@(IsNew ? "Nova empresa" : "Editar empresa")</MudText>
+            <MudText Typo="Typo.body2" Color="Color.Secondary">
+                O NIF identifica a empresa perante a AT e não pode repetir-se.
+            </MudText>
+        </MudStack>
+
+        <MudButton Variant="Variant.Text" StartIcon="@Icons.Material.Filled.ArrowBack"
+                   OnClick="@(() => Navigation.NavigateTo("companies"))">
+            Voltar
+        </MudButton>
+    </MudStack>
+
+    @if (!string.IsNullOrWhiteSpace(_error))
+    {
+        <MudAlert Severity="Severity.Error" Dense="true">@_error</MudAlert>
+    }
+
+    @if (_loading)
+    {
+        <MudProgressLinear Indeterminate="true" Color="Color.Primary" />
+    }
+    else
+    {
+        <MudPaper Elevation="1" Class="pa-4">
+            <MudGrid>
+                <MudItem xs="12" md="6">
+                    <MudTextField @bind-Value="_name" Label="Nome" Variant="Variant.Outlined" Required="true" />
+                </MudItem>
+                <MudItem xs="12" md="6">
+                    <MudTextField @bind-Value="_legalName" Label="Designação legal" Variant="Variant.Outlined" />
+                </MudItem>
+                <MudItem xs="12" md="4">
+                    <MudTextField @bind-Value="_taxId" Label="NIF" Variant="Variant.Outlined" Required="true" />
+                </MudItem>
+                <MudItem xs="12" md="4">
+                    <MudTextField @bind-Value="_email" Label="Email" Variant="Variant.Outlined" InputType="InputType.Email" />
+                </MudItem>
+                <MudItem xs="12" md="4">
+                    <MudTextField @bind-Value="_phone" Label="Telefone" Variant="Variant.Outlined" />
+                </MudItem>
+
+                @if (!IsNew)
+                {
+                    <MudItem xs="12">
+                        <MudSwitch @bind-Value="_isActive" Color="Color.Primary" Label="Empresa ativa" />
+                    </MudItem>
+                }
+            </MudGrid>
+
+            <MudStack Row="true" Justify="Justify.FlexEnd" Class="mt-4">
+                <MudButton Variant="Variant.Filled" Color="Color.Primary"
+                           StartIcon="@Icons.Material.Filled.Save"
+                           Disabled="@(_saving || !CanSave)"
+                           OnClick="SaveAsync">
+                    Guardar
+                </MudButton>
+            </MudStack>
+        </MudPaper>
+    }
+</MudStack>
+
+@code {
+    [Parameter]
+    public Guid? Id { get; set; }
+
+    private bool IsNew => Id is null;
+
+    private bool _loading;
+    private bool _saving;
+    private string? _error;
+
+    private string _name = string.Empty;
+    private string _legalName = string.Empty;
+    private string _taxId = string.Empty;
+    private string _email = string.Empty;
+    private string _phone = string.Empty;
+    private bool _isActive = true;
+
+    private bool CanSave => !string.IsNullOrWhiteSpace(_name) && !string.IsNullOrWhiteSpace(_taxId);
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (IsNew)
+            return;
+
+        _loading = true;
+
+        try
+        {
+            var company = await CoreApi.GetCompanyAsync(Id!.Value);
+
+            if (company is null)
+            {
+                _error = "Empresa não encontrada.";
+                return;
+            }
+
+            _name = company.Name;
+            _legalName = company.LegalName ?? string.Empty;
+            _taxId = company.TaxId;
+            _email = company.Email ?? string.Empty;
+            _phone = company.Phone ?? string.Empty;
+            _isActive = company.IsActive;
+        }
+        catch (Exception ex)
+        {
+            _error = $"Não foi possível carregar a empresa: {ex.Message}";
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private async Task SaveAsync()
+    {
+        _saving = true;
+        _error = null;
+
+        try
+        {
+            string? error;
+
+            if (IsNew)
+            {
+                var request = new CreateCompanyRequest(
+                    _name.Trim(),
+                    _taxId.Trim(),
+                    Normalize(_legalName),
+                    Normalize(_email),
+                    Normalize(_phone));
+
+                (_, error) = await CoreApi.CreateCompanyAsync(request);
+            }
+            else
+            {
+                var request = new UpdateCompanyRequest(
+                    _name.Trim(),
+                    _taxId.Trim(),
+                    Normalize(_legalName),
+                    Normalize(_email),
+                    Normalize(_phone),
+                    _isActive);
+
+                (_, error) = await CoreApi.UpdateCompanyAsync(Id!.Value, request);
+            }
+
+            if (error is not null)
+            {
+                _error = error;
+                return;
+            }
+
+            // The header picker lists the user companies, so it has to pick up the change.
+            await Company.RefreshAsync();
+
+            Snackbar.Add(IsNew ? "Empresa criada." : "Empresa atualizada.", Severity.Success);
+            Navigation.NavigateTo("companies");
+        }
+        catch (Exception ex)
+        {
+            _error = $"Não foi possível guardar a empresa: {ex.Message}";
+        }
+        finally
+        {
+            _saving = false;
+        }
+    }
+
+    private static string? Normalize(string value) =>
+        string.IsNullOrWhiteSpace(value) ? null : value.Trim();
+}

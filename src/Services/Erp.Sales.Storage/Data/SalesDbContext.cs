@@ -1,0 +1,168 @@
+using Erp.Sales.Domain;
+using Microsoft.EntityFrameworkCore;
+
+namespace Erp.Sales.Storage.Data;
+
+public sealed class SalesDbContext(DbContextOptions<SalesDbContext> options) : DbContext(options)
+{
+    public const string Schema = "sales";
+
+    public DbSet<Series> Series => Set<Series>();
+    public DbSet<SalesDocument> SalesDocuments => Set<SalesDocument>();
+    public DbSet<SalesDocumentLine> SalesDocumentLines => Set<SalesDocumentLine>();
+    public DbSet<DocumentTaxSummary> DocumentTaxSummaries => Set<DocumentTaxSummary>();
+    public DbSet<DocumentStatusChange> DocumentStatusChanges => Set<DocumentStatusChange>();
+    public DbSet<Product> Products => Set<Product>();
+
+    protected override void OnModelCreating(ModelBuilder modelBuilder)
+    {
+        base.OnModelCreating(modelBuilder);
+
+        modelBuilder.HasDefaultSchema(Schema);
+
+        modelBuilder.Entity<Series>(entity =>
+        {
+            entity.ToTable("Series");
+            entity.HasKey(x => x.Id);
+
+            entity.Property(x => x.DocumentType).HasMaxLength(4).IsRequired();
+            entity.Property(x => x.SeriesCode).HasMaxLength(35).IsRequired();
+            entity.Property(x => x.EstablishmentCode).HasMaxLength(20);
+            entity.Property(x => x.ValidationCode).HasMaxLength(16);
+            entity.Property(x => x.CreatedByUserId).HasMaxLength(450);
+            entity.Property(x => x.Status).HasConversion<byte>();
+            entity.Property(x => x.RowVersion).IsRowVersion();
+
+            entity.Ignore(x => x.CanIssue);
+
+            entity.HasIndex(x => new { x.CompanyId, x.DocumentType, x.SeriesCode }).IsUnique();
+            entity.HasIndex(x => x.CompanyId);
+        });
+
+        modelBuilder.Entity<SalesDocument>(entity =>
+        {
+            entity.ToTable("SalesDocument");
+            entity.HasKey(x => x.Id);
+
+            entity.Property(x => x.DocumentType).HasMaxLength(4).IsRequired();
+            entity.Property(x => x.DocumentNumber).HasMaxLength(60).IsRequired();
+            entity.Property(x => x.Atcud).HasMaxLength(50).IsRequired();
+            entity.Property(x => x.Status).HasMaxLength(1).IsFixedLength().IsRequired();
+            entity.Property(x => x.SourceBilling).HasMaxLength(1).IsFixedLength().IsRequired();
+            entity.Property(x => x.CustomerTaxId).HasMaxLength(30).IsRequired();
+            entity.Property(x => x.CustomerName).HasMaxLength(200).IsRequired();
+            entity.Property(x => x.CustomerAddress).HasMaxLength(400);
+            entity.Property(x => x.CustomerCountry).HasMaxLength(2).IsRequired();
+            entity.Property(x => x.CreatedByUserId).HasMaxLength(450);
+
+            entity.Property(x => x.NetTotal).HasPrecision(19, 2);
+            entity.Property(x => x.TaxPayable).HasPrecision(19, 2);
+            entity.Property(x => x.GrossTotal).HasPrecision(19, 2);
+
+            entity.Property(x => x.Hash).HasMaxLength(200).IsRequired();
+            entity.Property(x => x.PreviousHash).HasMaxLength(200).IsRequired();
+            entity.Property(x => x.HashControl).HasMaxLength(70).IsRequired();
+            entity.Property(x => x.QrCodePayload).HasMaxLength(1024);
+
+            entity.Ignore(x => x.EffectiveStatus);
+            entity.Ignore(x => x.IsVoided);
+
+            // Numbering has no gaps and no repeats inside a series.
+            entity.HasIndex(x => new { x.SeriesId, x.SequenceNumber }).IsUnique();
+            entity.HasIndex(x => new { x.CompanyId, x.DocumentNumber }).IsUnique();
+            entity.HasIndex(x => new { x.CompanyId, x.DocumentDate });
+
+            entity.HasOne(x => x.Series)
+                .WithMany()
+                .HasForeignKey(x => x.SeriesId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasOne<SalesDocument>()
+                .WithMany()
+                .HasForeignKey(x => x.RectifiedDocumentId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasMany(x => x.Lines)
+                .WithOne(x => x.Document)
+                .HasForeignKey(x => x.DocumentId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasMany(x => x.TaxSummaries)
+                .WithOne(x => x.Document)
+                .HasForeignKey(x => x.DocumentId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasMany(x => x.StatusChanges)
+                .WithOne(x => x.Document)
+                .HasForeignKey(x => x.DocumentId)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        modelBuilder.Entity<SalesDocumentLine>(entity =>
+        {
+            entity.ToTable("SalesDocumentLine");
+            entity.HasKey(x => x.Id);
+
+            entity.Property(x => x.ProductCode).HasMaxLength(60).IsRequired();
+            entity.Property(x => x.ProductDescription).HasMaxLength(200).IsRequired();
+            entity.Property(x => x.UnitOfMeasure).HasMaxLength(20).IsRequired();
+            entity.Property(x => x.TaxCountryRegion).HasMaxLength(5).IsRequired();
+            entity.Property(x => x.TaxCode).HasMaxLength(10).IsRequired();
+            entity.Property(x => x.TaxExemptionCode).HasMaxLength(10);
+            entity.Property(x => x.TaxExemptionReason).HasMaxLength(200);
+
+            entity.Property(x => x.Quantity).HasPrecision(19, 6);
+            entity.Property(x => x.UnitPrice).HasPrecision(19, 6);
+            entity.Property(x => x.LineAmount).HasPrecision(19, 2);
+            entity.Property(x => x.TaxPercentage).HasPrecision(5, 2);
+            entity.Property(x => x.TaxAmount).HasPrecision(19, 2);
+
+            entity.HasIndex(x => new { x.DocumentId, x.LineNumber }).IsUnique();
+        });
+
+        modelBuilder.Entity<DocumentTaxSummary>(entity =>
+        {
+            entity.ToTable("DocumentTaxSummary");
+            entity.HasKey(x => x.Id);
+
+            entity.Property(x => x.TaxCountryRegion).HasMaxLength(5).IsRequired();
+            entity.Property(x => x.TaxCode).HasMaxLength(10).IsRequired();
+            entity.Property(x => x.TaxPercentage).HasPrecision(5, 2);
+            entity.Property(x => x.TaxableBase).HasPrecision(19, 2);
+            entity.Property(x => x.TaxAmount).HasPrecision(19, 2);
+
+            entity.HasIndex(x => x.DocumentId);
+        });
+
+        modelBuilder.Entity<Product>(entity =>
+        {
+            entity.ToTable("Product");
+            entity.HasKey(x => x.Id);
+
+            entity.Property(x => x.ProductCode).HasMaxLength(60).IsRequired();
+            entity.Property(x => x.Description).HasMaxLength(200).IsRequired();
+            entity.Property(x => x.ProductType).HasMaxLength(1).IsFixedLength().IsRequired();
+            entity.Property(x => x.UnitOfMeasure).HasMaxLength(20).IsRequired();
+            entity.Property(x => x.DefaultTaxCountryRegion).HasMaxLength(5).IsRequired();
+            entity.Property(x => x.DefaultTaxCode).HasMaxLength(10).IsRequired();
+
+            entity.Property(x => x.UnitPrice).HasPrecision(19, 6);
+            entity.Property(x => x.DefaultTaxPercentage).HasPrecision(5, 2);
+
+            entity.HasIndex(x => new { x.CompanyId, x.ProductCode }).IsUnique();
+        });
+
+        modelBuilder.Entity<DocumentStatusChange>(entity =>
+        {
+            entity.ToTable("DocumentStatusChange");
+            entity.HasKey(x => x.Id);
+
+            entity.Property(x => x.PreviousStatus).HasMaxLength(1).IsFixedLength().IsRequired();
+            entity.Property(x => x.NewStatus).HasMaxLength(1).IsFixedLength().IsRequired();
+            entity.Property(x => x.Reason).HasMaxLength(400).IsRequired();
+            entity.Property(x => x.UserId).HasMaxLength(450);
+
+            entity.HasIndex(x => x.DocumentId);
+        });
+    }
+}

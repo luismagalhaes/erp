@@ -1,0 +1,251 @@
+@page "/series/new"
+@page "/series/{Id:guid}"
+@attribute [Authorize]
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.AspNetCore.Components.Web
+@using MudBlazor
+@using Erp.Main.Models
+@using Erp.Main.Services
+@inject SalesApiClient SalesApi
+@inject CompanyState Company
+@inject NavigationManager Navigation
+@inject ISnackbar Snackbar
+
+<PageTitle>@(IsNew ? "Nova série" : "Série")</PageTitle>
+
+<MudStack Spacing="4">
+    <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center">
+        <MudStack Spacing="0">
+            <MudText Typo="Typo.h4">@(IsNew ? "Nova série" : $"Série {_series?.SeriesCode}")</MudText>
+            <MudText Typo="Typo.body2" Color="Color.Secondary">
+                O identificador não pode repetir-se para o mesmo tipo de documento na mesma empresa.
+            </MudText>
+        </MudStack>
+
+        <MudButton Variant="Variant.Text" StartIcon="@Icons.Material.Filled.ArrowBack"
+                   OnClick="@(() => Navigation.NavigateTo("series"))">
+            Voltar
+        </MudButton>
+    </MudStack>
+
+    @if (!string.IsNullOrWhiteSpace(_error))
+    {
+        <MudAlert Severity="Severity.Error" Dense="true">@_error</MudAlert>
+    }
+
+    @if (_loading)
+    {
+        <MudProgressLinear Indeterminate="true" Color="Color.Primary" />
+    }
+    else if (IsNew)
+    {
+        <MudPaper Elevation="1" Class="pa-4">
+            <MudGrid>
+                <MudItem xs="12" md="3">
+                    <MudSelect @bind-Value="_documentType" Label="Tipo de documento" Variant="Variant.Outlined">
+                        @foreach (var type in DocumentTypes)
+                        {
+                            <MudSelectItem T="string" Value="@type.Code">@type.Code — @type.Label</MudSelectItem>
+                        }
+                    </MudSelect>
+                </MudItem>
+                <MudItem xs="12" md="3">
+                    <MudTextField @bind-Value="_seriesCode" Label="Identificador da série"
+                                  Variant="Variant.Outlined" Required="true" Placeholder="A2026" />
+                </MudItem>
+                <MudItem xs="12" md="3">
+                    <MudNumericField @bind-Value="_initialSequence" Label="Número inicial"
+                                     Variant="Variant.Outlined" Min="1" />
+                </MudItem>
+                <MudItem xs="12" md="3">
+                    <MudTextField @bind-Value="_establishmentCode" Label="Estabelecimento"
+                                  Variant="Variant.Outlined" HelperText="Opcional" />
+                </MudItem>
+            </MudGrid>
+
+            <MudStack Row="true" Justify="Justify.FlexEnd" Class="mt-4">
+                <MudButton Variant="Variant.Filled" Color="Color.Primary"
+                           StartIcon="@Icons.Material.Filled.Save"
+                           Disabled="@(_saving || string.IsNullOrWhiteSpace(_seriesCode) || !Company.HasCompany)"
+                           OnClick="CreateAsync">
+                    Criar série
+                </MudButton>
+            </MudStack>
+        </MudPaper>
+    }
+    else if (_series is not null)
+    {
+        <MudPaper Elevation="1" Class="pa-4">
+            <MudGrid>
+                <MudItem xs="12" md="3">
+                    <MudText Typo="Typo.caption" Color="Color.Secondary">Tipo de documento</MudText>
+                    <MudText>@_series.DocumentType</MudText>
+                </MudItem>
+                <MudItem xs="12" md="3">
+                    <MudText Typo="Typo.caption" Color="Color.Secondary">Identificador</MudText>
+                    <MudText Style="font-family: monospace;">@_series.SeriesCode</MudText>
+                </MudItem>
+                <MudItem xs="12" md="3">
+                    <MudText Typo="Typo.caption" Color="Color.Secondary">Último número emitido</MudText>
+                    <MudText>@_series.CurrentSequence</MudText>
+                </MudItem>
+                <MudItem xs="12" md="3">
+                    <MudText Typo="Typo.caption" Color="Color.Secondary">Estado</MudText>
+                    <MudText>@_series.Status</MudText>
+                </MudItem>
+            </MudGrid>
+        </MudPaper>
+
+        <MudPaper Elevation="1" Class="pa-4">
+            <MudText Typo="Typo.h6" Class="mb-2">Comunicação à AT</MudText>
+            <MudText Typo="Typo.body2" Color="Color.Secondary" Class="mb-3">
+                Registe aqui o código de validação devolvido pela AT ao comunicar a série. É esse código
+                que forma o ATCUD dos documentos e desbloqueia a emissão.
+            </MudText>
+
+            @if (!string.IsNullOrWhiteSpace(_series.ValidationCode))
+            {
+                <MudAlert Severity="Severity.Success" Dense="true" Class="mb-3">
+                    Série comunicada com o código <strong>@_series.ValidationCode</strong>.
+                </MudAlert>
+            }
+
+            <MudStack Row="true" Spacing="2" AlignItems="AlignItems.Center">
+                <MudTextField @bind-Value="_validationCode" Label="Código de validação"
+                              Variant="Variant.Outlined" Margin="Margin.Dense" Style="max-width: 320px;" />
+                <MudButton Variant="Variant.Filled" Color="Color.Primary"
+                           StartIcon="@Icons.Material.Filled.CloudDone"
+                           Disabled="@(_saving || string.IsNullOrWhiteSpace(_validationCode))"
+                           OnClick="CommunicateAsync">
+                    Registar código
+                </MudButton>
+            </MudStack>
+        </MudPaper>
+    }
+</MudStack>
+
+@code {
+    private static readonly DocumentTypeOption[] DocumentTypes =
+    [
+        new("FT", "Fatura"),
+        new("FS", "Fatura simplificada"),
+        new("FR", "Fatura-recibo"),
+        new("NC", "Nota de crédito"),
+        new("ND", "Nota de débito")
+    ];
+
+    [Parameter]
+    public Guid? Id { get; set; }
+
+    private bool IsNew => Id is null;
+
+    private bool _loading;
+    private bool _saving;
+    private string? _error;
+
+    private string _documentType = "FT";
+    private string _seriesCode = string.Empty;
+    private int _initialSequence = 1;
+    private string _establishmentCode = string.Empty;
+    private string _validationCode = string.Empty;
+
+    private SalesSeries? _series;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        await Company.EnsureLoadedAsync();
+
+        if (IsNew)
+            return;
+
+        await LoadAsync();
+    }
+
+    private async Task LoadAsync()
+    {
+        _loading = true;
+
+        try
+        {
+            var series = await SalesApi.GetSeriesAsync(Company.SelectedCompanyId);
+            _series = series.FirstOrDefault(x => x.Id == Id);
+
+            if (_series is null)
+                _error = "Série não encontrada nesta empresa.";
+        }
+        catch (Exception ex)
+        {
+            _error = $"Não foi possível carregar a série: {ex.Message}";
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private async Task CreateAsync()
+    {
+        _saving = true;
+        _error = null;
+
+        try
+        {
+            var request = new CreateSeriesRequest(
+                Company.SelectedCompanyId,
+                _documentType,
+                _seriesCode.Trim(),
+                _initialSequence,
+                string.IsNullOrWhiteSpace(_establishmentCode) ? null : _establishmentCode.Trim());
+
+            var (series, error) = await SalesApi.CreateSeriesAsync(request);
+
+            if (series is null)
+            {
+                _error = error ?? "Não foi possível criar a série.";
+                return;
+            }
+
+            Snackbar.Add($"Série {series.SeriesCode} criada. Falta comunicar à AT.", Severity.Success);
+            Navigation.NavigateTo($"series/{series.Id}");
+        }
+        catch (Exception ex)
+        {
+            _error = $"Não foi possível criar a série: {ex.Message}";
+        }
+        finally
+        {
+            _saving = false;
+        }
+    }
+
+    private async Task CommunicateAsync()
+    {
+        _saving = true;
+        _error = null;
+
+        try
+        {
+            var error = await SalesApi.CommunicateSeriesAsync(Id!.Value, _validationCode.Trim());
+
+            if (error is not null)
+            {
+                _error = error;
+                return;
+            }
+
+            Snackbar.Add("Código de validação registado.", Severity.Success);
+            _validationCode = string.Empty;
+            await LoadAsync();
+        }
+        catch (Exception ex)
+        {
+            _error = $"Não foi possível registar o código: {ex.Message}";
+        }
+        finally
+        {
+            _saving = false;
+        }
+    }
+
+    private sealed record DocumentTypeOption(string Code, string Label);
+}

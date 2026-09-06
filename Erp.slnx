@@ -38,12 +38,21 @@
   </Folder>
   <Folder Name="/src/Services/Sales/">
     <Project Path="src/Services/Erp.Sales.Api/Erp.Sales.Api.csproj" />
+    <Project Path="src/Services/Erp.Sales.Application/Erp.Sales.Application.csproj" />
+    <Project Path="src/Services/Erp.Sales.Domain/Erp.Sales.Domain.csproj" />
+    <Project Path="src/Services/Erp.Sales.Infrastructure/Erp.Sales.Infrastructure.csproj" />
+    <Project Path="src/Services/Erp.Sales.Storage/Erp.Sales.Storage.csproj" />
+  </Folder>
+  <Folder Name="/src/Shared/">
+    <Project Path="src/Shared/Erp.FiscalPT/Erp.FiscalPT.csproj" />
   </Folder>
   <Folder Name="/src/UI/">
     <Project Path="src/UI/Erp.Main/Erp.Main.csproj" />
   </Folder>
   <Folder Name="/tests/">
+    <Project Path="tests/Erp.Core.Tests/Erp.Core.Tests.csproj" />
     <Project Path="tests/Erp.FiscalPT.Tests/Erp.FiscalPT.Tests.csproj" />
+    <Project Path="tests/Erp.Identity.Tests/Erp.Identity.Tests.csproj" />
     <Project Path="tests/Erp.Sales.Tests/Erp.Sales.Tests.csproj" />
   </Folder>
 </Solution>

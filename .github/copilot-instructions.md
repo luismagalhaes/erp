@@ -23,6 +23,8 @@
 - In Identity Backoffice edit pages with multiple related sections, organize sections using tabs (as in Clients edit) instead of long linear forms.
 - In Identity Backoffice listings, represent Create/Edit/Delete actions with icon buttons and keep the Actions column as the final table column.
 - Use Controllers instead of Minimal APIs to organize endpoints.
+- All page routes and navigation links in Erp.Main must be in English (`/invoices`, `/companies`, `/products`), even though the UI text shown to users stays in Portuguese.
+- Every microservice must expose a health endpoint through a `HealthController` and publish OpenAPI, with the Scalar reference available in development.
 
 ## UI Design Requirements
 - For Identity Razor Pages UI, use a shared layout with `@RenderBody` and a Mud-like visual style.

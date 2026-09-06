@@ -17,7 +17,6 @@ namespace Erp.Sales.Storage.Data.Migrations
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasDefaultSchema("sales")
                 .HasAnnotation("ProductVersion", "10.0.11")
                 .HasAnnotation("Relational:MaxIdentifierLength", 128);
 
@@ -60,7 +59,7 @@ namespace Erp.Sales.Storage.Data.Migrations
 
                     b.HasIndex("DocumentId");
 
-                    b.ToTable("DocumentStatusChange", "sales");
+                    b.ToTable("DocumentStatusChange", (string)null);
                 });
 
             modelBuilder.Entity("Erp.Sales.Domain.DocumentTaxSummary", b =>
@@ -98,72 +97,7 @@ namespace Erp.Sales.Storage.Data.Migrations
 
                     b.HasIndex("DocumentId");
 
-                    b.ToTable("DocumentTaxSummary", "sales");
-                });
-
-            modelBuilder.Entity("Erp.Sales.Domain.Product", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<Guid>("CompanyId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<DateTime>("CreatedAtUtc")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("DefaultTaxCode")
-                        .IsRequired()
-                        .HasMaxLength(10)
-                        .HasColumnType("nvarchar(10)");
-
-                    b.Property<string>("DefaultTaxCountryRegion")
-                        .IsRequired()
-                        .HasMaxLength(5)
-                        .HasColumnType("nvarchar(5)");
-
-                    b.Property<decimal>("DefaultTaxPercentage")
-                        .HasPrecision(5, 2)
-                        .HasColumnType("decimal(5,2)");
-
-                    b.Property<string>("Description")
-                        .IsRequired()
-                        .HasMaxLength(200)
-                        .HasColumnType("nvarchar(200)");
-
-                    b.Property<bool>("IsActive")
-                        .HasColumnType("bit");
-
-                    b.Property<string>("ProductCode")
-                        .IsRequired()
-                        .HasMaxLength(60)
-                        .HasColumnType("nvarchar(60)");
-
-                    b.Property<string>("ProductType")
-                        .IsRequired()
-                        .HasMaxLength(1)
-                        .HasColumnType("nchar(1)")
-                        .IsFixedLength();
-
-                    b.Property<string>("UnitOfMeasure")
-                        .IsRequired()
-                        .HasMaxLength(20)
-                        .HasColumnType("nvarchar(20)");
-
-                    b.Property<decimal>("UnitPrice")
-                        .HasPrecision(19, 6)
-                        .HasColumnType("decimal(19,6)");
-
-                    b.Property<DateTime?>("UpdatedAtUtc")
-                        .HasColumnType("datetime2");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("CompanyId", "ProductCode")
-                        .IsUnique();
-
-                    b.ToTable("Product", "sales");
+                    b.ToTable("DocumentTaxSummary", (string)null);
                 });
 
             modelBuilder.Entity("Erp.Sales.Domain.SalesDocument", b =>
@@ -284,7 +218,7 @@ namespace Erp.Sales.Storage.Data.Migrations
                     b.HasIndex("SeriesId", "SequenceNumber")
                         .IsUnique();
 
-                    b.ToTable("SalesDocument", "sales");
+                    b.ToTable("SalesDocument", (string)null);
                 });
 
             modelBuilder.Entity("Erp.Sales.Domain.SalesDocumentLine", b =>
@@ -357,7 +291,7 @@ namespace Erp.Sales.Storage.Data.Migrations
                     b.HasIndex("DocumentId", "LineNumber")
                         .IsUnique();
 
-                    b.ToTable("SalesDocumentLine", "sales");
+                    b.ToTable("SalesDocumentLine", (string)null);
                 });
 
             modelBuilder.Entity("Erp.Sales.Domain.Series", b =>
@@ -421,7 +355,7 @@ namespace Erp.Sales.Storage.Data.Migrations
                     b.HasIndex("CompanyId", "DocumentType", "SeriesCode")
                         .IsUnique();
 
-                    b.ToTable("Series", "sales");
+                    b.ToTable("Series", (string)null);
                 });
 
             modelBuilder.Entity("Erp.Sales.Domain.DocumentStatusChange", b =>

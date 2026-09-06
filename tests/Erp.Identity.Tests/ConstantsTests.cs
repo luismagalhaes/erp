@@ -44,22 +44,21 @@ public class ConstantsTests
         });
     }
 
+    /// <summary>
+    /// There are two hosts, so there are two audiences: the business modules share one, and the
+    /// Identity host serves its own users API. Access between modules is separated by scope.
+    /// </summary>
     [Fact]
-    public void Api_resource_names_match_the_audiences_the_services_validate()
+    public void Api_resource_names_match_the_audiences_the_hosts_validate()
     {
         var resources = new[]
         {
-            Constants.ApiResources.CoreApi,
-            Constants.ApiResources.SalesApi,
-            Constants.ApiResources.InventoryApi,
-            Constants.ApiResources.PurchasingApi,
-            Constants.ApiResources.AccountingApi,
-            Constants.ApiResources.ReportingApi,
-            Constants.ApiResources.NotificationApi,
+            Constants.ApiResources.ErpApi,
             Constants.ApiResources.IdentityApi
         };
 
         resources.Should().OnlyHaveUniqueItems();
         resources.Should().AllSatisfy(resource => resource.Should().EndWith("-api"));
+        Constants.ApiResources.ErpApi.Should().Be("erp-api");
     }
 }

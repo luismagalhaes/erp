@@ -1,0 +1,158 @@
+@page "/brands/new"
+@page "/brands/{Id:guid}"
+@attribute [Authorize]
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.AspNetCore.Components.Web
+@using MudBlazor
+@using Erp.Main.Models
+@using Erp.Main.Services
+@inject CatalogApiClient Catalog
+@inject CompanyState Company
+@inject NavigationManager Navigation
+@inject ISnackbar Snackbar
+
+<PageTitle>@(IsNew ? "Nova marca" : "Editar marca")</PageTitle>
+
+<MudStack Spacing="4">
+    <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center">
+        <MudText Typo="Typo.h4">@(IsNew ? "Nova marca" : "Editar marca")</MudText>
+
+        <MudButton Variant="Variant.Text" StartIcon="@Icons.Material.Filled.ArrowBack"
+                   OnClick="@(() => Navigation.NavigateTo("brands"))">
+            Voltar
+        </MudButton>
+    </MudStack>
+
+    @if (!string.IsNullOrWhiteSpace(_error))
+    {
+        <MudAlert Severity="Severity.Error" Dense="true">@_error</MudAlert>
+    }
+
+    @if (_loading)
+    {
+        <MudProgressLinear Indeterminate="true" Color="Color.Primary" />
+    }
+    else
+    {
+        <MudPaper Elevation="1" Class="pa-4">
+            <MudGrid>
+                <MudItem xs="12" md="3">
+                    <MudTextField @bind-Value="_code" Label="Código" Variant="Variant.Outlined"
+                                  Required="true" Disabled="@(!IsNew)"
+                                  HelperText="@(IsNew ? null : "O código não pode ser alterado")" />
+                </MudItem>
+                <MudItem xs="12" md="9">
+                    <MudTextField @bind-Value="_name" Label="Nome" Variant="Variant.Outlined" Required="true" />
+                </MudItem>
+
+                @if (!IsNew)
+                {
+                    <MudItem xs="12">
+                        <MudSwitch @bind-Value="_isActive" Color="Color.Primary" Label="Marca ativa" />
+                    </MudItem>
+                }
+            </MudGrid>
+
+            <MudStack Row="true" Justify="Justify.FlexEnd" Class="mt-4">
+                <MudButton Variant="Variant.Filled" Color="Color.Primary"
+                           StartIcon="@Icons.Material.Filled.Save"
+                           Disabled="@(_saving || !CanSave)"
+                           OnClick="SaveAsync">
+                    Guardar
+                </MudButton>
+            </MudStack>
+        </MudPaper>
+    }
+</MudStack>
+
+@code {
+    [Parameter]
+    public Guid? Id { get; set; }
+
+    private bool IsNew => Id is null;
+
+    private bool _loading;
+    private bool _saving;
+    private string? _error;
+
+    private bool _loaded;
+    private Guid? _loadedId;
+
+    private string _code = string.Empty;
+    private string _name = string.Empty;
+    private bool _isActive = true;
+
+    private bool CanSave =>
+        Company.HasCompany && !string.IsNullOrWhiteSpace(_code) && !string.IsNullOrWhiteSpace(_name);
+
+    protected override async Task OnParametersSetAsync()
+    {
+        await Company.EnsureLoadedAsync();
+
+        // A layout re-render sets the parameters again; only reload when the route changed.
+        if (_loaded && _loadedId == Id)
+            return;
+
+        _loaded = true;
+        _loadedId = Id;
+
+        if (IsNew)
+            return;
+
+        _loading = true;
+
+        try
+        {
+            var brand = await Catalog.GetBrandAsync(Id!.Value);
+
+            if (brand is null)
+            {
+                _error = "Marca não encontrada.";
+                return;
+            }
+
+            _code = brand.Code;
+            _name = brand.Name;
+            _isActive = brand.IsActive;
+        }
+        catch (Exception ex)
+        {
+            _error = $"Não foi possível carregar a marca: {ex.Message}";
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private async Task SaveAsync()
+    {
+        _saving = true;
+        _error = null;
+
+        try
+        {
+            var error = IsNew
+                ? await Catalog.CreateBrandAsync(new CreateBrandRequest(
+                    Company.SelectedCompanyId, _code.Trim(), _name.Trim()))
+                : await Catalog.UpdateBrandAsync(Id!.Value, new UpdateBrandRequest(_name.Trim(), _isActive));
+
+            if (error is not null)
+            {
+                _error = error;
+                return;
+            }
+
+            Snackbar.Add(IsNew ? "Marca criada." : "Marca atualizada.", Severity.Success);
+            Navigation.NavigateTo("brands");
+        }
+        catch (Exception ex)
+        {
+            _error = $"Não foi possível guardar a marca: {ex.Message}";
+        }
+        finally
+        {
+            _saving = false;
+        }
+    }
+}

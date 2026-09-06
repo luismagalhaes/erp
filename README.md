@@ -1,6 +1,17 @@
 # ERP
 
-ERP modular em .NET 10, construído como um conjunto de microserviços com autenticação centralizada (Duende IdentityServer), interface web em Blazor com MudBlazor e um modelo multi-empresa (cada utilizador pode pertencer a várias empresas com papéis distintos).
+ERP modular em .NET 10, com autenticação centralizada (Duende IdentityServer), interface web em Blazor com MudBlazor e um modelo multi-empresa (cada utilizador pode pertencer a várias empresas com papéis distintos).
+
+**Monólito modular, não microserviços.** Os módulos de negócio — Core, Sales, Notification e os que vierem — mantêm projetos, camadas e schema de base de dados próprios, mas correm **num único host** (`Erp.Api`). Separam-se em processos quando houver uma razão concreta para isso: escala independente, equipa dedicada ou cadência de deploy diferente. Até lá, a fronteira é o projeto, não o processo.
+
+Correm em processo separado apenas os que têm razão para isso:
+
+| Processo | Porquê |
+|---|---|
+| `Erp.Identity` | É um servidor OIDC — fronteira de segurança real |
+| `Erp.Api` | Todos os módulos de negócio |
+| `Erp.Notification.Worker` | Processamento assíncrono em segundo plano |
+| `Erp.Main` | Interface web |
 
 ---
 
@@ -37,10 +48,11 @@ Cada camada expõe um `DependencyInjection.cs` com um extension method (`AddCore
 
 ```
 Erp.Main (Blazor Server)  ──OIDC──►  Erp.Identity (Duende IdentityServer)
-        │                                      │
-        │ access token (Bearer)                │ tokens / claims
+        │                                      │  + API de utilizadores
+        │ access token (Bearer)                │
         ▼                                      ▼
-Erp.*.Api (JWT Bearer)  ──────────────►  SQL Server
+Erp.Api  ─── Core · Sales · Notification ──►  SQL Server
+   (JWT Bearer, um audience, scopes por módulo)
 ```
 
 ---
@@ -65,23 +77,31 @@ Erp.*.Api (JWT Bearer)  ──────────────►  SQL Serve
 | [Erp.Identity.Common](src/Identity/Erp.Identity.Common/) | Constantes partilhadas (roles, scopes, api resources, clients). |
 | [Erp.Identity.Dependencies](src/Identity/Erp.Identity.Dependencies/) | Integrações externas — cliente HTTP para o serviço de notificações. |
 
-### Serviços (APIs)
+### Erp.Api — o host dos módulos de negócio
 
-| Projeto | Audience JWT | Estado |
-|---|---|---|
-| [Erp.Core.Api](src/Services/Erp.Core.Api/) | `core-api` | Empresas e acessos de utilizador — implementado |
-| [Erp.Sales.Api](src/Services/Erp.Sales.Api/) | `sales-api` | Faturação certificada, séries e artigos — em construção |
-| [Erp.Inventory.Api](src/Services/Erp.Inventory.Api/) | `inventory-api` | Esqueleto (`/health` + OpenAPI) |
-| [Erp.Purchasing.Api](src/Services/Erp.Purchasing.Api/) | `purchasing-api` | Esqueleto (`/health` + OpenAPI) |
-| [Erp.Accounting.Api](src/Services/Erp.Accounting.Api/) | `accounting-api` | Esqueleto (`/health` + OpenAPI) |
-| [Erp.Reporting.Api](src/Services/Erp.Reporting.Api/) | `reporting-api` | Esqueleto (`/health` + OpenAPI) |
+[Erp.Api](src/Erp.Api/) serve todos os módulos, com os controllers organizados por módulo:
 
-Core e Sales seguem a mesma divisão em camadas, partilhadas pela respetiva API:
+```
+Controllers/Core/           Access, Companies, UserCompanies,
+                            Products, ProductFamilies, ProductSubfamilies, Brands,
+                            Customers, Suppliers
+Controllers/Sales/          Invoices, Series
+Controllers/Notification/   Notifications
+Controllers/HealthController.cs
+```
+
+Um único audience (`erp-api`) e **scopes por módulo** (`erp.core.read`, `erp.sales.write`, …), aplicados por políticas em [SalesPolicies](src/Erp.Api/Authorization/SalesPolicies.cs) e [NotificationPolicies](src/Erp.Api/Authorization/NotificationPolicies.cs). Os módulos partilham o host e a base de dados; o que os separa são os projetos de camadas e o seu próprio `DbContext`.
+
+Módulos ainda por implementar: Inventory (obrigação de comunicação de inventários), Purchasing, Accounting e Reporting. Entram como mais uma pasta de controllers e o seu conjunto de camadas.
+
+Cada módulo segue a mesma divisão em camadas:
 
 | Módulo | Domain | Infrastructure | Application | Storage |
 |---|---|---|---|---|
 | Core | [Erp.Core.Domain](src/Services/Erp.Core.Domain/) | [Erp.Core.Infrastructure](src/Services/Erp.Core.Infrastructure/) | [Erp.Core.Application](src/Services/Erp.Core.Application/) | [Erp.Core.Storage](src/Services/Erp.Core.Storage/) |
+| | Empresas, acessos e **dados mestre**: artigos com família, subfamília e marca, clientes e fornecedores | | | |
 | Sales | [Erp.Sales.Domain](src/Services/Erp.Sales.Domain/) | [Erp.Sales.Infrastructure](src/Services/Erp.Sales.Infrastructure/) | [Erp.Sales.Application](src/Services/Erp.Sales.Application/) | [Erp.Sales.Storage](src/Services/Erp.Sales.Storage/) |
+| Notification | [Erp.Notification.Domain](src/Notification/Erp.Notification.Domain/) | [Erp.Notification.Infrastructure](src/Notification/Erp.Notification.Infrastructure/) | [Erp.Notification.Application](src/Notification/Erp.Notification.Application/) | [Erp.Notification.Storage](src/Notification/Erp.Notification.Storage/) |
 
 ### Shared
 
@@ -93,7 +113,6 @@ Core e Sales seguem a mesma divisão em camadas, partilhadas pela respetiva API:
 
 | Projeto | Descrição |
 |---|---|
-| [Erp.Notification.Api](src/Notification/Erp.Notification.Api/) | API do módulo: fila de emails e histórico de envios. Audience JWT `notification-api`. |
 | [Erp.Notification.Domain](src/Notification/Erp.Notification.Domain/) | `EmailNotification`, `EmailNotificationRequest`, estados. |
 | [Erp.Notification.Infrastructure](src/Notification/Erp.Notification.Infrastructure/) | Interfaces de serviço, storage e envio. |
 | [Erp.Notification.Application](src/Notification/Erp.Notification.Application/) | Fila de emails, histórico e envio SMTP. |
@@ -105,8 +124,8 @@ Core e Sales seguem a mesma divisão em camadas, partilhadas pela respetiva API:
 | Projeto | Descrição |
 |---|---|
 | [Erp.FiscalPT.Tests](tests/Erp.FiscalPT.Tests/) | Assinatura, ATCUD, código QR e arredondamento fiscal |
-| [Erp.Sales.Tests](tests/Erp.Sales.Tests/) | Emissão, numeração de séries, anulação e ficheiro de artigos |
-| [Erp.Core.Tests](tests/Erp.Core.Tests/) | Empresas e acessos de utilizador |
+| [Erp.Sales.Tests](tests/Erp.Sales.Tests/) | Emissão, numeração de séries e anulação |
+| [Erp.Core.Tests](tests/Erp.Core.Tests/) | Empresas, acessos, catálogo de artigos, clientes e fornecedores, e o tratamento das claims JWT |
 | [Erp.Identity.Tests](tests/Erp.Identity.Tests/) | Invariantes do seed (clients, scopes, resources), serviços e o cliente de email |
 | [Erp.Notification.Tests](tests/Erp.Notification.Tests/) | Fila de emails, processamento e histórico |
 
@@ -118,17 +137,12 @@ Core e Sales seguem a mesma divisão em camadas, partilhadas pela respetiva API:
 |---|---|---|
 | Erp.Main | https://localhost:7019 | http://localhost:5191 |
 | Erp.Identity | https://localhost:7081 | http://localhost:5269 |
-| Erp.Core.Api | https://localhost:7072 | http://localhost:5096 |
-| Erp.Sales.Api | https://localhost:7163 | http://localhost:5093 |
-| Erp.Inventory.Api | https://localhost:7283 | http://localhost:5077 |
-| Erp.Purchasing.Api | https://localhost:7245 | http://localhost:5289 |
-| Erp.Accounting.Api | https://localhost:7212 | http://localhost:5194 |
-| Erp.Reporting.Api | https://localhost:7156 | http://localhost:5031 |
-| Erp.Notification.Api | https://localhost:7117 | http://localhost:5117 |
+| Erp.Api | https://localhost:7072 | http://localhost:5096 |
+| Erp.Notification.Worker | — | — |
 
 Estas portas estão referenciadas em configuração (URLs de callback OIDC, CORS, `Services:*` no [Erp.Main/appsettings.json](src/UI/Erp.Main/appsettings.json) e nos clients semeados). Alterar uma porta implica atualizar também esses pontos.
 
-Todos os microserviços expõem, em desenvolvimento, o documento **OpenAPI** em `/openapi/v1.json` e a referência interativa **Scalar** em `/scalar` (a raiz `/` redireciona para lá). Todos respondem também a `GET /health`, sem autenticação, através de um `HealthController`.
+O `Erp.Api` expõe, em desenvolvimento, o documento **OpenAPI** em `/openapi/v1.json` e a referência interativa **Scalar** em `/scalar` (a raiz `/` redireciona para lá), e responde a `GET /health` sem autenticação através de um `HealthController`.
 
 ---
 
@@ -136,7 +150,9 @@ Todos os microserviços expõem, em desenvolvimento, o documento **OpenAPI** em 
 
 O `Erp.Identity` é o único emissor de tokens. O `Erp.Main` autentica por **Authorization Code + PKCE** com cookie de sessão (30 dias, sliding) e as APIs validam **JWT Bearer**, cada uma com a sua audience.
 
-**Scopes** (definidos em [Constants.cs](src/Identity/Erp.Identity.Common/Constants/Constants.cs)): `erp.core.read/write`, `erp.sales.read/write`, `erp.inventory.read/write`, `erp.purchasing.read/write`, `erp.accounting.read/write`, `erp.reporting.read`, `erp.notification.read/write` e `erp.notification.send` (só para serviços).
+**Audiences**: `erp-api` para os módulos de negócio e `identity-api` para a API de utilizadores do Identity. O que separa o acesso entre módulos é o **scope**, não o audience.
+
+**Scopes** (definidos em [Constants.cs](src/Identity/Erp.Identity.Common/Constants/Constants.cs)): `erp.core.read/write`, `erp.sales.read/write`, `erp.inventory.read/write`, `erp.purchasing.read/write`, `erp.accounting.read/write`, `erp.reporting.read`, `erp.notification.read/write`, `erp.notification.send` (só para serviços) e `erp.identity.read`.
 
 **Clients semeados**:
 
@@ -182,22 +198,33 @@ dotnet build Erp.slnx
 # 2. Aplicar migrations e semear o Identity (clients, scopes, roles, admin)
 dotnet run --project .\src\Identity\Erp.Identity\Erp.Identity.csproj -- --seed
 
-# 3. Arrancar o Identity, a UI e a Core API (em terminais separados)
+# 3. Aplicar as migrations dos módulos de negócio
+dotnet ef database update --context CoreDbContext `
+  --project .\src\Services\Erp.Core.Storage\Erp.Core.Storage.csproj `
+  --startup-project .\src\Erp.Api\Erp.Api.csproj
+
+dotnet ef database update --context SalesDbContext `
+  --project .\src\Services\Erp.Sales.Storage\Erp.Sales.Storage.csproj `
+  --startup-project .\src\Erp.Api\Erp.Api.csproj
+
+dotnet ef database update --context NotificationDbContext `
+  --project .\src\Notification\Erp.Notification.Storage\Erp.Notification.Storage.csproj `
+  --startup-project .\src\Erp.Api\Erp.Api.csproj
+
+# 4. Arrancar os três processos (em terminais separados)
 dotnet run --project .\src\Identity\Erp.Identity\Erp.Identity.csproj --launch-profile https
-dotnet run --project .\src\Services\Erp.Core.Api\Erp.Core.Api.csproj --launch-profile https
+dotnet run --project .\src\Erp.Api\Erp.Api.csproj --launch-profile https
 dotnet run --project .\src\UI\Erp.Main\Erp.Main.csproj --launch-profile https
 
-# 4. Opcional: faturação, notificações e envio de emails
-dotnet run --project .\src\Services\Erp.Sales.Api\Erp.Sales.Api.csproj --launch-profile https
-dotnet run --project .\src\Notification\Erp.Notification.Api\Erp.Notification.Api.csproj --launch-profile https
+# 5. Opcional: envio efetivo dos emails em fila
 dotnet run --project .\src\Notification\Erp.Notification.Worker\Erp.Notification.Worker.csproj
 ```
 
-> A recuperação de password do Identity enfileira o email no `Erp.Notification.Api`. Sem esse serviço a correr, o pedido falha — arranque-o sempre que testar o fluxo de reset.
+> A recuperação de password do Identity enfileira o email no `Erp.Api`. Sem esse processo a correr, o pedido falha — arranque-o sempre que testar o fluxo de reset.
 
 Abrir https://localhost:7019 — o acesso não autenticado é redirecionado para o login do Identity.
 
-Em Visual Studio existe o perfil de arranque múltiplo **"Main + Id"** ([Erp.slnLaunch.user](Erp.slnLaunch.user)), que arranca Identity + Main + Core.Api de uma vez.
+Em Visual Studio existem os perfis de arranque múltiplo **"All"** e **"All + Worker"** ([Erp.slnLaunch.user](Erp.slnLaunch.user)).
 
 > Em `Development` o `Erp.Identity` corre o seed automaticamente no arranque (ver [Program.cs](src/Identity/Erp.Identity/Program.cs)); o `--seed` serve para forçar o mesmo noutros ambientes. O seed **substitui** os clients, scopes e resources configurados em código — alterações feitas pelo backoffice a esses registos são perdidas no arranque seguinte.
 
@@ -207,18 +234,24 @@ Em Visual Studio existe o perfil de arranque múltiplo **"Main + Id"** ([Erp.sln
 
 | Base de dados | Connection string | Utilizada por |
 |---|---|---|
+| `ErpPortugal` | `ErpDb` | Todos os módulos de negócio e o worker |
 | `ErpPortugal_Identity` | `IdentityDb` | Erp.Identity |
-| `ErpPortugal_Core` | `CoreDb` | Erp.Core.Api |
-| `ErpPortugal_Sales` | `SalesDb` | Erp.Sales.Api |
-| `ErpPortugal_Notification` | `NotificationDb` | Erp.Notification.Api e Erp.Notification.Worker |
+
+**Uma base de dados para o ERP**, com todas as tabelas em `dbo`. É o que permite que emitir uma fatura, dar saída de stock e gerar o lançamento contabilístico caibam numa transação — sem transações distribuídas nem sagas dentro de um único processo — e o que devolve as chaves estrangeiras entre módulos que a separação anterior impedia.
+
+Cada módulo mantém a **sua própria tabela de histórico de migrations** (`__EFMigrationsHistory_Core`, `_Sales`, `_Notification`), pelo que as migrations continuam independentes.
+
+A base do **Identity** fica separada: é outro processo, com ciclo de vida próprio e os stores do Duende.
+
+> Com tudo em `dbo`, os nomes das tabelas têm de carregar o módulo quando houver risco de colisão. `Products` é o catálogo partilhado do Core; um conceito próprio das compras seria `PurchaseItem` ou equivalente, não outro `Products`.
 
 O Identity usa três contextos (ASP.NET Identity, Configuration Store e Persisted Grant Store) sobre a mesma base de dados, com as migrations no assembly `Erp.Identity.Storage`.
 
 ```powershell
-# Nova migration no Core
-dotnet ef migrations add <Nome> `
+# Nova migration no Core (o startup project é sempre o Erp.Api)
+dotnet ef migrations add <Nome> --context CoreDbContext `
   --project .\src\Services\Erp.Core.Storage\Erp.Core.Storage.csproj `
-  --startup-project .\src\Services\Erp.Core.Api\Erp.Core.Api.csproj
+  --startup-project .\src\Erp.Api\Erp.Api.csproj
 
 # Nova migration no Identity (indicar o contexto e a pasta de saída)
 dotnet ef migrations add <Nome> --context ApplicationDbContext `
@@ -237,11 +270,11 @@ Contextos disponíveis no Identity: `ApplicationDbContext`, `ConfigurationDbCont
 dotnet test Erp.slnx
 ```
 
-152 testes em cinco projetos, sem dependência de base de dados: as camadas Application são testadas com storages substituídos (NSubstitute), a biblioteca fiscal é testada diretamente, e o cliente de email e a obtenção de tokens do Identity com um `HttpMessageHandler` e um `TimeProvider` de teste.
+170 testes em cinco projetos, sem dependência de base de dados: as camadas Application são testadas com storages substituídos (NSubstitute), a biblioteca fiscal é testada diretamente, e o cliente de email e a obtenção de tokens do Identity com um `HttpMessageHandler` e um `TimeProvider` de teste.
 
 ---
 
-## API do Core
+## Endpoints do módulo Core
 
 | Método | Rota | Autorização |
 |---|---|---|
@@ -254,13 +287,20 @@ dotnet test Erp.slnx
 | `POST` | `/api/user-companies` | Admin, SuperAdmin |
 | `PUT` | `/api/user-companies/{id}` | Admin, SuperAdmin |
 | `DELETE` | `/api/user-companies/{id}` | Admin, SuperAdmin |
+| `GET` | `/api/products?companyId=` · `/api/products/{id}` | Autenticado |
+| `POST` `PUT` | `/api/products` · `/api/products/{id}` | Autenticado |
+| `GET` `POST` `PUT` | `/api/product-families` | Autenticado |
+| `GET` `POST` `PUT` | `/api/product-subfamilies?companyId=&familyId=` | Autenticado |
+| `GET` `POST` `PUT` | `/api/brands` | Autenticado |
+| `GET` `POST` `PUT` | `/api/customers` | Autenticado |
+| `GET` `POST` `PUT` | `/api/suppliers` | Autenticado |
 | `GET` | `/api/access/me/companies` | Autenticado |
 | `GET` | `/api/access/me/companies/{companyId}/role` | Autenticado |
 | `POST` | `/api/access/check-role` | Autenticado |
 
 ---
 
-## API do Sales
+## Endpoints do módulo Sales
 
 | Método | Rota | Autorização |
 |---|---|---|
@@ -272,12 +312,8 @@ dotnet test Erp.slnx
 | `GET` | `/api/series/{id}` | `erp.sales.read` |
 | `POST` | `/api/series` | Admin, SuperAdmin |
 | `POST` | `/api/series/{id}/communicate` | Admin, SuperAdmin |
-| `GET` | `/api/products?companyId=` | `erp.sales.read` |
-| `GET` | `/api/products/{id}` | `erp.sales.read` |
-| `POST` | `/api/products` | `erp.sales.write` |
-| `PUT` | `/api/products/{id}` | `erp.sales.write` |
 
-O acesso é por **scope** do token (políticas em [SalesPolicies.cs](src/Services/Erp.Sales.Api/Authorization/SalesPolicies.cs)); a gestão de séries exige adicionalmente role de administrador. Não existe endpoint de alteração nem de remoção de documentos: correções fazem-se por documento retificativo e a anulação escreve um registo de mudança de estado.
+O acesso é por **scope** do token (políticas em [SalesPolicies.cs](src/Erp.Api/Authorization/SalesPolicies.cs)); a gestão de séries exige adicionalmente role de administrador. Não existe endpoint de alteração nem de remoção de documentos: correções fazem-se por documento retificativo e a anulação escreve um registo de mudança de estado.
 
 ---
 
@@ -294,7 +330,7 @@ Os utilizadores vivem no Identity, por isso o backoffice do `Erp.Main` lê-os da
 
 ---
 
-## API do Notification
+## Endpoints do módulo Notification
 
 | Método | Rota | Autorização |
 |---|---|---|
@@ -324,8 +360,13 @@ A empresa ativa escolhe-se no cabeçalho e é partilhada por todas as páginas (
 | `/invoices/{id}` | Documento emitido, com hash, QR e anulação |
 | `/series` | Séries de faturação |
 | `/series/new`, `/series/{id}` | Criar série e registar o código de validação da AT |
-| `/products` | Ficheiro de artigos |
+| `/products` | Ficheiro de artigos, com filtros por família, marca e texto |
 | `/products/new`, `/products/{id}` | Criar e editar artigo |
+| `/product-families`, `/product-families/new`, `/product-families/{id}` | Famílias |
+| `/product-subfamilies`, `/product-subfamilies/new`, `/product-subfamilies/{id}` | Subfamílias, agrupadas por família |
+| `/brands`, `/brands/new`, `/brands/{id}` | Marcas |
+| `/customers`, `/customers/new`, `/customers/{id}` | Clientes |
+| `/suppliers`, `/suppliers/new`, `/suppliers/{id}` | Fornecedores |
 | `/companies` | Empresas |
 | `/companies/new`, `/companies/{id}` | Criar e editar empresa, com os utilizadores com acesso num separador |
 | `/notifications` | Backoffice de notificações: histórico de emails por estado |
@@ -361,7 +402,8 @@ Em resumo:
 
 Registo honesto do que ainda não está feito, para evitar surpresas:
 
-- **APIs de negócio por implementar** — Inventory, Purchasing, Accounting e Reporting só expõem `/health` e OpenAPI; não têm camadas Domain/Application/Storage próprias. Core e Sales estão implementados.
+- **Dados mestre no Core** — o catálogo de artigos (com família, subfamília e marca), os clientes e os fornecedores vivem no módulo Core, porque são partilhados: Sales fatura-os, Purchasing vai comprá-los e Inventory vai reportá-los. Cada documento emitido guarda a sua própria cópia, pelo que editá-los nunca altera o que já foi faturado.
+- **Módulos por implementar** — Inventory, Purchasing, Accounting e Reporting ainda não existem: os hosts vazios foram removidos na fusão e entram como pasta de controllers e camadas próprias quando forem escritos. Core, Sales e Notification estão implementados.
 - **Sales em construção** — a emissão certificada funciona (numeração por série, assinatura encadeada, ATCUD, QR), mas falta a comunicação automática de séries à AT, a impressão do documento e o SAF-T. Ver [o plano](docs/certificacao-at-sales.md#estado-da-implementação).
 - **SMTP por configurar** — sem `Smtp:Host` e `Smtp:FromEmail`, o worker marca os emails como `Failed` com essa mensagem. É visível no backoffice de notificações e resolve-se com configuração, não com código.
 - **Portal de notificações inexistente** — o client `notification-ui` (https://localhost:7125) está semeado mas não há projeto correspondente. O histórico de emails vive agora no backoffice do `Erp.Main`, pelo que esse client pode deixar de fazer sentido.

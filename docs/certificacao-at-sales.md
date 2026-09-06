@@ -18,7 +18,7 @@ esquema de base de dados que garante a inviolabilidade dos registos.
 | Fase | Estado |
 |---|---|
 | 1 — Estrutura de projetos | **Feito** — `Erp.FiscalPT` + `Erp.Sales.{Domain,Infrastructure,Application,Storage}` |
-| 2 — Modelo de dados imutável | **Feito** — entidades, `SalesDbContext`, migration `InitialSalesStorage` e [script de permissões](../src/Services/Erp.Sales.Storage/Data/Scripts/harden-sales-permissions.sql) |
+| 2 — Modelo de dados imutável | **Feito** — entidades, `SalesDbContext`, migration `InitialSales` e [script de permissões](../src/Services/Erp.Sales.Storage/Data/Scripts/harden-sales-permissions.sql) |
 | 3 — Motor de assinatura | **Feito** — `DocumentSignatureString`, `RsaDocumentSigner`, `DocumentSigner` e 22 testes |
 | 4 — Séries e ATCUD | **Parcial** — modelo, ciclo de vida, gestão no frontend e registo manual do código de validação; falta o cliente SOAP do *SeriesWSService* |
 | 5 — Código QR | **Parcial** — `QrCodePayloadBuilder` gera a mensagem; falta renderizar a imagem no documento |
@@ -38,11 +38,15 @@ séries à AT, idempotência na emissão, validação da empresa contra o `Erp.C
 
 ## Onde estamos
 
-O `Erp.Sales.Api` ainda não tem nada implementado além do endpoint `/health`, mas a intenção já
+> **Nota:** este plano foi escrito quando o Sales era um microserviço próprio. Passou entretanto a
+> ser um módulo dentro do host único `Erp.Api`; as camadas e o desenho mantêm-se, muda apenas onde
+> vivem os controllers.
+
+O `Erp.Sales.Api` ainda não tinha nada implementado além do endpoint `/health`, mas a intenção já
 está semeada no repositório:
 
 - o `.csproj` referencia `QRCoder` e `Microsoft.EntityFrameworkCore.SqlServer`;
-- o `appsettings.json` tem a connection string `SalesDb` e uma secção `AT` com o endpoint do
+- o `appsettings.json` tem a connection string da base e uma secção `AT` com o endpoint do
   *SeriesWSService* e caminho para certificado;
 - existe um projeto `Erp.FiscalPT.Tests` vazio à espera da biblioteca que vai testar.
 
@@ -131,8 +135,8 @@ desde o primeiro dia — o `Erp.FiscalPT.Tests` já existe exatamente para isso.
 | `Erp.Sales.Domain` | Entidades e enums: `Series`, `SalesDocument`, `SalesDocumentLine`, `DocumentTax`, `CustomerSnapshot`. |
 | `Erp.Sales.Infrastructure` | Interfaces: `IDocumentIssuingService`, `ISeriesService`, `IDocumentSigner`, `IAtSeriesClient`, `ISaftExporter`, mais os contratos de storage. |
 | `Erp.Sales.Application` | Implementações dos serviços e orquestração da emissão. |
-| `Erp.Sales.Storage` | `SalesDbContext`, configurações, migrations e repositórios sobre a connection string `SalesDb`. |
-| `Erp.Sales.Api` | Controllers, DI e políticas de autorização. |
+| `Erp.Sales.Storage` | `SalesDbContext`, configurações, migrations e repositórios sobre a connection string `ErpDb`. |
+| `Erp.Api` | Controllers do módulo, DI e políticas de autorização — partilhado com os restantes módulos. |
 
 Cada projeto expõe o seu `DependencyInjection.cs` com um extension method (`AddSalesStorage`,
 `AddSalesApplication`), como já acontece no Core e no Identity.
@@ -381,7 +385,7 @@ nos documentos e no SAF-T.
 
 ## Estrutura da base de dados
 
-Esquema do `SalesDb` (`ErpPortugal_Sales`). O desenho responde a três exigências em simultâneo:
+Tabelas do módulo Sales, hoje em `dbo` na base única `ErpPortugal`. O desenho responde a três exigências em simultâneo:
 alimentar a string assinada sem perder precisão, impedir alteração de documentos emitidos, e
 produzir o SAF-T sem reconstruir dados que já não existem.
 

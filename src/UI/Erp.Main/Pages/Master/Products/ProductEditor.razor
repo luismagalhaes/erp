@@ -1,0 +1,347 @@
+@page "/products/new"
+@page "/products/{Id:guid}"
+@attribute [Authorize]
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.AspNetCore.Components.Web
+@using MudBlazor
+@using Erp.Main.Models
+@using Erp.Main.Services
+@inject CatalogApiClient Catalog
+@inject CompanyState Company
+@inject NavigationManager Navigation
+@inject ISnackbar Snackbar
+
+<PageTitle>@(IsNew ? "Novo artigo" : "Editar artigo")</PageTitle>
+
+<MudStack Spacing="4">
+    <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center">
+        <MudStack Spacing="0">
+            <MudText Typo="Typo.h4">@(IsNew ? "Novo artigo" : "Editar artigo")</MudText>
+            @if (!IsNew)
+            {
+                <MudText Typo="Typo.body2" Color="Color.Secondary">
+                    Alterar o artigo não muda documentos já emitidos: cada um guarda a sua própria cópia.
+                </MudText>
+            }
+        </MudStack>
+
+        <MudButton Variant="Variant.Text" StartIcon="@Icons.Material.Filled.ArrowBack"
+                   OnClick="@(() => Navigation.NavigateTo("products"))">
+            Voltar
+        </MudButton>
+    </MudStack>
+
+    @if (!string.IsNullOrWhiteSpace(_error))
+    {
+        <MudAlert Severity="Severity.Error" Dense="true">@_error</MudAlert>
+    }
+
+    @if (_loading)
+    {
+        <MudProgressLinear Indeterminate="true" Color="Color.Primary" />
+    }
+    else
+    {
+        <MudPaper Elevation="1" Class="pa-4">
+            <MudText Typo="Typo.h6" Class="mb-3">Identificação</MudText>
+            <MudGrid>
+                <MudItem xs="12" md="3">
+                    <MudTextField @bind-Value="_productCode" Label="Código" Variant="Variant.Outlined"
+                                  Required="true" Disabled="@(!IsNew)"
+                                  HelperText="@(IsNew ? null : "O código não pode ser alterado")" />
+                </MudItem>
+                <MudItem xs="12" md="6">
+                    <MudTextField @bind-Value="_description" Label="Descrição" Variant="Variant.Outlined" Required="true" />
+                </MudItem>
+                <MudItem xs="12" md="3">
+                    <MudTextField @bind-Value="_barcode" Label="Código de barras" Variant="Variant.Outlined" />
+                </MudItem>
+            </MudGrid>
+        </MudPaper>
+
+        <MudPaper Elevation="1" Class="pa-4">
+            <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center" Class="mb-3">
+                <MudText Typo="Typo.h6">Classificação</MudText>
+                <MudStack Row="true" Spacing="1">
+                    <MudButton Variant="Variant.Text" Size="Size.Small" StartIcon="@Icons.Material.Filled.Category"
+                               OnClick="@(() => Navigation.NavigateTo("product-families"))">Famílias</MudButton>
+                    <MudButton Variant="Variant.Text" Size="Size.Small" StartIcon="@Icons.Material.Filled.Sell"
+                               OnClick="@(() => Navigation.NavigateTo("brands"))">Marcas</MudButton>
+                </MudStack>
+            </MudStack>
+
+            <MudGrid>
+                <MudItem xs="12" md="4">
+                    <MudSelect T="Guid?" Value="_familyId" ValueChanged="OnFamilyChanged"
+                               Label="Família" Variant="Variant.Outlined" Clearable="true">
+                        @foreach (var family in _families)
+                        {
+                            <MudSelectItem T="Guid?" Value="@family.Id">@family.Name</MudSelectItem>
+                        }
+                    </MudSelect>
+                </MudItem>
+                <MudItem xs="12" md="4">
+                    <MudSelect T="Guid?" @bind-Value="_subfamilyId" Label="Subfamília" Variant="Variant.Outlined"
+                               Clearable="true" Disabled="@(_familyId is null)"
+                               HelperText="@(_familyId is null ? "Escolha primeiro a família" : null)">
+                        @foreach (var subfamily in AvailableSubfamilies)
+                        {
+                            <MudSelectItem T="Guid?" Value="@subfamily.Id">@subfamily.Name</MudSelectItem>
+                        }
+                    </MudSelect>
+                </MudItem>
+                <MudItem xs="12" md="4">
+                    <MudSelect T="Guid?" @bind-Value="_brandId" Label="Marca" Variant="Variant.Outlined" Clearable="true">
+                        @foreach (var brand in _brands)
+                        {
+                            <MudSelectItem T="Guid?" Value="@brand.Id">@brand.Name</MudSelectItem>
+                        }
+                    </MudSelect>
+                </MudItem>
+            </MudGrid>
+        </MudPaper>
+
+        <MudPaper Elevation="1" Class="pa-4">
+            <MudText Typo="Typo.h6" Class="mb-3">Preço e fiscalidade</MudText>
+            <MudGrid>
+                <MudItem xs="12" md="3">
+                    <MudSelect @bind-Value="_productType" Label="Tipo" Variant="Variant.Outlined">
+                        <MudSelectItem T="string" Value="@("P")">Produto</MudSelectItem>
+                        <MudSelectItem T="string" Value="@("S")">Serviço</MudSelectItem>
+                        <MudSelectItem T="string" Value="@("O")">Outro</MudSelectItem>
+                        <MudSelectItem T="string" Value="@("I")">Impostos e taxas</MudSelectItem>
+                    </MudSelect>
+                </MudItem>
+                <MudItem xs="12" md="3">
+                    <MudNumericField @bind-Value="_unitPrice" Label="Preço unitário" Variant="Variant.Outlined"
+                                     Min="0" Format="N2" />
+                </MudItem>
+                <MudItem xs="12" md="2">
+                    <MudTextField @bind-Value="_unitOfMeasure" Label="Unidade" Variant="Variant.Outlined" />
+                </MudItem>
+                <MudItem xs="12" md="2">
+                    <MudSelect T="string" Value="_taxCode" ValueChanged="OnTaxCodeChanged"
+                               Label="IVA" Variant="Variant.Outlined">
+                        @foreach (var rate in TaxRates)
+                        {
+                            <MudSelectItem T="string" Value="@rate.Code">@rate.Label</MudSelectItem>
+                        }
+                    </MudSelect>
+                </MudItem>
+                <MudItem xs="12" md="2">
+                    <MudSelect @bind-Value="_taxCountryRegion" Label="Espaço fiscal" Variant="Variant.Outlined">
+                        <MudSelectItem T="string" Value="@("PT")">Continente</MudSelectItem>
+                        <MudSelectItem T="string" Value="@("PT-AC")">Açores</MudSelectItem>
+                        <MudSelectItem T="string" Value="@("PT-MA")">Madeira</MudSelectItem>
+                    </MudSelect>
+                </MudItem>
+
+                @if (!IsNew)
+                {
+                    <MudItem xs="12">
+                        <MudSwitch @bind-Value="_isActive" Color="Color.Primary" Label="Artigo ativo" />
+                    </MudItem>
+                }
+            </MudGrid>
+
+            <MudStack Row="true" Justify="Justify.FlexEnd" Class="mt-4">
+                <MudButton Variant="Variant.Filled" Color="Color.Primary"
+                           StartIcon="@Icons.Material.Filled.Save"
+                           Disabled="@(_saving || !CanSave)"
+                           OnClick="SaveAsync">
+                    Guardar
+                </MudButton>
+            </MudStack>
+        </MudPaper>
+    }
+</MudStack>
+
+@code {
+    private static readonly TaxRateOption[] TaxRates =
+    [
+        new("NOR", 23m, "Normal - 23%"),
+        new("INT", 13m, "Intermédia - 13%"),
+        new("RED", 6m, "Reduzida - 6%"),
+        new("ISE", 0m, "Isento")
+    ];
+
+    [Parameter]
+    public Guid? Id { get; set; }
+
+    private bool IsNew => Id is null;
+
+    private bool _loading;
+    private bool _saving;
+    private string? _error;
+
+    private bool _loaded;
+    private Guid? _loadedId;
+
+    private string _productCode = string.Empty;
+    private string _description = string.Empty;
+    private string _barcode = string.Empty;
+    private string _productType = "P";
+    private string _unitOfMeasure = "UN";
+    private decimal _unitPrice;
+    private string _taxCode = "NOR";
+    private decimal _taxPercentage = 23m;
+    private string _taxCountryRegion = "PT";
+    private bool _isActive = true;
+
+    private Guid? _familyId;
+    private Guid? _subfamilyId;
+    private Guid? _brandId;
+
+    private List<ProductFamily> _families = [];
+    private List<ProductSubfamily> _subfamilies = [];
+    private List<Brand> _brands = [];
+
+    private IEnumerable<ProductSubfamily> AvailableSubfamilies =>
+        _subfamilies.Where(subfamily => subfamily.FamilyId == _familyId);
+
+    private bool CanSave =>
+        Company.HasCompany
+        && !string.IsNullOrWhiteSpace(_productCode)
+        && !string.IsNullOrWhiteSpace(_description);
+
+    protected override async Task OnParametersSetAsync()
+    {
+        await Company.EnsureLoadedAsync();
+
+        // A layout re-render sets the parameters again; only reload when the route changed.
+        if (_loaded && _loadedId == Id)
+            return;
+
+        _loaded = true;
+        _loadedId = Id;
+        _loading = true;
+
+        try
+        {
+            await LoadClassificationAsync();
+
+            if (IsNew)
+                return;
+
+            var product = await Catalog.GetProductAsync(Id!.Value);
+
+            if (product is null)
+            {
+                _error = "Artigo não encontrado.";
+                return;
+            }
+
+            _productCode = product.ProductCode;
+            _description = product.Description;
+            _barcode = product.Barcode ?? string.Empty;
+            _productType = product.ProductType;
+            _unitOfMeasure = product.UnitOfMeasure;
+            _unitPrice = product.UnitPrice;
+            _taxCode = product.DefaultTaxCode;
+            _taxPercentage = product.DefaultTaxPercentage;
+            _familyId = product.FamilyId;
+            _subfamilyId = product.SubfamilyId;
+            _brandId = product.BrandId;
+            _isActive = product.IsActive;
+        }
+        catch (Exception ex)
+        {
+            _error = $"Não foi possível carregar o artigo: {ex.Message}";
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private async Task LoadClassificationAsync()
+    {
+        if (!Company.HasCompany)
+            return;
+
+        var (families, familiesError) = await Catalog.GetFamiliesAsync(Company.SelectedCompanyId);
+        _families = [.. families.Where(family => family.IsActive)];
+
+        var (subfamilies, _) = await Catalog.GetSubfamiliesAsync(Company.SelectedCompanyId);
+        _subfamilies = [.. subfamilies.Where(subfamily => subfamily.IsActive)];
+
+        var (brands, _) = await Catalog.GetBrandsAsync(Company.SelectedCompanyId);
+        _brands = [.. brands.Where(brand => brand.IsActive)];
+
+        _error = familiesError;
+    }
+
+    /// <summary>Changing the family clears a subfamily that no longer belongs to it.</summary>
+    private void OnFamilyChanged(Guid? familyId)
+    {
+        _familyId = familyId;
+
+        if (_subfamilyId is not null && !AvailableSubfamilies.Any(subfamily => subfamily.Id == _subfamilyId))
+            _subfamilyId = null;
+    }
+
+    private void OnTaxCodeChanged(string taxCode)
+    {
+        _taxCode = taxCode;
+        _taxPercentage = TaxRates.First(rate => rate.Code == taxCode).Percentage;
+    }
+
+    private async Task SaveAsync()
+    {
+        _saving = true;
+        _error = null;
+
+        try
+        {
+            var barcode = string.IsNullOrWhiteSpace(_barcode) ? null : _barcode.Trim();
+
+            var error = IsNew
+                ? await Catalog.CreateProductAsync(new CreateProductRequest(
+                    Company.SelectedCompanyId,
+                    _productCode.Trim(),
+                    _description.Trim(),
+                    _unitPrice,
+                    _productType,
+                    _unitOfMeasure,
+                    _taxCountryRegion,
+                    _taxCode,
+                    _taxPercentage,
+                    barcode,
+                    _familyId,
+                    _subfamilyId,
+                    _brandId))
+                : await Catalog.UpdateProductAsync(Id!.Value, new UpdateProductRequest(
+                    _description.Trim(),
+                    _unitPrice,
+                    _productType,
+                    _unitOfMeasure,
+                    _taxCountryRegion,
+                    _taxCode,
+                    _taxPercentage,
+                    barcode,
+                    _familyId,
+                    _subfamilyId,
+                    _brandId,
+                    _isActive));
+
+            if (error is not null)
+            {
+                _error = error;
+                return;
+            }
+
+            Snackbar.Add(IsNew ? "Artigo criado." : "Artigo atualizado.", Severity.Success);
+            Navigation.NavigateTo("products");
+        }
+        catch (Exception ex)
+        {
+            _error = $"Não foi possível guardar o artigo: {ex.Message}";
+        }
+        finally
+        {
+            _saving = false;
+        }
+    }
+
+    private sealed record TaxRateOption(string Code, decimal Percentage, string Label);
+}

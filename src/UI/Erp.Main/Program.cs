@@ -82,35 +82,22 @@ builder.Services.AddScoped(sp =>
     return new HttpClient { BaseAddress = new Uri(navigation.BaseUri) };
 });
 
-// Typed HttpClients per microservice
-builder.Services.AddHttpClient<CoreApiClient>(client =>
-    client.BaseAddress = new Uri(builder.Configuration["Services:CoreApi"]!))
+// The business modules are served by one API; each client keeps its own routes.
+var apiBaseAddress = new Uri(builder.Configuration["Services:Api"]!);
+
+builder.Services.AddHttpClient<CoreApiClient>(client => client.BaseAddress = apiBaseAddress)
     .AddHttpMessageHandler<UserAccessTokenHandler>();
 
-builder.Services.AddHttpClient<SalesApiClient>(client =>
-    client.BaseAddress = new Uri(builder.Configuration["Services:SalesApi"]!))
+builder.Services.AddHttpClient<SalesApiClient>(client => client.BaseAddress = apiBaseAddress)
     .AddHttpMessageHandler<UserAccessTokenHandler>();
 
-builder.Services.AddHttpClient<InventoryApiClient>(client =>
-    client.BaseAddress = new Uri(builder.Configuration["Services:InventoryApi"]!))
+builder.Services.AddHttpClient<CatalogApiClient>(client => client.BaseAddress = apiBaseAddress)
     .AddHttpMessageHandler<UserAccessTokenHandler>();
 
-builder.Services.AddHttpClient<PurchasingApiClient>(client =>
-    client.BaseAddress = new Uri(builder.Configuration["Services:PurchasingApi"]!))
+builder.Services.AddHttpClient<NotificationApiClient>(client => client.BaseAddress = apiBaseAddress)
     .AddHttpMessageHandler<UserAccessTokenHandler>();
 
-builder.Services.AddHttpClient<AccountingApiClient>(client =>
-    client.BaseAddress = new Uri(builder.Configuration["Services:AccountingApi"]!))
-    .AddHttpMessageHandler<UserAccessTokenHandler>();
-
-builder.Services.AddHttpClient<ReportingApiClient>(client =>
-    client.BaseAddress = new Uri(builder.Configuration["Services:ReportingApi"]!))
-    .AddHttpMessageHandler<UserAccessTokenHandler>();
-
-builder.Services.AddHttpClient<NotificationApiClient>(client =>
-    client.BaseAddress = new Uri(builder.Configuration["Services:NotificationApi"]!))
-    .AddHttpMessageHandler<UserAccessTokenHandler>();
-
+// The Identity host stays separate: it is the token issuer and serves the users API.
 builder.Services.AddHttpClient<IdentityApiClient>(client =>
     client.BaseAddress = new Uri(builder.Configuration["Services:IdentityApi"]!))
     .AddHttpMessageHandler<UserAccessTokenHandler>();

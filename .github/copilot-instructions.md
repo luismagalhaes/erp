@@ -24,7 +24,9 @@
 - In Identity Backoffice listings, represent Create/Edit/Delete actions with icon buttons and keep the Actions column as the final table column.
 - Use Controllers instead of Minimal APIs to organize endpoints.
 - All page routes and navigation links in Erp.Main must be in English (`/invoices`, `/companies`, `/products`), even though the UI text shown to users stays in Portuguese.
-- Every microservice must expose a health endpoint through a `HealthController` and publish OpenAPI, with the Scalar reference available in development.
+- The business modules (Core, Sales, Notification, and future ones) run in a single host, `src/Erp.Api`, with controllers grouped per module in `Controllers/<Module>/`. Only Erp.Identity, Erp.Notification.Worker and Erp.Main are separate processes. Each module keeps its own Domain/Infrastructure/Application/Storage projects, schema and database: the boundary is the project, not the process. Do not create a new host without an explicit reason such as independent scaling or deployment.
+- All business modules share the `erp-api` audience; access between modules is separated by scope, not by audience.
+- Every host must expose a health endpoint through a `HealthController` and publish OpenAPI, with the Scalar reference available in development.
 - Blazor pages are organized one folder per feature under `Pages` (for example `Pages/Backoffice/Companies`, `Pages/Sales/Invoices`), keeping the listing and its create/edit pages together. Never leave pages loose at the root of an area.
 
 ## UI Design Requirements

@@ -24,7 +24,6 @@ public static class DependencyInjection
         services.AddScoped<IDocumentSigner, DocumentSigner>();
         services.AddScoped<ISalesDocumentService, SalesDocumentService>();
         services.AddScoped<ISeriesService, SeriesService>();
-        services.AddScoped<IProductService, ProductService>();
 
         return services;
     }

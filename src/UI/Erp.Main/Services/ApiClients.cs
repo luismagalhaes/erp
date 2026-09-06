@@ -197,44 +197,6 @@ public class SalesApiClient(HttpClient http)
         return response.IsSuccessStatusCode ? null : await ApiResponse.ReadErrorAsync(response, cancellationToken);
     }
 
-    public async Task<IReadOnlyList<ProductListItem>> GetProductsAsync(Guid companyId, CancellationToken cancellationToken = default)
-    {
-        var products = await Http.GetFromJsonAsync<List<ProductListItem>>(
-            $"api/products?companyId={companyId}", cancellationToken);
-
-        return products ?? [];
-    }
-
-    public async Task<ProductListItem?> GetProductAsync(Guid id, CancellationToken cancellationToken = default)
-    {
-        var response = await Http.GetAsync($"api/products/{id}", cancellationToken);
-        return response.IsSuccessStatusCode
-            ? await response.Content.ReadFromJsonAsync<ProductListItem>(cancellationToken)
-            : null;
-    }
-
-    public async Task<(ProductListItem? Product, string? Error)> CreateProductAsync(
-        CreateProductRequest request,
-        CancellationToken cancellationToken = default)
-    {
-        var response = await Http.PostAsJsonAsync("api/products", request, cancellationToken);
-
-        return response.IsSuccessStatusCode
-            ? (await response.Content.ReadFromJsonAsync<ProductListItem>(cancellationToken), null)
-            : (null, await ApiResponse.ReadErrorAsync(response, cancellationToken));
-    }
-
-    public async Task<(ProductListItem? Product, string? Error)> UpdateProductAsync(
-        Guid id,
-        UpdateProductRequest request,
-        CancellationToken cancellationToken = default)
-    {
-        var response = await Http.PutAsJsonAsync($"api/products/{id}", request, cancellationToken);
-
-        return response.IsSuccessStatusCode
-            ? (await response.Content.ReadFromJsonAsync<ProductListItem>(cancellationToken), null)
-            : (null, await ApiResponse.ReadErrorAsync(response, cancellationToken));
-    }
 }
 
 public class IdentityApiClient(HttpClient http)
@@ -281,22 +243,3 @@ public class NotificationApiClient(HttpClient http)
     }
 }
 
-public class InventoryApiClient(HttpClient http)
-{
-    public HttpClient Http { get; } = http;
-}
-
-public class PurchasingApiClient(HttpClient http)
-{
-    public HttpClient Http { get; } = http;
-}
-
-public class AccountingApiClient(HttpClient http)
-{
-    public HttpClient Http { get; } = http;
-}
-
-public class ReportingApiClient(HttpClient http)
-{
-    public HttpClient Http { get; } = http;
-}

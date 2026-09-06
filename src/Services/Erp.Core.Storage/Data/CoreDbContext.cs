@@ -7,12 +7,16 @@ public sealed class CoreDbContext(DbContextOptions<CoreDbContext> options) : DbC
 {
     public DbSet<Company> Companies => Set<Company>();
     public DbSet<UserCompany> UserCompanies => Set<UserCompany>();
+    public DbSet<Brand> Brands => Set<Brand>();
+    public DbSet<ProductFamily> ProductFamilies => Set<ProductFamily>();
+    public DbSet<ProductSubfamily> ProductSubfamilies => Set<ProductSubfamily>();
+    public DbSet<Product> Products => Set<Product>();
+    public DbSet<Customer> Customers => Set<Customer>();
+    public DbSet<Supplier> Suppliers => Set<Supplier>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
-
-        modelBuilder.HasDefaultSchema("core");
 
         modelBuilder.Entity<Company>(entity =>
         {
@@ -40,5 +44,90 @@ public sealed class CoreDbContext(DbContextOptions<CoreDbContext> options) : DbC
                 .HasForeignKey(x => x.CompanyId)
                 .OnDelete(DeleteBehavior.Restrict);
         });
+
+        modelBuilder.Entity<Brand>(entity =>
+        {
+            entity.HasKey(x => x.Id);
+            entity.Property(x => x.Code).HasMaxLength(30).IsRequired();
+            entity.Property(x => x.Name).HasMaxLength(120).IsRequired();
+            entity.HasIndex(x => new { x.CompanyId, x.Code }).IsUnique();
+        });
+
+        modelBuilder.Entity<ProductFamily>(entity =>
+        {
+            entity.HasKey(x => x.Id);
+            entity.Property(x => x.Code).HasMaxLength(30).IsRequired();
+            entity.Property(x => x.Name).HasMaxLength(120).IsRequired();
+            entity.HasIndex(x => new { x.CompanyId, x.Code }).IsUnique();
+        });
+
+        modelBuilder.Entity<ProductSubfamily>(entity =>
+        {
+            entity.HasKey(x => x.Id);
+            entity.Property(x => x.Code).HasMaxLength(30).IsRequired();
+            entity.Property(x => x.Name).HasMaxLength(120).IsRequired();
+            entity.HasIndex(x => new { x.CompanyId, x.Code }).IsUnique();
+            entity.HasIndex(x => x.FamilyId);
+
+            entity.HasOne(x => x.Family)
+                .WithMany(x => x.Subfamilies)
+                .HasForeignKey(x => x.FamilyId)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        modelBuilder.Entity<Product>(entity =>
+        {
+            entity.HasKey(x => x.Id);
+            entity.Property(x => x.ProductCode).HasMaxLength(60).IsRequired();
+            entity.Property(x => x.Description).HasMaxLength(200).IsRequired();
+            entity.Property(x => x.ProductType).HasMaxLength(1).IsFixedLength().IsRequired();
+            entity.Property(x => x.UnitOfMeasure).HasMaxLength(20).IsRequired();
+            entity.Property(x => x.DefaultTaxCountryRegion).HasMaxLength(5).IsRequired();
+            entity.Property(x => x.DefaultTaxCode).HasMaxLength(10).IsRequired();
+            entity.Property(x => x.Barcode).HasMaxLength(60);
+
+            entity.Property(x => x.UnitPrice).HasPrecision(19, 6);
+            entity.Property(x => x.DefaultTaxPercentage).HasPrecision(5, 2);
+
+            entity.HasIndex(x => new { x.CompanyId, x.ProductCode }).IsUnique();
+
+            // Classification is optional, and a family in use can never be deleted from under it.
+            entity.HasOne(x => x.Family)
+                .WithMany(x => x.Products)
+                .HasForeignKey(x => x.FamilyId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasOne(x => x.Subfamily)
+                .WithMany(x => x.Products)
+                .HasForeignKey(x => x.SubfamilyId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasOne(x => x.Brand)
+                .WithMany(x => x.Products)
+                .HasForeignKey(x => x.BrandId)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        modelBuilder.Entity<Customer>(entity => ConfigurePartner(entity));
+        modelBuilder.Entity<Supplier>(entity => ConfigurePartner(entity));
+    }
+
+    /// <summary>Customers and suppliers share the same columns, so they share the same mapping.</summary>
+    private static void ConfigurePartner<T>(Microsoft.EntityFrameworkCore.Metadata.Builders.EntityTypeBuilder<T> entity)
+        where T : class
+    {
+        entity.HasKey("Id");
+        entity.Property("Code").HasMaxLength(30).IsRequired();
+        entity.Property("Name").HasMaxLength(200).IsRequired();
+        entity.Property("TaxId").HasMaxLength(30).IsRequired();
+        entity.Property("Address").HasMaxLength(400);
+        entity.Property("PostalCode").HasMaxLength(20);
+        entity.Property("City").HasMaxLength(120);
+        entity.Property("Country").HasMaxLength(2).IsRequired();
+        entity.Property("Email").HasMaxLength(200);
+        entity.Property("Phone").HasMaxLength(30);
+
+        entity.HasIndex("CompanyId", "Code").IsUnique();
+        entity.HasIndex("CompanyId", "TaxId");
     }
 }

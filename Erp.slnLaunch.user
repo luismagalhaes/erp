@@ -1,13 +1,34 @@
 [
   {
-    "Name": "New Profile",
-    "Projects": []
-  },
-  {
     "Name": "All",
     "Projects": [
       {
         "Path": "src\\Identity\\Erp.Identity\\Erp.Identity.csproj",
+        "Action": "Start",
+        "DebugTarget": "https"
+      },
+      {
+        "Path": "src\\Erp.Api\\Erp.Api.csproj",
+        "Action": "Start",
+        "DebugTarget": "https"
+      },
+      {
+        "Path": "src\\UI\\Erp.Main\\Erp.Main.csproj",
+        "Action": "Start",
+        "DebugTarget": "https"
+      }
+    ]
+  },
+  {
+    "Name": "All + Worker",
+    "Projects": [
+      {
+        "Path": "src\\Identity\\Erp.Identity\\Erp.Identity.csproj",
+        "Action": "Start",
+        "DebugTarget": "https"
+      },
+      {
+        "Path": "src\\Erp.Api\\Erp.Api.csproj",
         "Action": "Start",
         "DebugTarget": "https"
       },
@@ -17,19 +38,9 @@
         "DebugTarget": "https"
       },
       {
-        "Path": "src\\Services\\Erp.Core.Api\\Erp.Core.Api.csproj",
+        "Path": "src\\Notification\\Erp.Notification.Worker\\Erp.Notification.Worker.csproj",
         "Action": "Start",
-        "DebugTarget": "https"
-      },
-      {
-        "Path": "src\\Notification\\Erp.Notification.Api\\Erp.Notification.Api.csproj",
-        "Action": "Start",
-        "DebugTarget": "https"
-      },
-      {
-        "Path": "src\\Services\\Erp.Sales.Api\\Erp.Sales.Api.csproj",
-        "Action": "Start",
-        "DebugTarget": "https"
+        "DebugTarget": "Erp.Notification.Worker"
       }
     ]
   }

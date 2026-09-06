@@ -5,20 +5,15 @@ namespace Erp.Sales.Storage.Data;
 
 public sealed class SalesDbContext(DbContextOptions<SalesDbContext> options) : DbContext(options)
 {
-    public const string Schema = "sales";
-
     public DbSet<Series> Series => Set<Series>();
     public DbSet<SalesDocument> SalesDocuments => Set<SalesDocument>();
     public DbSet<SalesDocumentLine> SalesDocumentLines => Set<SalesDocumentLine>();
     public DbSet<DocumentTaxSummary> DocumentTaxSummaries => Set<DocumentTaxSummary>();
     public DbSet<DocumentStatusChange> DocumentStatusChanges => Set<DocumentStatusChange>();
-    public DbSet<Product> Products => Set<Product>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
-
-        modelBuilder.HasDefaultSchema(Schema);
 
         modelBuilder.Entity<Series>(entity =>
         {
@@ -132,24 +127,6 @@ public sealed class SalesDbContext(DbContextOptions<SalesDbContext> options) : D
             entity.Property(x => x.TaxAmount).HasPrecision(19, 2);
 
             entity.HasIndex(x => x.DocumentId);
-        });
-
-        modelBuilder.Entity<Product>(entity =>
-        {
-            entity.ToTable("Product");
-            entity.HasKey(x => x.Id);
-
-            entity.Property(x => x.ProductCode).HasMaxLength(60).IsRequired();
-            entity.Property(x => x.Description).HasMaxLength(200).IsRequired();
-            entity.Property(x => x.ProductType).HasMaxLength(1).IsFixedLength().IsRequired();
-            entity.Property(x => x.UnitOfMeasure).HasMaxLength(20).IsRequired();
-            entity.Property(x => x.DefaultTaxCountryRegion).HasMaxLength(5).IsRequired();
-            entity.Property(x => x.DefaultTaxCode).HasMaxLength(10).IsRequired();
-
-            entity.Property(x => x.UnitPrice).HasPrecision(19, 6);
-            entity.Property(x => x.DefaultTaxPercentage).HasPrecision(5, 2);
-
-            entity.HasIndex(x => new { x.CompanyId, x.ProductCode }).IsUnique();
         });
 
         modelBuilder.Entity<DocumentStatusChange>(entity =>

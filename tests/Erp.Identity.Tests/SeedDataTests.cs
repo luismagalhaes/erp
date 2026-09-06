@@ -51,6 +51,22 @@ public class SeedDataTests
             resource.UserClaims.Should().Contain(Constants.Claims.Role, $"{resource.Name} authorizes by role"));
     }
 
+    /// <summary>
+    /// The business modules run in one host, so a single audience has to cover every module
+    /// scope. A scope left out here would answer 401 on the merged API.
+    /// </summary>
+    [Fact]
+    public void The_business_audience_covers_every_module_scope()
+    {
+        var businessScopes = SeedData.ApiScopes
+            .Select(scope => scope.Name)
+            .Except([Constants.Scopes.ErpIdentityRead], StringComparer.Ordinal);
+
+        SeedData.ApiResources
+            .Single(resource => resource.Name == Constants.ApiResources.ErpApi)
+            .Scopes.Should().Contain(businessScopes);
+    }
+
     [Fact]
     public void Client_ids_are_unique()
     {

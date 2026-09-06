@@ -17,7 +17,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\src\Notification\Erp.Notification.Api\Erp.Notification.Api.csproj" />
     <ProjectReference Include="..\..\src\Notification\Erp.Notification.Application\Erp.Notification.Application.csproj" />
   </ItemGroup>
 

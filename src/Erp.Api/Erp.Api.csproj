@@ -1,0 +1,41 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <NoWarn>$(NoWarn);CS1591</NoWarn>
+    <RootNamespace>Erp.Api</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="10.*" />
+    <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="10.*" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="10.*" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Tools" Version="10.*">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="10.*">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+    <PackageReference Include="QRCoder" Version="1.*" />
+    <PackageReference Include="Scalar.AspNetCore" Version="2.*" />
+    <PackageReference Include="Serilog.AspNetCore" Version="9.*" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Services\Erp.Core.Application\Erp.Core.Application.csproj" />
+    <ProjectReference Include="..\Services\Erp.Core.Infrastructure\Erp.Core.Infrastructure.csproj" />
+    <ProjectReference Include="..\Services\Erp.Core.Storage\Erp.Core.Storage.csproj" />
+    <ProjectReference Include="..\Services\Erp.Sales.Application\Erp.Sales.Application.csproj" />
+    <ProjectReference Include="..\Services\Erp.Sales.Infrastructure\Erp.Sales.Infrastructure.csproj" />
+    <ProjectReference Include="..\Services\Erp.Sales.Storage\Erp.Sales.Storage.csproj" />
+    <ProjectReference Include="..\Notification\Erp.Notification.Application\Erp.Notification.Application.csproj" />
+    <ProjectReference Include="..\Notification\Erp.Notification.Infrastructure\Erp.Notification.Infrastructure.csproj" />
+    <ProjectReference Include="..\Notification\Erp.Notification.Storage\Erp.Notification.Storage.csproj" />
+  </ItemGroup>
+
+</Project>

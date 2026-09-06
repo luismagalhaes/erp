@@ -11,11 +11,13 @@ public static class DependencyInjection
 {
     public static IServiceCollection AddNotificationStorage(this IServiceCollection services, IConfiguration configuration)
     {
-        var connectionString = configuration.GetConnectionString("NotificationDb")
-            ?? throw new InvalidOperationException("Connection string 'NotificationDb' not found.");
+        var connectionString = configuration.GetConnectionString("ErpDb")
+            ?? throw new InvalidOperationException("Connection string 'ErpDb' not found.");
 
+        // All modules share one database. Each keeps its own migrations history table so their
+        // migrations stay independent.
         services.AddDbContext<NotificationDbContext>(options =>
-            options.UseSqlServer(connectionString));
+            options.UseSqlServer(connectionString, sql => sql.MigrationsHistoryTable("__EFMigrationsHistory_Notification")));
 
         services.AddScoped<IEmailNotificationStorage, EmailNotificationStorage>();
 

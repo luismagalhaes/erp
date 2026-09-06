@@ -113,42 +113,19 @@ public static class SeedData
     /// </summary>
     public static IEnumerable<ApiResource> ApiResources =>
     [
-        new ApiResource(Constants.ApiResources.CoreApi, Constants.ApiResources.CoreApiDisplayName)
-        {
-            Scopes = { Constants.Scopes.ErpCoreRead, Constants.Scopes.ErpCoreWrite },
-            UserClaims = { Constants.Claims.Role, Constants.Claims.Name }
-        },
-        new ApiResource(Constants.ApiResources.SalesApi, Constants.ApiResources.SalesApiDisplayName)
-        {
-            Scopes = { Constants.Scopes.ErpSalesRead, Constants.Scopes.ErpSalesWrite },
-            UserClaims = { Constants.Claims.Role, Constants.Claims.Name }
-        },
-        new ApiResource(Constants.ApiResources.InventoryApi, Constants.ApiResources.InventoryApiDisplayName)
-        {
-            Scopes = { Constants.Scopes.ErpInventoryRead, Constants.Scopes.ErpInventoryWrite },
-            UserClaims = { Constants.Claims.Role, Constants.Claims.Name }
-        },
-        new ApiResource(Constants.ApiResources.PurchasingApi, Constants.ApiResources.PurchasingApiDisplayName)
-        {
-            Scopes = { Constants.Scopes.ErpPurchasingRead, Constants.Scopes.ErpPurchasingWrite },
-            UserClaims = { Constants.Claims.Role, Constants.Claims.Name }
-        },
-        new ApiResource(Constants.ApiResources.AccountingApi, Constants.ApiResources.AccountingApiDisplayName)
-        {
-            Scopes = { Constants.Scopes.ErpAccountingRead, Constants.Scopes.ErpAccountingWrite },
-            UserClaims = { Constants.Claims.Role, Constants.Claims.Name }
-        },
-        new ApiResource(Constants.ApiResources.ReportingApi, Constants.ApiResources.ReportingApiDisplayName)
-        {
-            Scopes = { Constants.Scopes.ErpReportingRead },
-            UserClaims = { Constants.Claims.Role, Constants.Claims.Name }
-        },
-        new ApiResource(Constants.ApiResources.NotificationApi, Constants.ApiResources.NotificationApiDisplayName)
+        // All business modules are served by one host, so one audience covers them. What
+        // separates access between modules is the scope, not the resource.
+        new ApiResource(Constants.ApiResources.ErpApi, Constants.ApiResources.ErpApiDisplayName)
         {
             Scopes =
             {
-                Constants.Scopes.ErpNotificationRead,
-                Constants.Scopes.ErpNotificationWrite,
+                Constants.Scopes.ErpCoreRead, Constants.Scopes.ErpCoreWrite,
+                Constants.Scopes.ErpSalesRead, Constants.Scopes.ErpSalesWrite,
+                Constants.Scopes.ErpInventoryRead, Constants.Scopes.ErpInventoryWrite,
+                Constants.Scopes.ErpPurchasingRead, Constants.Scopes.ErpPurchasingWrite,
+                Constants.Scopes.ErpAccountingRead, Constants.Scopes.ErpAccountingWrite,
+                Constants.Scopes.ErpReportingRead,
+                Constants.Scopes.ErpNotificationRead, Constants.Scopes.ErpNotificationWrite,
                 Constants.Scopes.ErpNotificationSend
             },
             UserClaims = { Constants.Claims.Role, Constants.Claims.Name }

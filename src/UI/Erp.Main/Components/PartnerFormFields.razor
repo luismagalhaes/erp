@@ -1,0 +1,60 @@
+@using MudBlazor
+@using Erp.Main.Models
+
+@* Customers and suppliers are filled in the same way, so they share these fields. *@
+<MudGrid>
+    <MudItem xs="12" md="3">
+        <MudTextField @bind-Value="Model.Code" Label="Código" Variant="Variant.Outlined"
+                      Required="true" Disabled="@(!AllowCodeEdit)"
+                      HelperText="@(AllowCodeEdit ? null : "O código não pode ser alterado")" />
+    </MudItem>
+    <MudItem xs="12" md="6">
+        <MudTextField @bind-Value="Model.Name" Label="Nome" Variant="Variant.Outlined" Required="true" />
+    </MudItem>
+    <MudItem xs="12" md="3">
+        <MudTextField @bind-Value="Model.TaxId" Label="NIF" Variant="Variant.Outlined" Required="true"
+                      HelperText="999999990 para consumidor final" />
+    </MudItem>
+
+    <MudItem xs="12" md="6">
+        <MudTextField @bind-Value="Model.Address" Label="Morada" Variant="Variant.Outlined" />
+    </MudItem>
+    <MudItem xs="12" md="2">
+        <MudTextField @bind-Value="Model.PostalCode" Label="Código postal" Variant="Variant.Outlined" />
+    </MudItem>
+    <MudItem xs="12" md="2">
+        <MudTextField @bind-Value="Model.City" Label="Localidade" Variant="Variant.Outlined" />
+    </MudItem>
+    <MudItem xs="12" md="2">
+        <MudTextField @bind-Value="Model.Country" Label="País" Variant="Variant.Outlined"
+                      HelperText="Código ISO, ex. PT" />
+    </MudItem>
+
+    <MudItem xs="12" md="6">
+        <MudTextField @bind-Value="Model.Email" Label="Email" Variant="Variant.Outlined" InputType="InputType.Email" />
+    </MudItem>
+    <MudItem xs="12" md="6">
+        <MudTextField @bind-Value="Model.Phone" Label="Telefone" Variant="Variant.Outlined" />
+    </MudItem>
+
+    @if (ShowActive)
+    {
+        <MudItem xs="12">
+            <MudSwitch @bind-Value="Model.IsActive" Color="Color.Primary" Label="@ActiveLabel" />
+        </MudItem>
+    }
+</MudGrid>
+
+@code {
+    [Parameter, EditorRequired]
+    public PartnerFormModel Model { get; set; } = new();
+
+    [Parameter]
+    public bool AllowCodeEdit { get; set; } = true;
+
+    [Parameter]
+    public bool ShowActive { get; set; }
+
+    [Parameter]
+    public string ActiveLabel { get; set; } = "Ativo";
+}

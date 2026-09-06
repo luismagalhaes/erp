@@ -1,0 +1,146 @@
+@page "/suppliers/new"
+@page "/suppliers/{Id:guid}"
+@attribute [Authorize]
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.AspNetCore.Components.Web
+@using MudBlazor
+@using Erp.Main.Components
+@using Erp.Main.Models
+@using Erp.Main.Services
+@inject CatalogApiClient Catalog
+@inject CompanyState Company
+@inject NavigationManager Navigation
+@inject ISnackbar Snackbar
+
+<PageTitle>@(IsNew ? "Novo fornecedor" : "Editar fornecedor")</PageTitle>
+
+<MudStack Spacing="4">
+    <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center">
+        <MudStack Spacing="0">
+            <MudText Typo="Typo.h4">@(IsNew ? "Novo fornecedor" : "Editar fornecedor")</MudText>
+            @if (!IsNew)
+            {
+                <MudText Typo="Typo.body2" Color="Color.Secondary">
+                    Alterar o fornecedor não muda documentos já emitidos: cada um guarda a sua própria cópia.
+                </MudText>
+            }
+        </MudStack>
+
+        <MudButton Variant="Variant.Text" StartIcon="@Icons.Material.Filled.ArrowBack"
+                   OnClick="@(() => Navigation.NavigateTo("suppliers"))">
+            Voltar
+        </MudButton>
+    </MudStack>
+
+    @if (!string.IsNullOrWhiteSpace(_error))
+    {
+        <MudAlert Severity="Severity.Error" Dense="true">@_error</MudAlert>
+    }
+
+    @if (_loading)
+    {
+        <MudProgressLinear Indeterminate="true" Color="Color.Primary" />
+    }
+    else
+    {
+        <MudPaper Elevation="1" Class="pa-4">
+            <PartnerFormFields Model="_model" AllowCodeEdit="IsNew" ShowActive="@(!IsNew)" ActiveLabel="Fornecedor ativo" />
+
+            <MudStack Row="true" Justify="Justify.FlexEnd" Class="mt-4">
+                <MudButton Variant="Variant.Filled" Color="Color.Primary"
+                           StartIcon="@Icons.Material.Filled.Save"
+                           Disabled="@(_saving || !_model.IsValid || !Company.HasCompany)"
+                           OnClick="SaveAsync">
+                    Guardar
+                </MudButton>
+            </MudStack>
+        </MudPaper>
+    }
+</MudStack>
+
+@code {
+    [Parameter]
+    public Guid? Id { get; set; }
+
+    private bool IsNew => Id is null;
+
+    private bool _loading;
+    private bool _saving;
+    private string? _error;
+
+    private bool _loaded;
+    private Guid? _loadedId;
+
+    private PartnerFormModel _model = new();
+
+    protected override async Task OnParametersSetAsync()
+    {
+        await Company.EnsureLoadedAsync();
+
+        // A layout re-render sets the parameters again; only reload when the route changed.
+        if (_loaded && _loadedId == Id)
+            return;
+
+        _loaded = true;
+        _loadedId = Id;
+
+        if (IsNew)
+        {
+            _model = new PartnerFormModel();
+            return;
+        }
+
+        _loading = true;
+
+        try
+        {
+            var supplier = await Catalog.GetSupplierAsync(Id!.Value);
+
+            if (supplier is null)
+            {
+                _error = "Fornecedor não encontrado.";
+                return;
+            }
+
+            _model = PartnerFormModel.From(supplier);
+        }
+        catch (Exception ex)
+        {
+            _error = $"Não foi possível carregar o fornecedor: {ex.Message}";
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private async Task SaveAsync()
+    {
+        _saving = true;
+        _error = null;
+
+        try
+        {
+            var error = IsNew
+                ? await Catalog.CreateSupplierAsync(_model.ToCreateRequest(Company.SelectedCompanyId))
+                : await Catalog.UpdateSupplierAsync(Id!.Value, _model.ToUpdateRequest());
+
+            if (error is not null)
+            {
+                _error = error;
+                return;
+            }
+
+            Snackbar.Add(IsNew ? "Fornecedor criado." : "Fornecedor atualizado.", Severity.Success);
+            Navigation.NavigateTo("suppliers");
+        }
+        catch (Exception ex)
+        {
+            _error = $"Não foi possível guardar o fornecedor: {ex.Message}";
+        }
+        finally
+        {
+            _saving = false;
+        }
+    }
+}

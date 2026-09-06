@@ -15,7 +15,35 @@ public static class SalesDocumentTypes
         All.Contains(documentType, StringComparer.Ordinal);
 }
 
-/// <summary>SAF-T (PT) InvoiceStatus values.</summary>
+/// <summary>
+/// SAF-T (PT) MovementType values, exported under MovementOfGoods. These are the documents
+/// covered by the goods in circulation regime, which must reach the tax authority before the
+/// transport starts.
+/// </summary>
+public static class MovementDocumentTypes
+{
+    /// <summary>Guia de remessa.</summary>
+    public const string DeliveryNote = "GR";
+
+    /// <summary>Guia de transporte.</summary>
+    public const string TransportNote = "GT";
+
+    /// <summary>Guia de movimentação de ativos próprios.</summary>
+    public const string OwnAssetsNote = "GA";
+
+    /// <summary>Guia de consignação.</summary>
+    public const string ConsignmentNote = "GC";
+
+    /// <summary>Guia ou nota de devolução.</summary>
+    public const string ReturnNote = "GD";
+
+    public static readonly string[] All = [DeliveryNote, TransportNote, OwnAssetsNote, ConsignmentNote, ReturnNote];
+
+    public static bool IsSupported(string movementType) =>
+        All.Contains(movementType, StringComparer.Ordinal);
+}
+
+/// <summary>SAF-T (PT) InvoiceStatus and MovementStatus values.</summary>
 public static class DocumentStatuses
 {
     public const string Normal = "N";

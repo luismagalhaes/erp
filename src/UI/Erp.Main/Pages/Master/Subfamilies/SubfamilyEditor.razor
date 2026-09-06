@@ -1,0 +1,190 @@
+@page "/product-subfamilies/new"
+@page "/product-subfamilies/{Id:guid}"
+@attribute [Authorize]
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.AspNetCore.Components.Web
+@using MudBlazor
+@using Erp.Main.Models
+@using Erp.Main.Services
+@inject CatalogApiClient Catalog
+@inject CompanyState Company
+@inject NavigationManager Navigation
+@inject ISnackbar Snackbar
+
+<PageTitle>@(IsNew ? "Nova subfamília" : "Editar subfamília")</PageTitle>
+
+<MudStack Spacing="4">
+    <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center">
+        <MudText Typo="Typo.h4">@(IsNew ? "Nova subfamília" : "Editar subfamília")</MudText>
+
+        <MudButton Variant="Variant.Text" StartIcon="@Icons.Material.Filled.ArrowBack"
+                   OnClick="@(() => Navigation.NavigateTo("product-subfamilies"))">
+            Voltar
+        </MudButton>
+    </MudStack>
+
+    @if (!string.IsNullOrWhiteSpace(_error))
+    {
+        <MudAlert Severity="Severity.Error" Dense="true">@_error</MudAlert>
+    }
+
+    @if (_loading)
+    {
+        <MudProgressLinear Indeterminate="true" Color="Color.Primary" />
+    }
+    else if (_families.Count == 0)
+    {
+        <MudAlert Severity="Severity.Warning">
+            Não existe nenhuma família ativa. Uma subfamília vive sempre dentro de uma família.
+            <MudLink Href="product-families/new" Class="ml-2">Criar família</MudLink>
+        </MudAlert>
+    }
+    else
+    {
+        <MudPaper Elevation="1" Class="pa-4">
+            <MudGrid>
+                <MudItem xs="12" md="4">
+                    <MudSelect @bind-Value="_familyId" Label="Família" Variant="Variant.Outlined" Required="true">
+                        @foreach (var family in _families)
+                        {
+                            <MudSelectItem T="Guid" Value="@family.Id">@family.Name</MudSelectItem>
+                        }
+                    </MudSelect>
+                </MudItem>
+                <MudItem xs="12" md="3">
+                    <MudTextField @bind-Value="_code" Label="Código" Variant="Variant.Outlined"
+                                  Required="true" Disabled="@(!IsNew)"
+                                  HelperText="@(IsNew ? null : "O código não pode ser alterado")" />
+                </MudItem>
+                <MudItem xs="12" md="5">
+                    <MudTextField @bind-Value="_name" Label="Nome" Variant="Variant.Outlined" Required="true" />
+                </MudItem>
+
+                @if (!IsNew)
+                {
+                    <MudItem xs="12">
+                        <MudSwitch @bind-Value="_isActive" Color="Color.Primary" Label="Subfamília ativa" />
+                    </MudItem>
+                }
+            </MudGrid>
+
+            <MudStack Row="true" Justify="Justify.FlexEnd" Class="mt-4">
+                <MudButton Variant="Variant.Filled" Color="Color.Primary"
+                           StartIcon="@Icons.Material.Filled.Save"
+                           Disabled="@(_saving || !CanSave)"
+                           OnClick="SaveAsync">
+                    Guardar
+                </MudButton>
+            </MudStack>
+        </MudPaper>
+    }
+</MudStack>
+
+@code {
+    [Parameter]
+    public Guid? Id { get; set; }
+
+    private bool IsNew => Id is null;
+
+    private bool _loading;
+    private bool _saving;
+    private string? _error;
+
+    private bool _loaded;
+    private Guid? _loadedId;
+
+    private Guid _familyId;
+    private string _code = string.Empty;
+    private string _name = string.Empty;
+    private bool _isActive = true;
+
+    private List<ProductFamily> _families = [];
+
+    private bool CanSave =>
+        Company.HasCompany
+        && _familyId != Guid.Empty
+        && !string.IsNullOrWhiteSpace(_code)
+        && !string.IsNullOrWhiteSpace(_name);
+
+    protected override async Task OnParametersSetAsync()
+    {
+        await Company.EnsureLoadedAsync();
+
+        // A layout re-render sets the parameters again; only reload when the route changed.
+        if (_loaded && _loadedId == Id)
+            return;
+
+        _loaded = true;
+        _loadedId = Id;
+        _loading = true;
+
+        try
+        {
+            if (Company.HasCompany)
+            {
+                var (families, error) = await Catalog.GetFamiliesAsync(Company.SelectedCompanyId);
+                _families = [.. families.Where(family => family.IsActive)];
+                _error = error;
+            }
+
+            if (IsNew)
+            {
+                _familyId = _families.FirstOrDefault()?.Id ?? Guid.Empty;
+                return;
+            }
+
+            var subfamily = await Catalog.GetSubfamilyAsync(Id!.Value);
+
+            if (subfamily is null)
+            {
+                _error = "Subfamília não encontrada.";
+                return;
+            }
+
+            _familyId = subfamily.FamilyId;
+            _code = subfamily.Code;
+            _name = subfamily.Name;
+            _isActive = subfamily.IsActive;
+        }
+        catch (Exception ex)
+        {
+            _error = $"Não foi possível carregar a subfamília: {ex.Message}";
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private async Task SaveAsync()
+    {
+        _saving = true;
+        _error = null;
+
+        try
+        {
+            var error = IsNew
+                ? await Catalog.CreateSubfamilyAsync(new CreateProductSubfamilyRequest(
+                    Company.SelectedCompanyId, _familyId, _code.Trim(), _name.Trim()))
+                : await Catalog.UpdateSubfamilyAsync(Id!.Value, new UpdateProductSubfamilyRequest(
+                    _familyId, _name.Trim(), _isActive));
+
+            if (error is not null)
+            {
+                _error = error;
+                return;
+            }
+
+            Snackbar.Add(IsNew ? "Subfamília criada." : "Subfamília atualizada.", Severity.Success);
+            Navigation.NavigateTo("product-subfamilies");
+        }
+        catch (Exception ex)
+        {
+            _error = $"Não foi possível guardar a subfamília: {ex.Message}";
+        }
+        finally
+        {
+            _saving = false;
+        }
+    }
+}

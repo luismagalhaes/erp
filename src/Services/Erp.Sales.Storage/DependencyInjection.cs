@@ -11,15 +11,16 @@ public static class DependencyInjection
 {
     public static IServiceCollection AddSalesStorage(this IServiceCollection services, IConfiguration configuration)
     {
-        var connectionString = configuration.GetConnectionString("SalesDb")
-            ?? throw new InvalidOperationException("Connection string 'SalesDb' not found.");
+        var connectionString = configuration.GetConnectionString("ErpDb")
+            ?? throw new InvalidOperationException("Connection string 'ErpDb' not found.");
 
+        // All modules share one database. Each keeps its own migrations history table so their
+        // migrations stay independent.
         services.AddDbContext<SalesDbContext>(options =>
-            options.UseSqlServer(connectionString));
+            options.UseSqlServer(connectionString, sql => sql.MigrationsHistoryTable("__EFMigrationsHistory_Sales")));
 
         services.AddScoped<ISeriesStorage, SeriesStorage>();
         services.AddScoped<ISalesDocumentStorage, SalesDocumentStorage>();
-        services.AddScoped<IProductStorage, ProductStorage>();
         services.AddScoped<ISalesUnitOfWork, SalesUnitOfWork>();
 
         return services;

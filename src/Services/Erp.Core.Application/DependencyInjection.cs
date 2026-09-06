@@ -12,6 +12,14 @@ public static class DependencyInjection
         services.AddScoped<IUserCompanyService, UserCompanyService>();
         services.AddScoped<IUserCompanyAdminService, UserCompanyAdminService>();
 
+        // Master data shared by every module.
+        services.AddScoped<IBrandService, BrandService>();
+        services.AddScoped<IProductFamilyService, ProductFamilyService>();
+        services.AddScoped<IProductSubfamilyService, ProductSubfamilyService>();
+        services.AddScoped<IProductService, ProductService>();
+        services.AddScoped<ICustomerService, CustomerService>();
+        services.AddScoped<ISupplierService, SupplierService>();
+
         return services;
     }
 }

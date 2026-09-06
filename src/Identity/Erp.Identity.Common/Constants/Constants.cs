@@ -90,20 +90,14 @@
 
         public static class ApiResources
         {
-            public const string CoreApi = "core-api";
-            public const string CoreApiDisplayName = "Core API";
-            public const string SalesApi = "sales-api";
-            public const string SalesApiDisplayName = "Sales API";
-            public const string InventoryApi = "inventory-api";
-            public const string InventoryApiDisplayName = "Inventory API";
-            public const string PurchasingApi = "purchasing-api";
-            public const string PurchasingApiDisplayName = "Purchasing API";
-            public const string AccountingApi = "accounting-api";
-            public const string AccountingApiDisplayName = "Accounting API";
-            public const string ReportingApi = "reporting-api";
-            public const string ReportingApiDisplayName = "Reporting API";
-            public const string NotificationApi = "notification-api";
-            public const string NotificationApiDisplayName = "Notification API";
+            /// <summary>
+            /// Every business module is served by one host, so they share a single audience.
+            /// Access is separated by scope, not by resource.
+            /// </summary>
+            public const string ErpApi = "erp-api";
+            public const string ErpApiDisplayName = "ERP API";
+
+            /// <summary>The users API served by the Identity host itself.</summary>
             public const string IdentityApi = "identity-api";
             public const string IdentityApiDisplayName = "Identity API";
         }

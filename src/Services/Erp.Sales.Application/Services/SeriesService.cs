@@ -24,8 +24,13 @@ public sealed class SeriesService(ISeriesStorage storage, ISalesUnitOfWork unitO
     {
         ArgumentNullException.ThrowIfNull(request);
 
-        if (!SalesDocumentTypes.IsSupported(request.DocumentType))
+        // A series numbers either invoicing documents or movement documents; both are numbered
+        // and signed the same way.
+        if (!SalesDocumentTypes.IsSupported(request.DocumentType)
+            && !MovementDocumentTypes.IsSupported(request.DocumentType))
+        {
             throw new ArgumentException($"Unsupported document type '{request.DocumentType}'.", nameof(request));
+        }
 
         if (string.IsNullOrWhiteSpace(request.SeriesCode))
             throw new ArgumentException("Series code is required.", nameof(request));

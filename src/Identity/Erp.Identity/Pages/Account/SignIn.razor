@@ -1,0 +1,110 @@
+@page "/Account/SignIn"
+@page "/Account/Login"
+@layout Layout.AuthLayout
+@using Microsoft.AspNetCore.Components.Web
+@attribute [AllowAnonymous]
+
+<PageTitle>Sign In — ERP</PageTitle>
+
+<div class="auth-wrapper">
+    <div class="auth-card mud-elevation-3">
+        <div class="auth-logo">ERP</div>
+        <h2>Sign In</h2>
+
+        @if (!string.IsNullOrWhiteSpace(ErrorMessage))
+        {
+            <div class="auth-error">@ErrorMessage</div>
+        }
+
+        @if (!string.IsNullOrWhiteSpace(SuccessMessage))
+        {
+            <div class="hint">@SuccessMessage</div>
+        }
+
+        <form method="post" action="/authentication/login">
+            <AntiforgeryToken />
+            <input type="hidden" name="returnUrl" value="@SanitizeReturnUrl(ReturnUrl)" />
+            <div class="auth-field">
+                <label>Email</label>
+                <input type="email" name="email" autocomplete="username" value="@Input.Email" />
+            </div>
+            <div class="auth-field">
+                <label>Password</label>
+                <input type="password" name="password" autocomplete="current-password" value="@Input.Password" />
+            </div>
+            <button type="submit" class="auth-button">Sign In</button>
+        </form>
+
+        <div class="auth-links mt-16">
+            <a class="auth-link" href="/Account/ForgotPassword">Forgot password?</a>
+            <a class="auth-link" href="/Account/SignUp">Create new account</a>
+        </div>
+    </div>
+</div>
+
+@code {
+    private InputModel Input { get; set; } = new();
+    private string? ErrorMessage { get; set; }
+    private string? SuccessMessage { get; set; }
+
+    [SupplyParameterFromQuery]
+    public string? ReturnUrl { get; set; }
+
+    [SupplyParameterFromQuery(Name = "registered")]
+    public string? Registered { get; set; }
+
+    [SupplyParameterFromQuery(Name = "reset")]
+    public string? Reset { get; set; }
+
+    [SupplyParameterFromQuery(Name = "error")]
+    public string? Error { get; set; }
+
+    protected override void OnParametersSet()
+    {
+        ErrorMessage = null;
+        SuccessMessage = null;
+
+        if (string.Equals(Registered, "1", StringComparison.Ordinal) || string.Equals(Reset, "1", StringComparison.Ordinal))
+        {
+            SuccessMessage = string.Equals(Registered, "1", StringComparison.Ordinal)
+                ? "Account created successfully. You can sign in now."
+                : "Password reset successfully. You can sign in now.";
+        }
+
+        if (string.Equals(Error, "locked", StringComparison.OrdinalIgnoreCase))
+        {
+            ErrorMessage = "Conta bloqueada. Tente mais tarde.";
+        }
+        else if (!string.IsNullOrWhiteSpace(Error))
+        {
+            ErrorMessage = "Email ou palavra-passe incorretos.";
+        }
+    }
+
+    private string SanitizeReturnUrl(string? returnUrl)
+    {
+        if (string.IsNullOrWhiteSpace(returnUrl))
+        {
+            return "/";
+        }
+
+        if (Uri.TryCreate(returnUrl, UriKind.Relative, out var relative) && returnUrl.StartsWith('/'))
+        {
+            return relative.ToString();
+        }
+
+        if (Uri.TryCreate(returnUrl, UriKind.Absolute, out var absolute) &&
+            (absolute.Scheme == Uri.UriSchemeHttp || absolute.Scheme == Uri.UriSchemeHttps))
+        {
+            return absolute.ToString();
+        }
+
+        return "/";
+    }
+
+    private sealed class InputModel
+    {
+        public string? Email { get; set; }
+        public string? Password { get; set; }
+    }
+}

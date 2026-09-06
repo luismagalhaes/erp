@@ -1,0 +1,54 @@
+﻿@using MudBlazor
+@using Microsoft.AspNetCore.Components.Routing
+
+<MudNavMenu>
+    <MudNavLink Href="" Match="NavLinkMatch.All" Icon="@Icons.Material.Filled.Dashboard">Dashboard</MudNavLink>
+
+    <MudNavGroup Title="Customers & Suppliers" Icon="@Icons.Material.Filled.People" Expanded="true">
+        <MudNavLink Href="clientes" Icon="@Icons.Material.Filled.PersonOutline">Customers</MudNavLink>
+        <MudNavLink Href="fornecedores" Icon="@Icons.Material.Filled.Business">Suppliers</MudNavLink>
+    </MudNavGroup>
+
+    <MudNavGroup Title="Billing" Icon="@Icons.Material.Filled.Receipt" Expanded="false">
+        <MudNavLink Href="faturas" Icon="@Icons.Material.Filled.ReceiptLong">Invoices</MudNavLink>
+        <MudNavLink Href="faturas/nova" Icon="@Icons.Material.Filled.AddCircleOutline">New Invoice</MudNavLink>
+        <MudNavLink Href="notas-credito" Icon="@Icons.Material.Filled.CreditCard">Credit Notes</MudNavLink>
+        <MudNavLink Href="recibos" Icon="@Icons.Material.Filled.Payments">Receipts</MudNavLink>
+        <MudNavLink Href="guias-transporte" Icon="@Icons.Material.Filled.LocalShipping">Transport Guides</MudNavLink>
+    </MudNavGroup>
+
+    <MudNavGroup Title="Items & Stock" Icon="@Icons.Material.Filled.Inventory" Expanded="false">
+        <MudNavLink Href="artigos" Icon="@Icons.Material.Filled.Category">Items</MudNavLink>
+        <MudNavLink Href="stock" Icon="@Icons.Material.Filled.Warehouse">Stock</MudNavLink>
+        <MudNavLink Href="movimentos-stock" Icon="@Icons.Material.Filled.SwapHoriz">Movements</MudNavLink>
+    </MudNavGroup>
+
+    <MudNavGroup Title="Purchasing" Icon="@Icons.Material.Filled.ShoppingCart" Expanded="false">
+        <MudNavLink Href="encomendas" Icon="@Icons.Material.Filled.ShoppingBag">Orders</MudNavLink>
+        <MudNavLink Href="recepcoes" Icon="@Icons.Material.Filled.MoveToInbox">Receipts</MudNavLink>
+        <MudNavLink Href="faturas-fornecedor" Icon="@Icons.Material.Filled.RequestPage">Supplier Invoices</MudNavLink>
+    </MudNavGroup>
+
+    <MudNavGroup Title="Accounting" Icon="@Icons.Material.Filled.AccountBalance" Expanded="false">
+        <MudNavLink Href="lancamentos" Icon="@Icons.Material.Filled.BookmarkAdd">Entries</MudNavLink>
+        <MudNavLink Href="plano-contas" Icon="@Icons.Material.Filled.AccountTree">Chart of Accounts</MudNavLink>
+        <MudNavLink Href="balancete" Icon="@Icons.Material.Filled.TableChart">Trial Balance</MudNavLink>
+    </MudNavGroup>
+
+    <MudNavGroup Title="Reports & AT" Icon="@Icons.Material.Filled.Assessment" Expanded="false">
+        <MudNavLink Href="saft" Icon="@Icons.Material.Filled.FileDownload">SAF-T (PT)</MudNavLink>
+        <MudNavLink Href="relatorios/iva" Icon="@Icons.Material.Filled.Percent">VAT Return</MudNavLink>
+        <MudNavLink Href="relatorios" Icon="@Icons.Material.Filled.BarChart">Reports</MudNavLink>
+    </MudNavGroup>
+
+    <MudNavGroup Title="Backoffice" Icon="@Icons.Material.Filled.AdminPanelSettings" Expanded="false">
+        <MudNavLink Href="backoffice/companies" Icon="@Icons.Material.Filled.Domain">Companies</MudNavLink>
+    </MudNavGroup>
+
+    <MudNavGroup Title="Settings" Icon="@Icons.Material.Filled.Settings" Expanded="false">
+        <MudNavLink Href="empresas" Icon="@Icons.Material.Filled.Domain">Companies</MudNavLink>
+        <MudNavLink Href="utilizadores" Icon="@Icons.Material.Filled.ManageAccounts">Users</MudNavLink>
+        <MudNavLink Href="tabelas-iva" Icon="@Icons.Material.Filled.TableView">VAT Tables</MudNavLink>
+        <MudNavLink Href="series-faturacao" Icon="@Icons.Material.Filled.FormatListNumbered">Billing Series</MudNavLink>
+    </MudNavGroup>
+</MudNavMenu>

@@ -1,0 +1,49 @@
+<Solution>
+  <Folder Name="/src/" />
+  <Folder Name="/src/Identity/">
+    <Project Path="src/Identity/Erp.Identity.Application/Erp.Identity.Application.csproj" />
+    <Project Path="src/Identity/Erp.Identity.Common/Erp.Identity.Common.csproj" Id="0b6b086b-c9ff-4619-8810-7e4ff6d2e4c0" />
+    <Project Path="src/Identity/Erp.Identity.Dependencies/Erp.Identity.Dependencies.csproj" />
+    <Project Path="src/Identity/Erp.Identity.Domain/Erp.Identity.Domain.csproj" />
+    <Project Path="src/Identity/Erp.Identity.Infrastructure/Erp.Identity.Infrastructure.csproj" />
+    <Project Path="src/Identity/Erp.Identity.Storage/Erp.Identity.Storage.csproj" />
+    <Project Path="src/Identity/Erp.Identity/Erp.Identity.csproj" />
+  </Folder>
+  <Folder Name="/src/Services/" />
+  <Folder Name="/src/Services/Accounting/">
+    <Project Path="src/Services/Erp.Accounting.Api/Erp.Accounting.Api.csproj" />
+  </Folder>
+  <Folder Name="/src/Services/Core/">
+    <Project Path="src/Services/Erp.Core.Api/Erp.Core.Api.csproj" />
+    <Project Path="src/Services/Erp.Core.Application/Erp.Core.Application.csproj" />
+    <Project Path="src/Services/Erp.Core.Domain/Erp.Core.Domain.csproj" />
+    <Project Path="src/Services/Erp.Core.Infrastructure/Erp.Core.Infrastructure.csproj" />
+    <Project Path="src/Services/Erp.Core.Storage/Erp.Core.Storage.csproj" />
+  </Folder>
+  <Folder Name="/src/Services/Inventory/">
+    <Project Path="src/Services/Erp.Inventory.Api/Erp.Inventory.Api.csproj" />
+  </Folder>
+  <Folder Name="/src/Services/Notification/">
+    <Project Path="src/Notification/Erp.Notification.Application/Erp.Notification.Application.csproj" />
+    <Project Path="src/Notification/Erp.Notification.Domain/Erp.Notification.Domain.csproj" />
+    <Project Path="src/Notification/Erp.Notification.Infrastructure/Erp.Notification.Infrastructure.csproj" />
+    <Project Path="src/Notification/Erp.Notification.Storage/Erp.Notification.Storage.csproj" />
+    <Project Path="src/Notification/Erp.Notification.Worker/Erp.Notification.Worker.csproj" />
+  </Folder>
+  <Folder Name="/src/Services/Purchasing/">
+    <Project Path="src/Services/Erp.Purchasing.Api/Erp.Purchasing.Api.csproj" />
+  </Folder>
+  <Folder Name="/src/Services/Reporting/">
+    <Project Path="src/Services/Erp.Reporting.Api/Erp.Reporting.Api.csproj" />
+  </Folder>
+  <Folder Name="/src/Services/Sales/">
+    <Project Path="src/Services/Erp.Sales.Api/Erp.Sales.Api.csproj" />
+  </Folder>
+  <Folder Name="/src/UI/">
+    <Project Path="src/UI/Erp.Main/Erp.Main.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/Erp.FiscalPT.Tests/Erp.FiscalPT.Tests.csproj" />
+    <Project Path="tests/Erp.Sales.Tests/Erp.Sales.Tests.csproj" />
+  </Folder>
+</Solution>

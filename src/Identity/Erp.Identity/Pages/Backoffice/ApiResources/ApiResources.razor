@@ -1,0 +1,230 @@
+@page "/Backoffice/ApiResources"
+@page "/Backoffice/ApiResources/{Mode}"
+@using Microsoft.AspNetCore.Components.Web
+@attribute [Authorize(Roles = "SuperAdmin")]
+@inject IApiResourceService ApiResourceService
+@inject NavigationManager Navigation
+
+<PageTitle>Backoffice - API Resources</PageTitle>
+
+@if (IsCreateMode || IsEditMode)
+{
+    <div class="content-card mud-elevation-1">
+        <h2>@(IsCreateMode ? "Create API Resource" : "Edit API Resource")</h2>
+        @if (!string.IsNullOrWhiteSpace(ErrorMessage)) { <div class="auth-error">@ErrorMessage</div> }
+
+        <EditForm Model="Form" OnSubmit="SaveAsync" FormName="api-resources-form">
+            <div class="tab-strip">
+                <button type="button" class="tab-btn @(ActiveTab == "MainInfo" ? "active" : null)" @onclick='() => SelectTab("MainInfo")'>Main Info</button>
+                <button type="button" class="tab-btn @(ActiveTab == "Scopes" ? "active" : null)" @onclick='() => SelectTab("Scopes")'>Scopes</button>
+                <button type="button" class="tab-btn @(ActiveTab == "UserClaims" ? "active" : null)" @onclick='() => SelectTab("UserClaims")'>User Claims</button>
+            </div>
+
+            <div class="tab-panel @(ActiveTab == "MainInfo" ? "active" : null)">
+                <div class="auth-field"><label>Name</label><InputText @bind-Value="Form.Name" /></div>
+                <div class="auth-field"><label>DisplayName</label><InputText @bind-Value="Form.DisplayName" /></div>
+                <div class="auth-field"><label>Description</label><InputTextArea @bind-Value="Form.Description" /></div>
+                <div class="auth-field"><label><InputCheckbox @bind-Value="Form.Enabled" /> Enabled</label></div>
+                <div class="auth-field"><label><InputCheckbox @bind-Value="Form.ShowInDiscoveryDocument" /> ShowInDiscoveryDocument</label></div>
+                <div class="auth-field"><label><InputCheckbox @bind-Value="Form.RequireResourceIndicator" /> RequireResourceIndicator</label></div>
+            </div>
+
+            <div class="tab-panel @(ActiveTab == "Scopes" ? "active" : null)">
+                <div class="auth-field">
+                    <label>Scopes</label>
+                    <table class="backoffice-table">
+                        <thead><tr><th>Scope</th><th class="actions-col">Actions</th></tr></thead>
+                        <tbody>
+                        @for (var i = 0; i < Form.Scopes.Count; i++)
+                        {
+                            var index = i;
+                            <tr>
+                                <td><InputText @bind-Value="Form.Scopes[index]" /></td>
+                                <td class="actions-col"><button type="button" class="action-btn danger" @onclick="() => RemoveListItem(Form.Scopes, index)">Remove</button></td>
+                            </tr>
+                        }
+                        </tbody>
+                    </table>
+                    <button type="button" class="action-btn" @onclick="() => AddListItem(Form.Scopes)">Add scope</button>
+                </div>
+            </div>
+
+            <div class="tab-panel @(ActiveTab == "UserClaims" ? "active" : null)">
+                <div class="auth-field">
+                    <label>UserClaims</label>
+                    <table class="backoffice-table">
+                        <thead><tr><th>Claim</th><th class="actions-col">Actions</th></tr></thead>
+                        <tbody>
+                        @for (var i = 0; i < Form.UserClaims.Count; i++)
+                        {
+                            var index = i;
+                            <tr>
+                                <td><InputText @bind-Value="Form.UserClaims[index]" /></td>
+                                <td class="actions-col"><button type="button" class="action-btn danger" @onclick="() => RemoveListItem(Form.UserClaims, index)">Remove</button></td>
+                            </tr>
+                        }
+                        </tbody>
+                    </table>
+                    <button type="button" class="action-btn" @onclick="() => AddListItem(Form.UserClaims)">Add claim</button>
+                </div>
+            </div>
+
+            <div class="form-actions">
+                <button type="submit" class="action-btn primary">Save</button>
+                <a class="action-btn" href="/Backoffice/ApiResources">Cancel</a>
+            </div>
+        </EditForm>
+    </div>
+}
+else if (IsDeleteMode)
+{
+    <div class="content-card mud-elevation-1">
+        <h2>Delete API Resource</h2>
+        <p>Are you sure you want to delete <strong>@Name</strong>?</p>
+        <div class="form-actions">
+            <button class="action-btn danger" @onclick="DeleteAsync">Delete</button>
+            <a class="action-btn" href="/Backoffice/ApiResources">Cancel</a>
+        </div>
+    </div>
+}
+else
+{
+    <div class="content-card mud-elevation-1">
+        <div class="list-header">
+            <h2>API Resources (@Items.Count)</h2>
+            <div class="list-actions">
+                <MudIconButton Icon="@Icons.Material.Filled.AddCircle" Href="/Backoffice/ApiResources/Create" Color="Color.Primary" Size="Size.Small" title="Create API Resource" aria-label="Create API Resource" />
+            </div>
+        </div>
+        <table class="backoffice-table">
+            <thead><tr><th>Name</th><th>Display name</th><th>Enabled</th><th>Scopes</th><th class="actions-col">Actions</th></tr></thead>
+            <tbody>
+            @foreach (var item in Items)
+            {
+                <tr>
+                    <td>@item.Name</td><td>@item.DisplayName</td>
+                    <td><span class="@(item.Enabled ? "ok" : "off")">@(item.Enabled ? "Yes" : "No")</span></td>
+                    <td>@string.Join(", ", item.Scopes)</td>
+                    <td class="actions-col">
+                        <div class="table-actions">
+                            <MudIconButton Icon="@Icons.Material.Filled.Edit" Href="@($"/Backoffice/ApiResources/Edit?name={Uri.EscapeDataString(item.Name)}")" Color="Color.Primary" Size="Size.Small" title="Edit" aria-label="Edit" />
+                            <MudIconButton Icon="@Icons.Material.Filled.Delete" Href="@($"/Backoffice/ApiResources/Delete?name={Uri.EscapeDataString(item.Name)}")" Color="Color.Error" Size="Size.Small" title="Delete" aria-label="Delete" />
+                        </div>
+                    </td>
+                </tr>
+            }
+            </tbody>
+        </table>
+    </div>
+}
+
+@code {
+    [Parameter] public string? Mode { get; set; }
+    [SupplyParameterFromQuery] public string? Name { get; set; }
+
+    private bool IsCreateMode => string.Equals(Mode, "Create", StringComparison.OrdinalIgnoreCase);
+    private bool IsEditMode => string.Equals(Mode, "Edit", StringComparison.OrdinalIgnoreCase);
+    private bool IsDeleteMode => string.Equals(Mode, "Delete", StringComparison.OrdinalIgnoreCase);
+
+    private List<ApiResourceListItem> Items { get; set; } = [];
+    private ApiResourceInput Form { get; set; } = new() { Enabled = true, ShowInDiscoveryDocument = true };
+    private string? ErrorMessage { get; set; }
+    private string ActiveTab { get; set; } = "MainInfo";
+
+    protected override async Task OnParametersSetAsync()
+    {
+        ErrorMessage = null;
+
+        if (IsEditMode)
+        {
+            if (string.IsNullOrWhiteSpace(Name)) { Navigation.NavigateTo("/Backoffice/ApiResources"); return; }
+            var item = await ApiResourceService.GetApiResourceAsync(Name);
+            if (item is null) { Navigation.NavigateTo("/Backoffice/ApiResources"); return; }
+            Form = ApiResourceInput.From(item);
+            return;
+        }
+
+        if (!IsCreateMode && !IsDeleteMode)
+            Items = (await ApiResourceService.GetApiResourcesAsync()).ToList();
+    }
+
+    private async Task SaveAsync(EditContext _)
+    {
+        if (string.IsNullOrWhiteSpace(Form.Name)) { ErrorMessage = "Name is required."; return; }
+
+        var request = new ApiResourceUpsertRequest(
+            Form.Name.Trim(),
+            (Form.DisplayName ?? string.Empty).Trim(),
+            (Form.Description ?? string.Empty).Trim(),
+            Form.Enabled,
+            Form.ShowInDiscoveryDocument,
+            Form.RequireResourceIndicator,
+            SanitizeList(Form.Scopes),
+            SanitizeList(Form.UserClaims));
+
+        if (IsCreateMode) await ApiResourceService.CreateApiResourceAsync(request);
+        else
+        {
+            if (string.IsNullOrWhiteSpace(Name)) { Navigation.NavigateTo("/Backoffice/ApiResources"); return; }
+            await ApiResourceService.UpdateApiResourceAsync(Name, request);
+        }
+
+        Navigation.NavigateTo("/Backoffice/ApiResources");
+    }
+
+    private async Task DeleteAsync()
+    {
+        if (!string.IsNullOrWhiteSpace(Name))
+            await ApiResourceService.DeleteApiResourceAsync(Name);
+        Navigation.NavigateTo("/Backoffice/ApiResources");
+    }
+
+    private static List<string> SanitizeList(IEnumerable<string> values)
+        => values
+            .Where(x => !string.IsNullOrWhiteSpace(x))
+            .Select(x => x.Trim())
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToList();
+
+    private void SelectTab(string tabKey) => ActiveTab = tabKey;
+
+    private static void AddListItem(List<string> list) => list.Add(string.Empty);
+
+    private static void RemoveListItem(List<string> list, int index)
+    {
+        if (index >= 0 && index < list.Count)
+            list.RemoveAt(index);
+    }
+
+    private sealed class ApiResourceInput
+    {
+        public string Name { get; set; } = string.Empty;
+        public string? DisplayName { get; set; }
+        public string? Description { get; set; }
+        public bool Enabled { get; set; }
+        public bool ShowInDiscoveryDocument { get; set; }
+        public bool RequireResourceIndicator { get; set; }
+        public List<string> Scopes { get; set; } = [];
+        public List<string> UserClaims { get; set; } = [];
+
+        public static ApiResourceInput From(ApiResourceEditItem item) => new()
+        {
+            Name = item.Name,
+            DisplayName = item.DisplayName,
+            Description = item.Description,
+            Enabled = item.Enabled,
+            ShowInDiscoveryDocument = item.ShowInDiscoveryDocument,
+            RequireResourceIndicator = item.RequireResourceIndicator,
+            Scopes = item.Scopes
+                .Where(x => !string.IsNullOrWhiteSpace(x))
+                .Select(x => x.Trim())
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToList(),
+            UserClaims = item.UserClaims
+                .Where(x => !string.IsNullOrWhiteSpace(x))
+                .Select(x => x.Trim())
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToList()
+        };
+    }
+}

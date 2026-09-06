@@ -1,0 +1,43 @@
+@using Microsoft.AspNetCore.Components.Routing
+@using Microsoft.AspNetCore.Components.Authorization
+@using MudBlazor
+
+<MudNavMenu>
+    <MudNavLink Href="/" Match="NavLinkMatch.All" Icon="@Icons.Material.Filled.Home">Home</MudNavLink>
+
+    @if (_isSuperAdmin)
+    {
+        <MudNavGroup Title="Backoffice"
+                     Icon="@Icons.Material.Filled.AdminPanelSettings"
+                     @bind-Expanded="_backofficeExpanded">
+            <MudNavLink Href="/Backoffice/Users" Icon="@Icons.Material.Filled.People">Users</MudNavLink>
+            <MudNavLink Href="/Backoffice/Roles" Icon="@Icons.Material.Filled.Security">Roles</MudNavLink>
+            <MudNavLink Href="/Backoffice/Clients" Icon="@Icons.Material.Filled.Devices">Clients</MudNavLink>
+            <MudNavLink Href="/Backoffice/ApiScopes" Icon="@Icons.Material.Filled.Key">API Scopes</MudNavLink>
+            <MudNavLink Href="/Backoffice/ApiResources" Icon="@Icons.Material.Filled.Api">API Resources</MudNavLink>
+            <MudNavLink Href="/Backoffice/IdentityResources" Icon="@Icons.Material.Filled.Badge">Identity Resources</MudNavLink>
+            <MudNavLink Href="/Backoffice/IdentityProviders" Icon="@Icons.Material.Filled.AccountTree">Identity Providers</MudNavLink>
+        </MudNavGroup>
+    }
+
+</MudNavMenu>
+
+@code {
+    [CascadingParameter]
+    private Task<AuthenticationState>? AuthenticationStateTask { get; set; }
+
+    private bool _backofficeExpanded;
+    private bool _isSuperAdmin;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (AuthenticationStateTask is null)
+        {
+            _isSuperAdmin = false;
+            return;
+        }
+
+        var authState = await AuthenticationStateTask;
+        _isSuperAdmin = authState.User.Identity?.IsAuthenticated == true && authState.User.IsInRole("SuperAdmin");
+    }
+}

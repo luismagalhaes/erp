@@ -1,0 +1,92 @@
+@page "/Account/SignUp"
+@layout Layout.AuthLayout
+@using Microsoft.AspNetCore.Components.Web
+@attribute [AllowAnonymous]
+@inject UserManager<ApplicationUser> UserManager
+@inject NavigationManager Navigation
+
+<PageTitle>Sign Up — ERP</PageTitle>
+
+<div class="auth-wrapper">
+    <div class="auth-card mud-elevation-3">
+        <div class="auth-logo">ERP</div>
+        <h2>Create account</h2>
+
+        @if (!string.IsNullOrWhiteSpace(ErrorMessage))
+        {
+            <div class="auth-error">@ErrorMessage</div>
+        }
+
+        <EditForm Model="Input" OnValidSubmit="HandleSubmitAsync" FormName="signup-form">
+            <DataAnnotationsValidator />
+
+            <div class="auth-field">
+                <label>First name</label>
+                <InputText @bind-Value="Input.FirstName" autocomplete="given-name" />
+            </div>
+            <div class="auth-field">
+                <label>Last name</label>
+                <InputText @bind-Value="Input.LastName" autocomplete="family-name" />
+            </div>
+            <div class="auth-field">
+                <label>Email</label>
+                <InputText @bind-Value="Input.Email" type="email" autocomplete="username" />
+            </div>
+            <div class="auth-field">
+                <label>Password</label>
+                <InputText @bind-Value="Input.Password" type="password" autocomplete="new-password" />
+            </div>
+            <div class="auth-field">
+                <label>Confirm password</label>
+                <InputText @bind-Value="Input.ConfirmPassword" type="password" autocomplete="new-password" />
+            </div>
+            <button type="submit" class="auth-button">Create account</button>
+        </EditForm>
+
+        <div class="auth-links mt-16">
+            <a class="auth-link" href="/Account/SignIn">Already have an account? Sign In</a>
+        </div>
+    </div>
+</div>
+
+@code {
+    private InputModel Input { get; set; } = new();
+    private string? ErrorMessage { get; set; }
+
+    private async Task HandleSubmitAsync()
+    {
+        ErrorMessage = null;
+
+        var firstName = (Input.FirstName ?? string.Empty).Trim();
+        var lastName = (Input.LastName ?? string.Empty).Trim();
+        var email = (Input.Email ?? string.Empty).Trim();
+
+        var user = new ApplicationUser
+        {
+            UserName = email,
+            Email = email,
+            FirstName = firstName,
+            LastName = lastName,
+            IsActive = true,
+            CreatedAt = DateTime.UtcNow
+        };
+
+        var result = await UserManager.CreateAsync(user, Input.Password!);
+        if (result.Succeeded)
+        {
+            Navigation.NavigateTo("/Account/SignIn?registered=1", forceLoad: true);
+            return;
+        }
+
+        ErrorMessage = string.Join(" ", result.Errors.Select(e => e.Description));
+    }
+
+    private sealed class InputModel
+    {
+        [Required] public string? FirstName { get; set; }
+        [Required] public string? LastName { get; set; }
+        [Required, EmailAddress] public string? Email { get; set; }
+        [Required, DataType(DataType.Password)] public string? Password { get; set; }
+        [Required, DataType(DataType.Password), Compare(nameof(Password), ErrorMessage = "Passwords do not match.")] public string? ConfirmPassword { get; set; }
+    }
+}

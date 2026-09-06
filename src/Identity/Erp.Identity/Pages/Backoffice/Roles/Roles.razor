@@ -1,0 +1,157 @@
+@page "/Backoffice/Roles"
+@page "/Backoffice/Roles/{Mode}"
+@using Microsoft.AspNetCore.Components.Web
+@attribute [Authorize(Roles = "SuperAdmin")]
+@inject IRoleService RoleService
+@inject NavigationManager Navigation
+
+<PageTitle>Backoffice - Roles</PageTitle>
+
+@if (IsCreateMode || IsEditMode)
+{
+    <div class="content-card mud-elevation-1">
+        <h2>@(IsCreateMode ? "Create Role" : "Edit Role")</h2>
+        @if (!string.IsNullOrWhiteSpace(ErrorMessage))
+        {
+            <div class="auth-error">@ErrorMessage</div>
+        }
+        <EditForm Model="Form" OnSubmit="SaveAsync" FormName="roles-form">
+            <div class="auth-field"><label>Name</label><InputText @bind-Value="Form.Name" /></div>
+            <div class="form-actions">
+                <button class="action-btn primary" type="submit">Save</button>
+                <a class="action-btn" href="/Backoffice/Roles">Cancel</a>
+            </div>
+        </EditForm>
+    </div>
+}
+else if (IsDeleteMode)
+{
+    <div class="content-card mud-elevation-1">
+        <h2>Delete Role</h2>
+        <p>Are you sure you want to delete role <strong>@RoleName</strong>?</p>
+        <div class="form-actions">
+            <button class="action-btn danger" @onclick="DeleteAsync">Delete</button>
+            <a class="action-btn" href="/Backoffice/Roles">Cancel</a>
+        </div>
+    </div>
+}
+else
+{
+    <div class="content-card mud-elevation-1">
+        <div class="list-header">
+            <h2>Roles (@RoleItems.Count)</h2>
+            <div class="list-actions">
+                <MudIconButton Icon="@Icons.Material.Filled.AddCircle" Href="/Backoffice/Roles/Create" Color="Color.Primary" Size="Size.Small" title="Create role" aria-label="Create role" />
+            </div>
+        </div>
+        <table class="backoffice-table">
+            <thead><tr><th>Name</th><th class="actions-col">Actions</th></tr></thead>
+            <tbody>
+                @foreach (var role in RoleItems)
+                {
+                    <tr>
+                        <td>@role.Name</td>
+                        <td class="actions-col">
+                            <div class="table-actions">
+                                <MudIconButton Icon="@Icons.Material.Filled.Edit" Href="@($"/Backoffice/Roles/Edit?roleName={Uri.EscapeDataString(role.Name)}")" Color="Color.Primary" Size="Size.Small" title="Edit" aria-label="Edit" />
+                                <MudIconButton Icon="@Icons.Material.Filled.Delete" Href="@($"/Backoffice/Roles/Delete?roleName={Uri.EscapeDataString(role.Name)}")" Color="Color.Error" Size="Size.Small" title="Delete" aria-label="Delete" />
+                            </div>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+}
+
+@code {
+    [Parameter] public string? Mode { get; set; }
+    [SupplyParameterFromQuery] public string? RoleName { get; set; }
+
+    private bool IsCreateMode => string.Equals(Mode, "Create", StringComparison.OrdinalIgnoreCase);
+    private bool IsEditMode => string.Equals(Mode, "Edit", StringComparison.OrdinalIgnoreCase);
+    private bool IsDeleteMode => string.Equals(Mode, "Delete", StringComparison.OrdinalIgnoreCase);
+
+    private List<RoleListItem> RoleItems { get; set; } = [];
+    private RoleInput Form { get; set; } = new();
+    private string? ErrorMessage { get; set; }
+
+    protected override async Task OnParametersSetAsync()
+    {
+        ErrorMessage = null;
+
+        if (IsEditMode)
+        {
+            if (string.IsNullOrWhiteSpace(RoleName))
+            {
+                Navigation.NavigateTo("/Backoffice/Roles");
+                return;
+            }
+
+            var role = await RoleService.GetRoleAsync(RoleName);
+            if (role is null)
+            {
+                Navigation.NavigateTo("/Backoffice/Roles");
+                return;
+            }
+
+            Form.Name = role.Name;
+            return;
+        }
+
+        if (!IsCreateMode && !IsDeleteMode)
+        {
+            RoleItems = (await RoleService.GetRolesAsync()).ToList();
+        }
+    }
+
+    private async Task SaveAsync(EditContext _)
+    {
+        if (string.IsNullOrWhiteSpace(Form.Name))
+        {
+            ErrorMessage = "Role name is required.";
+            return;
+        }
+
+        try
+        {
+            if (IsCreateMode)
+            {
+                await RoleService.CreateRoleAsync(new RoleUpsertRequest(Form.Name.Trim()));
+            }
+            else
+            {
+                if (string.IsNullOrWhiteSpace(RoleName))
+                {
+                    ErrorMessage = "Invalid role.";
+                    return;
+                }
+
+                await RoleService.UpdateRoleAsync(RoleName, new RoleUpsertRequest(Form.Name.Trim()));
+            }
+
+            Navigation.NavigateTo("/Backoffice/Roles");
+        }
+        catch (Exception ex)
+        {
+            ErrorMessage = ex.Message;
+        }
+    }
+
+    private async Task DeleteAsync()
+    {
+        if (string.IsNullOrWhiteSpace(RoleName))
+        {
+            Navigation.NavigateTo("/Backoffice/Roles");
+            return;
+        }
+
+        await RoleService.DeleteRoleAsync(RoleName);
+        Navigation.NavigateTo("/Backoffice/Roles");
+    }
+
+    private sealed class RoleInput
+    {
+        public string Name { get; set; } = string.Empty;
+    }
+}

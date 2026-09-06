@@ -1,0 +1,26 @@
+[
+  {
+    "Name": "New Profile",
+    "Projects": []
+  },
+  {
+    "Name": "Main + Id",
+    "Projects": [
+      {
+        "Path": "src\\Identity\\Erp.Identity\\Erp.Identity.csproj",
+        "Action": "Start",
+        "DebugTarget": "https"
+      },
+      {
+        "Path": "src\\UI\\Erp.Main\\Erp.Main.csproj",
+        "Action": "Start",
+        "DebugTarget": "https"
+      },
+      {
+        "Path": "src\\Services\\Erp.Core.Api\\Erp.Core.Api.csproj",
+        "Action": "Start",
+        "DebugTarget": "https"
+      }
+    ]
+  }
+]

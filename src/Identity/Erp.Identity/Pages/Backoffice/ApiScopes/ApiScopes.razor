@@ -1,0 +1,208 @@
+@page "/Backoffice/ApiScopes"
+@page "/Backoffice/ApiScopes/{Mode}"
+@using Microsoft.AspNetCore.Components.Web
+@attribute [Authorize(Roles = "SuperAdmin")]
+@inject IApiScopeService ApiScopeService
+@inject NavigationManager Navigation
+
+<PageTitle>Backoffice - API Scopes</PageTitle>
+
+@if (IsCreateMode || IsEditMode)
+{
+    <div class="content-card mud-elevation-1">
+        <h2>@(IsCreateMode ? "Create API Scope" : "Edit API Scope")</h2>
+        @if (!string.IsNullOrWhiteSpace(ErrorMessage)) { <div class="auth-error">@ErrorMessage</div> }
+
+        <EditForm Model="Form" OnSubmit="SaveAsync" FormName="api-scopes-form">
+            <div class="tab-strip">
+                <button type="button" class="tab-btn @(ActiveTab == "MainInfo" ? "active" : null)" @onclick='() => SelectTab("MainInfo")'>Main Info</button>
+                <button type="button" class="tab-btn @(ActiveTab == "UserClaims" ? "active" : null)" @onclick='() => SelectTab("UserClaims")'>User Claims</button>
+            </div>
+
+            <div class="tab-panel @(ActiveTab == "MainInfo" ? "active" : null)">
+                <div class="auth-field"><label>Name</label><InputText @bind-Value="Form.Name" /></div>
+                <div class="auth-field"><label>DisplayName</label><InputText @bind-Value="Form.DisplayName" /></div>
+                <div class="auth-field"><label>Description</label><InputTextArea @bind-Value="Form.Description" /></div>
+                <div class="auth-field"><label><InputCheckbox @bind-Value="Form.Enabled" /> Enabled</label></div>
+                <div class="auth-field"><label><InputCheckbox @bind-Value="Form.Required" /> Required</label></div>
+                <div class="auth-field"><label><InputCheckbox @bind-Value="Form.Emphasize" /> Emphasize</label></div>
+                <div class="auth-field"><label><InputCheckbox @bind-Value="Form.ShowInDiscoveryDocument" /> ShowInDiscoveryDocument</label></div>
+            </div>
+
+            <div class="tab-panel @(ActiveTab == "UserClaims" ? "active" : null)">
+                <div class="auth-field">
+                    <label>UserClaims</label>
+                    <table class="backoffice-table">
+                        <thead><tr><th>Claim</th><th class="actions-col">Actions</th></tr></thead>
+                        <tbody>
+                        @for (var i = 0; i < Form.UserClaims.Count; i++)
+                        {
+                            var index = i;
+                            <tr>
+                                <td><InputText @bind-Value="Form.UserClaims[index]" /></td>
+                                <td class="actions-col">
+                                    <button type="button" class="action-btn danger" @onclick="() => RemoveListItem(Form.UserClaims, index)">Remove</button>
+                                </td>
+                            </tr>
+                        }
+                        </tbody>
+                    </table>
+                    <button type="button" class="action-btn" @onclick="() => AddListItem(Form.UserClaims)">Add claim</button>
+                </div>
+            </div>
+
+            <div class="form-actions">
+                <button type="submit" class="action-btn primary">Save</button>
+                <a class="action-btn" href="/Backoffice/ApiScopes">Cancel</a>
+            </div>
+        </EditForm>
+    </div>
+}
+else if (IsDeleteMode)
+{
+    <div class="content-card mud-elevation-1">
+        <h2>Delete API Scope</h2>
+        <p>Are you sure you want to delete <strong>@Name</strong>?</p>
+        <div class="form-actions">
+            <button class="action-btn danger" @onclick="DeleteAsync">Delete</button>
+            <a class="action-btn" href="/Backoffice/ApiScopes">Cancel</a>
+        </div>
+    </div>
+}
+else
+{
+    <div class="content-card mud-elevation-1">
+        <div class="list-header">
+            <h2>API Scopes (@Items.Count)</h2>
+            <div class="list-actions">
+                <MudIconButton Icon="@Icons.Material.Filled.AddCircle" Href="/Backoffice/ApiScopes/Create" Color="Color.Primary" Size="Size.Small" title="Create API Scope" aria-label="Create API Scope" />
+            </div>
+        </div>
+        <table class="backoffice-table">
+            <thead><tr><th>Name</th><th>Display name</th><th>Enabled</th><th>Claims</th><th class="actions-col">Actions</th></tr></thead>
+            <tbody>
+            @foreach (var item in Items)
+            {
+                <tr>
+                    <td>@item.Name</td><td>@item.DisplayName</td>
+                    <td><span class="@(item.Enabled ? "ok" : "off")">@(item.Enabled ? "Yes" : "No")</span></td>
+                    <td>@string.Join(", ", item.UserClaims)</td>
+                    <td class="actions-col">
+                        <div class="table-actions">
+                            <MudIconButton Icon="@Icons.Material.Filled.Edit" Href="@($"/Backoffice/ApiScopes/Edit?name={Uri.EscapeDataString(item.Name)}")" Color="Color.Primary" Size="Size.Small" title="Edit" aria-label="Edit" />
+                            <MudIconButton Icon="@Icons.Material.Filled.Delete" Href="@($"/Backoffice/ApiScopes/Delete?name={Uri.EscapeDataString(item.Name)}")" Color="Color.Error" Size="Size.Small" title="Delete" aria-label="Delete" />
+                        </div>
+                    </td>
+                </tr>
+            }
+            </tbody>
+        </table>
+    </div>
+}
+
+@code {
+    [Parameter] public string? Mode { get; set; }
+    [SupplyParameterFromQuery] public string? Name { get; set; }
+
+    private bool IsCreateMode => string.Equals(Mode, "Create", StringComparison.OrdinalIgnoreCase);
+    private bool IsEditMode => string.Equals(Mode, "Edit", StringComparison.OrdinalIgnoreCase);
+    private bool IsDeleteMode => string.Equals(Mode, "Delete", StringComparison.OrdinalIgnoreCase);
+
+    private List<ApiScopeListItem> Items { get; set; } = [];
+    private ApiScopeInput Form { get; set; } = new() { Enabled = true, ShowInDiscoveryDocument = true };
+    private string? ErrorMessage { get; set; }
+    private string ActiveTab { get; set; } = "MainInfo";
+
+    protected override async Task OnParametersSetAsync()
+    {
+        ErrorMessage = null;
+
+        if (IsEditMode)
+        {
+            if (string.IsNullOrWhiteSpace(Name)) { Navigation.NavigateTo("/Backoffice/ApiScopes"); return; }
+            var item = await ApiScopeService.GetApiScopeAsync(Name);
+            if (item is null) { Navigation.NavigateTo("/Backoffice/ApiScopes"); return; }
+            Form = ApiScopeInput.From(item);
+            return;
+        }
+
+        if (!IsCreateMode && !IsDeleteMode)
+            Items = (await ApiScopeService.GetApiScopesAsync()).ToList();
+    }
+
+    private async Task SaveAsync(EditContext _)
+    {
+        if (string.IsNullOrWhiteSpace(Form.Name)) { ErrorMessage = "Name is required."; return; }
+
+        var request = new ApiScopeUpsertRequest(
+            Form.Name.Trim(),
+            (Form.DisplayName ?? string.Empty).Trim(),
+            (Form.Description ?? string.Empty).Trim(),
+            Form.Enabled,
+            Form.Required,
+            Form.Emphasize,
+            Form.ShowInDiscoveryDocument,
+            SanitizeList(Form.UserClaims));
+
+        if (IsCreateMode) await ApiScopeService.CreateApiScopeAsync(request);
+        else
+        {
+            if (string.IsNullOrWhiteSpace(Name)) { Navigation.NavigateTo("/Backoffice/ApiScopes"); return; }
+            await ApiScopeService.UpdateApiScopeAsync(Name, request);
+        }
+
+        Navigation.NavigateTo("/Backoffice/ApiScopes");
+    }
+
+    private async Task DeleteAsync()
+    {
+        if (!string.IsNullOrWhiteSpace(Name))
+            await ApiScopeService.DeleteApiScopeAsync(Name);
+        Navigation.NavigateTo("/Backoffice/ApiScopes");
+    }
+
+    private static List<string> SanitizeList(IEnumerable<string> values)
+        => values
+            .Where(x => !string.IsNullOrWhiteSpace(x))
+            .Select(x => x.Trim())
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToList();
+
+    private void SelectTab(string tabKey) => ActiveTab = tabKey;
+
+    private static void AddListItem(List<string> list) => list.Add(string.Empty);
+
+    private static void RemoveListItem(List<string> list, int index)
+    {
+        if (index >= 0 && index < list.Count)
+            list.RemoveAt(index);
+    }
+
+    private sealed class ApiScopeInput
+    {
+        public string Name { get; set; } = string.Empty;
+        public string? DisplayName { get; set; }
+        public string? Description { get; set; }
+        public bool Enabled { get; set; }
+        public bool Required { get; set; }
+        public bool Emphasize { get; set; }
+        public bool ShowInDiscoveryDocument { get; set; }
+        public List<string> UserClaims { get; set; } = [];
+
+        public static ApiScopeInput From(ApiScopeEditItem item) => new()
+        {
+            Name = item.Name,
+            DisplayName = item.DisplayName,
+            Description = item.Description,
+            Enabled = item.Enabled,
+            Required = item.Required,
+            Emphasize = item.Emphasize,
+            ShowInDiscoveryDocument = item.ShowInDiscoveryDocument,
+            UserClaims = item.UserClaims
+                .Where(x => !string.IsNullOrWhiteSpace(x))
+                .Select(x => x.Trim())
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToList()
+        };
+    }
+}

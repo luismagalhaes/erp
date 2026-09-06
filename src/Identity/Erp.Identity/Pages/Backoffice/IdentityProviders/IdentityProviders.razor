@@ -1,0 +1,144 @@
+@page "/Backoffice/IdentityProviders"
+@page "/Backoffice/IdentityProviders/{Mode}"
+@using Microsoft.AspNetCore.Components.Web
+@attribute [Authorize(Roles = "SuperAdmin")]
+@inject IIdentityProviderService IdentityProviderService
+@inject NavigationManager Navigation
+
+<PageTitle>Backoffice - Identity Providers</PageTitle>
+
+@if (IsCreateMode || IsEditMode)
+{
+    <div class="content-card mud-elevation-1">
+        <h2>@(IsCreateMode ? "Create Identity Provider" : "Edit Identity Provider")</h2>
+        @if (!string.IsNullOrWhiteSpace(ErrorMessage)) { <div class="auth-error">@ErrorMessage</div> }
+
+        <EditForm Model="Form" OnSubmit="SaveAsync" FormName="identity-providers-form">
+            <div class="auth-field"><label>Scheme</label><InputText @bind-Value="Form.Scheme" /></div>
+            <div class="auth-field"><label>DisplayName</label><InputText @bind-Value="Form.DisplayName" /></div>
+            <div class="auth-field"><label>Type</label><InputText @bind-Value="Form.Type" /></div>
+            <div class="auth-field"><label><InputCheckbox @bind-Value="Form.Enabled" /> Enabled</label></div>
+            <div class="form-actions">
+                <button type="submit" class="action-btn primary">Save</button>
+                <a class="action-btn" href="/Backoffice/IdentityProviders">Cancel</a>
+            </div>
+        </EditForm>
+    </div>
+}
+else if (IsDeleteMode)
+{
+    <div class="content-card mud-elevation-1">
+        <h2>Delete Identity Provider</h2>
+        <p>Are you sure you want to delete <strong>@Scheme</strong>?</p>
+        <div class="form-actions">
+            <button class="action-btn danger" @onclick="DeleteAsync">Delete</button>
+            <a class="action-btn" href="/Backoffice/IdentityProviders">Cancel</a>
+        </div>
+    </div>
+}
+else
+{
+    <div class="content-card mud-elevation-1">
+        <div class="list-header">
+            <h2>Identity Providers (@Items.Count)</h2>
+            <div class="list-actions">
+                <MudIconButton Icon="@Icons.Material.Filled.AddCircle" Href="/Backoffice/IdentityProviders/Create" Color="Color.Primary" Size="Size.Small" title="Create Identity Provider" aria-label="Create Identity Provider" />
+            </div>
+        </div>
+        <table class="backoffice-table">
+            <thead><tr><th>Scheme</th><th>Display name</th><th>Type</th><th>Enabled</th><th class="actions-col">Actions</th></tr></thead>
+            <tbody>
+            @foreach (var item in Items)
+            {
+                <tr>
+                    <td>@item.Scheme</td><td>@item.DisplayName</td><td>@item.Type</td>
+                    <td><span class="@(item.Enabled ? "ok" : "off")">@(item.Enabled ? "Yes" : "No")</span></td>
+                    <td class="actions-col">
+                        <div class="table-actions">
+                            <MudIconButton Icon="@Icons.Material.Filled.Edit" Href="@($"/Backoffice/IdentityProviders/Edit?scheme={Uri.EscapeDataString(item.Scheme)}")" Color="Color.Primary" Size="Size.Small" title="Edit" aria-label="Edit" />
+                            <MudIconButton Icon="@Icons.Material.Filled.Delete" Href="@($"/Backoffice/IdentityProviders/Delete?scheme={Uri.EscapeDataString(item.Scheme)}")" Color="Color.Error" Size="Size.Small" title="Delete" aria-label="Delete" />
+                        </div>
+                    </td>
+                </tr>
+            }
+            </tbody>
+        </table>
+    </div>
+}
+
+@code {
+    [Parameter] public string? Mode { get; set; }
+    [SupplyParameterFromQuery] public string? Scheme { get; set; }
+
+    private bool IsCreateMode => string.Equals(Mode, "Create", StringComparison.OrdinalIgnoreCase);
+    private bool IsEditMode => string.Equals(Mode, "Edit", StringComparison.OrdinalIgnoreCase);
+    private bool IsDeleteMode => string.Equals(Mode, "Delete", StringComparison.OrdinalIgnoreCase);
+
+    private List<IdentityProviderListItem> Items { get; set; } = [];
+    private IdentityProviderInput Form { get; set; } = new() { Enabled = true };
+    private string? ErrorMessage { get; set; }
+
+    protected override async Task OnParametersSetAsync()
+    {
+        ErrorMessage = null;
+
+        if (IsEditMode)
+        {
+            if (string.IsNullOrWhiteSpace(Scheme)) { Navigation.NavigateTo("/Backoffice/IdentityProviders"); return; }
+            var item = await IdentityProviderService.GetIdentityProviderAsync(Scheme);
+            if (item is null) { Navigation.NavigateTo("/Backoffice/IdentityProviders"); return; }
+            Form = IdentityProviderInput.From(item);
+            return;
+        }
+
+        if (!IsCreateMode && !IsDeleteMode)
+            Items = (await IdentityProviderService.GetIdentityProvidersAsync()).ToList();
+    }
+
+    private async Task SaveAsync(EditContext _)
+    {
+        if (string.IsNullOrWhiteSpace(Form.Scheme) || string.IsNullOrWhiteSpace(Form.Type))
+        {
+            ErrorMessage = "Scheme and Type are required.";
+            return;
+        }
+
+        var request = new IdentityProviderUpsertRequest(
+            Form.Scheme.Trim(),
+            (Form.DisplayName ?? string.Empty).Trim(),
+            Form.Type.Trim(),
+            Form.Enabled);
+
+        if (IsCreateMode) await IdentityProviderService.CreateIdentityProviderAsync(request);
+        else
+        {
+            if (string.IsNullOrWhiteSpace(Scheme)) { Navigation.NavigateTo("/Backoffice/IdentityProviders"); return; }
+            await IdentityProviderService.UpdateIdentityProviderAsync(Scheme, request);
+        }
+
+        Navigation.NavigateTo("/Backoffice/IdentityProviders");
+    }
+
+    private async Task DeleteAsync()
+    {
+        if (!string.IsNullOrWhiteSpace(Scheme))
+            await IdentityProviderService.DeleteIdentityProviderAsync(Scheme);
+        Navigation.NavigateTo("/Backoffice/IdentityProviders");
+    }
+
+    private sealed class IdentityProviderInput
+    {
+        public string Scheme { get; set; } = string.Empty;
+        public string? DisplayName { get; set; }
+        public string Type { get; set; } = string.Empty;
+        public bool Enabled { get; set; }
+
+        public static IdentityProviderInput From(IdentityProviderEditItem item) => new()
+        {
+            Scheme = item.Scheme,
+            DisplayName = item.DisplayName,
+            Type = item.Type,
+            Enabled = item.Enabled
+        };
+    }
+}

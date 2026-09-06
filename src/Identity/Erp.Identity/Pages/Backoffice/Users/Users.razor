@@ -1,0 +1,199 @@
+@page "/Backoffice/Users"
+@page "/Backoffice/Users/{Mode}"
+@using Microsoft.AspNetCore.Components.Web
+@attribute [Authorize(Roles = "SuperAdmin")]
+@inject IUserService UserService
+@inject NavigationManager Navigation
+
+<PageTitle>Backoffice - Users</PageTitle>
+
+@if (IsEditMode)
+{
+    <div class="content-card mud-elevation-1">
+        <h2>Edit User</h2>
+
+        @if (!string.IsNullOrWhiteSpace(ErrorMessage))
+        {
+            <div class="auth-error">@ErrorMessage</div>
+        }
+
+        @if (Form is null)
+        {
+            <p>Loading...</p>
+        }
+        else
+        {
+            <EditForm Model="Form" OnSubmit="SaveAsync" FormName="users-edit-form">
+                <div class="tab-strip">
+                    <button type="button" class="tab-btn @(ActiveTab == "MainInfo" ? "active" : null)" @onclick='() => SelectTab("MainInfo")'>Main Info</button>
+                    <button type="button" class="tab-btn @(ActiveTab == "Roles" ? "active" : null)" @onclick='() => SelectTab("Roles")'>Roles</button>
+                </div>
+
+                <div class="tab-panel @(ActiveTab == "MainInfo" ? "active" : null)">
+                    <div class="auth-field"><label>Email</label><InputText @bind-Value="Form.Email" disabled /></div>
+                    <div class="auth-field"><label>Name</label><InputText @bind-Value="Form.FullName" disabled /></div>
+                </div>
+
+                <div class="tab-panel @(ActiveTab == "Roles" ? "active" : null)">
+                    <div class="auth-field">
+                        <label>Roles</label>
+                        <table class="backoffice-table">
+                            <thead><tr><th>Role</th><th class="actions-col">Actions</th></tr></thead>
+                            <tbody>
+                            @for (var i = 0; i < Form.Roles.Count; i++)
+                            {
+                                var index = i;
+                                <tr>
+                                    <td><InputText @bind-Value="Form.Roles[index]" /></td>
+                                    <td class="actions-col"><button type="button" class="action-btn danger" @onclick="() => RemoveRole(index)">Remove</button></td>
+                                </tr>
+                            }
+                            </tbody>
+                        </table>
+                        <button type="button" class="action-btn" @onclick="AddRole">Add role</button>
+                    </div>
+                </div>
+
+                <div class="form-actions">
+                    <button class="action-btn primary" type="submit">Save</button>
+                    <a class="action-btn" href="/Backoffice/Users">Cancel</a>
+                </div>
+            </EditForm>
+        }
+    </div>
+}
+else
+{
+    <div class="content-card mud-elevation-1">
+        <div class="list-header">
+            <h2>Users (@UserItems.Count)</h2>
+        </div>
+        <table class="backoffice-table">
+            <thead>
+                <tr>
+                    <th>Email</th><th>Name</th><th>Active</th><th>Created at</th><th>Roles</th><th class="actions-col">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+            @foreach (var user in UserItems)
+            {
+                <tr>
+                    <td>@user.Email</td>
+                    <td>@user.FullName</td>
+                    <td><span class="@(user.IsActive ? "ok" : "off")">@(user.IsActive ? "Yes" : "No")</span></td>
+                    <td>@user.CreatedAt.ToLocalTime().ToString("yyyy-MM-dd HH:mm")</td>
+                    <td>
+                        @if (user.Roles.Count == 0)
+                        {
+                            <span>-</span>
+                        }
+                        else
+                        {
+                            @foreach (var role in user.Roles)
+                            {
+                                <span class="tag">@role</span>
+                            }
+                        }
+                    </td>
+                    <td class="actions-col">
+                        <div class="table-actions">
+                            <MudIconButton Icon="@Icons.Material.Filled.Edit" Href="@($"/Backoffice/Users/Edit?userId={Uri.EscapeDataString(user.Id)}")" Color="Color.Primary" Size="Size.Small" title="Edit" aria-label="Edit" />
+                        </div>
+                    </td>
+                </tr>
+            }
+            </tbody>
+        </table>
+    </div>
+}
+
+@code {
+    [Parameter] public string? Mode { get; set; }
+    [SupplyParameterFromQuery] public string? UserId { get; set; }
+
+    private bool IsEditMode => string.Equals(Mode, "Edit", StringComparison.OrdinalIgnoreCase);
+    private List<UserListItem> UserItems { get; set; } = [];
+    private EditUserInput? Form { get; set; }
+    private string? ErrorMessage { get; set; }
+    private string ActiveTab { get; set; } = "MainInfo";
+
+    protected override async Task OnParametersSetAsync()
+    {
+        ErrorMessage = null;
+
+        if (IsEditMode)
+        {
+            if (string.IsNullOrWhiteSpace(UserId))
+            {
+                Navigation.NavigateTo("/Backoffice/Users");
+                return;
+            }
+
+            var user = await UserService.GetUserAsync(UserId);
+            if (user is null)
+            {
+                Navigation.NavigateTo("/Backoffice/Users");
+                return;
+            }
+
+            Form = new EditUserInput
+            {
+                Email = user.Email,
+                FullName = user.FullName,
+                Roles = user.Roles
+                    .Where(x => !string.IsNullOrWhiteSpace(x))
+                    .Select(x => x.Trim())
+                    .Distinct(StringComparer.OrdinalIgnoreCase)
+                    .ToList()
+            };
+
+            return;
+        }
+
+        UserItems = (await UserService.GetUsersAsync()).ToList();
+    }
+
+    private async Task SaveAsync(EditContext _)
+    {
+        if (string.IsNullOrWhiteSpace(UserId) || Form is null)
+        {
+            ErrorMessage = "Invalid user.";
+            return;
+        }
+
+        var roles = Form.Roles
+            .Where(x => !string.IsNullOrWhiteSpace(x))
+            .Select(x => x.Trim())
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToList();
+
+        if (roles.Count == 0)
+        {
+            ErrorMessage = "At least one role is required.";
+            return;
+        }
+
+        await UserService.UpdateUserRolesAsync(UserId, roles);
+        Navigation.NavigateTo("/Backoffice/Users");
+    }
+
+    private void SelectTab(string tabKey) => ActiveTab = tabKey;
+
+    private void AddRole() => Form?.Roles.Add(string.Empty);
+
+    private void RemoveRole(int index)
+    {
+        if (Form is null)
+            return;
+
+        if (index >= 0 && index < Form.Roles.Count)
+            Form.Roles.RemoveAt(index);
+    }
+
+    private sealed class EditUserInput
+    {
+        public string Email { get; set; } = string.Empty;
+        public string FullName { get; set; } = string.Empty;
+        public List<string> Roles { get; set; } = [];
+    }
+}

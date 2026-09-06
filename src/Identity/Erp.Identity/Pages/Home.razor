@@ -1,0 +1,14 @@
+@page "/"
+@attribute [Authorize]
+@using Microsoft.AspNetCore.Components.Authorization
+@using MudBlazor
+
+<MudPaper Class="pa-6">
+
+    <AuthorizeView>
+        <Authorized>
+            <MudText Typo="Typo.body1">Authenticated user: <strong>@context.User.Identity?.Name</strong></MudText>
+            <MudText Typo="Typo.body2" Class="mt-2">Status: <strong>Authenticated</strong></MudText>
+        </Authorized>
+    </AuthorizeView>
+</MudPaper>

@@ -1,0 +1,70 @@
+@page "/backoffice/companies"
+@attribute [Authorize]
+@using Microsoft.AspNetCore.Authorization
+@using MudBlazor
+@inject Erp.Main.Services.CoreApiClient CoreApi
+
+<PageTitle>Backoffice - Companies</PageTitle>
+
+<MudStack Spacing="3">
+    <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center">
+        <MudText Typo="Typo.h4">Backoffice</MudText>
+        <MudChip T="string" Color="Color.Primary" Variant="Variant.Filled">Companies</MudChip>
+    </MudStack>
+
+    @if (!string.IsNullOrWhiteSpace(_error))
+    {
+        <MudAlert Severity="Severity.Error" Dense="true">@_error</MudAlert>
+    }
+
+    <MudPaper Elevation="1" Class="pa-2">
+        <MudTable Items="_companies" Hover="true" Dense="true" Loading="_loading" Striped="true">
+            <HeaderContent>
+                <MudTh>Name</MudTh>
+                <MudTh>Legal Name</MudTh>
+                <MudTh>Tax Id</MudTh>
+                <MudTh>Status</MudTh>
+            </HeaderContent>
+            <RowTemplate>
+                <MudTd DataLabel="Name">@context.Name</MudTd>
+                <MudTd DataLabel="Legal Name">@context.LegalName</MudTd>
+                <MudTd DataLabel="Tax Id">@context.TaxId</MudTd>
+                <MudTd DataLabel="Status">
+                    <MudChip T="string" Color="@(context.IsActive ? Color.Success : Color.Default)"
+                             Variant="Variant.Outlined"
+                             Size="Size.Small">
+                        @(context.IsActive ? "Active" : "Inactive")
+                    </MudChip>
+                </MudTd>
+            </RowTemplate>
+            <NoRecordsContent>
+                <MudText Typo="Typo.body2" Color="Color.Secondary">No companies found.</MudText>
+            </NoRecordsContent>
+        </MudTable>
+    </MudPaper>
+</MudStack>
+
+@code {
+    private bool _loading = true;
+    private string? _error;
+    private List<CompanyListItem> _companies = [];
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            var result = await CoreApi.Http.GetFromJsonAsync<List<CompanyListItem>>("api/companies");
+            _companies = result ?? [];
+        }
+        catch (Exception ex)
+        {
+            _error = $"Unable to load companies: {ex.Message}";
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private sealed record CompanyListItem(Guid Id, string Name, string? LegalName, string TaxId, bool IsActive);
+}

@@ -1,0 +1,50 @@
+@page "/Account/SignOut"
+@page "/Account/Logout"
+@layout Layout.AuthLayout
+@using Microsoft.AspNetCore.Components.Web
+@attribute [AllowAnonymous]
+@inject NavigationManager Navigation
+
+<PageTitle>Signed Out</PageTitle>
+
+<div class="content-card mud-elevation-1">
+    <h2>You have successfully signed out.</h2>
+    <p><a href="/">Back to home</a></p>
+</div>
+
+@code {
+    private bool _navigated;
+
+    [SupplyParameterFromQuery]
+    public string? ReturnUrl { get; set; }
+
+    [SupplyParameterFromQuery(Name = "logoutId")]
+    public string? LogoutId { get; set; }
+
+    protected override void OnAfterRender(bool firstRender)
+    {
+        if (!firstRender || _navigated)
+        {
+            return;
+        }
+
+        _navigated = true;
+        var query = new List<string>();
+
+        if (!string.IsNullOrWhiteSpace(ReturnUrl))
+        {
+            query.Add($"returnUrl={Uri.EscapeDataString(ReturnUrl)}");
+        }
+
+        if (!string.IsNullOrWhiteSpace(LogoutId))
+        {
+            query.Add($"logoutId={Uri.EscapeDataString(LogoutId)}");
+        }
+
+        var target = query.Count == 0
+            ? "/authentication/logout"
+            : $"/authentication/logout?{string.Join("&", query)}";
+
+        Navigation.NavigateTo(target, forceLoad: true);
+    }
+}

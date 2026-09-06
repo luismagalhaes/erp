@@ -1,0 +1,400 @@
+@page "/Backoffice/Clients"
+@page "/Backoffice/Clients/{Mode}"
+@using Microsoft.AspNetCore.Components.Web
+@attribute [Authorize(Roles = "SuperAdmin")]
+@inject IClientService ClientService
+@inject NavigationManager Navigation
+
+<PageTitle>Backoffice - Clients</PageTitle>
+
+@if (IsEditMode)
+{
+    <div class="content-card mud-elevation-1">
+        <h2>Edit Client</h2>
+
+        @if (!string.IsNullOrWhiteSpace(ErrorMessage))
+        {
+            <div class="auth-error">@ErrorMessage</div>
+        }
+
+        @if (Form is null)
+        {
+            <p>Loading...</p>
+        }
+        else
+        {
+            <EditForm Model="Form" OnSubmit="SaveAsync" FormName="clients-edit-form">
+                <div class="tab-strip">
+                    <button type="button" class="tab-btn @(ActiveTab == "MainInfo" ? "active" : null)" @onclick='() => SelectTab("MainInfo")'>Main Info</button>
+                    <button type="button" class="tab-btn @(ActiveTab == "AllowedGrantTypes" ? "active" : null)" @onclick='() => SelectTab("AllowedGrantTypes")'>Allowed Grant Types</button>
+                    <button type="button" class="tab-btn @(ActiveTab == "RedirectUris" ? "active" : null)" @onclick='() => SelectTab("RedirectUris")'>Redirect Uris</button>
+                    <button type="button" class="tab-btn @(ActiveTab == "PostLogoutRedirectUris" ? "active" : null)" @onclick='() => SelectTab("PostLogoutRedirectUris")'>Post Logout Redirect Uris</button>
+                    <button type="button" class="tab-btn @(ActiveTab == "AllowedCorsOrigins" ? "active" : null)" @onclick='() => SelectTab("AllowedCorsOrigins")'>Allowed Cors Origins</button>
+                    <button type="button" class="tab-btn @(ActiveTab == "AllowedScopes" ? "active" : null)" @onclick='() => SelectTab("AllowedScopes")'>Allowed Scopes</button>
+                    <button type="button" class="tab-btn @(ActiveTab == "ClientSecrets" ? "active" : null)" @onclick='() => SelectTab("ClientSecrets")'>Client Secrets</button>
+                </div>
+
+                <div class="tab-panel @(ActiveTab == "MainInfo" ? "active" : null)">
+                    <div class="auth-field"><label>ClientId</label><InputText @bind-Value="Form.ClientId" disabled /></div>
+                    <div class="auth-field"><label>ClientName</label><InputText @bind-Value="Form.ClientName" /></div>
+                    <div class="auth-field"><label><InputCheckbox @bind-Value="Form.Enabled" /> Enabled</label></div>
+                    <div class="auth-field"><label><InputCheckbox @bind-Value="Form.RequirePkce" /> RequirePkce</label></div>
+                    <div class="auth-field"><label><InputCheckbox @bind-Value="Form.RequireClientSecret" /> RequireClientSecret</label></div>
+                    <div class="auth-field"><label><InputCheckbox @bind-Value="Form.AllowOfflineAccess" /> AllowOfflineAccess</label></div>
+                    <div class="auth-field"><label>AccessTokenLifetime</label><InputNumber @bind-Value="Form.AccessTokenLifetime" /></div>
+                    <div class="auth-field"><label>SlidingRefreshTokenLifetime</label><InputNumber @bind-Value="Form.SlidingRefreshTokenLifetime" /></div>
+                    <div class="auth-field"><label>AbsoluteRefreshTokenLifetime</label><InputNumber @bind-Value="Form.AbsoluteRefreshTokenLifetime" /></div>
+                    <div class="auth-field"><label>RefreshTokenUsage</label><InputText @bind-Value="Form.RefreshTokenUsage" /></div>
+                    <div class="auth-field"><label>RefreshTokenExpiration</label><InputText @bind-Value="Form.RefreshTokenExpiration" /></div>
+                </div>
+
+                <div class="tab-panel @(ActiveTab == "AllowedGrantTypes" ? "active" : null)">
+                    <div class="auth-field">
+                        <label>AllowedGrantTypes</label>
+                        <table class="backoffice-table">
+                            <thead><tr><th>Grant Type</th><th class="actions-col">Actions</th></tr></thead>
+                            <tbody>
+                            @for (var i = 0; i < Form.AllowedGrantTypes.Count; i++)
+                            {
+                                var index = i;
+                                <tr>
+                                    <td><InputText @bind-Value="Form.AllowedGrantTypes[index]" /></td>
+                                    <td class="actions-col"><button type="button" class="action-btn danger" @onclick="() => RemoveListItem(Form.AllowedGrantTypes, index)">Remove</button></td>
+                                </tr>
+                            }
+                            </tbody>
+                        </table>
+                        <button type="button" class="action-btn" @onclick="() => AddListItem(Form.AllowedGrantTypes)">Add grant type</button>
+                    </div>
+                </div>
+
+                <div class="tab-panel @(ActiveTab == "RedirectUris" ? "active" : null)">
+                    <div class="auth-field">
+                        <label>RedirectUris</label>
+                        <table class="backoffice-table">
+                            <thead><tr><th>Redirect Uri</th><th class="actions-col">Actions</th></tr></thead>
+                            <tbody>
+                            @for (var i = 0; i < Form.RedirectUris.Count; i++)
+                            {
+                                var index = i;
+                                <tr>
+                                    <td><InputText @bind-Value="Form.RedirectUris[index]" /></td>
+                                    <td class="actions-col"><button type="button" class="action-btn danger" @onclick="() => RemoveListItem(Form.RedirectUris, index)">Remove</button></td>
+                                </tr>
+                            }
+                            </tbody>
+                        </table>
+                        <button type="button" class="action-btn" @onclick="() => AddListItem(Form.RedirectUris)">Add redirect uri</button>
+                    </div>
+                </div>
+
+                <div class="tab-panel @(ActiveTab == "PostLogoutRedirectUris" ? "active" : null)">
+                    <div class="auth-field">
+                        <label>PostLogoutRedirectUris</label>
+                        <table class="backoffice-table">
+                            <thead><tr><th>Post Logout Redirect Uri</th><th class="actions-col">Actions</th></tr></thead>
+                            <tbody>
+                            @for (var i = 0; i < Form.PostLogoutRedirectUris.Count; i++)
+                            {
+                                var index = i;
+                                <tr>
+                                    <td><InputText @bind-Value="Form.PostLogoutRedirectUris[index]" /></td>
+                                    <td class="actions-col"><button type="button" class="action-btn danger" @onclick="() => RemoveListItem(Form.PostLogoutRedirectUris, index)">Remove</button></td>
+                                </tr>
+                            }
+                            </tbody>
+                        </table>
+                        <button type="button" class="action-btn" @onclick="() => AddListItem(Form.PostLogoutRedirectUris)">Add post logout redirect uri</button>
+                    </div>
+                </div>
+
+                <div class="tab-panel @(ActiveTab == "AllowedCorsOrigins" ? "active" : null)">
+                    <div class="auth-field">
+                        <label>AllowedCorsOrigins</label>
+                        <table class="backoffice-table">
+                            <thead><tr><th>Origin</th><th class="actions-col">Actions</th></tr></thead>
+                            <tbody>
+                            @for (var i = 0; i < Form.AllowedCorsOrigins.Count; i++)
+                            {
+                                var index = i;
+                                <tr>
+                                    <td><InputText @bind-Value="Form.AllowedCorsOrigins[index]" /></td>
+                                    <td class="actions-col"><button type="button" class="action-btn danger" @onclick="() => RemoveListItem(Form.AllowedCorsOrigins, index)">Remove</button></td>
+                                </tr>
+                            }
+                            </tbody>
+                        </table>
+                        <button type="button" class="action-btn" @onclick="() => AddListItem(Form.AllowedCorsOrigins)">Add origin</button>
+                    </div>
+                </div>
+
+                <div class="tab-panel @(ActiveTab == "AllowedScopes" ? "active" : null)">
+                    <div class="auth-field">
+                        <label>AllowedScopes</label>
+                        <table class="backoffice-table">
+                            <thead><tr><th>Scope</th><th class="actions-col">Actions</th></tr></thead>
+                            <tbody>
+                            @for (var i = 0; i < Form.AllowedScopes.Count; i++)
+                            {
+                                var index = i;
+                                <tr>
+                                    <td><InputText @bind-Value="Form.AllowedScopes[index]" /></td>
+                                    <td class="actions-col"><button type="button" class="action-btn danger" @onclick="() => RemoveListItem(Form.AllowedScopes, index)">Remove</button></td>
+                                </tr>
+                            }
+                            </tbody>
+                        </table>
+                        <button type="button" class="action-btn" @onclick="() => AddListItem(Form.AllowedScopes)">Add scope</button>
+                    </div>
+                </div>
+
+                <div class="tab-panel @(ActiveTab == "ClientSecrets" ? "active" : null)">
+                    <div class="auth-field">
+                        <label>ClientSecrets</label>
+                        <table class="backoffice-table">
+                            <thead><tr><th>Value</th><th>Description</th><th>IsHashed</th><th class="actions-col">Actions</th></tr></thead>
+                            <tbody>
+                            @for (var i = 0; i < Form.ClientSecrets.Count; i++)
+                            {
+                                var index = i;
+                                <tr>
+                                    <td><InputText @bind-Value="Form.ClientSecrets[index].Value" /></td>
+                                    <td><InputText @bind-Value="Form.ClientSecrets[index].Description" /></td>
+                                    <td><InputCheckbox @bind-Value="Form.ClientSecrets[index].IsHashed" /></td>
+                                    <td class="actions-col"><button type="button" class="action-btn danger" @onclick="() => RemoveSecret(index)">Remove</button></td>
+                                </tr>
+                            }
+                            </tbody>
+                        </table>
+                        <button type="button" class="action-btn" @onclick="AddSecret">Add secret</button>
+                    </div>
+                </div>
+
+                <div class="form-actions">
+                    <button class="action-btn primary" type="submit">Save</button>
+                    <a class="action-btn" href="/Backoffice/Clients">Cancel</a>
+                </div>
+            </EditForm>
+        }
+    </div>
+}
+else if (IsDeleteMode)
+{
+    <div class="content-card mud-elevation-1">
+        <h2>Delete Client</h2>
+        <p>Are you sure you want to delete client <strong>@ClientId</strong>?</p>
+        <div class="form-actions">
+            <button class="action-btn danger" @onclick="DeleteAsync">Delete</button>
+            <a class="action-btn" href="/Backoffice/Clients">Cancel</a>
+        </div>
+    </div>
+}
+else
+{
+    <div class="content-card mud-elevation-1">
+        <div class="list-header">
+            <h2>Clients (@ClientItems.Count)</h2>
+        </div>
+        <table class="backoffice-table">
+            <thead><tr><th>ClientId</th><th>Name</th><th>Active</th><th>Redirect URIs</th><th>Scopes</th><th class="actions-col">Actions</th></tr></thead>
+            <tbody>
+            @foreach (var client in ClientItems)
+            {
+                <tr>
+                    <td>@client.ClientId</td>
+                    <td>@client.ClientName</td>
+                    <td><span class="@(client.Enabled ? "ok" : "off")">@(client.Enabled ? "Yes" : "No")</span></td>
+                    <td>@string.Join(", ", client.RedirectUris)</td>
+                    <td>@string.Join(", ", client.AllowedScopes)</td>
+                    <td class="actions-col">
+                        <div class="table-actions">
+                            <MudIconButton Icon="@Icons.Material.Filled.Edit" Href="@($"/Backoffice/Clients/Edit?clientId={Uri.EscapeDataString(client.ClientId)}")" Color="Color.Primary" Size="Size.Small" title="Edit" aria-label="Edit" />
+                            <MudIconButton Icon="@Icons.Material.Filled.Delete" Href="@($"/Backoffice/Clients/Delete?clientId={Uri.EscapeDataString(client.ClientId)}")" Color="Color.Error" Size="Size.Small" title="Delete" aria-label="Delete" />
+                        </div>
+                    </td>
+                </tr>
+            }
+            </tbody>
+        </table>
+    </div>
+}
+
+@code {
+    [Parameter] public string? Mode { get; set; }
+    [SupplyParameterFromQuery] public string? ClientId { get; set; }
+
+    private bool IsEditMode => string.Equals(Mode, "Edit", StringComparison.OrdinalIgnoreCase);
+    private bool IsDeleteMode => string.Equals(Mode, "Delete", StringComparison.OrdinalIgnoreCase);
+
+    private List<ClientListItem> ClientItems { get; set; } = [];
+    private ClientInput? Form { get; set; }
+    private string? ErrorMessage { get; set; }
+    private string ActiveTab { get; set; } = "MainInfo";
+
+    protected override async Task OnParametersSetAsync()
+    {
+        ErrorMessage = null;
+
+        if (IsEditMode)
+        {
+            if (string.IsNullOrWhiteSpace(ClientId))
+            {
+                Navigation.NavigateTo("/Backoffice/Clients");
+                return;
+            }
+
+            var client = await ClientService.GetClientAsync(ClientId);
+            if (client is null)
+            {
+                Navigation.NavigateTo("/Backoffice/Clients");
+                return;
+            }
+
+            Form = ClientInput.From(client);
+            return;
+        }
+
+        if (!IsDeleteMode)
+        {
+            ClientItems = (await ClientService.GetClientsAsync()).ToList();
+        }
+    }
+
+    private async Task SaveAsync(EditContext _)
+    {
+        if (string.IsNullOrWhiteSpace(ClientId) || Form is null)
+        {
+            ErrorMessage = "Invalid client.";
+            return;
+        }
+
+        var request = new ClientUpsertRequest(
+            ClientId,
+            (Form.ClientName ?? string.Empty).Trim(),
+            Form.Enabled,
+            Form.RequirePkce,
+            Form.RequireClientSecret,
+            Form.AllowOfflineAccess,
+            Form.AccessTokenLifetime,
+            Form.SlidingRefreshTokenLifetime,
+            Form.AbsoluteRefreshTokenLifetime,
+            Form.RefreshTokenUsage,
+            Form.RefreshTokenExpiration,
+            SanitizeList(Form.AllowedGrantTypes),
+            SanitizeList(Form.RedirectUris),
+            SanitizeList(Form.PostLogoutRedirectUris),
+            SanitizeList(Form.AllowedCorsOrigins),
+            SanitizeList(Form.AllowedScopes),
+            BuildSecrets(Form.ClientSecrets));
+
+        await ClientService.UpdateClientAsync(ClientId, request);
+        Navigation.NavigateTo("/Backoffice/Clients");
+    }
+
+    private async Task DeleteAsync()
+    {
+        if (string.IsNullOrWhiteSpace(ClientId))
+        {
+            Navigation.NavigateTo("/Backoffice/Clients");
+            return;
+        }
+
+        await ClientService.DeleteClientAsync(ClientId);
+        Navigation.NavigateTo("/Backoffice/Clients");
+    }
+
+    private static List<string> SanitizeList(IEnumerable<string> values)
+        => values
+            .Where(x => !string.IsNullOrWhiteSpace(x))
+            .Select(x => x.Trim())
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToList();
+
+    private void SelectTab(string tabKey) => ActiveTab = tabKey;
+
+    private static List<ClientSecretItem> BuildSecrets(IEnumerable<ClientSecretInput> secrets)
+    {
+        return secrets
+            .Where(x => !string.IsNullOrWhiteSpace(x.Value))
+            .Select(x => new ClientSecretItem(
+                x.Value.Trim(),
+                string.IsNullOrWhiteSpace(x.Description) ? null : x.Description.Trim(),
+                x.IsHashed))
+            .ToList();
+    }
+
+    private static void AddListItem(List<string> list) => list.Add(string.Empty);
+
+    private static void RemoveListItem(List<string> list, int index)
+    {
+        if (index >= 0 && index < list.Count)
+            list.RemoveAt(index);
+    }
+
+    private void AddSecret() => Form?.ClientSecrets.Add(new ClientSecretInput());
+
+    private void RemoveSecret(int index)
+    {
+        if (Form is null)
+            return;
+
+        if (index >= 0 && index < Form.ClientSecrets.Count)
+            Form.ClientSecrets.RemoveAt(index);
+    }
+
+    private sealed class ClientInput
+    {
+        public string ClientId { get; set; } = string.Empty;
+        public string? ClientName { get; set; }
+        public bool Enabled { get; set; }
+        public bool RequirePkce { get; set; }
+        public bool RequireClientSecret { get; set; }
+        public bool AllowOfflineAccess { get; set; }
+        public int AccessTokenLifetime { get; set; }
+        public int SlidingRefreshTokenLifetime { get; set; }
+        public int AbsoluteRefreshTokenLifetime { get; set; }
+        public string RefreshTokenUsage { get; set; } = "ReUse";
+        public string RefreshTokenExpiration { get; set; } = "Sliding";
+        public List<string> AllowedGrantTypes { get; set; } = [];
+        public List<string> RedirectUris { get; set; } = [];
+        public List<string> PostLogoutRedirectUris { get; set; } = [];
+        public List<string> AllowedCorsOrigins { get; set; } = [];
+        public List<string> AllowedScopes { get; set; } = [];
+        public List<ClientSecretInput> ClientSecrets { get; set; } = [];
+
+        public static ClientInput From(ClientEditItem client) => new()
+        {
+            ClientId = client.ClientId,
+            ClientName = client.ClientName,
+            Enabled = client.Enabled,
+            RequirePkce = client.RequirePkce,
+            RequireClientSecret = client.RequireClientSecret,
+            AllowOfflineAccess = client.AllowOfflineAccess,
+            AccessTokenLifetime = client.AccessTokenLifetime,
+            SlidingRefreshTokenLifetime = client.SlidingRefreshTokenLifetime,
+            AbsoluteRefreshTokenLifetime = client.AbsoluteRefreshTokenLifetime,
+            RefreshTokenUsage = string.IsNullOrWhiteSpace(client.RefreshTokenUsage) ? "ReUse" : client.RefreshTokenUsage,
+            RefreshTokenExpiration = string.IsNullOrWhiteSpace(client.RefreshTokenExpiration) ? "Sliding" : client.RefreshTokenExpiration,
+            AllowedGrantTypes = (client.AllowedGrantTypes ?? []).ToList(),
+            RedirectUris = (client.RedirectUris ?? []).ToList(),
+            PostLogoutRedirectUris = (client.PostLogoutRedirectUris ?? []).ToList(),
+            AllowedCorsOrigins = (client.AllowedCorsOrigins ?? []).ToList(),
+            AllowedScopes = (client.AllowedScopes ?? []).ToList(),
+            ClientSecrets = (client.ClientSecrets ?? [])
+                .Select(x => new ClientSecretInput
+                {
+                    Value = x.Value,
+                    Description = x.Description,
+                    IsHashed = x.IsHashed
+                })
+                .ToList()
+        };
+    }
+
+    private sealed class ClientSecretInput
+    {
+        public string Value { get; set; } = string.Empty;
+        public string? Description { get; set; }
+        public bool IsHashed { get; set; }
+    }
+}

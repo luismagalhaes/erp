@@ -1,0 +1,18 @@
+@page "/Backoffice"
+@using Microsoft.AspNetCore.Components.Web
+@attribute [Authorize]
+
+<PageTitle>Backoffice</PageTitle>
+
+<div class="content-card mud-elevation-1">
+    <h2>Backoffice</h2>
+    <ul>
+        <li><a href="/Backoffice/Users">Users</a></li>
+        <li><a href="/Backoffice/Roles">Roles</a></li>
+        <li><a href="/Backoffice/Clients">Clients</a></li>
+        <li><a href="/Backoffice/ApiScopes">API Scopes</a></li>
+        <li><a href="/Backoffice/ApiResources">API Resources</a></li>
+        <li><a href="/Backoffice/IdentityResources">Identity Resources</a></li>
+        <li><a href="/Backoffice/IdentityProviders">Identity Providers</a></li>
+    </ul>
+</div>

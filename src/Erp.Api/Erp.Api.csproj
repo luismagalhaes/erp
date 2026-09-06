@@ -27,6 +27,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\Shared\Erp.Common\Erp.Common.csproj" />
     <ProjectReference Include="..\Services\Erp.Core.Application\Erp.Core.Application.csproj" />
     <ProjectReference Include="..\Services\Erp.Core.Infrastructure\Erp.Core.Infrastructure.csproj" />
     <ProjectReference Include="..\Services\Erp.Core.Storage\Erp.Core.Storage.csproj" />

@@ -20,7 +20,7 @@ public sealed class NotificationsController(
     /// on a password reset) with a client credentials token carrying the send scope.
     /// </summary>
     [HttpPost("email")]
-    [Authorize(Policy = NotificationPolicies.Send)]
+    [Authorize(Policy = Policies.NotificationSend)]
     [ProducesResponseType<QueuedEmailDto>(StatusCodes.Status202Accepted)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
@@ -35,7 +35,7 @@ public sealed class NotificationsController(
 
     /// <summary>Lists every email, most recent first.</summary>
     [HttpGet]
-    [Authorize(Policy = NotificationPolicies.Read)]
+    [Authorize(Policy = Policies.Read)]
     [ProducesResponseType<IReadOnlyList<EmailNotificationListItemDto>>(StatusCodes.Status200OK)]
     public async Task<ActionResult<IReadOnlyList<EmailNotificationListItemDto>>> GetAll(CancellationToken cancellationToken)
     {
@@ -45,7 +45,7 @@ public sealed class NotificationsController(
 
     /// <summary>Gets one email, including the body that was sent.</summary>
     [HttpGet("{id:guid}")]
-    [Authorize(Policy = NotificationPolicies.Read)]
+    [Authorize(Policy = Policies.Read)]
     [ProducesResponseType<EmailNotificationDetailDto>(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult<EmailNotificationDetailDto>> GetById(Guid id, CancellationToken cancellationToken)
@@ -56,7 +56,7 @@ public sealed class NotificationsController(
 
     /// <summary>Puts a failed email back in the queue. Only failed emails can be requeued.</summary>
     [HttpPost("{id:guid}/requeue")]
-    [Authorize(Policy = NotificationPolicies.Write)]
+    [Authorize(Policy = Policies.Write)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status409Conflict)]

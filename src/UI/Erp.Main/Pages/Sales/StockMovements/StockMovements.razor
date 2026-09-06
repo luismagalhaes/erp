@@ -1,0 +1,145 @@
+@page "/stock-movements"
+@attribute [Authorize]
+@implements IDisposable
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.AspNetCore.Components.Web
+@using MudBlazor
+@using Erp.Main.Models
+@using Erp.Main.Services
+@inject SalesApiClient SalesApi
+@inject CompanyState Company
+@inject NavigationManager Navigation
+
+<PageTitle>Movimentação de mercadorias</PageTitle>
+
+<MudStack Spacing="4">
+    <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center">
+        <MudStack Spacing="0">
+            <MudText Typo="Typo.h4">Movimentação de mercadorias</MudText>
+            <MudText Typo="Typo.body2" Color="Color.Secondary">
+                Guias de remessa, transporte, consignação, devolução e ativos próprios.
+            </MudText>
+        </MudStack>
+
+        <MudButton Variant="Variant.Filled" Color="Color.Primary"
+                   StartIcon="@Icons.Material.Filled.Add"
+                   Disabled="@(!Company.HasCompany)"
+                   OnClick="@(() => Navigation.NavigateTo("stock-movements/new"))">
+            Nova guia
+        </MudButton>
+    </MudStack>
+
+    @if (!string.IsNullOrWhiteSpace(_error))
+    {
+        <MudAlert Severity="Severity.Error" Dense="true">@_error</MudAlert>
+    }
+
+    @if (_movements.Any(movement => string.IsNullOrWhiteSpace(movement.AtDocCodeId) && movement.Status != "A"))
+    {
+        <MudAlert Severity="Severity.Warning" Dense="true">
+            Há guias por comunicar à AT. O transporte só pode começar depois de comunicado.
+        </MudAlert>
+    }
+
+    <MudPaper Elevation="1" Class="pa-2">
+        <MudTable Items="_movements" Hover="true" Striped="true" Dense="true" Loading="_loading"
+                  Breakpoint="Breakpoint.Sm">
+            <HeaderContent>
+                <MudTh>Documento</MudTh>
+                <MudTh>Tipo</MudTh>
+                <MudTh>Data</MudTh>
+                <MudTh>Destinatário</MudTh>
+                <MudTh>Início do transporte</MudTh>
+                <MudTh Style="text-align: right;">Quantidade</MudTh>
+                <MudTh>Comunicação</MudTh>
+                <MudTh>Estado</MudTh>
+                <MudTh Style="text-align: right;">Ações</MudTh>
+            </HeaderContent>
+            <RowTemplate>
+                <MudTd DataLabel="Documento">
+                    <MudText Typo="Typo.body2" Style="font-family: monospace;">@context.DocumentNumber</MudText>
+                </MudTd>
+                <MudTd DataLabel="Tipo">
+                    <MudChip T="string" Size="Size.Small" Variant="Variant.Outlined">@context.MovementType</MudChip>
+                </MudTd>
+                <MudTd DataLabel="Data">@context.MovementDate.ToString("yyyy-MM-dd")</MudTd>
+                <MudTd DataLabel="Destinatário">@context.PartyName</MudTd>
+                <MudTd DataLabel="Início do transporte">@context.MovementStartAtUtc.ToString("yyyy-MM-dd HH:mm")</MudTd>
+                <MudTd DataLabel="Quantidade" Style="text-align: right;">@context.TotalQuantity.ToString("N3")</MudTd>
+                <MudTd DataLabel="Comunicação">
+                    @if (string.IsNullOrWhiteSpace(context.AtDocCodeId))
+                    {
+                        <MudChip T="string" Size="Size.Small" Variant="Variant.Outlined" Color="Color.Warning">
+                            Por comunicar
+                        </MudChip>
+                    }
+                    else
+                    {
+                        <MudText Typo="Typo.caption" Style="font-family: monospace;">@context.AtDocCodeId</MudText>
+                    }
+                </MudTd>
+                <MudTd DataLabel="Estado">
+                    <MudChip T="string" Size="Size.Small" Variant="Variant.Outlined"
+                             Color="@(context.Status == "A" ? Color.Error : Color.Success)">
+                        @(context.Status == "A" ? "Anulada" : "Normal")
+                    </MudChip>
+                </MudTd>
+                <MudTd DataLabel="Ações" Style="text-align: right;">
+                    <MudIconButton Icon="@Icons.Material.Filled.Visibility" Size="Size.Small"
+                                   title="Ver guia"
+                                   OnClick="@(() => Navigation.NavigateTo($"stock-movements/{context.Id}"))" />
+                </MudTd>
+            </RowTemplate>
+            <NoRecordsContent>
+                <MudText Typo="Typo.body2" Color="Color.Secondary">Ainda não há guias emitidas.</MudText>
+            </NoRecordsContent>
+        </MudTable>
+    </MudPaper>
+</MudStack>
+
+@code {
+    private bool _loading = true;
+    private string? _error;
+    private List<StockMovementListItem> _movements = [];
+
+    protected override async Task OnInitializedAsync()
+    {
+        Company.Changed += OnCompanyChanged;
+        await Company.EnsureLoadedAsync();
+        await LoadAsync();
+    }
+
+    private async void OnCompanyChanged() => await InvokeAsync(LoadAsync);
+
+    private async Task LoadAsync()
+    {
+        _loading = true;
+        _error = Company.LoadError;
+
+        if (!Company.HasCompany)
+        {
+            _movements = [];
+            _loading = false;
+            StateHasChanged();
+            return;
+        }
+
+        try
+        {
+            var (movements, error) = await SalesApi.GetStockMovementsAsync(Company.SelectedCompanyId);
+            _movements = [.. movements];
+            _error = error;
+        }
+        catch (Exception ex)
+        {
+            _error = $"Não foi possível carregar as guias: {ex.Message}";
+        }
+        finally
+        {
+            _loading = false;
+            StateHasChanged();
+        }
+    }
+
+    public void Dispose() => Company.Changed -= OnCompanyChanged;
+}

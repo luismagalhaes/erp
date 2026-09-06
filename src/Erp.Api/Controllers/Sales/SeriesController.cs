@@ -1,5 +1,6 @@
 using System.Security.Claims;
 using Erp.Api.Authorization;
+using Erp.Common;
 using Erp.Sales.Infrastructure.Application;
 using Erp.Sales.Infrastructure.Contracts;
 using Microsoft.AspNetCore.Authorization;
@@ -16,7 +17,7 @@ public sealed class SeriesController(ISeriesService seriesService) : ControllerB
 {
     /// <summary>Lists the series of a company.</summary>
     [HttpGet]
-    [Authorize(Policy = SalesPolicies.Read)]
+    [Authorize(Policy = Policies.Read)]
     [ProducesResponseType<IReadOnlyList<SeriesListItemDto>>(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<ActionResult<IReadOnlyList<SeriesListItemDto>>> GetAll(
@@ -32,7 +33,7 @@ public sealed class SeriesController(ISeriesService seriesService) : ControllerB
 
     /// <summary>Gets a single series.</summary>
     [HttpGet("{id:guid}")]
-    [Authorize(Policy = SalesPolicies.Read)]
+    [Authorize(Policy = Policies.Read)]
     [ProducesResponseType<SeriesListItemDto>(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult<SeriesListItemDto>> GetById(Guid id, CancellationToken cancellationToken)
@@ -43,7 +44,7 @@ public sealed class SeriesController(ISeriesService seriesService) : ControllerB
 
     /// <summary>Creates a series. It cannot issue documents until it is communicated.</summary>
     [HttpPost]
-    [Authorize(Roles = "Admin,SuperAdmin")]
+    [Authorize(Policy = Policies.Admin)]
     [ProducesResponseType<SeriesListItemDto>(StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status409Conflict)]
@@ -71,7 +72,7 @@ public sealed class SeriesController(ISeriesService seriesService) : ControllerB
     /// unlocks issuing and completes the ATCUD.
     /// </summary>
     [HttpPost("{id:guid}/communicate")]
-    [Authorize(Roles = "Admin,SuperAdmin")]
+    [Authorize(Policy = Policies.Admin)]
     [ProducesResponseType<SeriesListItemDto>(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -96,5 +97,5 @@ public sealed class SeriesController(ISeriesService seriesService) : ControllerB
     }
 
     private string? GetCurrentUserId() =>
-        User.FindFirstValue("sub") ?? User.FindFirstValue(ClaimTypes.NameIdentifier);
+        User.FindFirstValue(Constants.Claims.Subject) ?? User.FindFirstValue(ClaimTypes.NameIdentifier);
 }

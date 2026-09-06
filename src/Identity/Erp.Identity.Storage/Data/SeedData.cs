@@ -88,23 +88,16 @@ public static class SeedData
         new IdentityResources.Email()
     ];
 
+    /// <summary>
+    /// One API means two levels of access instead of one pair per module. Only the capabilities
+    /// that must never be granted to a signed in user keep a scope of their own.
+    /// </summary>
     public static IEnumerable<ApiScope> ApiScopes =>
     [
-        new ApiScope(Constants.Scopes.ErpCoreRead,  Constants.ScopeDisplayNames.CoreRead),
-        new ApiScope(Constants.Scopes.ErpCoreWrite, Constants.ScopeDisplayNames.CoreWrite),
-        new ApiScope(Constants.Scopes.ErpSalesRead,  Constants.ScopeDisplayNames.SalesRead),
-        new ApiScope(Constants.Scopes.ErpSalesWrite, Constants.ScopeDisplayNames.SalesWrite),
-        new ApiScope(Constants.Scopes.ErpInventoryRead,  Constants.ScopeDisplayNames.InventoryRead),
-        new ApiScope(Constants.Scopes.ErpInventoryWrite, Constants.ScopeDisplayNames.InventoryWrite),
-        new ApiScope(Constants.Scopes.ErpPurchasingRead,  Constants.ScopeDisplayNames.PurchasingRead),
-        new ApiScope(Constants.Scopes.ErpPurchasingWrite, Constants.ScopeDisplayNames.PurchasingWrite),
-        new ApiScope(Constants.Scopes.ErpAccountingRead,  Constants.ScopeDisplayNames.AccountingRead),
-        new ApiScope(Constants.Scopes.ErpAccountingWrite, Constants.ScopeDisplayNames.AccountingWrite),
-        new ApiScope(Constants.Scopes.ErpReportingRead, Constants.ScopeDisplayNames.ReportingRead),
-        new ApiScope(Constants.Scopes.ErpNotificationRead,  Constants.ScopeDisplayNames.NotificationRead),
-        new ApiScope(Constants.Scopes.ErpNotificationWrite, Constants.ScopeDisplayNames.NotificationWrite),
-        new ApiScope(Constants.Scopes.ErpNotificationSend,  Constants.ScopeDisplayNames.NotificationSend),
-        new ApiScope(Constants.Scopes.ErpIdentityRead,      Constants.ScopeDisplayNames.IdentityRead),
+        new ApiScope(Constants.Scopes.ErpRead,  Constants.ScopeDisplayNames.ErpRead),
+        new ApiScope(Constants.Scopes.ErpWrite, Constants.ScopeDisplayNames.ErpWrite),
+        new ApiScope(Constants.Scopes.ErpNotificationSend, Constants.ScopeDisplayNames.NotificationSend),
+        new ApiScope(Constants.Scopes.ErpIdentityRead,     Constants.ScopeDisplayNames.IdentityRead),
     ];
 
     /// <summary>
@@ -119,13 +112,8 @@ public static class SeedData
         {
             Scopes =
             {
-                Constants.Scopes.ErpCoreRead, Constants.Scopes.ErpCoreWrite,
-                Constants.Scopes.ErpSalesRead, Constants.Scopes.ErpSalesWrite,
-                Constants.Scopes.ErpInventoryRead, Constants.Scopes.ErpInventoryWrite,
-                Constants.Scopes.ErpPurchasingRead, Constants.Scopes.ErpPurchasingWrite,
-                Constants.Scopes.ErpAccountingRead, Constants.Scopes.ErpAccountingWrite,
-                Constants.Scopes.ErpReportingRead,
-                Constants.Scopes.ErpNotificationRead, Constants.Scopes.ErpNotificationWrite,
+                Constants.Scopes.ErpRead,
+                Constants.Scopes.ErpWrite,
                 Constants.Scopes.ErpNotificationSend
             },
             UserClaims = { Constants.Claims.Role, Constants.Claims.Name }
@@ -154,13 +142,8 @@ public static class SeedData
             AllowedScopes =
             {
                 Constants.Scopes.OpenId, Constants.Scopes.Profile, Constants.Scopes.Email, Constants.Scopes.OfflineAccess,
-                Constants.Scopes.ErpCoreRead, Constants.Scopes.ErpCoreWrite,
-                Constants.Scopes.ErpSalesRead, Constants.Scopes.ErpSalesWrite,
-                Constants.Scopes.ErpInventoryRead, Constants.Scopes.ErpInventoryWrite,
-                Constants.Scopes.ErpPurchasingRead, Constants.Scopes.ErpPurchasingWrite,
-                Constants.Scopes.ErpAccountingRead, Constants.Scopes.ErpAccountingWrite,
-                Constants.Scopes.ErpReportingRead,
-                Constants.Scopes.ErpNotificationRead, Constants.Scopes.ErpNotificationWrite,
+                Constants.Scopes.ErpRead,
+                Constants.Scopes.ErpWrite,
                 Constants.Scopes.ErpIdentityRead
             },
             AllowOfflineAccess = true,
@@ -169,42 +152,6 @@ public static class SeedData
             RefreshTokenExpiration = TokenExpiration.Sliding,
             SlidingRefreshTokenLifetime = 86400,
         },
-        new Client
-        {
-            ClientId = Constants.Clients.SalesServiceClientId,
-            ClientName = Constants.Clients.SalesServiceClientName,
-            AllowedGrantTypes = GrantTypes.ClientCredentials,
-            ClientSecrets = { new Secret(Constants.Clients.SalesServiceSecret.Sha256()) },
-            AllowedScopes = { Constants.Scopes.ErpCoreRead, Constants.Scopes.ErpInventoryRead, Constants.Scopes.ErpAccountingWrite }
-        },
-        new Client
-        {
-            ClientId = Constants.Clients.NotificationUiClientId,
-            ClientName = Constants.Clients.NotificationUiClientName,
-            AllowedGrantTypes = GrantTypes.Code,
-            RequireClientSecret = false,
-            RequirePkce = true,
-            RedirectUris = { Constants.Clients.HttpsLocalhost7125 + Constants.Clients.NotificationUiLoginCallbackPath },
-            PostLogoutRedirectUris = { Constants.Clients.HttpsLocalhost7125 + Constants.Clients.NotificationUiLogoutCallbackPath },
-            AllowedScopes =
-            {
-                Constants.Scopes.OpenId,
-                Constants.Scopes.Profile,
-                Constants.Scopes.Email,
-                Constants.Scopes.OfflineAccess
-            },
-            AllowOfflineAccess = true
-        },
-        new Client
-        {
-            ClientId = Constants.Clients.ReportingServiceClientId,
-            ClientName = Constants.Clients.ReportingServiceClientName,
-            AllowedGrantTypes = GrantTypes.ClientCredentials,
-            ClientSecrets = { new Secret(Constants.Clients.ReportingServiceSecret.Sha256()) },
-            AllowedScopes = { Constants.Scopes.ErpCoreRead, Constants.Scopes.ErpSalesRead, Constants.Scopes.ErpInventoryRead, Constants.Scopes.ErpAccountingRead }
-        },
-        // The Identity host queues emails on the notification service with its own token,
-        // so that call carries a short lived, revocable credential instead of a shared key.
         new Client
         {
             ClientId = Constants.Clients.IdentityServiceClientId,

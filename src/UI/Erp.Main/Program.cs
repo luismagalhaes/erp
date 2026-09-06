@@ -6,6 +6,7 @@ using MudBlazor.Services;
 using Erp.Main;
 using Erp.Main.Endpoints;
 using Erp.Main.Services;
+using Erp.Common;
 using Serilog;
 
 Log.Logger = new LoggerConfiguration()
@@ -52,24 +53,13 @@ builder.Services
         options.SaveTokens = true;
 
         options.Scope.Clear();
-        options.Scope.Add("openid");
-        options.Scope.Add("profile");
-        options.Scope.Add("email");
-        options.Scope.Add("offline_access");
-        options.Scope.Add("erp.core.read");
-        options.Scope.Add("erp.core.write");
-        options.Scope.Add("erp.sales.read");
-        options.Scope.Add("erp.sales.write");
-        options.Scope.Add("erp.inventory.read");
-        options.Scope.Add("erp.inventory.write");
-        options.Scope.Add("erp.purchasing.read");
-        options.Scope.Add("erp.purchasing.write");
-        options.Scope.Add("erp.accounting.read");
-        options.Scope.Add("erp.accounting.write");
-        options.Scope.Add("erp.reporting.read");
-        options.Scope.Add("erp.notification.read");
-        options.Scope.Add("erp.notification.write");
-        options.Scope.Add("erp.identity.read");
+        options.Scope.Add(Constants.Scopes.OpenId);
+        options.Scope.Add(Constants.Scopes.Profile);
+        options.Scope.Add(Constants.Scopes.Email);
+        options.Scope.Add(Constants.Scopes.OfflineAccess);
+        options.Scope.Add(Constants.Scopes.ErpRead);
+        options.Scope.Add(Constants.Scopes.ErpWrite);
+        options.Scope.Add(Constants.Scopes.ErpIdentityRead);
     });
 
 // MudBlazor

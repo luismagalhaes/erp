@@ -1,3 +1,4 @@
+using Erp.Api.Authorization;
 using Erp.Core.Infrastructure.Application;
 using Erp.Core.Infrastructure.Contracts;
 using Microsoft.AspNetCore.Authorization;
@@ -11,7 +12,7 @@ namespace Erp.Api.Controllers.Core;
 /// </summary>
 [ApiController]
 [Route("api/products")]
-[Authorize]
+[Authorize(Policy = Policies.Read)]
 [Produces("application/json")]
 public sealed class ProductsController(IProductService productService) : ControllerBase
 {
@@ -41,6 +42,7 @@ public sealed class ProductsController(IProductService productService) : Control
 
     /// <summary>Creates a product.</summary>
     [HttpPost]
+    [Authorize(Policy = Policies.Write)]
     [ProducesResponseType<ProductListItemDto>(StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status409Conflict)]
@@ -65,6 +67,7 @@ public sealed class ProductsController(IProductService productService) : Control
 
     /// <summary>Updates a product. Documents already issued keep their own copy of the old values.</summary>
     [HttpPut("{id:guid}")]
+    [Authorize(Policy = Policies.Write)]
     [ProducesResponseType<ProductListItemDto>(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]

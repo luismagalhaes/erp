@@ -1,3 +1,4 @@
+using Erp.Api.Authorization;
 using Erp.Core.Infrastructure.Application;
 using Erp.Core.Infrastructure.Contracts;
 using Microsoft.AspNetCore.Authorization;
@@ -8,7 +9,7 @@ namespace Erp.Api.Controllers.Core;
 /// <summary>Customer master file, exported as the SAF-T Customer table.</summary>
 [ApiController]
 [Route("api/customers")]
-[Authorize]
+[Authorize(Policy = Policies.Read)]
 [Produces("application/json")]
 public sealed class CustomersController(ICustomerService customerService) : ControllerBase
 {
@@ -34,6 +35,7 @@ public sealed class CustomersController(ICustomerService customerService) : Cont
     }
 
     [HttpPost]
+    [Authorize(Policy = Policies.Write)]
     [ProducesResponseType<PartnerDto>(StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status409Conflict)]
@@ -57,6 +59,7 @@ public sealed class CustomersController(ICustomerService customerService) : Cont
     }
 
     [HttpPut("{id:guid}")]
+    [Authorize(Policy = Policies.Write)]
     [ProducesResponseType<PartnerDto>(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -80,7 +83,7 @@ public sealed class CustomersController(ICustomerService customerService) : Cont
 /// <summary>Supplier master file, exported as the SAF-T Supplier table.</summary>
 [ApiController]
 [Route("api/suppliers")]
-[Authorize]
+[Authorize(Policy = Policies.Read)]
 [Produces("application/json")]
 public sealed class SuppliersController(ISupplierService supplierService) : ControllerBase
 {
@@ -106,6 +109,7 @@ public sealed class SuppliersController(ISupplierService supplierService) : Cont
     }
 
     [HttpPost]
+    [Authorize(Policy = Policies.Write)]
     [ProducesResponseType<PartnerDto>(StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status409Conflict)]
@@ -129,6 +133,7 @@ public sealed class SuppliersController(ISupplierService supplierService) : Cont
     }
 
     [HttpPut("{id:guid}")]
+    [Authorize(Policy = Policies.Write)]
     [ProducesResponseType<PartnerDto>(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]

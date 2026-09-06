@@ -19,7 +19,7 @@ public class ApplicationServiceTests
     {
         var storage = Substitute.For<IUserStorage>();
         IReadOnlyList<UserListItem> users =
-            [new("user-1", "a@b.pt", "Ana Alves", true, DateTime.UtcNow, ["Admin"])];
+            [new("user-1", "a@b.pt", "Ana Alves", true, DateTime.UtcNow, ["User"])];
         storage.GetUsersAsync(Arg.Any<CancellationToken>()).Returns(users);
 
         var result = await new UserService(storage).GetUsersAsync();
@@ -31,7 +31,7 @@ public class ApplicationServiceTests
     public async Task UserService_forwards_the_roles_to_update()
     {
         var storage = Substitute.For<IUserStorage>();
-        string[] roles = ["Admin", "Auditor"];
+        string[] roles = ["User", "SuperAdmin"];
 
         await new UserService(storage).UpdateUserRolesAsync("user-1", roles);
 
@@ -43,7 +43,7 @@ public class ApplicationServiceTests
     {
         var storage = Substitute.For<IApiScopeStorage>();
         var request = new ApiScopeUpsertRequest(
-            "erp.sales.read", "Sales - Read", "Read access to sales", true, false, false, true, []);
+            "erp.read", "ERP - Read", "Read access to the ERP", true, false, false, true, []);
 
         await new ApiScopeService(storage).CreateApiScopeAsync(request);
 

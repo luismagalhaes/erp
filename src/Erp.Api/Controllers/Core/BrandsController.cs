@@ -1,3 +1,4 @@
+using Erp.Api.Authorization;
 using Erp.Core.Infrastructure.Application;
 using Erp.Core.Infrastructure.Contracts;
 using Microsoft.AspNetCore.Authorization;
@@ -8,7 +9,7 @@ namespace Erp.Api.Controllers.Core;
 /// <summary>Product brands.</summary>
 [ApiController]
 [Route("api/brands")]
-[Authorize]
+[Authorize(Policy = Policies.Read)]
 [Produces("application/json")]
 public sealed class BrandsController(IBrandService brandService) : ControllerBase
 {
@@ -34,6 +35,7 @@ public sealed class BrandsController(IBrandService brandService) : ControllerBas
     }
 
     [HttpPost]
+    [Authorize(Policy = Policies.Write)]
     [ProducesResponseType<BrandDto>(StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status409Conflict)]
@@ -57,6 +59,7 @@ public sealed class BrandsController(IBrandService brandService) : ControllerBas
     }
 
     [HttpPut("{id:guid}")]
+    [Authorize(Policy = Policies.Write)]
     [ProducesResponseType<BrandDto>(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -80,7 +83,7 @@ public sealed class BrandsController(IBrandService brandService) : ControllerBas
 /// <summary>Top level product classification.</summary>
 [ApiController]
 [Route("api/product-families")]
-[Authorize]
+[Authorize(Policy = Policies.Read)]
 [Produces("application/json")]
 public sealed class ProductFamiliesController(IProductFamilyService familyService) : ControllerBase
 {
@@ -106,6 +109,7 @@ public sealed class ProductFamiliesController(IProductFamilyService familyServic
     }
 
     [HttpPost]
+    [Authorize(Policy = Policies.Write)]
     [ProducesResponseType<ProductFamilyDto>(StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status409Conflict)]
@@ -129,6 +133,7 @@ public sealed class ProductFamiliesController(IProductFamilyService familyServic
     }
 
     [HttpPut("{id:guid}")]
+    [Authorize(Policy = Policies.Write)]
     [ProducesResponseType<ProductFamilyDto>(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -152,7 +157,7 @@ public sealed class ProductFamiliesController(IProductFamilyService familyServic
 /// <summary>Second level of the product classification, always inside a family.</summary>
 [ApiController]
 [Route("api/product-subfamilies")]
-[Authorize]
+[Authorize(Policy = Policies.Read)]
 [Produces("application/json")]
 public sealed class ProductSubfamiliesController(IProductSubfamilyService subfamilyService) : ControllerBase
 {
@@ -182,6 +187,7 @@ public sealed class ProductSubfamiliesController(IProductSubfamilyService subfam
     }
 
     [HttpPost]
+    [Authorize(Policy = Policies.Write)]
     [ProducesResponseType<ProductSubfamilyDto>(StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status409Conflict)]
@@ -205,6 +211,7 @@ public sealed class ProductSubfamiliesController(IProductSubfamilyService subfam
     }
 
     [HttpPut("{id:guid}")]
+    [Authorize(Policy = Policies.Write)]
     [ProducesResponseType<ProductSubfamilyDto>(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]

@@ -1,5 +1,7 @@
 @using MudBlazor
 @using Microsoft.AspNetCore.Components.Routing
+@using Microsoft.AspNetCore.Components.Authorization
+@using Erp.Common
 
 <MudNavMenu>
     <MudNavLink Href="" Match="NavLinkMatch.All" Icon="@Icons.Material.Filled.Dashboard">Dashboard</MudNavLink>
@@ -52,8 +54,10 @@
         <MudNavLink Href="vat-rates" Icon="@Icons.Material.Filled.TableView">Taxas de IVA</MudNavLink>
     </MudNavGroup>
 
-    <MudNavGroup Title="Backoffice" Icon="@Icons.Material.Filled.AdminPanelSettings" Expanded="false">
-        <MudNavLink Href="companies" Icon="@Icons.Material.Filled.Domain">Empresas</MudNavLink>
-        <MudNavLink Href="notifications" Icon="@Icons.Material.Filled.Email">Notificações</MudNavLink>
-    </MudNavGroup>
+    <AuthorizeView Roles="@Constants.Roles.SuperAdmin">
+        <MudNavGroup Title="Backoffice" Icon="@Icons.Material.Filled.AdminPanelSettings" Expanded="false">
+            <MudNavLink Href="companies" Icon="@Icons.Material.Filled.Domain">Empresas</MudNavLink>
+            <MudNavLink Href="notifications" Icon="@Icons.Material.Filled.Email">Notificações</MudNavLink>
+        </MudNavGroup>
+    </AuthorizeView>
 </MudNavMenu>

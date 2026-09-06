@@ -21,5 +21,5 @@ public sealed record AccessDiagnosticsDto(
     string? UserId,
     string? Name,
     bool IsSuperAdmin,
-    bool IsAdmin,
+    bool IsUser,
     IReadOnlyList<ClaimDto> Claims);

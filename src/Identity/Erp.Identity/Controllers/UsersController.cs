@@ -16,7 +16,7 @@ namespace Erp.Identity.Controllers;
 [Route("api/users")]
 [Authorize(
     AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme,
-    Roles = $"{Constants.Roles.Admin},{Constants.Roles.SuperAdmin}")]
+    Roles = $"{Constants.Roles.User},{Constants.Roles.SuperAdmin}")]
 [Produces("application/json")]
 public sealed class UsersController(IUserService userService) : ControllerBase
 {

@@ -1,7 +1,35 @@
 <Solution>
   <Folder Name="/src/" />
-  <Folder Name="/src/Api/">
+  <Folder Name="/src/Erp/" />
+  <Folder Name="/src/Erp/Api/">
     <Project Path="src/Erp.Api/Erp.Api.csproj" />
+  </Folder>
+  <Folder Name="/src/Erp/Modules/" />
+  <Folder Name="/src/Erp/Modules/Core/">
+    <Project Path="src/Services/Erp.Core.Application/Erp.Core.Application.csproj" />
+    <Project Path="src/Services/Erp.Core.Domain/Erp.Core.Domain.csproj" />
+    <Project Path="src/Services/Erp.Core.Infrastructure/Erp.Core.Infrastructure.csproj" />
+    <Project Path="src/Services/Erp.Core.Storage/Erp.Core.Storage.csproj" />
+  </Folder>
+  <Folder Name="/src/Erp/Modules/Notification/">
+    <Project Path="src/Notification/Erp.Notification.Application/Erp.Notification.Application.csproj" />
+    <Project Path="src/Notification/Erp.Notification.Domain/Erp.Notification.Domain.csproj" />
+    <Project Path="src/Notification/Erp.Notification.Infrastructure/Erp.Notification.Infrastructure.csproj" />
+    <Project Path="src/Notification/Erp.Notification.Storage/Erp.Notification.Storage.csproj" />
+    <Project Path="src/Notification/Erp.Notification.Worker/Erp.Notification.Worker.csproj" />
+  </Folder>
+  <Folder Name="/src/Erp/Modules/Sales/">
+    <Project Path="src/Services/Erp.Sales.Application/Erp.Sales.Application.csproj" />
+    <Project Path="src/Services/Erp.Sales.Domain/Erp.Sales.Domain.csproj" />
+    <Project Path="src/Services/Erp.Sales.Infrastructure/Erp.Sales.Infrastructure.csproj" />
+    <Project Path="src/Services/Erp.Sales.Storage/Erp.Sales.Storage.csproj" />
+  </Folder>
+  <Folder Name="/src/Erp/Shared/">
+    <Project Path="src/Shared/Erp.Common/Erp.Common.csproj" />
+    <Project Path="src/Shared/Erp.FiscalPT/Erp.FiscalPT.csproj" />
+  </Folder>
+  <Folder Name="/src/Erp/UI/">
+    <Project Path="src/UI/Erp.Main/Erp.Main.csproj" />
   </Folder>
   <Folder Name="/src/Identity/">
     <Project Path="src/Identity/Erp.Identity.Application/Erp.Identity.Application.csproj" />
@@ -12,37 +40,14 @@
     <Project Path="src/Identity/Erp.Identity.Storage/Erp.Identity.Storage.csproj" />
     <Project Path="src/Identity/Erp.Identity/Erp.Identity.csproj" />
   </Folder>
-  <Folder Name="/src/Modules/" />
-  <Folder Name="/src/Modules/Core/">
-    <Project Path="src/Services/Erp.Core.Application/Erp.Core.Application.csproj" />
-    <Project Path="src/Services/Erp.Core.Domain/Erp.Core.Domain.csproj" />
-    <Project Path="src/Services/Erp.Core.Infrastructure/Erp.Core.Infrastructure.csproj" />
-    <Project Path="src/Services/Erp.Core.Storage/Erp.Core.Storage.csproj" />
-  </Folder>
-  <Folder Name="/src/Modules/Notification/">
-    <Project Path="src/Notification/Erp.Notification.Application/Erp.Notification.Application.csproj" />
-    <Project Path="src/Notification/Erp.Notification.Domain/Erp.Notification.Domain.csproj" />
-    <Project Path="src/Notification/Erp.Notification.Infrastructure/Erp.Notification.Infrastructure.csproj" />
-    <Project Path="src/Notification/Erp.Notification.Storage/Erp.Notification.Storage.csproj" />
-    <Project Path="src/Notification/Erp.Notification.Worker/Erp.Notification.Worker.csproj" />
-  </Folder>
-  <Folder Name="/src/Modules/Sales/">
-    <Project Path="src/Services/Erp.Sales.Application/Erp.Sales.Application.csproj" />
-    <Project Path="src/Services/Erp.Sales.Domain/Erp.Sales.Domain.csproj" />
-    <Project Path="src/Services/Erp.Sales.Infrastructure/Erp.Sales.Infrastructure.csproj" />
-    <Project Path="src/Services/Erp.Sales.Storage/Erp.Sales.Storage.csproj" />
-  </Folder>
-  <Folder Name="/src/Shared/">
-    <Project Path="src/Shared/Erp.FiscalPT/Erp.FiscalPT.csproj" />
-  </Folder>
-  <Folder Name="/src/UI/">
-    <Project Path="src/UI/Erp.Main/Erp.Main.csproj" />
-  </Folder>
-  <Folder Name="/tests/">
+  <Folder Name="/tests/" />
+  <Folder Name="/tests/Erp/">
     <Project Path="tests/Erp.Core.Tests/Erp.Core.Tests.csproj" />
     <Project Path="tests/Erp.FiscalPT.Tests/Erp.FiscalPT.Tests.csproj" />
-    <Project Path="tests/Erp.Identity.Tests/Erp.Identity.Tests.csproj" />
     <Project Path="tests/Erp.Notification.Tests/Erp.Notification.Tests.csproj" />
     <Project Path="tests/Erp.Sales.Tests/Erp.Sales.Tests.csproj" />
+  </Folder>
+  <Folder Name="/tests/Identity/">
+    <Project Path="tests/Erp.Identity.Tests/Erp.Identity.Tests.csproj" />
   </Folder>
 </Solution>

@@ -170,6 +170,56 @@ public class SalesApiClient(HttpClient http)
         return response.IsSuccessStatusCode ? null : await ApiResponse.ReadErrorAsync(response, cancellationToken);
     }
 
+    // --- Goods movements ---
+
+    public async Task<(IReadOnlyList<StockMovementListItem> Items, string? Error)> GetStockMovementsAsync(
+        Guid companyId,
+        CancellationToken cancellationToken = default)
+    {
+        var response = await Http.GetAsync($"api/stock-movements?companyId={companyId}", cancellationToken);
+
+        if (!response.IsSuccessStatusCode)
+            return ([], await ApiResponse.ReadErrorAsync(response, cancellationToken));
+
+        var items = await response.Content.ReadFromJsonAsync<List<StockMovementListItem>>(cancellationToken);
+        return (items ?? [], null);
+    }
+
+    public async Task<StockMovementDetail?> GetStockMovementAsync(Guid id, CancellationToken cancellationToken = default)
+    {
+        var response = await Http.GetAsync($"api/stock-movements/{id}", cancellationToken);
+        return response.IsSuccessStatusCode
+            ? await response.Content.ReadFromJsonAsync<StockMovementDetail>(cancellationToken)
+            : null;
+    }
+
+    public async Task<(StockMovementDetail? Movement, string? Error)> IssueStockMovementAsync(
+        CreateStockMovementRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        var response = await Http.PostAsJsonAsync("api/stock-movements", request, cancellationToken);
+
+        return response.IsSuccessStatusCode
+            ? (await response.Content.ReadFromJsonAsync<StockMovementDetail>(cancellationToken), null)
+            : (null, await ApiResponse.ReadErrorAsync(response, cancellationToken));
+    }
+
+    public async Task<string?> CommunicateStockMovementAsync(Guid id, string atDocCodeId, CancellationToken cancellationToken = default)
+    {
+        var response = await Http.PostAsJsonAsync(
+            $"api/stock-movements/{id}/communicate", new CommunicateStockMovementRequest(atDocCodeId), cancellationToken);
+
+        return response.IsSuccessStatusCode ? null : await ApiResponse.ReadErrorAsync(response, cancellationToken);
+    }
+
+    public async Task<string?> VoidStockMovementAsync(Guid id, string reason, CancellationToken cancellationToken = default)
+    {
+        var response = await Http.PostAsJsonAsync(
+            $"api/stock-movements/{id}/void", new VoidStockMovementRequest(reason), cancellationToken);
+
+        return response.IsSuccessStatusCode ? null : await ApiResponse.ReadErrorAsync(response, cancellationToken);
+    }
+
     public async Task<IReadOnlyList<SalesSeries>> GetSeriesAsync(Guid companyId, CancellationToken cancellationToken = default)
     {
         var series = await Http.GetFromJsonAsync<List<SalesSeries>>(

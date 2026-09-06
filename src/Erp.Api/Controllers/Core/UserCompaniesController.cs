@@ -1,3 +1,4 @@
+using Erp.Api.Authorization;
 using Erp.Core.Infrastructure.Application;
 using Erp.Core.Infrastructure.Contracts;
 using Microsoft.AspNetCore.Authorization;
@@ -7,7 +8,7 @@ namespace Erp.Api.Controllers.Core;
 
 [ApiController]
 [Route("api/user-companies")]
-[Authorize(Roles = "Admin,SuperAdmin")]
+[Authorize(Policy = Policies.Read)]
 public sealed class UserCompaniesController(IUserCompanyAdminService userCompanyAdminService) : ControllerBase
 {
     /// <summary>Lists user memberships, optionally limited to one company.</summary>
@@ -28,6 +29,7 @@ public sealed class UserCompaniesController(IUserCompanyAdminService userCompany
     }
 
     [HttpPost]
+    [Authorize(Policy = Policies.Admin)]
     public async Task<ActionResult<UserCompanyAdminDto>> Create([FromBody] CreateUserCompanyRequest request, CancellationToken cancellationToken)
     {
         try
@@ -46,6 +48,7 @@ public sealed class UserCompaniesController(IUserCompanyAdminService userCompany
     }
 
     [HttpPut("{id:guid}")]
+    [Authorize(Policy = Policies.Admin)]
     public async Task<ActionResult<UserCompanyAdminDto>> Update(Guid id, [FromBody] UpdateUserCompanyRequest request, CancellationToken cancellationToken)
     {
         try
@@ -60,6 +63,7 @@ public sealed class UserCompaniesController(IUserCompanyAdminService userCompany
     }
 
     [HttpDelete("{id:guid}")]
+    [Authorize(Policy = Policies.Admin)]
     public async Task<IActionResult> Delete(Guid id, CancellationToken cancellationToken)
     {
         var deleted = await userCompanyAdminService.DeleteAsync(id, cancellationToken);

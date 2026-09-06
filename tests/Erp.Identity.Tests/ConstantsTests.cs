@@ -11,26 +11,21 @@ public class ConstantsTests
         Constants.Roles.All.Should().OnlyHaveUniqueItems();
         Constants.Roles.All.Should().Contain([
             Constants.Roles.SuperAdmin,
-            Constants.Roles.Admin,
-            Constants.Roles.Manager,
-            Constants.Roles.User,
-            Constants.Roles.Accountant,
-            Constants.Roles.Auditor
+            Constants.Roles.User
         ]);
     }
 
+    /// <summary>
+    /// One API means two levels of access; only the capabilities that a signed in user must
+    /// never hold keep a scope of their own.
+    /// </summary>
     [Fact]
-    public void Every_api_scope_follows_the_erp_module_action_naming()
+    public void Every_api_scope_follows_the_erp_naming()
     {
         var scopes = new[]
         {
-            Constants.Scopes.ErpCoreRead, Constants.Scopes.ErpCoreWrite,
-            Constants.Scopes.ErpSalesRead, Constants.Scopes.ErpSalesWrite,
-            Constants.Scopes.ErpInventoryRead, Constants.Scopes.ErpInventoryWrite,
-            Constants.Scopes.ErpPurchasingRead, Constants.Scopes.ErpPurchasingWrite,
-            Constants.Scopes.ErpAccountingRead, Constants.Scopes.ErpAccountingWrite,
-            Constants.Scopes.ErpReportingRead,
-            Constants.Scopes.ErpNotificationRead, Constants.Scopes.ErpNotificationWrite,
+            Constants.Scopes.ErpRead,
+            Constants.Scopes.ErpWrite,
             Constants.Scopes.ErpNotificationSend,
             Constants.Scopes.ErpIdentityRead
         };
@@ -39,8 +34,7 @@ public class ConstantsTests
         scopes.Should().AllSatisfy(scope =>
         {
             scope.Should().StartWith("erp.");
-            scope.Split('.').Should().HaveCount(3);
-            scope.Should().MatchRegex("^erp\\.[a-z]+\\.(read|write|send)$");
+            scope.Should().MatchRegex("^erp\\.([a-z]+\\.)?(read|write|send)$");
         });
     }
 

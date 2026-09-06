@@ -1,6 +1,7 @@
 using System.Security.Claims;
 using Erp.Core.Infrastructure.Application;
 using Erp.Core.Infrastructure.Contracts;
+using Erp.Common;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -59,14 +60,14 @@ public sealed class AccessController(IUserCompanyService userCompanyService) : C
         return Ok(new AccessDiagnosticsDto(
             GetCurrentUserId(),
             User.Identity?.Name,
-            User.IsInRole("SuperAdmin"),
-            User.IsInRole("Admin"),
+            User.IsInRole(Constants.Roles.SuperAdmin),
+            User.IsInRole(Constants.Roles.User),
             claims));
     }
 
     private string? GetCurrentUserId()
     {
-        return User.FindFirstValue("sub")
+        return User.FindFirstValue(Constants.Claims.Subject)
             ?? User.FindFirstValue(ClaimTypes.NameIdentifier);
     }
 }

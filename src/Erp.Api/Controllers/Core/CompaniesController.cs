@@ -1,3 +1,4 @@
+using Erp.Api.Authorization;
 using Erp.Core.Infrastructure.Application;
 using Erp.Core.Infrastructure.Contracts;
 using Microsoft.AspNetCore.Authorization;
@@ -7,7 +8,7 @@ namespace Erp.Api.Controllers.Core;
 
 [ApiController]
 [Route("api/companies")]
-[Authorize(Roles = "Admin,SuperAdmin")]
+[Authorize(Policy = Policies.Read)]
 [Produces("application/json")]
 public sealed class CompaniesController(ICompanyAdminService companyAdminService) : ControllerBase
 {
@@ -32,6 +33,7 @@ public sealed class CompaniesController(ICompanyAdminService companyAdminService
 
     /// <summary>Creates a company.</summary>
     [HttpPost]
+    [Authorize(Policy = Policies.Admin)]
     [ProducesResponseType<CompanyDetailDto>(StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status409Conflict)]
@@ -56,6 +58,7 @@ public sealed class CompaniesController(ICompanyAdminService companyAdminService
 
     /// <summary>Updates a company.</summary>
     [HttpPut("{id:guid}")]
+    [Authorize(Policy = Policies.Admin)]
     [ProducesResponseType<CompanyDetailDto>(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]

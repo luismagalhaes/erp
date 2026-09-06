@@ -16,7 +16,7 @@ public sealed class InvoicesController(ISalesDocumentService salesDocumentServic
 {
     /// <summary>Lists the documents issued by a company, most recent first.</summary>
     [HttpGet]
-    [Authorize(Policy = SalesPolicies.Read)]
+    [Authorize(Policy = Policies.Read)]
     [ProducesResponseType<IReadOnlyList<InvoiceListItemDto>>(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<ActionResult<IReadOnlyList<InvoiceListItemDto>>> GetAll(
@@ -32,7 +32,7 @@ public sealed class InvoicesController(ISalesDocumentService salesDocumentServic
 
     /// <summary>Gets a document with its lines, tax totals, signature and QR code message.</summary>
     [HttpGet("{id:guid}")]
-    [Authorize(Policy = SalesPolicies.Read)]
+    [Authorize(Policy = Policies.Read)]
     [ProducesResponseType<InvoiceDetailDto>(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult<InvoiceDetailDto>> GetById(Guid id, CancellationToken cancellationToken)
@@ -46,7 +46,7 @@ public sealed class InvoicesController(ISalesDocumentService salesDocumentServic
     /// document of that series and persists everything in one transaction.
     /// </summary>
     [HttpPost]
-    [Authorize(Policy = SalesPolicies.Write)]
+    [Authorize(Policy = Policies.Write)]
     [ProducesResponseType<InvoiceDetailDto>(StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status409Conflict)]
@@ -74,7 +74,7 @@ public sealed class InvoicesController(ISalesDocumentService salesDocumentServic
     /// not alter or remove the document.
     /// </summary>
     [HttpPost("{id:guid}/void")]
-    [Authorize(Policy = SalesPolicies.Write)]
+    [Authorize(Policy = Policies.Write)]
     [ProducesResponseType<InvoiceDetailDto>(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]

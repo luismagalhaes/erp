@@ -52,8 +52,8 @@ public class SeedDataTests
     }
 
     /// <summary>
-    /// The business modules run in one host, so a single audience has to cover every module
-    /// scope. A scope left out here would answer 401 on the merged API.
+    /// The business modules run in one host, so a single audience has to cover every scope of
+    /// the API. A scope left out here would answer 401 on the merged API.
     /// </summary>
     [Fact]
     public void The_business_audience_covers_every_module_scope()
@@ -122,8 +122,6 @@ public class SeedDataTests
     }
 
     [Theory]
-    [InlineData("sales-service")]
-    [InlineData("reporting-service")]
     [InlineData("identity-service")]
     public void Machine_clients_use_client_credentials_with_a_secret_and_no_redirects(string clientId)
     {
@@ -138,10 +136,10 @@ public class SeedDataTests
     [Fact]
     public void Machine_client_secrets_are_hashed_not_stored_in_clear_text()
     {
-        var client = SeedData.Clients.Single(x => x.ClientId == Constants.Clients.SalesServiceClientId);
+        var client = SeedData.Clients.Single(x => x.ClientId == Constants.Clients.IdentityServiceClientId);
 
         client.ClientSecrets.Should().AllSatisfy(secret =>
-            secret.Value.Should().NotBe(Constants.Clients.SalesServiceSecret));
+            secret.Value.Should().NotBe(Constants.Clients.IdentityServiceSecret));
     }
 
     [Fact]
@@ -161,7 +159,7 @@ public class SeedDataTests
         var client = SeedData.Clients.Single(x => x.ClientId == Constants.Clients.BlazorWasmClientId);
 
         client.AllowedScopes.Should().NotContain(Constants.Scopes.ErpNotificationSend);
-        client.AllowedScopes.Should().Contain(Constants.Scopes.ErpNotificationRead);
+        client.AllowedScopes.Should().Contain(Constants.Scopes.ErpRead);
     }
 
     [Fact]

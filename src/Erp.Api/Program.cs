@@ -1,6 +1,7 @@
 using Erp.Api.Authorization;
 using Erp.Core.Application;
 using Erp.Core.Storage;
+using Erp.Common;
 using Erp.Notification.Application;
 using Erp.Notification.Storage;
 using Erp.Sales.Application;
@@ -40,20 +41,19 @@ try
         .AddJwtBearer(options =>
         {
             options.Authority = builder.Configuration["IdentityServer:Authority"];
-            options.Audience = "erp-api";
+            options.Audience = Constants.ApiResources.ErpApi;
             options.RequireHttpsMetadata = !builder.Environment.IsDevelopment();
 
             // JwtBearerOptions.MapInboundClaims defaults to true, which renames 'role' to the
             // WS-Federation URI. Keeping the short names is what makes the role checks find the
             // claim Duende actually issued.
             options.MapInboundClaims = false;
-            options.TokenValidationParameters.RoleClaimType = "role";
-            options.TokenValidationParameters.NameClaimType = "name";
+            options.TokenValidationParameters.RoleClaimType = Constants.Claims.Role;
+            options.TokenValidationParameters.NameClaimType = Constants.Claims.Name;
         });
 
     builder.Services.AddAuthorizationBuilder()
-        .AddSalesPolicies()
-        .AddNotificationPolicies();
+        .AddErpPolicies();
 
     builder.Services.AddOpenApi();
 

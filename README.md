@@ -52,7 +52,7 @@ Erp.Main (Blazor Server)  ──OIDC──►  Erp.Identity (Duende IdentityServ
         │ access token (Bearer)                │
         ▼                                      ▼
 Erp.Api  ─── Core · Sales · Notification ──►  SQL Server
-   (JWT Bearer, um audience, scopes por módulo)
+   (JWT Bearer, um audience, scopes globais de leitura e escrita)
 ```
 
 ---
@@ -74,7 +74,7 @@ Erp.Api  ─── Core · Sales · Notification ──►  SQL Server
 | [Erp.Identity.Infrastructure](src/Identity/Erp.Identity.Infrastructure/) | Interfaces de serviços e de storage. |
 | [Erp.Identity.Application](src/Identity/Erp.Identity.Application/) | Implementações: utilizadores, roles, clients, API scopes/resources, identity resources e providers. |
 | [Erp.Identity.Storage](src/Identity/Erp.Identity.Storage/) | `ApplicationDbContext`, stores do IdentityServer, migrations e [SeedData](src/Identity/Erp.Identity.Storage/Data/SeedData.cs). |
-| [Erp.Identity.Common](src/Identity/Erp.Identity.Common/) | Constantes partilhadas (roles, scopes, api resources, clients). |
+| [Erp.Identity.Common](src/Identity/Erp.Identity.Common/) | Constantes do host de Identity: utilizador administrador semeado, ids e URLs de callback dos clients. |
 | [Erp.Identity.Dependencies](src/Identity/Erp.Identity.Dependencies/) | Integrações externas — cliente HTTP para o serviço de notificações. |
 
 ### Erp.Api — o host dos módulos de negócio
@@ -90,7 +90,7 @@ Controllers/Notification/   Notifications
 Controllers/HealthController.cs
 ```
 
-Um único audience (`erp-api`) e **scopes por módulo** (`erp.core.read`, `erp.sales.write`, …), aplicados por políticas em [SalesPolicies](src/Erp.Api/Authorization/SalesPolicies.cs) e [NotificationPolicies](src/Erp.Api/Authorization/NotificationPolicies.cs). Os módulos partilham o host e a base de dados; o que os separa são os projetos de camadas e o seu próprio `DbContext`.
+Um único audience (`erp-api`) e **dois scopes globais** (`erp.read` e `erp.write`), aplicados pelas políticas em [ErpPolicies](src/Erp.Api/Authorization/ErpPolicies.cs). Os módulos partilham o host e a base de dados; o que os separa são os projetos de camadas e o seu próprio `DbContext`.
 
 Módulos ainda por implementar: Inventory (obrigação de comunicação de inventários), Purchasing, Accounting e Reporting. Entram como mais uma pasta de controllers e o seu conjunto de camadas.
 
@@ -107,6 +107,7 @@ Cada módulo segue a mesma divisão em camadas:
 
 | Projeto | Descrição |
 |---|---|
+| [Erp.Common](src/Shared/Erp.Common/) | Constantes que descrevem o contrato do access token — roles, claims, scopes e api resources — partilhadas pela `Erp.Api` e pelo `Erp.Main`, para não dependerem de um projeto do Identity. |
 | [Erp.FiscalPT](src/Shared/Erp.FiscalPT/) | Primitivas de fiscalidade portuguesa sem dependências de infraestrutura: string e assinatura RSA dos documentos, ATCUD, número de documento, mensagem do código QR e arredondamento fiscal. |
 
 ### Notification
@@ -152,19 +153,38 @@ O `Erp.Identity` é o único emissor de tokens. O `Erp.Main` autentica por **Aut
 
 **Audiences**: `erp-api` para os módulos de negócio e `identity-api` para a API de utilizadores do Identity. O que separa o acesso entre módulos é o **scope**, não o audience.
 
-**Scopes** (definidos em [Constants.cs](src/Identity/Erp.Identity.Common/Constants/Constants.cs)): `erp.core.read/write`, `erp.sales.read/write`, `erp.inventory.read/write`, `erp.purchasing.read/write`, `erp.accounting.read/write`, `erp.reporting.read`, `erp.notification.read/write`, `erp.notification.send` (só para serviços) e `erp.identity.read`.
+**Scopes** (definidos em [Constants.cs](src/Shared/Erp.Common/Constants.cs)):
+
+| Scope | Quem o recebe | Para quê |
+|---|---|---|
+| `erp.read` | `blazor-wasm` | Ler qualquer módulo da `erp-api` |
+| `erp.write` | `blazor-wasm` | Escrever em qualquer módulo da `erp-api` |
+| `erp.notification.send` | `identity-service` | Identity → ERP API, para enfileirar email |
+| `erp.identity.read` | `blazor-wasm` | Blazor → Identity API, para consultar utilizadores |
+
+Como todos os módulos de negócio correm num só host, não há um par de scopes por módulo: o token diz apenas se a aplicação **lê** ou **escreve**, e o que o chamador alcança dentro da API é depois decidido por role e por pertença à empresa. Repare que `erp.notification.send` e `erp.identity.read` apontam em sentidos opostos e validam audiences diferentes: o primeiro é o Identity a chamar a `erp-api`, o segundo é a UI a chamar a `identity-api`.
+
+**Políticas** ([ErpPolicies.cs](src/Erp.Api/Authorization/ErpPolicies.cs)):
+
+| Política | Exige |
+|---|---|
+| `Read` | scope `erp.read` ou `erp.write` |
+| `Write` | scope `erp.write` |
+| `Admin` | scope `erp.write` **e** role `SuperAdmin` |
+| `NotificationSend` | scope `erp.notification.send` |
+
+O valor da constante `Admin` (`"erp.admin"`) é apenas o **nome da política**, não um scope: não está semeado nem existe em token nenhum. A administração do tenant depende de quem é o utilizador, não do que a aplicação pode fazer — por isso exige a role e não um scope, o que impede um token de serviço de reconfigurar empresas ou séries.
+
+Os scopes são lidos da claim `scope`, aceitando tanto a forma separada por espaços como claims repetidas.
 
 **Clients semeados**:
 
 | ClientId | Tipo | Finalidade |
 |---|---|---|
 | `blazor-wasm` | Code + PKCE | Erp.Main |
-| `notification-ui` | Code + PKCE | Portal de notificações (https://localhost:7125) |
-| `sales-service` | Client Credentials | Máquina-a-máquina |
-| `reporting-service` | Client Credentials | Máquina-a-máquina |
 | `identity-service` | Client Credentials | O próprio Identity a enfileirar emails |
 
-**Roles**: `SuperAdmin`, `Admin`, `Manager`, `User`, `Accountant`, `Auditor`. O backoffice do Identity só é visível a `SuperAdmin`; os endpoints administrativos do Core exigem `Admin` ou `SuperAdmin`.
+**Roles**: apenas `SuperAdmin` e `User`. O `SuperAdmin` configura o tenant; todos os outros são `User`, e o que podem ver depende da empresa a que pertencem. O menu de Backoffice do `Erp.Main` e o backoffice do Identity só são visíveis a `SuperAdmin`, e os endpoints administrativos exigem a política `Admin`.
 
 Para que a autorização por role funcione são precisas **três** coisas, e falhando qualquer uma os endpoints com `[Authorize(Roles = ...)]` respondem **403 mesmo a um SuperAdmin**:
 
@@ -270,7 +290,7 @@ Contextos disponíveis no Identity: `ApplicationDbContext`, `ConfigurationDbCont
 dotnet test Erp.slnx
 ```
 
-170 testes em cinco projetos, sem dependência de base de dados: as camadas Application são testadas com storages substituídos (NSubstitute), a biblioteca fiscal é testada diretamente, e o cliente de email e a obtenção de tokens do Identity com um `HttpMessageHandler` e um `TimeProvider` de teste.
+168 testes em cinco projetos, sem dependência de base de dados: as camadas Application são testadas com storages substituídos (NSubstitute), a biblioteca fiscal é testada diretamente, e o cliente de email e a obtenção de tokens do Identity com um `HttpMessageHandler` e um `TimeProvider` de teste.
 
 ---
 
@@ -278,22 +298,22 @@ dotnet test Erp.slnx
 
 | Método | Rota | Autorização |
 |---|---|---|
-| `GET` | `/api/companies` | Admin, SuperAdmin |
-| `GET` | `/api/companies/{id}` | Admin, SuperAdmin |
-| `POST` | `/api/companies` | Admin, SuperAdmin |
-| `PUT` | `/api/companies/{id}` | Admin, SuperAdmin |
-| `GET` | `/api/user-companies?companyId=` | Admin, SuperAdmin |
-| `GET` | `/api/user-companies/{id}` | Admin, SuperAdmin |
-| `POST` | `/api/user-companies` | Admin, SuperAdmin |
-| `PUT` | `/api/user-companies/{id}` | Admin, SuperAdmin |
-| `DELETE` | `/api/user-companies/{id}` | Admin, SuperAdmin |
-| `GET` | `/api/products?companyId=` · `/api/products/{id}` | Autenticado |
-| `POST` `PUT` | `/api/products` · `/api/products/{id}` | Autenticado |
-| `GET` `POST` `PUT` | `/api/product-families` | Autenticado |
-| `GET` `POST` `PUT` | `/api/product-subfamilies?companyId=&familyId=` | Autenticado |
-| `GET` `POST` `PUT` | `/api/brands` | Autenticado |
-| `GET` `POST` `PUT` | `/api/customers` | Autenticado |
-| `GET` `POST` `PUT` | `/api/suppliers` | Autenticado |
+| `GET` | `/api/companies` | `Read` |
+| `GET` | `/api/companies/{id}` | `Read` |
+| `POST` | `/api/companies` | `Admin` |
+| `PUT` | `/api/companies/{id}` | `Admin` |
+| `GET` | `/api/user-companies?companyId=` | `Read` |
+| `GET` | `/api/user-companies/{id}` | `Read` |
+| `POST` | `/api/user-companies` | `Admin` |
+| `PUT` | `/api/user-companies/{id}` | `Admin` |
+| `DELETE` | `/api/user-companies/{id}` | `Admin` |
+| `GET` | `/api/products?companyId=` · `/api/products/{id}` | `Read` |
+| `POST` `PUT` | `/api/products` · `/api/products/{id}` | `Write` |
+| `GET` `POST` `PUT` | `/api/product-families` | `Read` / `Write` |
+| `GET` `POST` `PUT` | `/api/product-subfamilies?companyId=&familyId=` | `Read` / `Write` |
+| `GET` `POST` `PUT` | `/api/brands` | `Read` / `Write` |
+| `GET` `POST` `PUT` | `/api/customers` | `Read` / `Write` |
+| `GET` `POST` `PUT` | `/api/suppliers` | `Read` / `Write` |
 | `GET` | `/api/access/me/companies` | Autenticado |
 | `GET` | `/api/access/me/companies/{companyId}/role` | Autenticado |
 | `POST` | `/api/access/check-role` | Autenticado |
@@ -304,16 +324,16 @@ dotnet test Erp.slnx
 
 | Método | Rota | Autorização |
 |---|---|---|
-| `GET` | `/api/invoices?companyId=` | `erp.sales.read` |
-| `GET` | `/api/invoices/{id}` | `erp.sales.read` |
-| `POST` | `/api/invoices` | `erp.sales.write` |
-| `POST` | `/api/invoices/{id}/void` | `erp.sales.write` |
-| `GET` | `/api/series?companyId=` | `erp.sales.read` |
-| `GET` | `/api/series/{id}` | `erp.sales.read` |
-| `POST` | `/api/series` | Admin, SuperAdmin |
-| `POST` | `/api/series/{id}/communicate` | Admin, SuperAdmin |
+| `GET` | `/api/invoices?companyId=` | `Read` |
+| `GET` | `/api/invoices/{id}` | `Read` |
+| `POST` | `/api/invoices` | `Write` |
+| `POST` | `/api/invoices/{id}/void` | `Write` |
+| `GET` | `/api/series?companyId=` | `Read` |
+| `GET` | `/api/series/{id}` | `Read` |
+| `POST` | `/api/series` | `Admin` |
+| `POST` | `/api/series/{id}/communicate` | `Admin` |
 
-O acesso é por **scope** do token (políticas em [SalesPolicies.cs](src/Erp.Api/Authorization/SalesPolicies.cs)); a gestão de séries exige adicionalmente role de administrador. Não existe endpoint de alteração nem de remoção de documentos: correções fazem-se por documento retificativo e a anulação escreve um registo de mudança de estado.
+O acesso é por **scope** do token (políticas em [ErpPolicies.cs](src/Erp.Api/Authorization/ErpPolicies.cs)); a gestão de séries exige adicionalmente a role `SuperAdmin`, através da política `Admin`. Não existe endpoint de alteração nem de remoção de documentos: correções fazem-se por documento retificativo e a anulação escreve um registo de mudança de estado.
 
 ---
 
@@ -335,13 +355,13 @@ Os utilizadores vivem no Identity, por isso o backoffice do `Erp.Main` lê-os da
 | Método | Rota | Autorização |
 |---|---|---|
 | `POST` | `/api/notifications/email` | `erp.notification.send` |
-| `GET` | `/api/notifications` | `erp.notification.read` |
-| `GET` | `/api/notifications/{id}` | `erp.notification.read` |
-| `POST` | `/api/notifications/{id}/requeue` | `erp.notification.write` |
+| `GET` | `/api/notifications` | `Read` |
+| `GET` | `/api/notifications/{id}` | `Read` |
+| `POST` | `/api/notifications/{id}/requeue` | `Write` |
 
 O enfileiramento é chamado serviço a serviço (o Identity, na recuperação de password) com um token de **client credentials** obtido no próprio Identity pelo client `identity-service`, cujo único scope é `erp.notification.send`. O [ClientCredentialsTokenProvider](src/Identity/Erp.Identity.Dependencies/Services/ClientCredentialsTokenProvider.cs) pede o token e reutiliza-o até perto de expirar; o [ServiceTokenHandler](src/Identity/Erp.Identity.Dependencies/Services/ServiceTokenHandler.cs) anexa-o ao pedido.
 
-O scope de envio é deliberadamente separado de `read` e `write`: o cliente da UI tem os dois últimos, para consultar e reenviar, mas **não** pode enfileirar email — caso contrário qualquer utilizador autenticado poderia mandar mensagens em nome do ERP.
+O scope de envio é deliberadamente separado de `erp.read` e `erp.write`: o cliente da UI tem os dois últimos, para consultar e reenviar, mas **não** pode enfileirar email — caso contrário qualquer utilizador autenticado poderia mandar mensagens em nome do ERP.
 
 O segredo do `identity-service` vem de `ServiceAuthentication:ClientSecret` (user secrets ou cofre). Em desenvolvimento, se não estiver configurado, é usado o valor semeado em `Constants` para a máquina local funcionar sem preparação.
 
@@ -406,17 +426,16 @@ Registo honesto do que ainda não está feito, para evitar surpresas:
 - **Módulos por implementar** — Inventory, Purchasing, Accounting e Reporting ainda não existem: os hosts vazios foram removidos na fusão e entram como pasta de controllers e camadas próprias quando forem escritos. Core, Sales e Notification estão implementados.
 - **Sales em construção** — a emissão certificada funciona (numeração por série, assinatura encadeada, ATCUD, QR), mas falta a comunicação automática de séries à AT, a impressão do documento e o SAF-T. Ver [o plano](docs/certificacao-at-sales.md#estado-da-implementação).
 - **SMTP por configurar** — sem `Smtp:Host` e `Smtp:FromEmail`, o worker marca os emails como `Failed` com essa mensagem. É visível no backoffice de notificações e resolve-se com configuração, não com código.
-- **Portal de notificações inexistente** — o client `notification-ui` (https://localhost:7125) está semeado mas não há projeto correspondente. O histórico de emails vive agora no backoffice do `Erp.Main`, pelo que esse client pode deixar de fazer sentido.
+- **Constantes duplicadas** — os scopes, roles e claims vivem em [Erp.Common](src/Shared/Erp.Common/Constants.cs), usado pela `Erp.Api` e pelo `Erp.Main`, mas o Identity mantém a sua cópia em `Erp.Identity.Common`. Os valores coincidem, mas alterar só um dos lados põe o seed e a API em desacordo sem erro de compilação.
 - **Cobertura de testes desigual** — a lógica fiscal, a emissão e os serviços do Core estão cobertos; as camadas Storage (EF Core) e as páginas Blazor não têm testes.
-- **`csproj` duplicados** — `ErpPortugal.Identity.Application.csproj` e `ErpPortugal.Identity.Storage.csproj` continuam nas pastas do Identity, fora da solução, resto de um rename anterior. Devem ser removidos.
-- **Sem CI** — não há pipelines em `.github/workflows`.
+
 
 ### Segurança
 
 Há segredos em código e em configuração versionada que têm de sair antes de qualquer ambiente partilhado:
 
 - Credenciais do utilizador administrador em [Constants.cs](src/Identity/Erp.Identity.Common/Constants/Constants.cs) (`Constants.AdminUser`).
-- Segredos dos clients máquina-a-máquina no mesmo ficheiro (`sales-service`, `reporting-service`).
+- Segredo do client `identity-service` no mesmo ficheiro, usado como recurso em desenvolvimento quando `ServiceAuthentication:ClientSecret` não está definido.
 
 Mover para *user secrets* em desenvolvimento e para variáveis de ambiente ou um cofre de segredos em produção.
 

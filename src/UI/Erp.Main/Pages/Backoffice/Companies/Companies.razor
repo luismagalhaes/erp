@@ -15,7 +15,7 @@
         <MudStack Spacing="0">
             <MudText Typo="Typo.h4">Empresas</MudText>
             <MudText Typo="Typo.body2" Color="Color.Secondary">
-                Entidades emitentes. A empresa ativa escolhe-se no cabeçalho.
+                Entidades emitentes. Os utilizadores com acesso a cada uma definem-se ao editá-la.
             </MudText>
         </MudStack>
 
@@ -75,7 +75,9 @@
     {
         try
         {
-            _companies = [.. await CoreApi.GetCompaniesAsync()];
+            var (companies, error) = await CoreApi.GetCompaniesAsync();
+            _companies = [.. companies];
+            _error = error;
         }
         catch (Exception ex)
         {

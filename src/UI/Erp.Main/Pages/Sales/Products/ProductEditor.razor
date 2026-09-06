@@ -123,6 +123,9 @@
     private bool _saving;
     private string? _error;
 
+    private bool _loaded;
+    private Guid? _loadedId;
+
     private string _productCode = string.Empty;
     private string _description = string.Empty;
     private string _productType = "P";
@@ -141,6 +144,13 @@
     protected override async Task OnParametersSetAsync()
     {
         await Company.EnsureLoadedAsync();
+
+        // A layout re-render sets the parameters again; only reload when the route changed.
+        if (_loaded && _loadedId == Id)
+            return;
+
+        _loaded = true;
+        _loadedId = Id;
 
         if (IsNew)
             return;

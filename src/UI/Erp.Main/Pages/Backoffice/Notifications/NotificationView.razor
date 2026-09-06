@@ -97,9 +97,19 @@
     private bool _loading = true;
     private bool _requeuing;
     private string? _error;
+
+    private Guid? _loadedId;
     private NotificationDetail? _notification;
 
-    protected override async Task OnParametersSetAsync() => await LoadAsync();
+    protected override async Task OnParametersSetAsync()
+    {
+        // A layout re-render sets the parameters again; only reload when the route changed.
+        if (_loadedId == Id)
+            return;
+
+        _loadedId = Id;
+        await LoadAsync();
+    }
 
     private async Task LoadAsync()
     {

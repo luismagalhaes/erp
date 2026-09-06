@@ -4,7 +4,7 @@
     "Projects": []
   },
   {
-    "Name": "Main + Id",
+    "Name": "All",
     "Projects": [
       {
         "Path": "src\\Identity\\Erp.Identity\\Erp.Identity.csproj",
@@ -18,6 +18,16 @@
       },
       {
         "Path": "src\\Services\\Erp.Core.Api\\Erp.Core.Api.csproj",
+        "Action": "Start",
+        "DebugTarget": "https"
+      },
+      {
+        "Path": "src\\Notification\\Erp.Notification.Api\\Erp.Notification.Api.csproj",
+        "Action": "Start",
+        "DebugTarget": "https"
+      },
+      {
+        "Path": "src\\Services\\Erp.Sales.Api\\Erp.Sales.Api.csproj",
         "Action": "Start",
         "DebugTarget": "https"
       }

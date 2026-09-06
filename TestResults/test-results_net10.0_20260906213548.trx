@@ -1,0 +1,220 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TestRun id="68347270-2d1e-4cc3-8bc3-657ceb10d0ca" name="Luis.Magalhaes@MS_A112 2026-09-06 21:35:47" runUser="PRIMAVERA\Luis.Magalhaes" xmlns="http://microsoft.com/schemas/VisualStudio/TeamTest/2010">
+  <Times creation="2026-09-06T21:35:47.2855872+01:00" queuing="2026-09-06T21:35:47.2855877+01:00" start="2026-09-06T21:35:45.6765744+01:00" finish="2026-09-06T21:35:47.3387082+01:00" />
+  <TestSettings name="default" id="a8802458-0725-44e5-ac71-bdf06e80cee5">
+    <Deployment runDeploymentRoot="Luis.Magalhaes_MS_A112_2026-09-06_21_35_47" />
+  </TestSettings>
+  <Results>
+    <UnitTestResult executionId="9708efd2-a10f-4ec7-ad7c-04488c14e4b8" testId="13069c2f-6aad-a399-148c-566363c6f0d9" testName="Erp.Core.Tests.UserCompanyServiceTests.GetUserRoleAsync_returns_null_for_an_empty_company" computerName="MS_A112" duration="00:00:00.0015860" startTime="2026-09-06T21:35:47.1788741+01:00" endTime="2026-09-06T21:35:47.1798405+01:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="9708efd2-a10f-4ec7-ad7c-04488c14e4b8" />
+    <UnitTestResult executionId="b19c3203-171f-40d1-98c5-d4444cb61392" testId="c19cbee4-d895-10f4-87ff-4083574796a1" testName="Erp.Core.Tests.UserCompanyAdminServiceTests.CreateAsync_rejects_an_unknown_company" computerName="MS_A112" duration="00:00:00.0026451" startTime="2026-09-06T21:35:47.2454893+01:00" endTime="2026-09-06T21:35:47.2455395+01:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="b19c3203-171f-40d1-98c5-d4444cb61392" />
+    <UnitTestResult executionId="2d25561b-68f6-479c-be6c-9a5a3e656606" testId="90bc7f0d-7e90-ca86-f3a1-9ee5b7b7e75f" testName="Erp.Core.Tests.UserCompanyAdminServiceTests.CreateAsync_persists_the_membership" computerName="MS_A112" duration="00:00:00.0085462" startTime="2026-09-06T21:35:47.2451419+01:00" endTime="2026-09-06T21:35:47.2453569+01:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="2d25561b-68f6-479c-be6c-9a5a3e656606" />
+    <UnitTestResult executionId="30236945-75a8-4bb2-9321-ed08c29a8089" testId="9ecd91e9-f5b9-60fa-10f3-48a8c3bcdd21" testName="Erp.Core.Tests.CompanyAdminServiceTests.CreateAsync_requires_a_name_and_a_tax_id(name: &quot;&quot;, taxId: &quot;500000001&quot;)" computerName="MS_A112" duration="00:00:00.0003830" startTime="2026-09-06T21:35:47.2405223+01:00" endTime="2026-09-06T21:35:47.2405686+01:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="30236945-75a8-4bb2-9321-ed08c29a8089" />
+    <UnitTestResult executionId="b4f88a44-0666-4f7d-8f5e-78efe0e2f328" testId="7b9fb890-9e54-d180-9e3e-b557d4b72b5b" testName="Erp.Core.Tests.CompanyAdminServiceTests.GetByIdAsync_returns_null_for_an_unknown_company" computerName="MS_A112" duration="00:00:00.0012760" startTime="2026-09-06T21:35:47.2408180+01:00" endTime="2026-09-06T21:35:47.2408608+01:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="b4f88a44-0666-4f7d-8f5e-78efe0e2f328" />
+    <UnitTestResult executionId="25832c2d-0149-45ec-bb7e-aa61141793e6" testId="c607c241-9729-dce6-365a-4c43b0142c82" testName="Erp.Core.Tests.UserCompanyAdminServiceTests.CreateAsync_requires_a_company" computerName="MS_A112" duration="00:00:00.0011829" startTime="2026-09-06T21:35:47.2440255+01:00" endTime="2026-09-06T21:35:47.2440755+01:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="25832c2d-0149-45ec-bb7e-aa61141793e6" />
+    <UnitTestResult executionId="31807a9a-6eae-4462-b6ae-5fe76fb65f73" testId="ec66ec8f-7b9a-f09c-5baf-ad31f8a73366" testName="Erp.Core.Tests.UserCompanyAdminServiceTests.UpdateAsync_returns_null_for_an_unknown_membership" computerName="MS_A112" duration="00:00:00.0025067" startTime="2026-09-06T21:35:47.2371662+01:00" endTime="2026-09-06T21:35:47.2373626+01:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="31807a9a-6eae-4462-b6ae-5fe76fb65f73" />
+    <UnitTestResult executionId="e0a33950-b187-425b-84a4-8938e5fc7bc9" testId="4f966b5b-51a0-4ef6-fb33-32ecfd99bd03" testName="Erp.Core.Tests.JwtRoleClaimTests.Without_mapping_the_role_claim_keeps_its_name_and_authorization_works" computerName="MS_A112" duration="00:00:00.1146949" startTime="2026-09-06T21:35:47.0359093+01:00" endTime="2026-09-06T21:35:47.1770066+01:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="e0a33950-b187-425b-84a4-8938e5fc7bc9" />
+    <UnitTestResult executionId="eb1cfa16-ce5e-4cd3-80e9-cf74c7ffe372" testId="98b6424e-600d-2ff0-5fe2-3bfd83f711de" testName="Erp.Core.Tests.CompanyAdminServiceTests.UpdateAsync_allows_a_company_to_keep_its_own_tax_id" computerName="MS_A112" duration="00:00:00.0010005" startTime="2026-09-06T21:35:47.2414933+01:00" endTime="2026-09-06T21:35:47.2425381+01:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="eb1cfa16-ce5e-4cd3-80e9-cf74c7ffe372" />
+    <UnitTestResult executionId="e75d76e4-627d-4dbe-a595-8897ef8b349b" testId="f03a57b3-67ba-4ea0-8bae-fcfeeaa054ee" testName="Erp.Core.Tests.CompanyAdminServiceTests.UpdateAsync_rejects_a_tax_id_used_by_another_company" computerName="MS_A112" duration="00:00:00.0019664" startTime="2026-09-06T21:35:47.2427568+01:00" endTime="2026-09-06T21:35:47.2433393+01:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="e75d76e4-627d-4dbe-a595-8897ef8b349b" />
+    <UnitTestResult executionId="05995e54-7994-49ad-95c1-f3baa364a983" testId="52a1ae9c-b957-b9af-6a92-af4d08cb4d14" testName="Erp.Core.Tests.UserCompanyAdminServiceTests.DeleteAsync_is_false_for_an_unknown_membership" computerName="MS_A112" duration="00:00:00.0187523" startTime="2026-09-06T21:35:47.2401134+01:00" endTime="2026-09-06T21:35:47.2428201+01:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="05995e54-7994-49ad-95c1-f3baa364a983" />
+    <UnitTestResult executionId="19bdd412-ac1c-4943-ac02-de9eec408d77" testId="438d4320-15c8-2d12-ed23-35941e37cb76" testName="Erp.Core.Tests.CompanyAdminServiceTests.CreateAsync_rejects_a_duplicate_tax_id" computerName="MS_A112" duration="00:00:00.0044790" startTime="2026-09-06T21:35:47.2434529+01:00" endTime="2026-09-06T21:35:47.2452103+01:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="19bdd412-ac1c-4943-ac02-de9eec408d77" />
+    <UnitTestResult executionId="03eae0c6-6f15-4a33-904c-dae720372bd6" testId="7615d7fb-2b22-e2e2-16e1-0b23a7428750" testName="Erp.Core.Tests.CompanyAdminServiceTests.GetAllAsync_maps_every_company" computerName="MS_A112" duration="00:00:00.1551099" startTime="2026-09-06T21:35:47.0386112+01:00" endTime="2026-09-06T21:35:47.2366024+01:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="03eae0c6-6f15-4a33-904c-dae720372bd6" />
+    <UnitTestResult executionId="0fd4edfe-2191-4e74-9d76-27f348d37537" testId="388c176e-6ee6-25c4-58e4-659f5d173856" testName="Erp.Core.Tests.UserCompanyServiceTests.HasRoleAsync_ignores_case" computerName="MS_A112" duration="00:00:00.0008556" startTime="2026-09-06T21:35:47.2427141+01:00" endTime="2026-09-06T21:35:47.2430173+01:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="0fd4edfe-2191-4e74-9d76-27f348d37537" />
+    <UnitTestResult executionId="581d1008-0045-4e3e-8231-47b9c8fd7a0b" testId="f0026a94-5e32-61de-9fa6-9745a027e3c3" testName="Erp.Core.Tests.CompanyAdminServiceTests.UpdateAsync_returns_null_for_an_unknown_company" computerName="MS_A112" duration="00:00:00.0049368" startTime="2026-09-06T21:35:47.2368322+01:00" endTime="2026-09-06T21:35:47.2368869+01:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="581d1008-0045-4e3e-8231-47b9c8fd7a0b" />
+    <UnitTestResult executionId="13d48d47-6a7e-4a98-9370-2fbe09144dd7" testId="87aaae34-3bf3-36b9-d33a-f97b356ecd53" testName="Erp.Core.Tests.CompanyAdminServiceTests.CreateAsync_requires_a_name_and_a_tax_id(name: &quot;   &quot;, taxId: &quot;500000001&quot;)" computerName="MS_A112" duration="00:00:00.0006853" startTime="2026-09-06T21:35:47.2403755+01:00" endTime="2026-09-06T21:35:47.2404223+01:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="13d48d47-6a7e-4a98-9370-2fbe09144dd7" />
+    <UnitTestResult executionId="85ac0829-8f41-406d-a503-08f1cfeba6cb" testId="f1ec64e3-e23d-2b9f-caa7-c50382e2448c" testName="Erp.Core.Tests.UserCompanyServiceTests.CanAccessCompanyAsync_is_false_when_there_is_no_active_membership" computerName="MS_A112" duration="00:00:00.0008771" startTime="2026-09-06T21:35:47.2431414+01:00" endTime="2026-09-06T21:35:47.2431827+01:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="85ac0829-8f41-406d-a503-08f1cfeba6cb" />
+    <UnitTestResult executionId="32df198c-dc72-40f7-839c-e4204fd513d5" testId="98e7cc3a-1fe9-095e-75fc-2fc8a9019080" testName="Erp.Core.Tests.JwtRoleClaimTests.With_mapping_the_role_is_renamed_and_authorization_silently_fails" computerName="MS_A112" duration="00:00:00.0028244" startTime="2026-09-06T21:35:47.1781363+01:00" endTime="2026-09-06T21:35:47.1782145+01:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="32df198c-dc72-40f7-839c-e4204fd513d5" />
+    <UnitTestResult executionId="0fde918c-a995-488c-8755-2a26dfb2bd2b" testId="aa538138-591a-a105-476c-f439fc034352" testName="Erp.Core.Tests.UserCompanyServiceTests.CanAccessCompanyAsync_is_true_for_an_active_membership" computerName="MS_A112" duration="00:00:00.0197616" startTime="2026-09-06T21:35:47.1768576+01:00" endTime="2026-09-06T21:35:47.1787181+01:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="0fde918c-a995-488c-8755-2a26dfb2bd2b" />
+    <UnitTestResult executionId="220e1007-8ce7-4b00-a313-e18de4c3708c" testId="a4bb14c3-3f40-406b-e114-c2127e589669" testName="Erp.Core.Tests.JwtRoleClaimTests.Without_mapping_the_subject_claim_stays_readable_as_sub" computerName="MS_A112" duration="00:00:00.0057404" startTime="2026-09-06T21:35:47.1783967+01:00" endTime="2026-09-06T21:35:47.1784545+01:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="220e1007-8ce7-4b00-a313-e18de4c3708c" />
+    <UnitTestResult executionId="7dcf7bdc-15c8-41d9-859f-6543e9c0b3a6" testId="98969f90-4f90-1567-923d-28db69fc3455" testName="Erp.Core.Tests.CompanyAdminServiceTests.CreateAsync_requires_a_name_and_a_tax_id(name: &quot;Alfa&quot;, taxId: &quot;&quot;)" computerName="MS_A112" duration="00:00:00.0031893" startTime="2026-09-06T21:35:47.2373219+01:00" endTime="2026-09-06T21:35:47.2401984+01:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="7dcf7bdc-15c8-41d9-859f-6543e9c0b3a6" />
+    <UnitTestResult executionId="396c5255-bd10-4f46-8f9f-f4e361b8177c" testId="e322f28d-dcc5-2273-76c8-ef425eb2790a" testName="Erp.Core.Tests.UserCompanyAdminServiceTests.CreateAsync_rejects_a_duplicate_membership" computerName="MS_A112" duration="00:00:00.1645043" startTime="2026-09-06T21:35:47.0385089+01:00" endTime="2026-09-06T21:35:47.2370684+01:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="396c5255-bd10-4f46-8f9f-f4e361b8177c" />
+    <UnitTestResult executionId="9218a217-c695-4c54-86ae-989f4766ac6d" testId="246022a6-ebae-2fe5-d732-5165bea7b15e" testName="Erp.Core.Tests.JwtRoleClaimTests.JwtBearer_maps_inbound_claims_by_default" computerName="MS_A112" duration="00:00:00.0177421" startTime="2026-09-06T21:35:47.1786248+01:00" endTime="2026-09-06T21:35:47.2323238+01:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="9218a217-c695-4c54-86ae-989f4766ac6d" />
+    <UnitTestResult executionId="964dc5fd-23ff-44a3-aaa2-ccd5dee92780" testId="277b63de-8194-b2bd-c5c2-242083c9b9d3" testName="Erp.Core.Tests.CompanyAdminServiceTests.CreateAsync_trims_the_input_and_activates_the_company" computerName="MS_A112" duration="00:00:00.0127160" startTime="2026-09-06T21:35:47.2409662+01:00" endTime="2026-09-06T21:35:47.2413676+01:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="964dc5fd-23ff-44a3-aaa2-ccd5dee92780" />
+    <UnitTestResult executionId="c789fedc-763a-403b-bd4d-c172ffa2bd43" testId="3c26434f-f903-d805-6463-a07a5db6a0e7" testName="Erp.Core.Tests.CompanyAdminServiceTests.CreateAsync_requires_a_name_and_a_tax_id(name: &quot;Alfa&quot;, taxId: &quot;  &quot;)" computerName="MS_A112" duration="00:00:00.0003027" startTime="2026-09-06T21:35:47.2406592+01:00" endTime="2026-09-06T21:35:47.2407030+01:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="c789fedc-763a-403b-bd4d-c172ffa2bd43" />
+    <UnitTestResult executionId="0ab84752-311f-4ffd-9f3e-eb32cc6421bf" testId="9d14a62b-46f3-4a86-067e-6d16cb499793" testName="Erp.Core.Tests.UserCompanyServiceTests.HasRoleAsync_is_false_for_a_different_role" computerName="MS_A112" duration="00:00:00.0007230" startTime="2026-09-06T21:35:47.2432944+01:00" endTime="2026-09-06T21:35:47.2434926+01:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="0ab84752-311f-4ffd-9f3e-eb32cc6421bf" />
+    <UnitTestResult executionId="aaa32685-c415-44ff-b135-dfdc683626ba" testId="7cc25003-abbb-9da2-2950-adf10bbc9dbe" testName="Erp.Core.Tests.CompanyAdminServiceTests.UpdateAsync_changes_the_fields_and_stamps_the_update" computerName="MS_A112" duration="00:00:00.0050197" startTime="2026-09-06T21:35:47.2370266+01:00" endTime="2026-09-06T21:35:47.2372269+01:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="aaa32685-c415-44ff-b135-dfdc683626ba" />
+    <UnitTestResult executionId="01f9ba56-86c0-4ba5-9292-fb5a9f959170" testId="950450f2-e809-7e14-6a62-4ef4f609f1d9" testName="Erp.Core.Tests.UserCompanyAdminServiceTests.DeleteAsync_removes_an_existing_membership" computerName="MS_A112" duration="00:00:00.0028099" startTime="2026-09-06T21:35:47.2429705+01:00" endTime="2026-09-06T21:35:47.2438796+01:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="01f9ba56-86c0-4ba5-9292-fb5a9f959170" />
+    <UnitTestResult executionId="dcbddf09-4c92-49e9-a794-b3b1bcdd3500" testId="23087d97-95ae-e7ad-c712-45932e4d2774" testName="Erp.Core.Tests.UserCompanyServiceTests.GetUserCompaniesAsync_returns_empty_without_a_user(userId: &quot;&quot;)" computerName="MS_A112" duration="00:00:00.0327434" startTime="2026-09-06T21:35:47.2365356+01:00" endTime="2026-09-06T21:35:47.2410084+01:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="dcbddf09-4c92-49e9-a794-b3b1bcdd3500" />
+    <UnitTestResult executionId="8d328345-6bb0-463a-b7c3-56db9844ae6f" testId="c3a3c745-ee3b-a88d-3346-a258133ed54c" testName="Erp.Core.Tests.UserCompanyServiceTests.GetUserCompaniesAsync_returns_empty_without_a_user(userId: &quot;   &quot;)" computerName="MS_A112" duration="00:00:00.0017773" startTime="2026-09-06T21:35:47.2413147+01:00" endTime="2026-09-06T21:35:47.2415347+01:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="8d328345-6bb0-463a-b7c3-56db9844ae6f" />
+    <UnitTestResult executionId="343f9f13-85cd-4fa8-b89e-63efac383af8" testId="575d4ae3-9628-d89e-e34b-204b0d722926" testName="Erp.Core.Tests.UserCompanyServiceTests.GetUserCompaniesAsync_maps_the_active_memberships" computerName="MS_A112" duration="00:00:00.0099529" startTime="2026-09-06T21:35:47.2321590+01:00" endTime="2026-09-06T21:35:47.2362515+01:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="343f9f13-85cd-4fa8-b89e-63efac383af8" />
+    <UnitTestResult executionId="3d28005c-9a0b-484b-8ac3-e9a4975052b1" testId="f9a287a7-fee2-61e0-6235-d241f47b8f0d" testName="Erp.Core.Tests.UserCompanyServiceTests.HasRoleAsync_is_false_when_no_role_is_asked_for" computerName="MS_A112" duration="00:00:00.1143929" startTime="2026-09-06T21:35:47.0386407+01:00" endTime="2026-09-06T21:35:47.1576980+01:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="3d28005c-9a0b-484b-8ac3-e9a4975052b1" />
+  </Results>
+  <TestDefinitions>
+    <UnitTest name="Erp.Core.Tests.UserCompanyAdminServiceTests.CreateAsync_rejects_a_duplicate_membership" storage="c:\git\erp\tests\erp.core.tests\bin\release\net10.0\erp.core.tests.dll" id="e322f28d-dcc5-2273-76c8-ef425eb2790a">
+      <Execution id="396c5255-bd10-4f46-8f9f-f4e361b8177c" />
+      <TestMethod codeBase="C:\Git\erp\tests\Erp.Core.Tests\bin\Release\net10.0\Erp.Core.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner3/netcore/" className="Erp.Core.Tests.UserCompanyAdminServiceTests" name="CreateAsync_rejects_a_duplicate_membership" />
+    </UnitTest>
+    <UnitTest name="Erp.Core.Tests.CompanyAdminServiceTests.UpdateAsync_changes_the_fields_and_stamps_the_update" storage="c:\git\erp\tests\erp.core.tests\bin\release\net10.0\erp.core.tests.dll" id="7cc25003-abbb-9da2-2950-adf10bbc9dbe">
+      <Execution id="aaa32685-c415-44ff-b135-dfdc683626ba" />
+      <TestMethod codeBase="C:\Git\erp\tests\Erp.Core.Tests\bin\Release\net10.0\Erp.Core.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner3/netcore/" className="Erp.Core.Tests.CompanyAdminServiceTests" name="UpdateAsync_changes_the_fields_and_stamps_the_update" />
+    </UnitTest>
+    <UnitTest name="Erp.Core.Tests.CompanyAdminServiceTests.GetByIdAsync_returns_null_for_an_unknown_company" storage="c:\git\erp\tests\erp.core.tests\bin\release\net10.0\erp.core.tests.dll" id="7b9fb890-9e54-d180-9e3e-b557d4b72b5b">
+      <Execution id="b4f88a44-0666-4f7d-8f5e-78efe0e2f328" />
+      <TestMethod codeBase="C:\Git\erp\tests\Erp.Core.Tests\bin\Release\net10.0\Erp.Core.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner3/netcore/" className="Erp.Core.Tests.CompanyAdminServiceTests" name="GetByIdAsync_returns_null_for_an_unknown_company" />
+    </UnitTest>
+    <UnitTest name="Erp.Core.Tests.UserCompanyServiceTests.GetUserCompaniesAsync_returns_empty_without_a_user(userId: &quot;   &quot;)" storage="c:\git\erp\tests\erp.core.tests\bin\release\net10.0\erp.core.tests.dll" id="c3a3c745-ee3b-a88d-3346-a258133ed54c">
+      <Execution id="8d328345-6bb0-463a-b7c3-56db9844ae6f" />
+      <TestMethod codeBase="C:\Git\erp\tests\Erp.Core.Tests\bin\Release\net10.0\Erp.Core.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner3/netcore/" className="Erp.Core.Tests.UserCompanyServiceTests" name="GetUserCompaniesAsync_returns_empty_without_a_user" />
+    </UnitTest>
+    <UnitTest name="Erp.Core.Tests.UserCompanyServiceTests.GetUserRoleAsync_returns_null_for_an_empty_company" storage="c:\git\erp\tests\erp.core.tests\bin\release\net10.0\erp.core.tests.dll" id="13069c2f-6aad-a399-148c-566363c6f0d9">
+      <Execution id="9708efd2-a10f-4ec7-ad7c-04488c14e4b8" />
+      <TestMethod codeBase="C:\Git\erp\tests\Erp.Core.Tests\bin\Release\net10.0\Erp.Core.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner3/netcore/" className="Erp.Core.Tests.UserCompanyServiceTests" name="GetUserRoleAsync_returns_null_for_an_empty_company" />
+    </UnitTest>
+    <UnitTest name="Erp.Core.Tests.UserCompanyServiceTests.HasRoleAsync_ignores_case" storage="c:\git\erp\tests\erp.core.tests\bin\release\net10.0\erp.core.tests.dll" id="388c176e-6ee6-25c4-58e4-659f5d173856">
+      <Execution id="0fd4edfe-2191-4e74-9d76-27f348d37537" />
+      <TestMethod codeBase="C:\Git\erp\tests\Erp.Core.Tests\bin\Release\net10.0\Erp.Core.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner3/netcore/" className="Erp.Core.Tests.UserCompanyServiceTests" name="HasRoleAsync_ignores_case" />
+    </UnitTest>
+    <UnitTest name="Erp.Core.Tests.UserCompanyAdminServiceTests.CreateAsync_rejects_an_unknown_company" storage="c:\git\erp\tests\erp.core.tests\bin\release\net10.0\erp.core.tests.dll" id="c19cbee4-d895-10f4-87ff-4083574796a1">
+      <Execution id="b19c3203-171f-40d1-98c5-d4444cb61392" />
+      <TestMethod codeBase="C:\Git\erp\tests\Erp.Core.Tests\bin\Release\net10.0\Erp.Core.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner3/netcore/" className="Erp.Core.Tests.UserCompanyAdminServiceTests" name="CreateAsync_rejects_an_unknown_company" />
+    </UnitTest>
+    <UnitTest name="Erp.Core.Tests.CompanyAdminServiceTests.CreateAsync_trims_the_input_and_activates_the_company" storage="c:\git\erp\tests\erp.core.tests\bin\release\net10.0\erp.core.tests.dll" id="277b63de-8194-b2bd-c5c2-242083c9b9d3">
+      <Execution id="964dc5fd-23ff-44a3-aaa2-ccd5dee92780" />
+      <TestMethod codeBase="C:\Git\erp\tests\Erp.Core.Tests\bin\Release\net10.0\Erp.Core.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner3/netcore/" className="Erp.Core.Tests.CompanyAdminServiceTests" name="CreateAsync_trims_the_input_and_activates_the_company" />
+    </UnitTest>
+    <UnitTest name="Erp.Core.Tests.JwtRoleClaimTests.Without_mapping_the_subject_claim_stays_readable_as_sub" storage="c:\git\erp\tests\erp.core.tests\bin\release\net10.0\erp.core.tests.dll" id="a4bb14c3-3f40-406b-e114-c2127e589669">
+      <Execution id="220e1007-8ce7-4b00-a313-e18de4c3708c" />
+      <TestMethod codeBase="C:\Git\erp\tests\Erp.Core.Tests\bin\Release\net10.0\Erp.Core.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner3/netcore/" className="Erp.Core.Tests.JwtRoleClaimTests" name="Without_mapping_the_subject_claim_stays_readable_as_sub" />
+    </UnitTest>
+    <UnitTest name="Erp.Core.Tests.UserCompanyAdminServiceTests.DeleteAsync_is_false_for_an_unknown_membership" storage="c:\git\erp\tests\erp.core.tests\bin\release\net10.0\erp.core.tests.dll" id="52a1ae9c-b957-b9af-6a92-af4d08cb4d14">
+      <Execution id="05995e54-7994-49ad-95c1-f3baa364a983" />
+      <TestMethod codeBase="C:\Git\erp\tests\Erp.Core.Tests\bin\Release\net10.0\Erp.Core.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner3/netcore/" className="Erp.Core.Tests.UserCompanyAdminServiceTests" name="DeleteAsync_is_false_for_an_unknown_membership" />
+    </UnitTest>
+    <UnitTest name="Erp.Core.Tests.UserCompanyAdminServiceTests.CreateAsync_persists_the_membership" storage="c:\git\erp\tests\erp.core.tests\bin\release\net10.0\erp.core.tests.dll" id="90bc7f0d-7e90-ca86-f3a1-9ee5b7b7e75f">
+      <Execution id="2d25561b-68f6-479c-be6c-9a5a3e656606" />
+      <TestMethod codeBase="C:\Git\erp\tests\Erp.Core.Tests\bin\Release\net10.0\Erp.Core.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner3/netcore/" className="Erp.Core.Tests.UserCompanyAdminServiceTests" name="CreateAsync_persists_the_membership" />
+    </UnitTest>
+    <UnitTest name="Erp.Core.Tests.JwtRoleClaimTests.JwtBearer_maps_inbound_claims_by_default" storage="c:\git\erp\tests\erp.core.tests\bin\release\net10.0\erp.core.tests.dll" id="246022a6-ebae-2fe5-d732-5165bea7b15e">
+      <Execution id="9218a217-c695-4c54-86ae-989f4766ac6d" />
+      <TestMethod codeBase="C:\Git\erp\tests\Erp.Core.Tests\bin\Release\net10.0\Erp.Core.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner3/netcore/" className="Erp.Core.Tests.JwtRoleClaimTests" name="JwtBearer_maps_inbound_claims_by_default" />
+    </UnitTest>
+    <UnitTest name="Erp.Core.Tests.UserCompanyServiceTests.HasRoleAsync_is_false_when_no_role_is_asked_for" storage="c:\git\erp\tests\erp.core.tests\bin\release\net10.0\erp.core.tests.dll" id="f9a287a7-fee2-61e0-6235-d241f47b8f0d">
+      <Execution id="3d28005c-9a0b-484b-8ac3-e9a4975052b1" />
+      <TestMethod codeBase="C:\Git\erp\tests\Erp.Core.Tests\bin\Release\net10.0\Erp.Core.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner3/netcore/" className="Erp.Core.Tests.UserCompanyServiceTests" name="HasRoleAsync_is_false_when_no_role_is_asked_for" />
+    </UnitTest>
+    <UnitTest name="Erp.Core.Tests.CompanyAdminServiceTests.UpdateAsync_rejects_a_tax_id_used_by_another_company" storage="c:\git\erp\tests\erp.core.tests\bin\release\net10.0\erp.core.tests.dll" id="f03a57b3-67ba-4ea0-8bae-fcfeeaa054ee">
+      <Execution id="e75d76e4-627d-4dbe-a595-8897ef8b349b" />
+      <TestMethod codeBase="C:\Git\erp\tests\Erp.Core.Tests\bin\Release\net10.0\Erp.Core.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner3/netcore/" className="Erp.Core.Tests.CompanyAdminServiceTests" name="UpdateAsync_rejects_a_tax_id_used_by_another_company" />
+    </UnitTest>
+    <UnitTest name="Erp.Core.Tests.JwtRoleClaimTests.Without_mapping_the_role_claim_keeps_its_name_and_authorization_works" storage="c:\git\erp\tests\erp.core.tests\bin\release\net10.0\erp.core.tests.dll" id="4f966b5b-51a0-4ef6-fb33-32ecfd99bd03">
+      <Execution id="e0a33950-b187-425b-84a4-8938e5fc7bc9" />
+      <TestMethod codeBase="C:\Git\erp\tests\Erp.Core.Tests\bin\Release\net10.0\Erp.Core.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner3/netcore/" className="Erp.Core.Tests.JwtRoleClaimTests" name="Without_mapping_the_role_claim_keeps_its_name_and_authorization_works" />
+    </UnitTest>
+    <UnitTest name="Erp.Core.Tests.UserCompanyAdminServiceTests.CreateAsync_requires_a_company" storage="c:\git\erp\tests\erp.core.tests\bin\release\net10.0\erp.core.tests.dll" id="c607c241-9729-dce6-365a-4c43b0142c82">
+      <Execution id="25832c2d-0149-45ec-bb7e-aa61141793e6" />
+      <TestMethod codeBase="C:\Git\erp\tests\Erp.Core.Tests\bin\Release\net10.0\Erp.Core.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner3/netcore/" className="Erp.Core.Tests.UserCompanyAdminServiceTests" name="CreateAsync_requires_a_company" />
+    </UnitTest>
+    <UnitTest name="Erp.Core.Tests.UserCompanyAdminServiceTests.DeleteAsync_removes_an_existing_membership" storage="c:\git\erp\tests\erp.core.tests\bin\release\net10.0\erp.core.tests.dll" id="950450f2-e809-7e14-6a62-4ef4f609f1d9">
+      <Execution id="01f9ba56-86c0-4ba5-9292-fb5a9f959170" />
+      <TestMethod codeBase="C:\Git\erp\tests\Erp.Core.Tests\bin\Release\net10.0\Erp.Core.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner3/netcore/" className="Erp.Core.Tests.UserCompanyAdminServiceTests" name="DeleteAsync_removes_an_existing_membership" />
+    </UnitTest>
+    <UnitTest name="Erp.Core.Tests.UserCompanyServiceTests.CanAccessCompanyAsync_is_true_for_an_active_membership" storage="c:\git\erp\tests\erp.core.tests\bin\release\net10.0\erp.core.tests.dll" id="aa538138-591a-a105-476c-f439fc034352">
+      <Execution id="0fde918c-a995-488c-8755-2a26dfb2bd2b" />
+      <TestMethod codeBase="C:\Git\erp\tests\Erp.Core.Tests\bin\Release\net10.0\Erp.Core.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner3/netcore/" className="Erp.Core.Tests.UserCompanyServiceTests" name="CanAccessCompanyAsync_is_true_for_an_active_membership" />
+    </UnitTest>
+    <UnitTest name="Erp.Core.Tests.CompanyAdminServiceTests.CreateAsync_requires_a_name_and_a_tax_id(name: &quot;&quot;, taxId: &quot;500000001&quot;)" storage="c:\git\erp\tests\erp.core.tests\bin\release\net10.0\erp.core.tests.dll" id="9ecd91e9-f5b9-60fa-10f3-48a8c3bcdd21">
+      <Execution id="30236945-75a8-4bb2-9321-ed08c29a8089" />
+      <TestMethod codeBase="C:\Git\erp\tests\Erp.Core.Tests\bin\Release\net10.0\Erp.Core.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner3/netcore/" className="Erp.Core.Tests.CompanyAdminServiceTests" name="CreateAsync_requires_a_name_and_a_tax_id" />
+    </UnitTest>
+    <UnitTest name="Erp.Core.Tests.CompanyAdminServiceTests.CreateAsync_rejects_a_duplicate_tax_id" storage="c:\git\erp\tests\erp.core.tests\bin\release\net10.0\erp.core.tests.dll" id="438d4320-15c8-2d12-ed23-35941e37cb76">
+      <Execution id="19bdd412-ac1c-4943-ac02-de9eec408d77" />
+      <TestMethod codeBase="C:\Git\erp\tests\Erp.Core.Tests\bin\Release\net10.0\Erp.Core.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner3/netcore/" className="Erp.Core.Tests.CompanyAdminServiceTests" name="CreateAsync_rejects_a_duplicate_tax_id" />
+    </UnitTest>
+    <UnitTest name="Erp.Core.Tests.CompanyAdminServiceTests.GetAllAsync_maps_every_company" storage="c:\git\erp\tests\erp.core.tests\bin\release\net10.0\erp.core.tests.dll" id="7615d7fb-2b22-e2e2-16e1-0b23a7428750">
+      <Execution id="03eae0c6-6f15-4a33-904c-dae720372bd6" />
+      <TestMethod codeBase="C:\Git\erp\tests\Erp.Core.Tests\bin\Release\net10.0\Erp.Core.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner3/netcore/" className="Erp.Core.Tests.CompanyAdminServiceTests" name="GetAllAsync_maps_every_company" />
+    </UnitTest>
+    <UnitTest name="Erp.Core.Tests.UserCompanyAdminServiceTests.UpdateAsync_returns_null_for_an_unknown_membership" storage="c:\git\erp\tests\erp.core.tests\bin\release\net10.0\erp.core.tests.dll" id="ec66ec8f-7b9a-f09c-5baf-ad31f8a73366">
+      <Execution id="31807a9a-6eae-4462-b6ae-5fe76fb65f73" />
+      <TestMethod codeBase="C:\Git\erp\tests\Erp.Core.Tests\bin\Release\net10.0\Erp.Core.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner3/netcore/" className="Erp.Core.Tests.UserCompanyAdminServiceTests" name="UpdateAsync_returns_null_for_an_unknown_membership" />
+    </UnitTest>
+    <UnitTest name="Erp.Core.Tests.CompanyAdminServiceTests.UpdateAsync_allows_a_company_to_keep_its_own_tax_id" storage="c:\git\erp\tests\erp.core.tests\bin\release\net10.0\erp.core.tests.dll" id="98b6424e-600d-2ff0-5fe2-3bfd83f711de">
+      <Execution id="eb1cfa16-ce5e-4cd3-80e9-cf74c7ffe372" />
+      <TestMethod codeBase="C:\Git\erp\tests\Erp.Core.Tests\bin\Release\net10.0\Erp.Core.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner3/netcore/" className="Erp.Core.Tests.CompanyAdminServiceTests" name="UpdateAsync_allows_a_company_to_keep_its_own_tax_id" />
+    </UnitTest>
+    <UnitTest name="Erp.Core.Tests.JwtRoleClaimTests.With_mapping_the_role_is_renamed_and_authorization_silently_fails" storage="c:\git\erp\tests\erp.core.tests\bin\release\net10.0\erp.core.tests.dll" id="98e7cc3a-1fe9-095e-75fc-2fc8a9019080">
+      <Execution id="32df198c-dc72-40f7-839c-e4204fd513d5" />
+      <TestMethod codeBase="C:\Git\erp\tests\Erp.Core.Tests\bin\Release\net10.0\Erp.Core.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner3/netcore/" className="Erp.Core.Tests.JwtRoleClaimTests" name="With_mapping_the_role_is_renamed_and_authorization_silently_fails" />
+    </UnitTest>
+    <UnitTest name="Erp.Core.Tests.UserCompanyServiceTests.GetUserCompaniesAsync_maps_the_active_memberships" storage="c:\git\erp\tests\erp.core.tests\bin\release\net10.0\erp.core.tests.dll" id="575d4ae3-9628-d89e-e34b-204b0d722926">
+      <Execution id="343f9f13-85cd-4fa8-b89e-63efac383af8" />
+      <TestMethod codeBase="C:\Git\erp\tests\Erp.Core.Tests\bin\Release\net10.0\Erp.Core.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner3/netcore/" className="Erp.Core.Tests.UserCompanyServiceTests" name="GetUserCompaniesAsync_maps_the_active_memberships" />
+    </UnitTest>
+    <UnitTest name="Erp.Core.Tests.UserCompanyServiceTests.CanAccessCompanyAsync_is_false_when_there_is_no_active_membership" storage="c:\git\erp\tests\erp.core.tests\bin\release\net10.0\erp.core.tests.dll" id="f1ec64e3-e23d-2b9f-caa7-c50382e2448c">
+      <Execution id="85ac0829-8f41-406d-a503-08f1cfeba6cb" />
+      <TestMethod codeBase="C:\Git\erp\tests\Erp.Core.Tests\bin\Release\net10.0\Erp.Core.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner3/netcore/" className="Erp.Core.Tests.UserCompanyServiceTests" name="CanAccessCompanyAsync_is_false_when_there_is_no_active_membership" />
+    </UnitTest>
+    <UnitTest name="Erp.Core.Tests.CompanyAdminServiceTests.CreateAsync_requires_a_name_and_a_tax_id(name: &quot;   &quot;, taxId: &quot;500000001&quot;)" storage="c:\git\erp\tests\erp.core.tests\bin\release\net10.0\erp.core.tests.dll" id="87aaae34-3bf3-36b9-d33a-f97b356ecd53">
+      <Execution id="13d48d47-6a7e-4a98-9370-2fbe09144dd7" />
+      <TestMethod codeBase="C:\Git\erp\tests\Erp.Core.Tests\bin\Release\net10.0\Erp.Core.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner3/netcore/" className="Erp.Core.Tests.CompanyAdminServiceTests" name="CreateAsync_requires_a_name_and_a_tax_id" />
+    </UnitTest>
+    <UnitTest name="Erp.Core.Tests.CompanyAdminServiceTests.CreateAsync_requires_a_name_and_a_tax_id(name: &quot;Alfa&quot;, taxId: &quot;&quot;)" storage="c:\git\erp\tests\erp.core.tests\bin\release\net10.0\erp.core.tests.dll" id="98969f90-4f90-1567-923d-28db69fc3455">
+      <Execution id="7dcf7bdc-15c8-41d9-859f-6543e9c0b3a6" />
+      <TestMethod codeBase="C:\Git\erp\tests\Erp.Core.Tests\bin\Release\net10.0\Erp.Core.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner3/netcore/" className="Erp.Core.Tests.CompanyAdminServiceTests" name="CreateAsync_requires_a_name_and_a_tax_id" />
+    </UnitTest>
+    <UnitTest name="Erp.Core.Tests.CompanyAdminServiceTests.CreateAsync_requires_a_name_and_a_tax_id(name: &quot;Alfa&quot;, taxId: &quot;  &quot;)" storage="c:\git\erp\tests\erp.core.tests\bin\release\net10.0\erp.core.tests.dll" id="3c26434f-f903-d805-6463-a07a5db6a0e7">
+      <Execution id="c789fedc-763a-403b-bd4d-c172ffa2bd43" />
+      <TestMethod codeBase="C:\Git\erp\tests\Erp.Core.Tests\bin\Release\net10.0\Erp.Core.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner3/netcore/" className="Erp.Core.Tests.CompanyAdminServiceTests" name="CreateAsync_requires_a_name_and_a_tax_id" />
+    </UnitTest>
+    <UnitTest name="Erp.Core.Tests.CompanyAdminServiceTests.UpdateAsync_returns_null_for_an_unknown_company" storage="c:\git\erp\tests\erp.core.tests\bin\release\net10.0\erp.core.tests.dll" id="f0026a94-5e32-61de-9fa6-9745a027e3c3">
+      <Execution id="581d1008-0045-4e3e-8231-47b9c8fd7a0b" />
+      <TestMethod codeBase="C:\Git\erp\tests\Erp.Core.Tests\bin\Release\net10.0\Erp.Core.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner3/netcore/" className="Erp.Core.Tests.CompanyAdminServiceTests" name="UpdateAsync_returns_null_for_an_unknown_company" />
+    </UnitTest>
+    <UnitTest name="Erp.Core.Tests.UserCompanyServiceTests.GetUserCompaniesAsync_returns_empty_without_a_user(userId: &quot;&quot;)" storage="c:\git\erp\tests\erp.core.tests\bin\release\net10.0\erp.core.tests.dll" id="23087d97-95ae-e7ad-c712-45932e4d2774">
+      <Execution id="dcbddf09-4c92-49e9-a794-b3b1bcdd3500" />
+      <TestMethod codeBase="C:\Git\erp\tests\Erp.Core.Tests\bin\Release\net10.0\Erp.Core.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner3/netcore/" className="Erp.Core.Tests.UserCompanyServiceTests" name="GetUserCompaniesAsync_returns_empty_without_a_user" />
+    </UnitTest>
+    <UnitTest name="Erp.Core.Tests.UserCompanyServiceTests.HasRoleAsync_is_false_for_a_different_role" storage="c:\git\erp\tests\erp.core.tests\bin\release\net10.0\erp.core.tests.dll" id="9d14a62b-46f3-4a86-067e-6d16cb499793">
+      <Execution id="0ab84752-311f-4ffd-9f3e-eb32cc6421bf" />
+      <TestMethod codeBase="C:\Git\erp\tests\Erp.Core.Tests\bin\Release\net10.0\Erp.Core.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner3/netcore/" className="Erp.Core.Tests.UserCompanyServiceTests" name="HasRoleAsync_is_false_for_a_different_role" />
+    </UnitTest>
+  </TestDefinitions>
+  <TestEntries>
+    <TestEntry testId="13069c2f-6aad-a399-148c-566363c6f0d9" executionId="9708efd2-a10f-4ec7-ad7c-04488c14e4b8" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="c19cbee4-d895-10f4-87ff-4083574796a1" executionId="b19c3203-171f-40d1-98c5-d4444cb61392" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="90bc7f0d-7e90-ca86-f3a1-9ee5b7b7e75f" executionId="2d25561b-68f6-479c-be6c-9a5a3e656606" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="9ecd91e9-f5b9-60fa-10f3-48a8c3bcdd21" executionId="30236945-75a8-4bb2-9321-ed08c29a8089" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="7b9fb890-9e54-d180-9e3e-b557d4b72b5b" executionId="b4f88a44-0666-4f7d-8f5e-78efe0e2f328" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="c607c241-9729-dce6-365a-4c43b0142c82" executionId="25832c2d-0149-45ec-bb7e-aa61141793e6" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="ec66ec8f-7b9a-f09c-5baf-ad31f8a73366" executionId="31807a9a-6eae-4462-b6ae-5fe76fb65f73" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="4f966b5b-51a0-4ef6-fb33-32ecfd99bd03" executionId="e0a33950-b187-425b-84a4-8938e5fc7bc9" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="98b6424e-600d-2ff0-5fe2-3bfd83f711de" executionId="eb1cfa16-ce5e-4cd3-80e9-cf74c7ffe372" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="f03a57b3-67ba-4ea0-8bae-fcfeeaa054ee" executionId="e75d76e4-627d-4dbe-a595-8897ef8b349b" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="52a1ae9c-b957-b9af-6a92-af4d08cb4d14" executionId="05995e54-7994-49ad-95c1-f3baa364a983" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="438d4320-15c8-2d12-ed23-35941e37cb76" executionId="19bdd412-ac1c-4943-ac02-de9eec408d77" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="7615d7fb-2b22-e2e2-16e1-0b23a7428750" executionId="03eae0c6-6f15-4a33-904c-dae720372bd6" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="388c176e-6ee6-25c4-58e4-659f5d173856" executionId="0fd4edfe-2191-4e74-9d76-27f348d37537" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="f0026a94-5e32-61de-9fa6-9745a027e3c3" executionId="581d1008-0045-4e3e-8231-47b9c8fd7a0b" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="87aaae34-3bf3-36b9-d33a-f97b356ecd53" executionId="13d48d47-6a7e-4a98-9370-2fbe09144dd7" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="f1ec64e3-e23d-2b9f-caa7-c50382e2448c" executionId="85ac0829-8f41-406d-a503-08f1cfeba6cb" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="98e7cc3a-1fe9-095e-75fc-2fc8a9019080" executionId="32df198c-dc72-40f7-839c-e4204fd513d5" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="aa538138-591a-a105-476c-f439fc034352" executionId="0fde918c-a995-488c-8755-2a26dfb2bd2b" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="a4bb14c3-3f40-406b-e114-c2127e589669" executionId="220e1007-8ce7-4b00-a313-e18de4c3708c" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="98969f90-4f90-1567-923d-28db69fc3455" executionId="7dcf7bdc-15c8-41d9-859f-6543e9c0b3a6" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="e322f28d-dcc5-2273-76c8-ef425eb2790a" executionId="396c5255-bd10-4f46-8f9f-f4e361b8177c" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="246022a6-ebae-2fe5-d732-5165bea7b15e" executionId="9218a217-c695-4c54-86ae-989f4766ac6d" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="277b63de-8194-b2bd-c5c2-242083c9b9d3" executionId="964dc5fd-23ff-44a3-aaa2-ccd5dee92780" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="3c26434f-f903-d805-6463-a07a5db6a0e7" executionId="c789fedc-763a-403b-bd4d-c172ffa2bd43" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="9d14a62b-46f3-4a86-067e-6d16cb499793" executionId="0ab84752-311f-4ffd-9f3e-eb32cc6421bf" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="7cc25003-abbb-9da2-2950-adf10bbc9dbe" executionId="aaa32685-c415-44ff-b135-dfdc683626ba" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="950450f2-e809-7e14-6a62-4ef4f609f1d9" executionId="01f9ba56-86c0-4ba5-9292-fb5a9f959170" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="23087d97-95ae-e7ad-c712-45932e4d2774" executionId="dcbddf09-4c92-49e9-a794-b3b1bcdd3500" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="c3a3c745-ee3b-a88d-3346-a258133ed54c" executionId="8d328345-6bb0-463a-b7c3-56db9844ae6f" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="575d4ae3-9628-d89e-e34b-204b0d722926" executionId="343f9f13-85cd-4fa8-b89e-63efac383af8" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="f9a287a7-fee2-61e0-6235-d241f47b8f0d" executionId="3d28005c-9a0b-484b-8ac3-e9a4975052b1" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+  </TestEntries>
+  <TestLists>
+    <TestList name="Results Not in a List" id="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestList name="All Loaded Results" id="19431567-8539-422a-85d7-44ee4e166bda" />
+  </TestLists>
+  <ResultSummary outcome="Completed">
+    <Counters total="32" executed="32" passed="32" failed="0" error="0" timeout="0" aborted="0" inconclusive="0" passedButRunAborted="0" notRunnable="0" notExecuted="0" disconnected="0" warning="0" completed="0" inProgress="0" pending="0" />
+    <Output>
+      <StdOut>[xUnit.net 00:00:00.00] xUnit.net VSTest Adapter v3.1.5+1b188a7b0a (64-bit .NET 10.0.11)&#xD;
+[xUnit.net 00:00:00.19]   Discovering: Erp.Core.Tests&#xD;
+[xUnit.net 00:00:00.26]   Discovered:  Erp.Core.Tests&#xD;
+[xUnit.net 00:00:00.30]   Starting:    Erp.Core.Tests&#xD;
+[xUnit.net 00:00:00.55]   Finished:    Erp.Core.Tests&#xD;
+</StdOut>
+    </Output>
+  </ResultSummary>
+</TestRun>

@@ -8,6 +8,12 @@ public static class ApiResponse
 {
     public static async Task<string> ReadErrorAsync(HttpResponseMessage response, CancellationToken cancellationToken)
     {
+        if (response.StatusCode == System.Net.HttpStatusCode.Forbidden)
+        {
+            return "Sem permissões para esta operação. Se as suas permissões mudaram há pouco, "
+                 + "termine a sessão e volte a entrar: o token em cache ainda é o anterior.";
+        }
+
         try
         {
             var problem = await response.Content.ReadFromJsonAsync<ApiError>(cancellationToken);
@@ -36,10 +42,16 @@ public class CoreApiClient(HttpClient http)
         return companies ?? [];
     }
 
-    public async Task<IReadOnlyList<CompanyListItem>> GetCompaniesAsync(CancellationToken cancellationToken = default)
+    public async Task<(IReadOnlyList<CompanyListItem> Companies, string? Error)> GetCompaniesAsync(
+        CancellationToken cancellationToken = default)
     {
-        var companies = await Http.GetFromJsonAsync<List<CompanyListItem>>("api/companies", cancellationToken);
-        return companies ?? [];
+        var response = await Http.GetAsync("api/companies", cancellationToken);
+
+        if (!response.IsSuccessStatusCode)
+            return ([], await ApiResponse.ReadErrorAsync(response, cancellationToken));
+
+        var companies = await response.Content.ReadFromJsonAsync<List<CompanyListItem>>(cancellationToken);
+        return (companies ?? [], null);
     }
 
     public async Task<CompanyDetail?> GetCompanyAsync(Guid id, CancellationToken cancellationToken = default)
@@ -71,6 +83,52 @@ public class CoreApiClient(HttpClient http)
         return response.IsSuccessStatusCode
             ? (await response.Content.ReadFromJsonAsync<CompanyDetail>(cancellationToken), null)
             : (null, await ApiResponse.ReadErrorAsync(response, cancellationToken));
+    }
+
+    /// <param name="companyId">Limits the result to one company; null returns every membership.</param>
+    public async Task<(IReadOnlyList<UserCompanyAdmin> Items, string? Error)> GetUserCompaniesAsync(
+        Guid? companyId = null,
+        CancellationToken cancellationToken = default)
+    {
+        var route = companyId is null ? "api/user-companies" : $"api/user-companies?companyId={companyId}";
+        var response = await Http.GetAsync(route, cancellationToken);
+
+        if (!response.IsSuccessStatusCode)
+            return ([], await ApiResponse.ReadErrorAsync(response, cancellationToken));
+
+        var items = await response.Content.ReadFromJsonAsync<List<UserCompanyAdmin>>(cancellationToken);
+        return (items ?? [], null);
+    }
+
+    public async Task<UserCompanyAdmin?> GetUserCompanyAsync(Guid id, CancellationToken cancellationToken = default)
+    {
+        var response = await Http.GetAsync($"api/user-companies/{id}", cancellationToken);
+        return response.IsSuccessStatusCode
+            ? await response.Content.ReadFromJsonAsync<UserCompanyAdmin>(cancellationToken)
+            : null;
+    }
+
+    public async Task<string?> CreateUserCompanyAsync(
+        CreateUserCompanyRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        var response = await Http.PostAsJsonAsync("api/user-companies", request, cancellationToken);
+        return response.IsSuccessStatusCode ? null : await ApiResponse.ReadErrorAsync(response, cancellationToken);
+    }
+
+    public async Task<string?> UpdateUserCompanyAsync(
+        Guid id,
+        UpdateUserCompanyRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        var response = await Http.PutAsJsonAsync($"api/user-companies/{id}", request, cancellationToken);
+        return response.IsSuccessStatusCode ? null : await ApiResponse.ReadErrorAsync(response, cancellationToken);
+    }
+
+    public async Task<string?> DeleteUserCompanyAsync(Guid id, CancellationToken cancellationToken = default)
+    {
+        var response = await Http.DeleteAsync($"api/user-companies/{id}", cancellationToken);
+        return response.IsSuccessStatusCode ? null : await ApiResponse.ReadErrorAsync(response, cancellationToken);
     }
 }
 
@@ -176,6 +234,24 @@ public class SalesApiClient(HttpClient http)
         return response.IsSuccessStatusCode
             ? (await response.Content.ReadFromJsonAsync<ProductListItem>(cancellationToken), null)
             : (null, await ApiResponse.ReadErrorAsync(response, cancellationToken));
+    }
+}
+
+public class IdentityApiClient(HttpClient http)
+{
+    public HttpClient Http { get; } = http;
+
+    /// <summary>Users from the Identity store, so they can be assigned to companies.</summary>
+    public async Task<(IReadOnlyList<IdentityUser> Users, string? Error)> GetUsersAsync(
+        CancellationToken cancellationToken = default)
+    {
+        var response = await Http.GetAsync("api/users", cancellationToken);
+
+        if (!response.IsSuccessStatusCode)
+            return ([], await ApiResponse.ReadErrorAsync(response, cancellationToken));
+
+        var users = await response.Content.ReadFromJsonAsync<List<IdentityUser>>(cancellationToken);
+        return (users ?? [], null);
     }
 }
 

@@ -27,11 +27,12 @@ public sealed class UserCompanyStorage(CoreDbContext dbContext) : IUserCompanySt
                 cancellationToken);
     }
 
-    public async Task<IReadOnlyList<UserCompany>> GetAllAsync(CancellationToken cancellationToken = default)
+    public async Task<IReadOnlyList<UserCompany>> GetAllAsync(Guid? companyId = null, CancellationToken cancellationToken = default)
     {
         return await dbContext.UserCompanies
             .AsNoTracking()
             .Include(x => x.Company)
+            .Where(x => companyId == null || x.CompanyId == companyId)
             .OrderBy(x => x.UserId)
             .ThenBy(x => x.Company.Name)
             .ToListAsync(cancellationToken);

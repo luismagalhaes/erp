@@ -10,10 +10,13 @@ namespace Erp.Core.Api.Controllers;
 [Authorize(Roles = "Admin,SuperAdmin")]
 public sealed class UserCompaniesController(IUserCompanyAdminService userCompanyAdminService) : ControllerBase
 {
+    /// <summary>Lists user memberships, optionally limited to one company.</summary>
     [HttpGet]
-    public async Task<ActionResult<IReadOnlyList<UserCompanyAdminDto>>> GetAll(CancellationToken cancellationToken)
+    public async Task<ActionResult<IReadOnlyList<UserCompanyAdminDto>>> GetAll(
+        [FromQuery] Guid? companyId,
+        CancellationToken cancellationToken)
     {
-        var result = await userCompanyAdminService.GetAllAsync(cancellationToken);
+        var result = await userCompanyAdminService.GetAllAsync(companyId, cancellationToken);
         return Ok(result);
     }
 

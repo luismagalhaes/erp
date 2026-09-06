@@ -153,6 +153,26 @@ public sealed record CreateInvoiceRequest(
 
 public sealed record VoidInvoiceRequest(string Reason);
 
+public sealed record IdentityUser(
+    string Id,
+    string Email,
+    string FullName,
+    bool IsActive,
+    DateTime CreatedAt,
+    IReadOnlyList<string> Roles);
+
+public sealed record UserCompanyAdmin(
+    Guid Id,
+    string UserId,
+    Guid CompanyId,
+    string CompanyName,
+    string Role,
+    bool IsActive);
+
+public sealed record CreateUserCompanyRequest(string UserId, Guid CompanyId, string Role, bool IsActive = true);
+
+public sealed record UpdateUserCompanyRequest(string Role, bool IsActive);
+
 public sealed record NotificationListItem(
     Guid Id,
     string ToEmail,

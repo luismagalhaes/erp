@@ -27,6 +27,13 @@ try
             options.Authority = builder.Configuration["IdentityServer:Authority"];
             options.Audience = "core-api";
             options.RequireHttpsMetadata = !builder.Environment.IsDevelopment();
+
+            // JwtBearerOptions.MapInboundClaims defaults to true, which renames 'role' to the
+            // WS-Federation URI. Keeping the short names is what makes the role checks below
+            // find the claim Duende actually issued.
+            options.MapInboundClaims = false;
+            options.TokenValidationParameters.RoleClaimType = "role";
+            options.TokenValidationParameters.NameClaimType = "name";
         });
 
     builder.Services.AddAuthorization();

@@ -25,6 +25,7 @@
 - Use Controllers instead of Minimal APIs to organize endpoints.
 - All page routes and navigation links in Erp.Main must be in English (`/invoices`, `/companies`, `/products`), even though the UI text shown to users stays in Portuguese.
 - Every microservice must expose a health endpoint through a `HealthController` and publish OpenAPI, with the Scalar reference available in development.
+- Blazor pages are organized one folder per feature under `Pages` (for example `Pages/Backoffice/Companies`, `Pages/Sales/Invoices`), keeping the listing and its create/edit pages together. Never leave pages loose at the root of an area.
 
 ## UI Design Requirements
 - For Identity Razor Pages UI, use a shared layout with `@RenderBody` and a Mud-like visual style.

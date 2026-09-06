@@ -1,18 +1,16 @@
 using System.Net;
 using System.Text.Json;
-using Erp.Identity.Dependencies;
 using Erp.Identity.Dependencies.Services;
 using Erp.Identity.Infrastructure.Application;
 using FluentAssertions;
-using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.DependencyInjection;
+using NSubstitute;
 
 namespace Erp.Identity.Tests;
 
 /// <summary>
 /// The password reset page calls IEmailService, which ends up here. If this call silently
 /// stopped working, users would never get their reset link, so the contract is pinned:
-/// the right endpoint, the right payload, and a failure that does not pass unnoticed.
+/// the right endpoint, the right payload, a bearer token, and a failure that is not swallowed.
 /// </summary>
 public class NotificationEmailClientTests
 {
@@ -30,7 +28,7 @@ public class NotificationEmailClientTests
         }
     }
 
-    private static NotificationEmailClient CreateClient(RecordingHandler handler) =>
+    private static NotificationEmailClient CreateClient(HttpMessageHandler handler) =>
         new(new HttpClient(handler) { BaseAddress = new Uri("https://localhost:7117") });
 
     [Fact]
@@ -68,55 +66,17 @@ public class NotificationEmailClientTests
     }
 
     [Fact]
-    public void AddIdentityDependencies_sends_the_internal_api_key_when_configured()
+    public async Task The_call_carries_the_service_access_token()
     {
-        var client = BuildConfiguredClient(new Dictionary<string, string?>
-        {
-            ["NotificationService:BaseUrl"] = "https://localhost:7117",
-            ["NotificationService:InternalApiKey"] = "chave-de-teste"
-        });
+        var tokenProvider = Substitute.For<IServiceTokenProvider>();
+        tokenProvider.GetAccessTokenAsync(Arg.Any<CancellationToken>()).Returns("token-de-servico");
 
-        client.DefaultRequestHeaders.GetValues(DependencyInjection.InternalApiKeyHeader)
-            .Should().ContainSingle().Which.Should().Be("chave-de-teste");
-    }
+        var recording = new RecordingHandler();
+        var handler = new ServiceTokenHandler(tokenProvider) { InnerHandler = recording };
 
-    [Fact]
-    public void AddIdentityDependencies_omits_the_key_header_when_it_is_not_configured()
-    {
-        var client = BuildConfiguredClient(new Dictionary<string, string?>
-        {
-            ["NotificationService:BaseUrl"] = "https://localhost:7117"
-        });
+        await CreateClient(handler).QueueAsync("ana@empresa.pt", "Assunto", "<p>corpo</p>");
 
-        client.DefaultRequestHeaders.Contains(DependencyInjection.InternalApiKeyHeader).Should().BeFalse();
-    }
-
-    [Fact]
-    public void AddIdentityDependencies_fails_when_the_base_url_is_missing()
-    {
-        var act = () => BuildConfiguredClient(new Dictionary<string, string?>());
-
-        act.Should().Throw<InvalidOperationException>().WithMessage("*BaseUrl*");
-    }
-
-    /// <summary>
-    /// Builds the client through the real registration, so the configuration callback in
-    /// AddIdentityDependencies is the one under test.
-    /// </summary>
-    private static HttpClient BuildConfiguredClient(Dictionary<string, string?> settings)
-    {
-        var configuration = new ConfigurationBuilder().AddInMemoryCollection(settings).Build();
-
-        var provider = new ServiceCollection()
-            .AddIdentityDependencies(configuration)
-            .BuildServiceProvider();
-
-        var client = provider.GetRequiredService<IHttpClientFactory>()
-            .CreateClient(nameof(INotificationEmailClient));
-
-        // Proves the named registration was found; otherwise the factory hands back a bare client.
-        client.BaseAddress.Should().NotBeNull();
-
-        return client;
+        recording.Request!.Headers.Authorization!.Scheme.Should().Be("Bearer");
+        recording.Request.Headers.Authorization.Parameter.Should().Be("token-de-servico");
     }
 }

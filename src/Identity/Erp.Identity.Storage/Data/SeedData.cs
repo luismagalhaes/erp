@@ -104,33 +104,44 @@ public static class SeedData
         new ApiScope(Constants.Scopes.ErpNotificationRead,  Constants.ScopeDisplayNames.NotificationRead),
         new ApiScope(Constants.Scopes.ErpNotificationWrite, Constants.ScopeDisplayNames.NotificationWrite),
         new ApiScope(Constants.Scopes.ErpNotificationSend,  Constants.ScopeDisplayNames.NotificationSend),
+        new ApiScope(Constants.Scopes.ErpIdentityRead,      Constants.ScopeDisplayNames.IdentityRead),
     ];
 
+    /// <summary>
+    /// Every API resource asks for the role claim: without it the access token carries no roles
+    /// and the [Authorize(Roles = ...)] endpoints answer 403 even to a SuperAdmin.
+    /// </summary>
     public static IEnumerable<ApiResource> ApiResources =>
     [
         new ApiResource(Constants.ApiResources.CoreApi, Constants.ApiResources.CoreApiDisplayName)
         {
-            Scopes = { Constants.Scopes.ErpCoreRead, Constants.Scopes.ErpCoreWrite }
+            Scopes = { Constants.Scopes.ErpCoreRead, Constants.Scopes.ErpCoreWrite },
+            UserClaims = { Constants.Claims.Role, Constants.Claims.Name }
         },
         new ApiResource(Constants.ApiResources.SalesApi, Constants.ApiResources.SalesApiDisplayName)
         {
-            Scopes = { Constants.Scopes.ErpSalesRead, Constants.Scopes.ErpSalesWrite }
+            Scopes = { Constants.Scopes.ErpSalesRead, Constants.Scopes.ErpSalesWrite },
+            UserClaims = { Constants.Claims.Role, Constants.Claims.Name }
         },
         new ApiResource(Constants.ApiResources.InventoryApi, Constants.ApiResources.InventoryApiDisplayName)
         {
-            Scopes = { Constants.Scopes.ErpInventoryRead, Constants.Scopes.ErpInventoryWrite }
+            Scopes = { Constants.Scopes.ErpInventoryRead, Constants.Scopes.ErpInventoryWrite },
+            UserClaims = { Constants.Claims.Role, Constants.Claims.Name }
         },
         new ApiResource(Constants.ApiResources.PurchasingApi, Constants.ApiResources.PurchasingApiDisplayName)
         {
-            Scopes = { Constants.Scopes.ErpPurchasingRead, Constants.Scopes.ErpPurchasingWrite }
+            Scopes = { Constants.Scopes.ErpPurchasingRead, Constants.Scopes.ErpPurchasingWrite },
+            UserClaims = { Constants.Claims.Role, Constants.Claims.Name }
         },
         new ApiResource(Constants.ApiResources.AccountingApi, Constants.ApiResources.AccountingApiDisplayName)
         {
-            Scopes = { Constants.Scopes.ErpAccountingRead, Constants.Scopes.ErpAccountingWrite }
+            Scopes = { Constants.Scopes.ErpAccountingRead, Constants.Scopes.ErpAccountingWrite },
+            UserClaims = { Constants.Claims.Role, Constants.Claims.Name }
         },
         new ApiResource(Constants.ApiResources.ReportingApi, Constants.ApiResources.ReportingApiDisplayName)
         {
-            Scopes = { Constants.Scopes.ErpReportingRead }
+            Scopes = { Constants.Scopes.ErpReportingRead },
+            UserClaims = { Constants.Claims.Role, Constants.Claims.Name }
         },
         new ApiResource(Constants.ApiResources.NotificationApi, Constants.ApiResources.NotificationApiDisplayName)
         {
@@ -139,7 +150,15 @@ public static class SeedData
                 Constants.Scopes.ErpNotificationRead,
                 Constants.Scopes.ErpNotificationWrite,
                 Constants.Scopes.ErpNotificationSend
-            }
+            },
+            UserClaims = { Constants.Claims.Role, Constants.Claims.Name }
+        },
+        // The Identity host also serves a read only users API, so the UI can assign users
+        // to companies without duplicating the user store.
+        new ApiResource(Constants.ApiResources.IdentityApi, Constants.ApiResources.IdentityApiDisplayName)
+        {
+            Scopes = { Constants.Scopes.ErpIdentityRead },
+            UserClaims = { Constants.Claims.Role, Constants.Claims.Name }
         },
     ];
 
@@ -164,7 +183,8 @@ public static class SeedData
                 Constants.Scopes.ErpPurchasingRead, Constants.Scopes.ErpPurchasingWrite,
                 Constants.Scopes.ErpAccountingRead, Constants.Scopes.ErpAccountingWrite,
                 Constants.Scopes.ErpReportingRead,
-                Constants.Scopes.ErpNotificationRead, Constants.Scopes.ErpNotificationWrite
+                Constants.Scopes.ErpNotificationRead, Constants.Scopes.ErpNotificationWrite,
+                Constants.Scopes.ErpIdentityRead
             },
             AllowOfflineAccess = true,
             AccessTokenLifetime = 3600,

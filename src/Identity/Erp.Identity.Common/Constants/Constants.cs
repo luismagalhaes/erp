@@ -30,6 +30,17 @@
             public const string Password = "Activex.01!";
         }
 
+        /// <summary>
+        /// Claim types as Duende emits them. The APIs read the short names, so their JWT
+        /// validation is configured with these instead of the WS-Federation defaults.
+        /// </summary>
+        public static class Claims
+        {
+            public const string Role = "role";
+            public const string Name = "name";
+            public const string Subject = "sub";
+        }
+
         public static class Scopes
         {
             public const string OpenId = "openid";
@@ -53,6 +64,9 @@
 
             /// <summary>Queueing emails. Granted only to services, never to the user facing client.</summary>
             public const string ErpNotificationSend = "erp.notification.send";
+
+            /// <summary>Reading users from the Identity host, to assign them to companies.</summary>
+            public const string ErpIdentityRead = "erp.identity.read";
         }
 
         public static class ScopeDisplayNames
@@ -71,6 +85,7 @@
             public const string NotificationRead = "Notification — Read";
             public const string NotificationWrite = "Notification — Write";
             public const string NotificationSend = "Notification — Send";
+            public const string IdentityRead = "Identity — Read";
         }
 
         public static class ApiResources
@@ -89,6 +104,8 @@
             public const string ReportingApiDisplayName = "Reporting API";
             public const string NotificationApi = "notification-api";
             public const string NotificationApiDisplayName = "Notification API";
+            public const string IdentityApi = "identity-api";
+            public const string IdentityApiDisplayName = "Identity API";
         }
 
         public static class Clients

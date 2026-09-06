@@ -157,11 +157,18 @@
     private bool _loading = true;
     private bool _voiding;
     private string? _error;
+
+    private Guid? _loadedId;
     private string _voidReason = string.Empty;
     private InvoiceDetail? _invoice;
 
     protected override async Task OnParametersSetAsync()
     {
+        // A layout re-render sets the parameters again; only reload when the route changed.
+        if (_loadedId == Id)
+            return;
+
+        _loadedId = Id;
         await LoadAsync();
     }
 

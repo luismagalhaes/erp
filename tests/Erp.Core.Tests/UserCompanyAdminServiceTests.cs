@@ -40,6 +40,25 @@ public class UserCompanyAdminServiceTests
     }
 
     [Fact]
+    public async Task GetAllAsync_passes_the_company_filter_to_the_storage()
+    {
+        _storage.GetAllAsync(_companyId, Arg.Any<CancellationToken>()).Returns([Membership(Guid.NewGuid())]);
+
+        var result = await CreateService().GetAllAsync(_companyId);
+
+        result.Should().ContainSingle();
+        await _storage.Received(1).GetAllAsync(_companyId, Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task GetAllAsync_without_a_company_asks_for_every_membership()
+    {
+        await CreateService().GetAllAsync();
+
+        await _storage.Received(1).GetAllAsync(null, Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
     public async Task CreateAsync_rejects_an_unknown_company()
     {
         _storage.CompanyExistsAsync(_companyId, Arg.Any<CancellationToken>()).Returns(false);

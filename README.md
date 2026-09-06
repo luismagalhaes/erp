@@ -136,7 +136,7 @@ Todos os microserviços expõem, em desenvolvimento, o documento **OpenAPI** em 
 
 O `Erp.Identity` é o único emissor de tokens. O `Erp.Main` autentica por **Authorization Code + PKCE** com cookie de sessão (30 dias, sliding) e as APIs validam **JWT Bearer**, cada uma com a sua audience.
 
-**Scopes** (definidos em [Constants.cs](src/Identity/Erp.Identity.Common/Constants/Constants.cs)): `erp.core.read/write`, `erp.sales.read/write`, `erp.inventory.read/write`, `erp.purchasing.read/write`, `erp.accounting.read/write`, `erp.reporting.read`, `erp.notification.read/write`.
+**Scopes** (definidos em [Constants.cs](src/Identity/Erp.Identity.Common/Constants/Constants.cs)): `erp.core.read/write`, `erp.sales.read/write`, `erp.inventory.read/write`, `erp.purchasing.read/write`, `erp.accounting.read/write`, `erp.reporting.read`, `erp.notification.read/write` e `erp.notification.send` (só para serviços).
 
 **Clients semeados**:
 
@@ -146,8 +146,19 @@ O `Erp.Identity` é o único emissor de tokens. O `Erp.Main` autentica por **Aut
 | `notification-ui` | Code + PKCE | Portal de notificações (https://localhost:7125) |
 | `sales-service` | Client Credentials | Máquina-a-máquina |
 | `reporting-service` | Client Credentials | Máquina-a-máquina |
+| `identity-service` | Client Credentials | O próprio Identity a enfileirar emails |
 
 **Roles**: `SuperAdmin`, `Admin`, `Manager`, `User`, `Accountant`, `Auditor`. O backoffice do Identity só é visível a `SuperAdmin`; os endpoints administrativos do Core exigem `Admin` ou `SuperAdmin`.
+
+Para que a autorização por role funcione são precisas **três** coisas, e falhando qualquer uma os endpoints com `[Authorize(Roles = ...)]` respondem **403 mesmo a um SuperAdmin**:
+
+1. cada `ApiResource` declara `UserClaims = { "role" }` — sem isso o *access token* não leva roles nenhumas, mesmo que o utilizador as tenha;
+2. cada API define `options.MapInboundClaims = false` — por omissão é `true` e o handler **renomeia** `role` para a URI WS-Federation `http://schemas.microsoft.com/ws/2008/06/identity/claims/role`;
+3. cada API define `TokenValidationParameters.RoleClaimType = "role"` (e `NameClaimType = "name"`), porque é assim que o Duende emite as claims.
+
+Os pontos 2 e 3 andam aos pares: definir o `RoleClaimType` sem desligar o mapeamento é **pior** do que não fazer nada, porque a claim passa a existir com o nome longo enquanto a autorização procura o curto. [JwtRoleClaimTests](tests/Erp.Core.Tests/JwtRoleClaimTests.cs) reproduz os dois cenários.
+
+Depois de alterar isto é preciso reiniciar o Identity (para o seed atualizar os resources) **e voltar a autenticar**, porque o token em cache foi emitido antes. O endpoint `GET /api/access/me/claims` mostra o que a API vê no token e diz de imediato qual dos três pontos falhou.
 
 O seed cria um utilizador administrador cujas credenciais estão definidas em `Constants.AdminUser` — ver [nota de segurança](#segurança) abaixo.
 
@@ -226,7 +237,7 @@ Contextos disponíveis no Identity: `ApplicationDbContext`, `ConfigurationDbCont
 dotnet test Erp.slnx
 ```
 
-131 testes em cinco projetos, sem dependência de base de dados: as camadas Application são testadas com storages substituídos (NSubstitute), a biblioteca fiscal é testada diretamente e o cliente de email do Identity com um `HttpMessageHandler` de teste.
+152 testes em cinco projetos, sem dependência de base de dados: as camadas Application são testadas com storages substituídos (NSubstitute), a biblioteca fiscal é testada diretamente, e o cliente de email e a obtenção de tokens do Identity com um `HttpMessageHandler` e um `TimeProvider` de teste.
 
 ---
 
@@ -238,7 +249,7 @@ dotnet test Erp.slnx
 | `GET` | `/api/companies/{id}` | Admin, SuperAdmin |
 | `POST` | `/api/companies` | Admin, SuperAdmin |
 | `PUT` | `/api/companies/{id}` | Admin, SuperAdmin |
-| `GET` | `/api/user-companies` | Admin, SuperAdmin |
+| `GET` | `/api/user-companies?companyId=` | Admin, SuperAdmin |
 | `GET` | `/api/user-companies/{id}` | Admin, SuperAdmin |
 | `POST` | `/api/user-companies` | Admin, SuperAdmin |
 | `PUT` | `/api/user-companies/{id}` | Admin, SuperAdmin |
@@ -270,16 +281,33 @@ O acesso é por **scope** do token (políticas em [SalesPolicies.cs](src/Service
 
 ---
 
+## API do Identity
+
+| Método | Rota | Autorização |
+|---|---|---|
+| `GET` | `/api/users` | `erp.identity.read` + Admin/SuperAdmin |
+| `GET` | `/api/users/{id}` | `erp.identity.read` + Admin/SuperAdmin |
+
+Os utilizadores vivem no Identity, por isso o backoffice do `Erp.Main` lê-os daqui em vez de manter uma cópia. É uma API só de leitura, servida pelo próprio host do IdentityServer com o audience `identity-api`, num esquema Bearer separado — os esquemas por omissão continuam a ser os cookies do ASP.NET Identity, portanto a UI do Identity não é afetada.
+
+**A associação utilizador ↔ empresa vive no Core** (`/api/user-companies`), porque é lá que as empresas existem. É essa tabela que alimenta o seletor de empresa no cabeçalho: um utilizador sem associações não vê empresa nenhuma.
+
+---
+
 ## API do Notification
 
 | Método | Rota | Autorização |
 |---|---|---|
-| `POST` | `/api/notifications/email` | Chave interna (`X-Internal-Api-Key`) |
+| `POST` | `/api/notifications/email` | `erp.notification.send` |
 | `GET` | `/api/notifications` | `erp.notification.read` |
 | `GET` | `/api/notifications/{id}` | `erp.notification.read` |
 | `POST` | `/api/notifications/{id}/requeue` | `erp.notification.write` |
 
-O endpoint de enfileiramento é chamado serviço a serviço (o Identity, na recuperação de password) e por isso não traz token de utilizador: é protegido por uma **chave interna** partilhada, configurada em `Notification:InternalApiKey` do lado da API e em `NotificationService:InternalApiKey` do lado do Identity — via *user secrets*, nunca em `appsettings`. Em desenvolvimento, sem chave configurada, a API aceita a chamada e regista um aviso; fora de desenvolvimento, recusa.
+O enfileiramento é chamado serviço a serviço (o Identity, na recuperação de password) com um token de **client credentials** obtido no próprio Identity pelo client `identity-service`, cujo único scope é `erp.notification.send`. O [ClientCredentialsTokenProvider](src/Identity/Erp.Identity.Dependencies/Services/ClientCredentialsTokenProvider.cs) pede o token e reutiliza-o até perto de expirar; o [ServiceTokenHandler](src/Identity/Erp.Identity.Dependencies/Services/ServiceTokenHandler.cs) anexa-o ao pedido.
+
+O scope de envio é deliberadamente separado de `read` e `write`: o cliente da UI tem os dois últimos, para consultar e reenviar, mas **não** pode enfileirar email — caso contrário qualquer utilizador autenticado poderia mandar mensagens em nome do ERP.
+
+O segredo do `identity-service` vem de `ServiceAuthentication:ClientSecret` (user secrets ou cofre). Em desenvolvimento, se não estiver configurado, é usado o valor semeado em `Constants` para a máquina local funcionar sem preparação.
 
 O envio efetivo é feito pelo [Erp.Notification.Worker](src/Notification/Erp.Notification.Worker/), que drena a fila no intervalo definido em `NotificationWorker:PollingIntervalSeconds`. Uma falha de entrega marca a notificação como `Failed` com o erro e incrementa as tentativas, sem parar o ciclo.
 
@@ -299,11 +327,11 @@ A empresa ativa escolhe-se no cabeçalho e é partilhada por todas as páginas (
 | `/products` | Ficheiro de artigos |
 | `/products/new`, `/products/{id}` | Criar e editar artigo |
 | `/companies` | Empresas |
-| `/companies/new`, `/companies/{id}` | Criar e editar empresa |
+| `/companies/new`, `/companies/{id}` | Criar e editar empresa, com os utilizadores com acesso num separador |
 | `/notifications` | Backoffice de notificações: histórico de emails por estado |
 | `/notifications/{id}` | Email enviado, com corpo, erro e reenvio |
 
-As rotas são sempre em **inglês**, mesmo com a interface em português.
+As rotas são sempre em **inglês**, mesmo com a interface em português, e as páginas organizam-se **uma pasta por funcionalidade** em `Pages` (`Backoffice/Companies`, `Sales/Invoices`, …), com a listagem e o respetivo editor juntos.
 
 ---
 

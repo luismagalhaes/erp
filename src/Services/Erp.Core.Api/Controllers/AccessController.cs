@@ -43,6 +43,27 @@ public sealed class AccessController(IUserCompanyService userCompanyService) : C
         return Ok(new CheckRoleResponse(allowed));
     }
 
+    /// <summary>
+    /// Claims carried by the caller access token. Diagnostic endpoint: when an endpoint answers
+    /// 403, this says whether the token actually carries the expected roles or whether the
+    /// session predates a permission change.
+    /// </summary>
+    [HttpGet("me/claims")]
+    public ActionResult<AccessDiagnosticsDto> GetMyClaims()
+    {
+        var claims = User.Claims
+            .Select(claim => new ClaimDto(claim.Type, claim.Value))
+            .OrderBy(claim => claim.Type)
+            .ToList();
+
+        return Ok(new AccessDiagnosticsDto(
+            GetCurrentUserId(),
+            User.Identity?.Name,
+            User.IsInRole("SuperAdmin"),
+            User.IsInRole("Admin"),
+            claims));
+    }
+
     private string? GetCurrentUserId()
     {
         return User.FindFirstValue("sub")

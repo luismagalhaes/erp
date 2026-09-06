@@ -29,7 +29,10 @@ public class ConstantsTests
             Constants.Scopes.ErpInventoryRead, Constants.Scopes.ErpInventoryWrite,
             Constants.Scopes.ErpPurchasingRead, Constants.Scopes.ErpPurchasingWrite,
             Constants.Scopes.ErpAccountingRead, Constants.Scopes.ErpAccountingWrite,
-            Constants.Scopes.ErpReportingRead
+            Constants.Scopes.ErpReportingRead,
+            Constants.Scopes.ErpNotificationRead, Constants.Scopes.ErpNotificationWrite,
+            Constants.Scopes.ErpNotificationSend,
+            Constants.Scopes.ErpIdentityRead
         };
 
         scopes.Should().OnlyHaveUniqueItems();
@@ -37,7 +40,7 @@ public class ConstantsTests
         {
             scope.Should().StartWith("erp.");
             scope.Split('.').Should().HaveCount(3);
-            scope.Should().MatchRegex("^erp\\.[a-z]+\\.(read|write)$");
+            scope.Should().MatchRegex("^erp\\.[a-z]+\\.(read|write|send)$");
         });
     }
 
@@ -51,7 +54,9 @@ public class ConstantsTests
             Constants.ApiResources.InventoryApi,
             Constants.ApiResources.PurchasingApi,
             Constants.ApiResources.AccountingApi,
-            Constants.ApiResources.ReportingApi
+            Constants.ApiResources.ReportingApi,
+            Constants.ApiResources.NotificationApi,
+            Constants.ApiResources.IdentityApi
         };
 
         resources.Should().OnlyHaveUniqueItems();

@@ -4,6 +4,8 @@
 @inject NavigationManager Navigation
 
 <MudThemeProvider />
+@* Required by every component that opens an overlay: selects, date pickers and menus. *@
+<MudPopoverProvider />
 <MudDialogProvider />
 <MudSnackbarProvider />
 

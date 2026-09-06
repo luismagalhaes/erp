@@ -40,6 +40,17 @@ public class SeedDataTests
         unknown.Should().BeEmpty();
     }
 
+    /// <summary>
+    /// Without this claim the access token carries no roles, and every
+    /// [Authorize(Roles = ...)] endpoint answers 403 even to a SuperAdmin.
+    /// </summary>
+    [Fact]
+    public void Every_api_resource_asks_for_the_role_claim()
+    {
+        SeedData.ApiResources.Should().AllSatisfy(resource =>
+            resource.UserClaims.Should().Contain(Constants.Claims.Role, $"{resource.Name} authorizes by role"));
+    }
+
     [Fact]
     public void Client_ids_are_unique()
     {
@@ -66,13 +77,20 @@ public class SeedDataTests
         client.AllowOfflineAccess.Should().BeTrue();
     }
 
+    /// <summary>
+    /// The UI reaches every module, with one deliberate exception: queueing email is a
+    /// service only capability, checked separately below.
+    /// </summary>
     [Fact]
-    public void The_main_ui_client_can_reach_every_api_scope()
+    public void The_main_ui_client_can_reach_every_api_scope_except_the_service_only_ones()
     {
         var client = SeedData.Clients.Single(x => x.ClientId == Constants.Clients.BlazorWasmClientId);
-        var apiScopes = SeedData.ApiScopes.Select(scope => scope.Name);
 
-        client.AllowedScopes.Should().Contain(apiScopes);
+        var userFacingScopes = SeedData.ApiScopes
+            .Select(scope => scope.Name)
+            .Except([Constants.Scopes.ErpNotificationSend], StringComparer.Ordinal);
+
+        client.AllowedScopes.Should().Contain(userFacingScopes);
     }
 
     [Fact]
@@ -90,6 +108,7 @@ public class SeedDataTests
     [Theory]
     [InlineData("sales-service")]
     [InlineData("reporting-service")]
+    [InlineData("identity-service")]
     public void Machine_clients_use_client_credentials_with_a_secret_and_no_redirects(string clientId)
     {
         var client = SeedData.Clients.Single(x => x.ClientId == clientId);
@@ -107,6 +126,46 @@ public class SeedDataTests
 
         client.ClientSecrets.Should().AllSatisfy(secret =>
             secret.Value.Should().NotBe(Constants.Clients.SalesServiceSecret));
+    }
+
+    [Fact]
+    public void Only_the_identity_service_may_queue_emails()
+    {
+        var allowed = SeedData.Clients
+            .Where(client => client.AllowedScopes.Contains(Constants.Scopes.ErpNotificationSend))
+            .Select(client => client.ClientId)
+            .ToList();
+
+        allowed.Should().Equal(Constants.Clients.IdentityServiceClientId);
+    }
+
+    [Fact]
+    public void The_user_facing_client_cannot_send_mail_through_the_erp()
+    {
+        var client = SeedData.Clients.Single(x => x.ClientId == Constants.Clients.BlazorWasmClientId);
+
+        client.AllowedScopes.Should().NotContain(Constants.Scopes.ErpNotificationSend);
+        client.AllowedScopes.Should().Contain(Constants.Scopes.ErpNotificationRead);
+    }
+
+    [Fact]
+    public void The_identity_service_client_is_limited_to_queueing_emails()
+    {
+        var client = SeedData.Clients.Single(x => x.ClientId == Constants.Clients.IdentityServiceClientId);
+
+        client.AllowedScopes.Should().Equal(Constants.Scopes.ErpNotificationSend);
+    }
+
+    [Fact]
+    public void The_ui_client_can_read_users_to_assign_them_to_companies()
+    {
+        var client = SeedData.Clients.Single(x => x.ClientId == Constants.Clients.BlazorWasmClientId);
+
+        client.AllowedScopes.Should().Contain(Constants.Scopes.ErpIdentityRead);
+
+        SeedData.ApiResources
+            .Single(resource => resource.Name == Constants.ApiResources.IdentityApi)
+            .Scopes.Should().Contain(Constants.Scopes.ErpIdentityRead);
     }
 
     [Fact]

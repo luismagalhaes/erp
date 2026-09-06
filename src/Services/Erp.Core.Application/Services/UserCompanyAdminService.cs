@@ -7,9 +7,9 @@ namespace Erp.Core.Application.Services;
 
 public sealed class UserCompanyAdminService(IUserCompanyStorage storage) : IUserCompanyAdminService
 {
-    public async Task<IReadOnlyList<UserCompanyAdminDto>> GetAllAsync(CancellationToken cancellationToken = default)
+    public async Task<IReadOnlyList<UserCompanyAdminDto>> GetAllAsync(Guid? companyId = null, CancellationToken cancellationToken = default)
     {
-        var list = await storage.GetAllAsync(cancellationToken);
+        var list = await storage.GetAllAsync(companyId, cancellationToken);
         return list.Select(Map).ToList();
     }
 

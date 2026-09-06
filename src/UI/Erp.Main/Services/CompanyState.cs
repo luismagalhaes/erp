@@ -33,24 +33,40 @@ public sealed class CompanyState(CoreApiClient coreApi)
 
         await _loadGate.WaitAsync(cancellationToken);
 
+        // Only a load that actually happened raises the event. Notifying on a no-op would
+        // re-render the layout, which sets the parameters of the current page again, which
+        // restarts its loading: the page would never settle.
+        var loaded = false;
+
         try
         {
             if (IsLoaded)
                 return;
 
-            Companies = await coreApi.GetMyCompaniesAsync(cancellationToken);
-            SelectedCompanyId = Companies.FirstOrDefault()?.CompanyId ?? Guid.Empty;
-            LoadError = Companies.Count == 0 ? "A sua conta não tem nenhuma empresa associada." : null;
-        }
-        catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException)
-        {
-            LoadError = $"Não foi possível carregar as empresas: {ex.Message}";
+            try
+            {
+                Companies = await coreApi.GetMyCompaniesAsync(cancellationToken);
+                SelectedCompanyId = Companies.FirstOrDefault()?.CompanyId ?? Guid.Empty;
+                LoadError = Companies.Count == 0 ? "A sua conta não tem nenhuma empresa associada." : null;
+            }
+            catch (Exception ex)
+            {
+                // This runs from the layout, on every page. Letting anything escape here would
+                // tear down the circuit and freeze the whole UI instead of showing the problem.
+                Companies = [];
+                SelectedCompanyId = Guid.Empty;
+                LoadError = $"Não foi possível carregar as empresas: {ex.Message}";
+            }
+
+            IsLoaded = true;
+            loaded = true;
         }
         finally
         {
-            IsLoaded = true;
             _loadGate.Release();
-            Changed?.Invoke();
+
+            if (loaded)
+                Changed?.Invoke();
         }
     }
 
@@ -63,7 +79,7 @@ public sealed class CompanyState(CoreApiClient coreApi)
         Changed?.Invoke();
     }
 
-    /// <summary>Reloads the list after a company is created or renamed.</summary>
+    /// <summary>Reloads the list after a company is created, renamed or assigned to someone.</summary>
     public async Task RefreshAsync(CancellationToken cancellationToken = default)
     {
         IsLoaded = false;
@@ -71,9 +87,14 @@ public sealed class CompanyState(CoreApiClient coreApi)
 
         await EnsureLoadedAsync(cancellationToken);
 
-        if (Companies.Any(company => company.CompanyId == previous))
-            SelectedCompanyId = previous;
+        if (!Companies.Any(company => company.CompanyId == previous))
+            return;
 
-        Changed?.Invoke();
+        // Keep the user on the company they were working on; EnsureLoadedAsync already notified.
+        if (SelectedCompanyId != previous)
+        {
+            SelectedCompanyId = previous;
+            Changed?.Invoke();
+        }
     }
 }

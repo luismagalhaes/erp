@@ -69,6 +69,7 @@ builder.Services
         options.Scope.Add("erp.reporting.read");
         options.Scope.Add("erp.notification.read");
         options.Scope.Add("erp.notification.write");
+        options.Scope.Add("erp.identity.read");
     });
 
 // MudBlazor
@@ -109,6 +110,15 @@ builder.Services.AddHttpClient<ReportingApiClient>(client =>
 builder.Services.AddHttpClient<NotificationApiClient>(client =>
     client.BaseAddress = new Uri(builder.Configuration["Services:NotificationApi"]!))
     .AddHttpMessageHandler<UserAccessTokenHandler>();
+
+builder.Services.AddHttpClient<IdentityApiClient>(client =>
+    client.BaseAddress = new Uri(builder.Configuration["Services:IdentityApi"]!))
+    .AddHttpMessageHandler<UserAccessTokenHandler>();
+
+// A service that stops responding must surface as an error on the page, not as a spinner that
+// sits there for the 100 second default of HttpClient.
+builder.Services.ConfigureAll<Microsoft.Extensions.Http.HttpClientFactoryOptions>(options =>
+    options.HttpClientActions.Add(client => client.Timeout = TimeSpan.FromSeconds(20)));
 
 // Company currently selected in the header, shared by every page of the circuit.
 builder.Services.AddScoped<CompanyState>();

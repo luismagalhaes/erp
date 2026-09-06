@@ -1,4 +1,5 @@
 using Erp.Identity.Application;
+using Erp.Identity.Common.Constants;
 using Erp.Identity.Endpoints;
 using Erp.Identity.Data;
 using Erp.Identity.Dependencies;
@@ -25,12 +26,33 @@ try
 
     builder.Services.AddIdentityStorage(builder.Configuration);
     builder.Services.AddIdentityApplication();
-    builder.Services.AddIdentityDependencies(builder.Configuration);
+    // Outside development the service secret has to come from user secrets or a secret store.
+    builder.Services.AddIdentityDependencies(
+        builder.Configuration,
+        builder.Environment.IsDevelopment() ? Constants.Clients.IdentityServiceSecret : null);
     builder.Services.AddMudServices();
 
     builder.Services.AddRazorComponents()
         .AddInteractiveServerComponents();
     builder.Services.AddCascadingAuthenticationState();
+    builder.Services.AddControllers();
+
+    // Bearer scheme for the users API this host serves. The default schemes stay the cookie
+    // ones set up by ASP.NET Identity, so the UI is unaffected.
+    builder.Services.AddAuthentication()
+        .AddJwtBearer(options =>
+        {
+            options.Authority = builder.Configuration["IdentityServer:Authority"];
+            options.Audience = Constants.ApiResources.IdentityApi;
+            options.RequireHttpsMetadata = !builder.Environment.IsDevelopment();
+
+            // JwtBearerOptions.MapInboundClaims defaults to true, which renames 'role' to the
+            // WS-Federation URI. Keeping the short names is what makes the role checks find the
+            // claim Duende actually issued.
+            options.MapInboundClaims = false;
+            options.TokenValidationParameters.RoleClaimType = Constants.Claims.Role;
+            options.TokenValidationParameters.NameClaimType = Constants.Claims.Name;
+        });
     builder.Services.AddCors(options =>
         options.AddPolicy("BlazorPolicy", policy =>
             policy.WithOrigins(builder.Configuration.GetSection("AllowedOrigins").Get<string[]>() ?? [])
@@ -52,6 +74,7 @@ try
     app.UseAntiforgery();
 
     app.MapAuthenticationEndpoints();
+    app.MapControllers();
 
     app.MapRazorComponents<Erp.Identity.Shell.App>()
         .AddInteractiveServerRenderMode();

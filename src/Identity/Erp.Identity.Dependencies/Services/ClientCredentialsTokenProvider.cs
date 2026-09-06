@@ -15,6 +15,7 @@ namespace Erp.Identity.Dependencies.Services;
 public sealed class ClientCredentialsTokenProvider(
     IHttpClientFactory httpClientFactory,
     IOptions<ServiceAuthenticationOptions> options,
+    TimeProvider timeProvider,
     ILogger<ClientCredentialsTokenProvider> logger) : IServiceTokenProvider
 {
     public const string HttpClientName = "erp-identity-token-client";
@@ -27,21 +28,24 @@ public sealed class ClientCredentialsTokenProvider(
 
     public async Task<string> GetAccessTokenAsync(CancellationToken cancellationToken = default)
     {
-        if (_accessToken is not null && DateTimeOffset.UtcNow < _renewAt)
-            return _accessToken;
+        if (IsCachedTokenUsable())
+            return _accessToken!;
 
         await _gate.WaitAsync(cancellationToken);
 
         try
         {
             // Another caller may have renewed it while this one waited.
-            if (_accessToken is not null && DateTimeOffset.UtcNow < _renewAt)
-                return _accessToken;
+            if (IsCachedTokenUsable())
+                return _accessToken!;
 
             var token = await RequestTokenAsync(cancellationToken);
 
             _accessToken = token.AccessToken;
-            _renewAt = DateTimeOffset.UtcNow
+
+            // A token whose whole lifetime fits inside the renewal margin is still used for that
+            // window; renewing on every single call would hammer the token endpoint instead.
+            _renewAt = timeProvider.GetUtcNow()
                 .AddSeconds(Math.Max(1, token.ExpiresIn - _options.RenewBeforeExpirySeconds));
 
             logger.LogInformation(
@@ -56,6 +60,9 @@ public sealed class ClientCredentialsTokenProvider(
             _gate.Release();
         }
     }
+
+    private bool IsCachedTokenUsable() =>
+        _accessToken is not null && timeProvider.GetUtcNow() < _renewAt;
 
     private async Task<TokenResponse> RequestTokenAsync(CancellationToken cancellationToken)
     {

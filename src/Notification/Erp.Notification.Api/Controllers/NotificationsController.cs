@@ -17,14 +17,14 @@ public sealed class NotificationsController(
 {
     /// <summary>
     /// Queues an email for delivery. Called service to service (for example by the Identity host
-    /// on a password reset), so it is guarded by the internal API key instead of a user token.
+    /// on a password reset) with a client credentials token carrying the send scope.
     /// </summary>
     [HttpPost("email")]
-    [AllowAnonymous]
-    [InternalApiKey]
+    [Authorize(Policy = NotificationPolicies.Send)]
     [ProducesResponseType<QueuedEmailDto>(StatusCodes.Status202Accepted)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public async Task<ActionResult<QueuedEmailDto>> QueueEmail(
         [FromBody] EmailNotificationRequest request,
         CancellationToken cancellationToken)

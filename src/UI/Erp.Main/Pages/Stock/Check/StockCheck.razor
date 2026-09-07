@@ -1,0 +1,209 @@
+@page "/stock/check"
+@attribute [Authorize]
+@implements IDisposable
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.AspNetCore.Components.Web
+@using MudBlazor
+@using Erp.Main.Models
+@using Erp.Main.Services
+@inject StockApiClient StockApi
+@inject CompanyState Company
+@inject NavigationManager Navigation
+
+<PageTitle>Teste de stock</PageTitle>
+
+<MudStack Spacing="4">
+    <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center">
+        <MudStack Spacing="0">
+            <MudText Typo="Typo.h4">Teste de stock</MudText>
+            <MudText Typo="Typo.body2" Color="Color.Secondary">
+                Recalcula as existências a partir dos movimentos e compara com o saldo guardado.
+                Devem ser iguais sempre.
+            </MudText>
+        </MudStack>
+
+        <MudButton Variant="Variant.Text" StartIcon="@Icons.Material.Filled.ArrowBack"
+                   OnClick="@(() => Navigation.NavigateTo("stock"))">
+            Voltar
+        </MudButton>
+    </MudStack>
+
+    @if (!string.IsNullOrWhiteSpace(_error))
+    {
+        <MudAlert Severity="Severity.Error" Dense="true">@_error</MudAlert>
+    }
+
+    <MudPaper Elevation="1" Class="pa-4">
+        <MudGrid>
+            <MudItem xs="12" md="6">
+                <MudTextField @bind-Value="_productCode" @bind-Value:after="StateHasChanged" Immediate="true"
+                              Label="Artigo" Variant="Variant.Outlined"
+                              HelperText="Deixe vazio para testar a empresa inteira" />
+            </MudItem>
+            <MudItem xs="12" md="6" Class="d-flex align-center">
+                <MudButton Variant="Variant.Filled" Color="Color.Primary"
+                           StartIcon="@Icons.Material.Filled.FactCheck"
+                           Disabled="@(_running || !Company.HasCompany)"
+                           OnClick="RunAsync">
+                    @(_running ? "A verificar..." : "Correr teste")
+                </MudButton>
+            </MudItem>
+        </MudGrid>
+    </MudPaper>
+
+    @if (_result is not null)
+    {
+        @if (_result.ProductsWithDifference == 0)
+        {
+            <MudAlert Severity="Severity.Success">
+                @_result.ProductsChecked @(_result.ProductsChecked == 1 ? "artigo verificado" : "artigos verificados"),
+                sem diferenças. Os saldos batem certo com os movimentos.
+            </MudAlert>
+        }
+        else
+        {
+            <MudAlert Severity="Severity.Error">
+                @_result.ProductsWithDifference de @_result.ProductsChecked
+                @(_result.ProductsWithDifference == 1 ? "artigo não bate" : "artigos não batem") certo.
+                Uma diferença significa que alguém escreveu fora do caminho normal — o saldo mudou sem
+                um movimento que o explique, ou houve movimento sem saldo.
+            </MudAlert>
+        }
+
+        <MudPaper Elevation="1" Class="pa-2">
+            <MudTable Items="Visible" Hover="true" Striped="true" Dense="true" Breakpoint="Breakpoint.Sm">
+                <ToolBarContent>
+                    <MudText Typo="Typo.h6">Resultado</MudText>
+                    <MudSpacer />
+                    <MudSwitch @bind-Value="_onlyDifferences" @bind-Value:after="StateHasChanged"
+                               Color="Color.Primary" Label="Só diferenças" />
+                </ToolBarContent>
+                <HeaderContent>
+                    <MudTh>Artigo</MudTh>
+                    <MudTh>Descrição</MudTh>
+                    <MudTh>Armazém</MudTh>
+                    <MudTh Style="text-align: right;">Saldo guardado</MudTh>
+                    <MudTh Style="text-align: right;">Soma dos movimentos</MudTh>
+                    <MudTh Style="text-align: right;">Diferença</MudTh>
+                    <MudTh Style="text-align: right;">Movimentos</MudTh>
+                </HeaderContent>
+                <RowTemplate>
+                    <MudTd DataLabel="Artigo">
+                        <MudText Typo="Typo.body2" Style="font-family: monospace;">@context.ProductCode</MudText>
+                    </MudTd>
+                    <MudTd DataLabel="Descrição">
+                        @(string.IsNullOrWhiteSpace(context.ProductDescription) ? "—" : context.ProductDescription)
+                    </MudTd>
+                    <MudTd DataLabel="Armazém">@WarehouseName(context.WarehouseId)</MudTd>
+                    <MudTd DataLabel="Saldo guardado" Style="text-align: right;">
+                        @context.RecordedQuantity.ToString("N3")
+                    </MudTd>
+                    <MudTd DataLabel="Soma dos movimentos" Style="text-align: right;">
+                        @context.LedgerQuantity.ToString("N3")
+                    </MudTd>
+                    <MudTd DataLabel="Diferença" Style="text-align: right;">
+                        <MudText Typo="Typo.body2" Color="@(context.Difference == 0 ? Color.Success : Color.Error)">
+                            <strong>@context.Difference.ToString("N3")</strong>
+                        </MudText>
+                    </MudTd>
+                    <MudTd DataLabel="Movimentos" Style="text-align: right;">@context.EntryCount</MudTd>
+                </RowTemplate>
+                <NoRecordsContent>
+                    <MudText Typo="Typo.body2" Color="Color.Secondary">Nada a mostrar.</MudText>
+                </NoRecordsContent>
+            </MudTable>
+        </MudPaper>
+
+        <MudText Typo="Typo.caption" Color="Color.Secondary">
+            Verificado em @_result.CheckedAtUtc.ToString("yyyy-MM-dd HH:mm:ss") UTC. Movimentos posteriores
+            a esse instante não estão incluídos.
+        </MudText>
+    }
+</MudStack>
+
+@code {
+    private bool _running;
+    private bool _onlyDifferences = true;
+    private string? _error;
+    private string _productCode = string.Empty;
+
+    private StockCheckResult? _result;
+    private List<Warehouse> _warehouses = [];
+
+    private IEnumerable<StockCheckLine> Visible =>
+        _result is null
+            ? []
+            : _result.Lines.Where(line => !_onlyDifferences || line.Difference != 0);
+
+    protected override async Task OnInitializedAsync()
+    {
+        Company.Changed += OnCompanyChanged;
+        await Company.EnsureLoadedAsync();
+        await LoadWarehousesAsync();
+    }
+
+    private async void OnCompanyChanged() => await InvokeAsync(async () =>
+    {
+        _result = null;
+        await LoadWarehousesAsync();
+    });
+
+    private async Task LoadWarehousesAsync()
+    {
+        if (!Company.HasCompany)
+        {
+            _warehouses = [];
+            _error = Company.LoadError;
+            StateHasChanged();
+            return;
+        }
+
+        try
+        {
+            var (warehouses, error) = await StockApi.GetWarehousesAsync(Company.SelectedCompanyId);
+            _warehouses = [.. warehouses];
+            _error = error;
+        }
+        catch (Exception ex)
+        {
+            _error = $"Não foi possível carregar os armazéns: {ex.Message}";
+        }
+        finally
+        {
+            StateHasChanged();
+        }
+    }
+
+    private async Task RunAsync()
+    {
+        _running = true;
+        _error = null;
+
+        try
+        {
+            var (result, error) = await StockApi.CheckAsync(
+                Company.SelectedCompanyId,
+                string.IsNullOrWhiteSpace(_productCode) ? null : _productCode.Trim());
+
+            _result = result;
+            _error = error;
+
+            // With nothing wrong there is nothing to filter, so show everything that was checked.
+            if (result is not null && result.ProductsWithDifference == 0)
+                _onlyDifferences = false;
+        }
+        catch (Exception ex)
+        {
+            _error = $"Não foi possível correr o teste: {ex.Message}";
+        }
+        finally
+        {
+            _running = false;
+        }
+    }
+
+    private string WarehouseName(Guid warehouseId) =>
+        _warehouses.FirstOrDefault(x => x.Id == warehouseId)?.Code ?? "—";
+
+    public void Dispose() => Company.Changed -= OnCompanyChanged;
+}

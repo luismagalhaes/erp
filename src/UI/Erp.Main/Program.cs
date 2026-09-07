@@ -100,6 +100,9 @@ builder.Services.AddHttpClient<SalesApiClient>(client => client.BaseAddress = ap
 builder.Services.AddHttpClient<CatalogApiClient>(client => client.BaseAddress = apiBaseAddress)
     .AddHttpMessageHandler<UserAccessTokenHandler>();
 
+builder.Services.AddHttpClient<StockApiClient>(client => client.BaseAddress = apiBaseAddress)
+    .AddHttpMessageHandler<UserAccessTokenHandler>();
+
 builder.Services.AddHttpClient<NotificationApiClient>(client => client.BaseAddress = apiBaseAddress)
     .AddHttpMessageHandler<UserAccessTokenHandler>();
 

@@ -11,4 +11,5 @@ RUN dotnet publish "src/Erp.Api/Erp.Api.csproj" -c Release -o /app/publish --no-
 FROM base AS final
 WORKDIR /app
 COPY --from=build /app/publish .
+USER $APP_UID
 ENTRYPOINT ["dotnet", "Erp.Api.dll"]

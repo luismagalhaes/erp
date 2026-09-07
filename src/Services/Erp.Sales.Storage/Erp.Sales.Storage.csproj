@@ -14,6 +14,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\..\Shared\Erp.Common\Erp.Common.csproj" />
     <ProjectReference Include="..\Erp.Sales.Domain\Erp.Sales.Domain.csproj" />
     <ProjectReference Include="..\Erp.Sales.Infrastructure\Erp.Sales.Infrastructure.csproj" />
   </ItemGroup>

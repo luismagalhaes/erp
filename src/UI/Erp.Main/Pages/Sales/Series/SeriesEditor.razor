@@ -61,6 +61,22 @@
                     <MudTextField @bind-Value="_establishmentCode" Label="Estabelecimento"
                                   Variant="Variant.Outlined" HelperText="Opcional" />
                 </MudItem>
+
+                <MudItem xs="12" md="4">
+                    <MudSelect @bind-Value="_stockEffect" Label="Efeito no stock" Variant="Variant.Outlined"
+                               HelperText="@($"Por omissão para {_documentType}: {StockEffects.Describe(DefaultStockEffectFor(_documentType))}")">
+                        @foreach (var effect in StockEffects.All)
+                        {
+                            <MudSelectItem T="string" Value="@effect.Code">@effect.Label</MudSelectItem>
+                        }
+                    </MudSelect>
+                </MudItem>
+                <MudItem xs="12" md="8" Class="d-flex align-center">
+                    <MudText Typo="Typo.body2" Color="Color.Secondary">
+                        Os documentos desta série movimentam as existências do armazém. Uma fatura emitida
+                        a partir de uma guia não volta a movimentar o que a guia já movimentou.
+                    </MudText>
+                </MudItem>
             </MudGrid>
 
             <MudStack Row="true" Justify="Justify.FlexEnd" Class="mt-4">
@@ -92,6 +108,10 @@
                 <MudItem xs="12" md="3">
                     <MudText Typo="Typo.caption" Color="Color.Secondary">Estado</MudText>
                     <MudText>@_series.Status</MudText>
+                </MudItem>
+                <MudItem xs="12" md="3">
+                    <MudText Typo="Typo.caption" Color="Color.Secondary">Efeito no stock</MudText>
+                    <MudText>@StockEffects.Describe(_series.StockEffect)</MudText>
                 </MudItem>
             </MudGrid>
         </MudPaper>
@@ -162,6 +182,18 @@
     private int _initialSequence = 1;
     private string _establishmentCode = string.Empty;
     private string _validationCode = string.Empty;
+    private string _stockEffect = DefaultStockEffectFor("FT");
+
+    /// <summary>
+    /// Mirrors the API's defaults, so the screen shows what the server would choose. The server
+    /// decides; this is only so the user is not surprised.
+    /// </summary>
+    private static string DefaultStockEffectFor(string documentType) => documentType switch
+    {
+        "GR" or "GT" or "GC" or "FT" or "FS" or "FR" => "Out",
+        "GD" or "NC" => "In",
+        _ => "None"
+    };
 
     private SalesSeries? _series;
 
@@ -216,7 +248,8 @@
                 _documentType,
                 _seriesCode.Trim(),
                 _initialSequence,
-                string.IsNullOrWhiteSpace(_establishmentCode) ? null : _establishmentCode.Trim());
+                string.IsNullOrWhiteSpace(_establishmentCode) ? null : _establishmentCode.Trim(),
+                _stockEffect);
 
             var (series, error) = await SalesApi.CreateSeriesAsync(request);
 

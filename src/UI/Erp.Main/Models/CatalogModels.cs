@@ -44,7 +44,8 @@ public sealed record ProductListItem(
     string? SubfamilyName,
     Guid? BrandId,
     string? BrandName,
-    bool IsActive);
+    bool IsActive,
+    decimal UnitCost = 0m);
 
 public sealed record CreateProductRequest(
     Guid CompanyId,
@@ -59,7 +60,8 @@ public sealed record CreateProductRequest(
     string? Barcode = null,
     Guid? FamilyId = null,
     Guid? SubfamilyId = null,
-    Guid? BrandId = null);
+    Guid? BrandId = null,
+    decimal UnitCost = 0m);
 
 public sealed record UpdateProductRequest(
     string Description,
@@ -73,7 +75,8 @@ public sealed record UpdateProductRequest(
     Guid? FamilyId,
     Guid? SubfamilyId,
     Guid? BrandId,
-    bool IsActive);
+    bool IsActive,
+    decimal UnitCost = 0m);
 
 // --- Customers and suppliers ---
 

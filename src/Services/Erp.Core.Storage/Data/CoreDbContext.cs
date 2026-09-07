@@ -112,6 +112,7 @@ public sealed class CoreDbContext(DbContextOptions<CoreDbContext> options) : DbC
             entity.Property(x => x.Barcode).HasMaxLength(60);
 
             entity.Property(x => x.UnitPrice).HasPrecision(19, 6);
+            entity.Property(x => x.UnitCost).HasPrecision(19, 6);
             entity.Property(x => x.DefaultTaxPercentage).HasPrecision(5, 2);
 
             entity.HasIndex(x => new { x.CompanyId, x.ProductCode }).IsUnique();

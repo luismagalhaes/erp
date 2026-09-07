@@ -1,3 +1,4 @@
+using Erp.Inventory.Infrastructure.Application;
 using Erp.Sales.Application.Configuration;
 using Erp.Sales.Application.Services;
 using Erp.Sales.Domain;
@@ -36,8 +37,13 @@ public class StockMovementServiceTests
             .Do(call => _persistedStatusChanges.Add(call.Arg<MovementStatusChange>()));
     }
 
+    /// <summary>
+    /// Substituted: what the recorder does with the stock has its own tests in Erp.Inventory.Tests.
+    /// </summary>
+    private readonly IStockRecorder _stockRecorder = Substitute.For<IStockRecorder>();
+
     private StockMovementService CreateService() =>
-        new(_movements, _series, _unitOfWork, _signer,
+        new(_movements, _series, _unitOfWork, _signer, _stockRecorder,
             Options.Create(new FiscalOptions { IssuerTaxId = "123456789", CertificateNumber = "9999", KeyVersion = "1" }));
 
     private Series GivenSeries(string documentType = "GT", Guid? companyId = null)

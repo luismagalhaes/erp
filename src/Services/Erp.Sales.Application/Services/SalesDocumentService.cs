@@ -2,6 +2,9 @@ using Erp.FiscalPT;
 using Erp.FiscalPT.Documents;
 using Erp.FiscalPT.QrCode;
 using Erp.FiscalPT.Signing;
+using Erp.Inventory.Domain;
+using Erp.Inventory.Infrastructure.Application;
+using Erp.Inventory.Infrastructure.Contracts;
 using Erp.Sales.Application.Configuration;
 using Erp.Sales.Domain;
 using Erp.Sales.Infrastructure.Application;
@@ -17,6 +20,7 @@ public sealed class SalesDocumentService(
     IStockMovementStorage movementStorage,
     ISalesUnitOfWork unitOfWork,
     IDocumentSigner signer,
+    IStockRecorder stockRecorder,
     IOptions<FiscalOptions> fiscalOptions) : ISalesDocumentService
 {
     private readonly FiscalOptions _fiscal = fiscalOptions.Value;
@@ -187,6 +191,11 @@ public sealed class SalesDocumentService(
 
         await documentStorage.AddAsync(document, cancellationToken);
         await unitOfWork.SaveChangesAsync(cancellationToken);
+
+        // Inside the transaction on purpose: the document and the stock it moves commit together
+        // or not at all.
+        await RecordStockAsync(series, document, request.WarehouseId, userId, cancellationToken);
+
         await transaction.CommitAsync(cancellationToken);
 
         // A document that has just been issued cannot have been credited yet.
@@ -201,8 +210,17 @@ public sealed class SalesDocumentService(
 
         var statusChange = document.Void(reason, userId, DateTime.UtcNow);
 
+        // Transactional, because voiding also puts back the stock the document moved: the two have
+        // to happen together, or the goods end up outside the warehouse with nothing to show it.
+        await using var transaction = await unitOfWork.BeginTransactionAsync(cancellationToken);
+
         await documentStorage.AddStatusChangeAsync(statusChange, cancellationToken);
         await unitOfWork.SaveChangesAsync(cancellationToken);
+
+        await stockRecorder.ReverseDocumentAsync(
+            document.Id, $"Anulação de {document.DocumentNumber}: {reason}", userId, cancellationToken);
+
+        await transaction.CommitAsync(cancellationToken);
 
         return Map(document, await documentStorage.GetCreditedAmountAsync(id, cancellationToken));
     }
@@ -212,6 +230,46 @@ public sealed class SalesDocumentService(
     /// the reference mandatory on a rectifying document, and meaningless on any other, so both
     /// directions are enforced here.
     /// </summary>
+    /// <summary>
+    /// Records what the document does to stock, when its series says it does anything. Lines that
+    /// come from a delivery note whose goods already left are skipped by the recorder, so an
+    /// invoice raised from a guia does not take the same goods out twice.
+    /// </summary>
+    private async Task RecordStockAsync(
+        Series series,
+        SalesDocument document,
+        Guid? warehouseId,
+        string? userId,
+        CancellationToken cancellationToken)
+    {
+        if (series.StockEffect == StockEffect.None)
+            return;
+
+        if (warehouseId is not { } warehouse || warehouse == Guid.Empty)
+        {
+            throw new ArgumentException(
+                $"Series '{series.SeriesCode}' moves stock, so the document needs a warehouse.",
+                nameof(warehouseId));
+        }
+
+        var request = new RecordDocumentStockRequest(
+            document.CompanyId,
+            warehouse,
+            series.StockEffect == StockEffect.In ? StockDirection.In : StockDirection.Out,
+            document.DocumentDate,
+            document.DocumentType,
+            document.DocumentNumber,
+            document.Id,
+            [.. document.Lines.Select(line => new DocumentStockLine(
+                line.Id,
+                line.ProductCode,
+                line.ProductDescription,
+                line.Quantity,
+                line.OriginatingLineId))]);
+
+        await stockRecorder.RecordAsync(request, userId, cancellationToken);
+    }
+
     /// <summary>
     /// A document cannot be credited for more than it is worth. Credit notes already issued against
     /// it count towards that ceiling; voided ones do not, because they credit nothing.

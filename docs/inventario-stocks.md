@@ -75,6 +75,18 @@ O razão guarda a linha de documento que o originou, e há uma restrição de un
 que a regra falhasse, a base recusaria o movimento repetido. É o mesmo princípio de defesa em
 profundidade que já usamos na numeração das séries.
 
+### [decisão] Anular um documento devolve o stock, sem apagar nada
+
+O razão é *append-only*, por isso anular não remove o que foi escrito: acrescenta a entrada
+contrária, e as duas ficam visíveis. Quem olhar para o histórico vê a mercadoria a sair e a voltar,
+que é o que de facto aconteceu.
+
+A entrada de reversão **não leva `SourceLineId`**. Essa coluna é única e significa "esta linha já
+movimentou o seu stock", o que continua verdade depois de o documento ser anulado.
+
+Anular duas vezes não devolve o stock duas vezes: as reversões já existentes são emparelhadas com
+as entradas originais antes de se escrever seja o que for.
+
 ### [decisão] O acerto de inventário é um documento com contagem
 
 Uma contagem (`InventoryCount`) é um documento com um âmbito — total, ou parcial por armazém,
@@ -145,22 +157,52 @@ InventoryCountLine
 
 | Fase | Conteúdo | Estado |
 |---|---|---|
-| 1 | Armazéns no Core, razão de stock, saldos, acertos manuais e teste de stock | Em curso |
-| 2 | `StockEffect` nas séries, movimentação na emissão e regra do documento integrador | Por fazer |
+| 1 | Armazéns no Core, razão de stock, saldos, acertos manuais e teste de stock | **Feito** |
+| 2 | `StockEffect` nas séries, movimentação na emissão, regra do documento integrador e reversão na anulação | **Feito** |
+| 2b | Ecrãs: armazéns, existências com razão e acerto, e teste de stock | **Feito** |
 | 3 | Contagens de inventário, parciais e totais, com zeragem | Por fazer |
-| 4 | Ficheiro de inventário para a AT (Portaria 126/2019) | Por fazer |
+| 4 | Ficheiro de inventário para a AT (Portaria 126/2019) | **Parcial** — ficheiro gerado e ecrã em `/inventory-file`; falta validar contra o XSD oficial |
 
-### O que a fase 2 tem de resolver com cuidado
+### Como ficou resolvida a transação partilhada
 
-O movimento de stock tem de ser gravado **na mesma transação** que o documento: um documento emitido
-sem o movimento correspondente, ou o contrário, é uma inconsistência que ninguém deteta a tempo.
+O movimento de stock é gravado **na mesma transação** que o documento: um documento emitido sem o
+movimento correspondente, ou o contrário, é uma inconsistência que ninguém deteta a tempo.
 
 Como o `SalesDbContext` e o `InventoryDbContext` são contextos distintos sobre a mesma base, isso
-exige partilharem a ligação e a transação. É a única peça de canalização não trivial deste plano, e
-está isolada na fase 2 de propósito.
+exige partilharem a ligação e a transação. A solução tem três peças, todas em `Erp.Common` para que
+nenhum módulo tenha de conhecer o outro:
 
-### O que a fase 4 precisa
+- **`SharedDbConnection`** — uma ligação por pedido, que todos os `DbContext` recebem em vez da
+  *connection string*. O primeiro módulo a registá-la ganha; os restantes juntam-se.
+- **`IAmbientDbTransaction`** — onde o `SalesUnitOfWork` publica a transação que abriu.
+- O `StockStorage` chama `UseTransaction` antes de escrever, entrando na transação em curso.
 
-O ficheiro de inventário da Portaria 126/2019 tem esquema próprio, distinto do SAF-T. Segue-se o
-mesmo padrão do SAF-T: o XSD oficial fica no repositório, embebido no *assembly*, e cada ficheiro
-gerado é validado contra ele antes de ser entregue.
+A consequência a conhecer: um pedido não pode correr consultas em dois contextos ao mesmo tempo,
+porque uma ligação não serve dois leitores. Todo o nosso código espera por uma chamada antes de
+começar a seguinte, o que é o que torna isto seguro.
+
+O `Erp.Sales.Application` referencia o `Erp.Inventory.Infrastructure` — **só as interfaces**. A
+implementação fica atrás do módulo de inventário.
+
+### Como ficou a fase 4, e o que lhe falta
+
+O gerador vive em [`Erp.FiscalPT/Inventory`](../src/Shared/Erp.FiscalPT/Inventory/), ao lado do
+SAF-T, e o `InventoryFileService` preenche-o a partir do razão **à data de referência** — somando os
+movimentos até esse dia, e não lendo os saldos de hoje, que dariam a posição errada para qualquer
+período já fechado.
+
+> [!WARNING]
+> **O ficheiro não é validado contra o esquema oficial.** Ao contrário do SAF-T, cujo XSD está
+> publicado num endereço público e vive no repositório, o esquema da comunicação de inventários fica
+> na área autenticada do Portal das Finanças e não foi possível obtê-lo. A estrutura segue os campos
+> que a Portaria enumera — `ProductCategory`, `ProductCode`, `ProductDescription`,
+> `ProductNumberCode`, `ClosingStockQuantity`, `UnitOfMeasure`, `ClosingStockValue` — mas o
+> *namespace* declarado em `InventoryConstants.Namespace` **está por confirmar**.
+>
+> Assim que o XSD estiver em `src/Shared/Erp.FiscalPT/Inventory/Schemas/`, aplica-se o mesmo padrão
+> do SAF-T: embebido no *assembly*, e cada ficheiro validado antes de ser entregue.
+
+**A valorização vem do custo unitário do artigo**, um campo novo no ficheiro de artigos. É custo
+padrão: o custeio a sério — média ponderada ou FIFO, movido por cada compra — é trabalho à parte e
+não existe. Enquanto não existir, é isto que valoriza o stock, e o ecrã avisa quantos artigos vão
+com valor zero por não terem custo preenchido.

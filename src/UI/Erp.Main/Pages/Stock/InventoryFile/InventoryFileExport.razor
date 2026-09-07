@@ -1,0 +1,230 @@
+@page "/inventory-file"
+@attribute [Authorize]
+@implements IDisposable
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.AspNetCore.Components.Web
+@using Microsoft.JSInterop
+@using MudBlazor
+@using Erp.Main.Models
+@using Erp.Main.Services
+@inject StockApiClient StockApi
+@inject CompanyState Company
+@inject IJSRuntime JS
+@inject ISnackbar Snackbar
+
+<PageTitle>Comunicação de inventários</PageTitle>
+
+<MudStack Spacing="4">
+    <MudStack Spacing="0">
+        <MudText Typo="Typo.h4">Comunicação de inventários</MudText>
+        <MudText Typo="Typo.body2" Color="Color.Secondary">
+            Ficheiro das existências à data de referência, para comunicar à AT. Desde a Portaria
+            126/2019 leva também a valorização, e não só as quantidades.
+        </MudText>
+    </MudStack>
+
+    @if (!string.IsNullOrWhiteSpace(_error))
+    {
+        <MudAlert Severity="Severity.Error" Dense="true">@_error</MudAlert>
+    }
+
+    @if (!Company.HasCompany)
+    {
+        <MudAlert Severity="Severity.Info">Escolha uma empresa no cabeçalho para gerar o ficheiro.</MudAlert>
+    }
+    else
+    {
+        <MudPaper Elevation="1" Class="pa-4">
+            <MudGrid>
+                <MudItem xs="12" md="3">
+                    <MudNumericField T="int" Value="_fiscalYear" ValueChanged="OnYearChangedAsync"
+                                     Label="Período" Variant="Variant.Outlined" Min="2000" Max="2100" />
+                </MudItem>
+                <MudItem xs="12" md="4">
+                    <MudDatePicker Date="_endDate" DateChanged="OnEndDateChangedAsync"
+                                   Label="Data de referência" Variant="Variant.Outlined"
+                                   DateFormat="yyyy-MM-dd"
+                                   HelperText="Último dia do período; as existências são as desse dia" />
+                </MudItem>
+                <MudItem xs="12" md="5" Class="d-flex align-center">
+                    @if (_loading)
+                    {
+                        <MudProgressCircular Size="Size.Small" Indeterminate="true" Color="Color.Primary" />
+                    }
+                </MudItem>
+            </MudGrid>
+        </MudPaper>
+
+        <MudPaper Elevation="1" Class="pa-4">
+            <MudText Typo="Typo.h6" Class="mb-3">Conteúdo do ficheiro</MudText>
+
+            @if (_summary is null)
+            {
+                <MudText Typo="Typo.body2" Color="Color.Secondary">Sem dados para a data escolhida.</MudText>
+            }
+            else
+            {
+                <MudGrid>
+                    <MudItem xs="6" md="3">
+                        <MudText Typo="Typo.caption" Color="Color.Secondary">Artigos</MudText>
+                        <MudText Typo="Typo.h5">@_summary.LineCount</MudText>
+                    </MudItem>
+                    <MudItem xs="6" md="3">
+                        <MudText Typo="Typo.caption" Color="Color.Secondary">Quantidade total</MudText>
+                        <MudText Typo="Typo.h5">@_summary.TotalQuantity.ToString("N3")</MudText>
+                    </MudItem>
+                    <MudItem xs="6" md="3">
+                        <MudText Typo="Typo.caption" Color="Color.Secondary">Valor total</MudText>
+                        <MudText Typo="Typo.h5" Color="Color.Primary">@_summary.TotalValue.ToString("N2")</MudText>
+                    </MudItem>
+                    <MudItem xs="6" md="3" Class="d-flex align-center justify-end">
+                        <MudButton Variant="Variant.Filled" Color="Color.Primary" Size="Size.Large"
+                                   StartIcon="@Icons.Material.Filled.Download"
+                                   Disabled="@(_downloading || _summary.LineCount == 0)"
+                                   OnClick="DownloadAsync">
+                            @(_downloading ? "A gerar..." : "Gerar ficheiro")
+                        </MudButton>
+                    </MudItem>
+                </MudGrid>
+
+                @if (_summary.LineCount == 0)
+                {
+                    <MudAlert Severity="Severity.Info" Dense="true" Class="mt-3">
+                        Não havia existências nesta data. A comunicação continua a ser devida — nesse caso
+                        é feita como "sem existências" no Portal das Finanças, não por este ficheiro.
+                    </MudAlert>
+                }
+                else if (_summary.ProductsWithoutCost > 0)
+                {
+                    <MudAlert Severity="Severity.Warning" Class="mt-3">
+                        @_summary.ProductsWithoutCost de @_summary.LineCount
+                        @(_summary.ProductsWithoutCost == 1 ? "artigo vai" : "artigos vão") com valor zero,
+                        porque não têm custo na ficha. A comunicação exige a valorização: preencha o custo
+                        unitário dos artigos antes de submeter.
+                        <MudLink Href="products" Class="ml-2">Ir aos artigos</MudLink>
+                    </MudAlert>
+                }
+            }
+        </MudPaper>
+
+        <MudAlert Severity="Severity.Warning">
+            <strong>Este ficheiro ainda não é validado contra o esquema oficial.</strong>
+            Ao contrário do SAF-T, o XSD da comunicação de inventários não está publicado num endereço
+            público — fica na área autenticada do Portal das Finanças. A estrutura segue os campos que a
+            Portaria define, mas confirme o ficheiro no validador da AT antes de submeter.
+        </MudAlert>
+    }
+</MudStack>
+
+@code {
+    private bool _loading;
+    private bool _downloading;
+    private string? _error;
+
+    private int _fiscalYear = DateTime.Today.Year - 1;
+    private DateTime? _endDate = new DateTime(DateTime.Today.Year - 1, 12, 31);
+
+    private InventoryFileSummary? _summary;
+
+    protected override async Task OnInitializedAsync()
+    {
+        Company.Changed += OnCompanyChanged;
+        await Company.EnsureLoadedAsync();
+        await LoadAsync();
+    }
+
+    private async void OnCompanyChanged() => await InvokeAsync(LoadAsync);
+
+    private async Task LoadAsync()
+    {
+        if (!Company.HasCompany)
+        {
+            _summary = null;
+            _error = Company.LoadError;
+            StateHasChanged();
+            return;
+        }
+
+        _loading = true;
+        _error = null;
+        StateHasChanged();
+
+        try
+        {
+            var (summary, error) = await StockApi.GetInventoryFileSummaryAsync(
+                Company.SelectedCompanyId, _fiscalYear, DateOnly.FromDateTime(_endDate!.Value));
+
+            _summary = summary;
+            _error = error;
+        }
+        catch (Exception ex)
+        {
+            _error = $"Não foi possível ler as existências: {ex.Message}";
+        }
+        finally
+        {
+            _loading = false;
+            StateHasChanged();
+        }
+    }
+
+    /// <summary>Changing the period moves the reference date with it, which is what is wanted.</summary>
+    private async Task OnYearChangedAsync(int year)
+    {
+        _fiscalYear = year;
+        _endDate = new DateTime(year, 12, 31);
+        await LoadAsync();
+    }
+
+    private async Task OnEndDateChangedAsync(DateTime? date)
+    {
+        _endDate = date;
+
+        if (date is { } value)
+            _fiscalYear = value.Year;
+
+        await LoadAsync();
+    }
+
+    private async Task DownloadAsync()
+    {
+        _downloading = true;
+        _error = null;
+
+        try
+        {
+            var (file, error) = await StockApi.DownloadInventoryFileAsync(
+                Company.SelectedCompanyId, _fiscalYear, DateOnly.FromDateTime(_endDate!.Value));
+
+            if (file is null)
+            {
+                _error = error ?? "Não foi possível gerar o ficheiro.";
+                return;
+            }
+
+            await JS.InvokeVoidAsync(
+                "erpDownloadFile", file.FileName, "application/xml", Convert.ToBase64String(file.Content));
+
+            if (file.ProductsWithoutCost > 0)
+            {
+                Snackbar.Add(
+                    $"{file.FileName} gerado, mas com {file.ProductsWithoutCost} artigos sem custo.",
+                    Severity.Warning);
+            }
+            else
+            {
+                Snackbar.Add($"{file.FileName} gerado.", Severity.Success);
+            }
+        }
+        catch (Exception ex)
+        {
+            _error = $"Não foi possível gerar o ficheiro: {ex.Message}";
+        }
+        finally
+        {
+            _downloading = false;
+        }
+    }
+
+    public void Dispose() => Company.Changed -= OnCompanyChanged;
+}

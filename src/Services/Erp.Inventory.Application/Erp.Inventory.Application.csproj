@@ -1,0 +1,24 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <RootNamespace>Erp.Inventory.Application</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="10.*" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="10.*" />
+    <PackageReference Include="Microsoft.Extensions.Options.ConfigurationExtensions" Version="10.*" />
+    <PackageReference Include="SonarAnalyzer.CSharp" Version="9.32.0.97167" PrivateAssets="all" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- The inventory communication file is a fiscal artefact, so the writer lives with the rest. -->
+    <ProjectReference Include="..\..\Shared\Erp.FiscalPT\Erp.FiscalPT.csproj" />
+    <ProjectReference Include="..\Erp.Inventory.Domain\Erp.Inventory.Domain.csproj" />
+    <ProjectReference Include="..\Erp.Inventory.Infrastructure\Erp.Inventory.Infrastructure.csproj" />
+  </ItemGroup>
+
+</Project>

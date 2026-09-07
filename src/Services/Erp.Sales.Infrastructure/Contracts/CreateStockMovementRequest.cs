@@ -11,4 +11,5 @@ public sealed record CreateStockMovementRequest(
     IReadOnlyList<CreateStockMovementLineRequest> Lines,
     DateTime? MovementEndAtUtc = null,
     string? VehiclePlate = null,
-    string? Comments = null);
+    string? Comments = null,
+    Guid? WarehouseId = null);

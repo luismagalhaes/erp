@@ -621,6 +621,9 @@ namespace Erp.Sales.Storage.Data.Migrations
                     b.Property<byte>("Status")
                         .HasColumnType("tinyint");
 
+                    b.Property<byte>("StockEffect")
+                        .HasColumnType("tinyint");
+
                     b.Property<string>("ValidationCode")
                         .HasMaxLength(16)
                         .HasColumnType("nvarchar(16)");

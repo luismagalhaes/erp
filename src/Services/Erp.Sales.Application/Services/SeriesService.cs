@@ -46,6 +46,9 @@ public sealed class SeriesService(ISeriesStorage storage, ISalesUnitOfWork unitO
             SeriesCode = request.SeriesCode.Trim(),
             InitialSequence = request.InitialSequence < 1 ? 1 : request.InitialSequence,
             EstablishmentCode = request.EstablishmentCode,
+            // The document type says what usually happens to stock; the caller can override it,
+            // because the same type is used differently by different businesses.
+            StockEffect = ParseStockEffect(request.StockEffect, request.DocumentType),
             CreatedByUserId = userId
         };
 
@@ -67,6 +70,22 @@ public sealed class SeriesService(ISeriesStorage storage, ISalesUnitOfWork unitO
         return Map(series);
     }
 
+    /// <summary>
+    /// Takes the effect the caller asked for, or the default for the document type when it said
+    /// nothing. An unknown value is refused rather than quietly turned into "moves no stock",
+    /// which would leave the warehouse wrong without anyone noticing.
+    /// </summary>
+    private static StockEffect ParseStockEffect(string? requested, string documentType)
+    {
+        if (string.IsNullOrWhiteSpace(requested))
+            return DefaultStockEffects.For(documentType);
+
+        if (!Enum.TryParse<StockEffect>(requested, ignoreCase: true, out var effect))
+            throw new ArgumentException($"Unknown stock effect '{requested}'.", nameof(requested));
+
+        return effect;
+    }
+
     private static SeriesListItemDto Map(Series series) =>
         new(series.Id,
             series.CompanyId,
@@ -75,5 +94,6 @@ public sealed class SeriesService(ISeriesStorage storage, ISalesUnitOfWork unitO
             series.CurrentSequence,
             series.ValidationCode,
             series.Status.ToString(),
-            series.CanIssue);
+            series.CanIssue,
+            series.StockEffect.ToString());
 }

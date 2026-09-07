@@ -1,3 +1,4 @@
+using Erp.Inventory.Infrastructure.Application;
 using Erp.Sales.Application.Configuration;
 using Erp.Sales.Application.Services;
 using Erp.Sales.Domain;
@@ -58,17 +59,31 @@ internal sealed class SalesTestContext
             .Do(call => PersistedStatusChanges.Add(call.Arg<DocumentStatusChange>()));
     }
 
+    /// <summary>
+    /// Substituted: what the recorder does with the stock has its own tests in Erp.Inventory.Tests.
+    /// Here it only matters that issuing calls it.
+    /// </summary>
+    public IStockRecorder StockRecorder { get; } = Substitute.For<IStockRecorder>();
+
     public SalesDocumentService CreateService() =>
-        new(DocumentStorage, SeriesStorage, MovementStorage, UnitOfWork, Signer, Options.Create(Fiscal));
+        new(DocumentStorage, SeriesStorage, MovementStorage, UnitOfWork, Signer, StockRecorder, Options.Create(Fiscal));
 
     /// <summary>A series ready to issue, already carrying a validation code from the tax authority.</summary>
-    public Series GivenCommunicatedSeries(Guid companyId, string seriesCode = "A2026", string documentType = "FT")
+    /// <param name="stockEffect">
+    /// Defaults to moving no stock, so the tests that are not about stock stay unaffected.
+    /// </param>
+    public Series GivenCommunicatedSeries(
+        Guid companyId,
+        string seriesCode = "A2026",
+        string documentType = "FT",
+        StockEffect stockEffect = StockEffect.None)
     {
         var series = new Series
         {
             CompanyId = companyId,
             DocumentType = documentType,
-            SeriesCode = seriesCode
+            SeriesCode = seriesCode,
+            StockEffect = stockEffect
         };
 
         series.Communicate("JFTX7RK9", DateTime.UtcNow);
@@ -77,6 +92,40 @@ internal sealed class SalesTestContext
         SeriesStorage.GetByIdAsync(series.Id, Arg.Any<CancellationToken>()).Returns(series);
 
         return series;
+    }
+
+    /// <summary>
+    /// Serves a delivery note line the service can resolve, so a request naming an origin gets
+    /// past the validation and reaches the recorder.
+    /// </summary>
+    public void GivenInvoiceableMovementLine(Guid companyId, Guid lineId, decimal quantity = 100m)
+    {
+        var series = new Series { CompanyId = companyId, DocumentType = "GR", SeriesCode = "G2026" };
+        series.Communicate("JFTX7RK9", DateTime.UtcNow);
+
+        var line = new StockMovementLine
+        {
+            Id = lineId,
+            LineNumber = 1,
+            ProductCode = "ART001",
+            ProductDescription = "Artigo de teste",
+            Quantity = quantity,
+            UnitPrice = 100m
+        };
+
+        var location = new MovementLocation("Rua da Fábrica");
+
+        var movement = StockMovement.Issue(
+            companyId, series, series.TakeNextSequence(), "GR G2026/1", "JFTX7RK9-1",
+            new DateOnly(2026, 1, 10), new DateTime(2026, 1, 10, 8, 0, 0, DateTimeKind.Utc),
+            new MovementParty("500123456", "Cliente Teste"), location, location,
+            new DateTime(2026, 1, 10, 9, 0, 0, DateTimeKind.Utc), null, null, null,
+            [line], quantity * 100m, 0m, quantity * 100m,
+            new string('x', 44), string.Empty, "1", "user-1");
+
+        MovementStorage
+            .GetForUpdateByLinesAsync(Arg.Any<IReadOnlyCollection<Guid>>(), Arg.Any<CancellationToken>())
+            .Returns((IReadOnlyList<StockMovement>)[movement]);
     }
 
     public static CreateInvoiceRequest InvoiceRequest(

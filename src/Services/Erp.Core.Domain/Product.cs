@@ -20,7 +20,18 @@ public sealed class Product
 
     public string UnitOfMeasure { get; set; } = "UN";
 
+    /// <summary>Selling price.</summary>
     public decimal UnitPrice { get; set; }
+
+    /// <summary>
+    /// What the item costs the company. Used to value stock in the inventory communication, which
+    /// since Portaria 126/2019 carries the valuation and not only the quantities.
+    /// </summary>
+    /// <remarks>
+    /// A standard cost held on the product file. Proper costing — weighted average or FIFO, moved
+    /// by each purchase — is a separate piece of work; until it exists, this is what values stock.
+    /// </remarks>
+    public decimal UnitCost { get; set; }
 
     public string DefaultTaxCountryRegion { get; set; } = "PT";
 

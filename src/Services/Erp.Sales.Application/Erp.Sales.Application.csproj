@@ -18,6 +18,9 @@
     <ProjectReference Include="..\..\Shared\Erp.FiscalPT\Erp.FiscalPT.csproj" />
     <ProjectReference Include="..\Erp.Sales.Domain\Erp.Sales.Domain.csproj" />
     <ProjectReference Include="..\Erp.Sales.Infrastructure\Erp.Sales.Infrastructure.csproj" />
+    <!-- Interfaces only: issuing a document has to record the stock it moves, in the same
+         transaction. The implementation stays behind the Inventory module. -->
+    <ProjectReference Include="..\Erp.Inventory.Infrastructure\Erp.Inventory.Infrastructure.csproj" />
   </ItemGroup>
 
 </Project>

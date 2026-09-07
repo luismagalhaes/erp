@@ -2,6 +2,9 @@ using Erp.FiscalPT;
 using Erp.FiscalPT.Documents;
 using Erp.FiscalPT.QrCode;
 using Erp.FiscalPT.Signing;
+using Erp.Inventory.Domain;
+using Erp.Inventory.Infrastructure.Application;
+using Erp.Inventory.Infrastructure.Contracts;
 using Erp.Sales.Application.Configuration;
 using Erp.Sales.Domain;
 using Erp.Sales.Infrastructure.Application;
@@ -21,6 +24,7 @@ public sealed class StockMovementService(
     ISeriesStorage seriesStorage,
     ISalesUnitOfWork unitOfWork,
     IDocumentSigner signer,
+    IStockRecorder stockRecorder,
     IOptions<FiscalOptions> fiscalOptions) : IStockMovementService
 {
     private readonly FiscalOptions _fiscal = fiscalOptions.Value;
@@ -131,6 +135,10 @@ public sealed class StockMovementService(
 
         await movementStorage.AddAsync(movement, cancellationToken);
         await unitOfWork.SaveChangesAsync(cancellationToken);
+
+        // Inside the transaction on purpose: the guia and the stock it moves commit together.
+        await RecordStockAsync(series, movement, request.WarehouseId, userId, cancellationToken);
+
         await transaction.CommitAsync(cancellationToken);
 
         return Map(movement);
@@ -156,8 +164,17 @@ public sealed class StockMovementService(
 
         var statusChange = movement.Void(reason, userId, DateTime.UtcNow);
 
+        // Transactional, because voiding also puts back the stock the guia moved: the two have to
+        // happen together, or the goods end up outside the warehouse with nothing to show it.
+        await using var transaction = await unitOfWork.BeginTransactionAsync(cancellationToken);
+
         await movementStorage.AddStatusChangeAsync(statusChange, cancellationToken);
         await unitOfWork.SaveChangesAsync(cancellationToken);
+
+        await stockRecorder.ReverseDocumentAsync(
+            movement.Id, $"Anulação de {movement.DocumentNumber}: {reason}", userId, cancellationToken);
+
+        await transaction.CommitAsync(cancellationToken);
 
         return Map(movement);
     }
@@ -208,6 +225,45 @@ public sealed class StockMovementService(
         }
 
         return lines;
+    }
+
+    /// <summary>
+    /// Records what the guia does to stock, when its series says it does anything. This is the
+    /// document that normally moves the goods; the invoice that follows it will find the stock
+    /// already gone and leave it alone.
+    /// </summary>
+    private async Task RecordStockAsync(
+        Series series,
+        StockMovement movement,
+        Guid? warehouseId,
+        string? userId,
+        CancellationToken cancellationToken)
+    {
+        if (series.StockEffect == StockEffect.None)
+            return;
+
+        if (warehouseId is not { } warehouse || warehouse == Guid.Empty)
+        {
+            throw new ArgumentException(
+                $"Series '{series.SeriesCode}' moves stock, so the document needs a warehouse.",
+                nameof(warehouseId));
+        }
+
+        var request = new RecordDocumentStockRequest(
+            movement.CompanyId,
+            warehouse,
+            series.StockEffect == StockEffect.In ? StockDirection.In : StockDirection.Out,
+            movement.MovementDate,
+            movement.MovementType,
+            movement.DocumentNumber,
+            movement.Id,
+            [.. movement.Lines.Select(line => new DocumentStockLine(
+                line.Id,
+                line.ProductCode,
+                line.ProductDescription,
+                line.Quantity))]);
+
+        await stockRecorder.RecordAsync(request, userId, cancellationToken);
     }
 
     private string BuildQrCodePayload(StockMovement movement, string hash)

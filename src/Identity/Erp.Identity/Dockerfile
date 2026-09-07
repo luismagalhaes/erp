@@ -11,4 +11,5 @@ RUN dotnet publish "src/Identity/Erp.Identity/Erp.Identity.csproj" -c Release -o
 FROM base AS final
 WORKDIR /app
 COPY --from=build /app/publish .
+USER $APP_UID
 ENTRYPOINT ["dotnet", "Erp.Identity.dll"]

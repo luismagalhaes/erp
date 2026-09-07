@@ -116,6 +116,11 @@
                     <MudNumericField @bind-Value="_unitPrice" Label="Preço unitário" Variant="Variant.Outlined"
                                      Min="0" Format="N2" />
                 </MudItem>
+                <MudItem xs="12" md="3">
+                    <MudNumericField @bind-Value="_unitCost" Label="Custo unitário" Variant="Variant.Outlined"
+                                     Min="0" Format="N2"
+                                     HelperText="Valoriza o stock na comunicação de inventários" />
+                </MudItem>
                 <MudItem xs="12" md="2">
                     <MudTextField @bind-Value="_unitOfMeasure" Label="Unidade" Variant="Variant.Outlined" />
                 </MudItem>
@@ -183,6 +188,7 @@
     private string _productType = "P";
     private string _unitOfMeasure = "UN";
     private decimal _unitPrice;
+    private decimal _unitCost;
     private string _taxCode = "NOR";
     private decimal _taxPercentage = 23m;
     private string _taxCountryRegion = "PT";
@@ -237,6 +243,7 @@
             _productType = product.ProductType;
             _unitOfMeasure = product.UnitOfMeasure;
             _unitPrice = product.UnitPrice;
+            _unitCost = product.UnitCost;
             _taxCode = product.DefaultTaxCode;
             _taxPercentage = product.DefaultTaxPercentage;
             _familyId = product.FamilyId;
@@ -309,7 +316,8 @@
                     barcode,
                     _familyId,
                     _subfamilyId,
-                    _brandId))
+                    _brandId,
+                    _unitCost))
                 : await Catalog.UpdateProductAsync(Id!.Value, new UpdateProductRequest(
                     _description.Trim(),
                     _unitPrice,
@@ -322,7 +330,8 @@
                     _familyId,
                     _subfamilyId,
                     _brandId,
-                    _isActive));
+                    _isActive,
+                    _unitCost));
 
             if (error is not null)
             {

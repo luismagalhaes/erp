@@ -1,5 +1,6 @@
 using System.Security.Claims;
 using Erp.Api.Authorization;
+using Erp.Core.Infrastructure.Application;
 using Erp.Sales.Infrastructure.Application;
 using Erp.Sales.Infrastructure.Contracts;
 using Microsoft.AspNetCore.Authorization;
@@ -15,8 +16,27 @@ namespace Erp.Api.Controllers.Sales;
 [Route("api/stock-movements")]
 [Authorize]
 [Produces("application/json")]
-public sealed class StockMovementsController(IStockMovementService stockMovementService) : ControllerBase
+public sealed class StockMovementsController(
+    IStockMovementService stockMovementService,
+    IWarehouseService warehouseService) : ControllerBase
 {
+    /// <summary>
+    /// Falls back to the company's default warehouse when the caller names none. The warehouse
+    /// file belongs to Core, so this is the host's job rather than the Sales module's.
+    /// </summary>
+    private async Task<Guid?> ResolveWarehouseAsync(
+        Guid companyId,
+        Guid? requested,
+        CancellationToken cancellationToken)
+    {
+        if (requested is { } warehouseId && warehouseId != Guid.Empty)
+            return warehouseId;
+
+        var warehouses = await warehouseService.GetAllAsync(companyId, cancellationToken);
+
+        return warehouses.FirstOrDefault(x => x.IsDefault)?.Id;
+    }
+
     /// <summary>Lists the movements issued by a company, most recent first.</summary>
     [HttpGet]
     [Authorize(Policy = Policies.Read)]
@@ -58,7 +78,12 @@ public sealed class StockMovementsController(IStockMovementService stockMovement
     {
         try
         {
-            var issued = await stockMovementService.IssueAsync(request, GetCurrentUserId(), cancellationToken);
+            var withWarehouse = request with
+            {
+                WarehouseId = await ResolveWarehouseAsync(request.CompanyId, request.WarehouseId, cancellationToken)
+            };
+
+            var issued = await stockMovementService.IssueAsync(withWarehouse, GetCurrentUserId(), cancellationToken);
             return CreatedAtAction(nameof(GetById), new { id = issued.Id }, issued);
         }
         catch (ArgumentException ex)

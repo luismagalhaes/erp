@@ -33,6 +33,7 @@ public sealed class SalesDbContext(DbContextOptions<SalesDbContext> options) : D
             entity.Property(x => x.ValidationCode).HasMaxLength(16);
             entity.Property(x => x.CreatedByUserId).HasMaxLength(450);
             entity.Property(x => x.Status).HasConversion<byte>();
+            entity.Property(x => x.StockEffect).HasConversion<byte>();
             entity.Property(x => x.RowVersion).IsRowVersion();
 
             entity.Ignore(x => x.CanIssue);

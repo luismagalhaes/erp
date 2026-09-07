@@ -1,0 +1,399 @@
+@page "/stock"
+@attribute [Authorize]
+@implements IDisposable
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.AspNetCore.Components.Web
+@using MudBlazor
+@using Erp.Main.Models
+@using Erp.Main.Services
+@inject StockApiClient StockApi
+@inject CompanyState Company
+@inject NavigationManager Navigation
+@inject ISnackbar Snackbar
+
+<PageTitle>Existências</PageTitle>
+
+<MudStack Spacing="4">
+    <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center">
+        <MudStack Spacing="0">
+            <MudText Typo="Typo.h4">Existências</MudText>
+            <MudText Typo="Typo.body2" Color="Color.Secondary">
+                Saldo por armazém. Clique numa linha para ver os movimentos que lá chegaram.
+            </MudText>
+        </MudStack>
+
+        <MudButton Variant="Variant.Outlined" Color="Color.Primary"
+                   StartIcon="@Icons.Material.Filled.FactCheck"
+                   Disabled="@(!Company.HasCompany)"
+                   OnClick="@(() => Navigation.NavigateTo("stock/check"))">
+            Teste de stock
+        </MudButton>
+    </MudStack>
+
+    @if (!string.IsNullOrWhiteSpace(_error))
+    {
+        <MudAlert Severity="Severity.Error" Dense="true">@_error</MudAlert>
+    }
+
+    @if (Company.HasCompany && _warehouses.Count == 0 && !_loading)
+    {
+        <MudAlert Severity="Severity.Warning">
+            Esta empresa ainda não tem armazéns, por isso não há onde guardar stock.
+            <MudLink Href="warehouses/new" Class="ml-2">Criar armazém</MudLink>
+        </MudAlert>
+    }
+
+    <MudPaper Elevation="1" Class="pa-4">
+        <MudGrid>
+            <MudItem xs="12" md="4">
+                <MudSelect T="Guid?" Value="_warehouseId" ValueChanged="OnWarehouseChangedAsync"
+                           Label="Armazém" Variant="Variant.Outlined" Clearable="true"
+                           Placeholder="Todos">
+                    @foreach (var warehouse in _warehouses)
+                    {
+                        <MudSelectItem T="Guid?" Value="@warehouse.Id">
+                            @warehouse.Code — @warehouse.Name
+                        </MudSelectItem>
+                    }
+                </MudSelect>
+            </MudItem>
+            <MudItem xs="12" md="4">
+                <MudTextField @bind-Value="_search" @bind-Value:after="StateHasChanged" Immediate="true"
+                              Label="Filtrar" Variant="Variant.Outlined"
+                              Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.Search"
+                              HelperText="Código ou descrição do artigo" />
+            </MudItem>
+            <MudItem xs="12" md="4" Class="d-flex align-center">
+                <MudSwitch @bind-Value="_onlyWithStock" @bind-Value:after="StateHasChanged"
+                           Color="Color.Primary" Label="Só com existências" />
+            </MudItem>
+        </MudGrid>
+    </MudPaper>
+
+    <MudPaper Elevation="1" Class="pa-2">
+        <MudTable Items="Visible" Hover="true" Striped="true" Dense="true" Loading="_loading"
+                  Breakpoint="Breakpoint.Sm" T="StockBalance"
+                  OnRowClick="OnRowClickAsync">
+            <HeaderContent>
+                <MudTh>Artigo</MudTh>
+                <MudTh>Descrição</MudTh>
+                <MudTh>Armazém</MudTh>
+                <MudTh Style="text-align: right;">Quantidade</MudTh>
+                <MudTh>Último movimento</MudTh>
+                <MudTh Style="text-align: right;">Ações</MudTh>
+            </HeaderContent>
+            <RowTemplate>
+                <MudTd DataLabel="Artigo">
+                    <MudText Typo="Typo.body2" Style="font-family: monospace;">@context.ProductCode</MudText>
+                </MudTd>
+                <MudTd DataLabel="Descrição">@context.ProductDescription</MudTd>
+                <MudTd DataLabel="Armazém">@WarehouseName(context.WarehouseId)</MudTd>
+                <MudTd DataLabel="Quantidade" Style="text-align: right;">
+                    <MudText Typo="Typo.body2"
+                             Color="@(context.Quantity < 0 ? Color.Error : Color.Default)">
+                        <strong>@context.Quantity.ToString("N3")</strong>
+                    </MudText>
+                </MudTd>
+                <MudTd DataLabel="Último movimento">
+                    @context.LastMovementUtc.ToString("yyyy-MM-dd HH:mm")
+                </MudTd>
+                <MudTd DataLabel="Ações" Style="text-align: right;">
+                    <MudIconButton Icon="@Icons.Material.Filled.Tune" Size="Size.Small"
+                                   title="Acertar existências"
+                                   OnClick="@(() => OpenAdjustment(context))" />
+                </MudTd>
+            </RowTemplate>
+            <NoRecordsContent>
+                <MudText Typo="Typo.body2" Color="Color.Secondary">Sem existências para mostrar.</MudText>
+            </NoRecordsContent>
+        </MudTable>
+    </MudPaper>
+
+    @if (_negativeCount > 0)
+    {
+        <MudAlert Severity="Severity.Warning" Dense="true">
+            @_negativeCount @(_negativeCount == 1 ? "artigo tem" : "artigos têm") existências negativas:
+            saiu mercadoria que nunca entrou. O teste de stock ajuda a perceber onde.
+        </MudAlert>
+    }
+</MudStack>
+
+@* --- Movimentos do artigo --- *@
+<MudDialog @bind-Visible="_ledgerOpen" Options="_dialogOptions">
+    <TitleContent>
+        <MudText Typo="Typo.h6">
+            Movimentos de @_ledgerProductCode
+        </MudText>
+    </TitleContent>
+    <DialogContent>
+        @if (_ledgerLoading)
+        {
+            <MudProgressLinear Indeterminate="true" Color="Color.Primary" />
+        }
+        else
+        {
+            <MudTable Items="_ledger" Dense="true" Striped="true" Breakpoint="Breakpoint.Sm">
+                <HeaderContent>
+                    <MudTh>Data</MudTh>
+                    <MudTh>Documento</MudTh>
+                    <MudTh>Motivo</MudTh>
+                    <MudTh Style="text-align: right;">Movimento</MudTh>
+                    <MudTh Style="text-align: right;">Saldo</MudTh>
+                </HeaderContent>
+                <RowTemplate>
+                    <MudTd DataLabel="Data">@context.MovementDate.ToString("yyyy-MM-dd")</MudTd>
+                    <MudTd DataLabel="Documento">
+                        <MudText Typo="Typo.body2" Style="font-family: monospace;">
+                            @(context.SourceDocumentNumber ?? "—")
+                        </MudText>
+                    </MudTd>
+                    <MudTd DataLabel="Motivo">@(context.Reason ?? "—")</MudTd>
+                    <MudTd DataLabel="Movimento" Style="text-align: right;">
+                        <MudText Typo="Typo.body2"
+                                 Color="@(context.Quantity < 0 ? Color.Error : Color.Success)">
+                            @(context.Quantity > 0 ? "+" : string.Empty)@context.Quantity.ToString("N3")
+                        </MudText>
+                    </MudTd>
+                    <MudTd DataLabel="Saldo" Style="text-align: right;">
+                        <strong>@context.RunningBalance.ToString("N3")</strong>
+                    </MudTd>
+                </RowTemplate>
+                <NoRecordsContent>
+                    <MudText Typo="Typo.body2" Color="Color.Secondary">Sem movimentos.</MudText>
+                </NoRecordsContent>
+            </MudTable>
+        }
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="@(() => _ledgerOpen = false)">Fechar</MudButton>
+    </DialogActions>
+</MudDialog>
+
+@* --- Acerto manual --- *@
+<MudDialog @bind-Visible="_adjustOpen" Options="_dialogOptions">
+    <TitleContent>
+        <MudText Typo="Typo.h6">Acertar existências</MudText>
+    </TitleContent>
+    <DialogContent>
+        <MudText Typo="Typo.body2" Color="Color.Secondary" Class="mb-3">
+            O acerto não corrige o passado: escreve um movimento novo, e ambos ficam visíveis.
+        </MudText>
+
+        <MudGrid>
+            <MudItem xs="12" md="6">
+                <MudTextField Value="@_adjustProductCode" Label="Artigo" Variant="Variant.Outlined"
+                              ReadOnly="true" />
+            </MudItem>
+            <MudItem xs="12" md="6">
+                <MudNumericField T="decimal" Value="_adjustCurrent" Label="Existência atual"
+                                 Variant="Variant.Outlined" ReadOnly="true" Format="N3" />
+            </MudItem>
+            <MudItem xs="12" md="6">
+                <MudNumericField T="decimal" Value="_adjustCounted" ValueChanged="OnCountedChanged"
+                                 Label="Quantidade contada" Variant="Variant.Outlined" Format="N3" />
+            </MudItem>
+            <MudItem xs="12" md="6">
+                <MudNumericField T="decimal" Value="AdjustDifference" Label="Diferença"
+                                 Variant="Variant.Outlined" ReadOnly="true" Format="N3" />
+            </MudItem>
+            <MudItem xs="12">
+                <MudTextField @bind-Value="_adjustReason" @bind-Value:after="StateHasChanged" Immediate="true"
+                              Label="Motivo" Variant="Variant.Outlined" Required="true"
+                              HelperText="Fica no razão, e é o que explica o acerto mais tarde" />
+            </MudItem>
+        </MudGrid>
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="@(() => _adjustOpen = false)">Cancelar</MudButton>
+        <MudButton Variant="Variant.Filled" Color="Color.Primary"
+                   Disabled="@(_adjusting || AdjustDifference == 0 || string.IsNullOrWhiteSpace(_adjustReason))"
+                   OnClick="AdjustAsync">
+            Acertar
+        </MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    private readonly DialogOptions _dialogOptions = new() { MaxWidth = MaxWidth.Medium, FullWidth = true };
+
+    private bool _loading = true;
+    private string? _error;
+
+    private Guid? _warehouseId;
+    private string _search = string.Empty;
+    private bool _onlyWithStock;
+
+    private List<Warehouse> _warehouses = [];
+    private List<StockBalance> _balances = [];
+    private int _negativeCount;
+
+    private bool _ledgerOpen;
+    private bool _ledgerLoading;
+    private string _ledgerProductCode = string.Empty;
+    private List<StockLedgerEntry> _ledger = [];
+
+    private bool _adjustOpen;
+    private bool _adjusting;
+    private Guid _adjustWarehouseId;
+    private string _adjustProductCode = string.Empty;
+    private string _adjustProductDescription = string.Empty;
+    private decimal _adjustCurrent;
+    private decimal _adjustCounted;
+    private string _adjustReason = string.Empty;
+
+    private decimal AdjustDifference => _adjustCounted - _adjustCurrent;
+
+    private IEnumerable<StockBalance> Visible =>
+        _balances
+            .Where(x => !_onlyWithStock || x.Quantity != 0)
+            .Where(x => string.IsNullOrWhiteSpace(_search)
+                        || x.ProductCode.Contains(_search, StringComparison.OrdinalIgnoreCase)
+                        || x.ProductDescription.Contains(_search, StringComparison.OrdinalIgnoreCase));
+
+    protected override async Task OnInitializedAsync()
+    {
+        Company.Changed += OnCompanyChanged;
+        await Company.EnsureLoadedAsync();
+
+        // Coming from the warehouse list, the warehouse to show is on the query string.
+        var uri = Navigation.ToAbsoluteUri(Navigation.Uri);
+        var query = Microsoft.AspNetCore.WebUtilities.QueryHelpers.ParseQuery(uri.Query);
+
+        if (query.TryGetValue("warehouseId", out var value) && Guid.TryParse(value, out var warehouseId))
+            _warehouseId = warehouseId;
+
+        await LoadAsync();
+    }
+
+    private async void OnCompanyChanged() => await InvokeAsync(LoadAsync);
+
+    private async Task LoadAsync()
+    {
+        _loading = true;
+        _error = Company.LoadError;
+
+        if (!Company.HasCompany)
+        {
+            _warehouses = [];
+            _balances = [];
+            _loading = false;
+            StateHasChanged();
+            return;
+        }
+
+        try
+        {
+            var (warehouses, warehouseError) = await StockApi.GetWarehousesAsync(Company.SelectedCompanyId);
+            _warehouses = [.. warehouses];
+            _error ??= warehouseError;
+
+            var (balances, error) = await StockApi.GetBalancesAsync(Company.SelectedCompanyId, _warehouseId);
+            _balances = [.. balances];
+            _error ??= error;
+            _negativeCount = _balances.Count(x => x.Quantity < 0);
+        }
+        catch (Exception ex)
+        {
+            _error = $"Não foi possível carregar as existências: {ex.Message}";
+        }
+        finally
+        {
+            _loading = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task OnWarehouseChangedAsync(Guid? warehouseId)
+    {
+        _warehouseId = warehouseId;
+        await LoadAsync();
+    }
+
+    private string WarehouseName(Guid warehouseId) =>
+        _warehouses.FirstOrDefault(x => x.Id == warehouseId)?.Code ?? "—";
+
+    /// <summary>The clicked row can be null when the click lands outside a row.</summary>
+    private async Task OnRowClickAsync(TableRowClickEventArgs<StockBalance> args)
+    {
+        if (args.Item is { } balance)
+            await ShowLedgerAsync(balance);
+    }
+
+    private async Task ShowLedgerAsync(StockBalance balance)
+    {
+        _ledgerProductCode = balance.ProductCode;
+        _ledger = [];
+        _ledgerOpen = true;
+        _ledgerLoading = true;
+
+        try
+        {
+            var (entries, error) = await StockApi.GetLedgerAsync(
+                Company.SelectedCompanyId, balance.WarehouseId, balance.ProductCode);
+
+            _ledger = [.. entries];
+
+            if (error is not null)
+                _error = error;
+        }
+        catch (Exception ex)
+        {
+            _error = $"Não foi possível carregar os movimentos: {ex.Message}";
+        }
+        finally
+        {
+            _ledgerLoading = false;
+        }
+    }
+
+    private void OpenAdjustment(StockBalance balance)
+    {
+        _adjustWarehouseId = balance.WarehouseId;
+        _adjustProductCode = balance.ProductCode;
+        _adjustProductDescription = balance.ProductDescription;
+        _adjustCurrent = balance.Quantity;
+        _adjustCounted = balance.Quantity;
+        _adjustReason = string.Empty;
+        _adjustOpen = true;
+    }
+
+    private void OnCountedChanged(decimal counted) => _adjustCounted = counted;
+
+    private async Task AdjustAsync()
+    {
+        _adjusting = true;
+        _error = null;
+
+        try
+        {
+            var error = await StockApi.AdjustAsync(new AdjustStockRequest(
+                Company.SelectedCompanyId,
+                _adjustWarehouseId,
+                _adjustProductCode,
+                _adjustProductDescription,
+                AdjustDifference,
+                DateOnly.FromDateTime(DateTime.Today),
+                _adjustReason.Trim()));
+
+            if (error is not null)
+            {
+                _error = error;
+                return;
+            }
+
+            Snackbar.Add($"Existências de {_adjustProductCode} acertadas.", Severity.Success);
+            _adjustOpen = false;
+            await LoadAsync();
+        }
+        catch (Exception ex)
+        {
+            _error = $"Não foi possível acertar as existências: {ex.Message}";
+        }
+        finally
+        {
+            _adjusting = false;
+        }
+    }
+
+    public void Dispose() => Company.Changed -= OnCompanyChanged;
+}

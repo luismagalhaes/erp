@@ -30,7 +30,8 @@ public sealed record CreateInvoiceRequest(
     CustomerRequest Customer,
     IReadOnlyList<CreateInvoiceLineRequest> Lines,
     Guid? RectifiedDocumentId = null,
-    string? RectificationReason = null);
+    string? RectificationReason = null,
+    Guid? WarehouseId = null);
 
 public sealed record VoidInvoiceRequest(string Reason);
 

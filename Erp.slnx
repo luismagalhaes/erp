@@ -18,6 +18,12 @@
     <Project Path="src/Notification/Erp.Notification.Storage/Erp.Notification.Storage.csproj" />
     <Project Path="src/Notification/Erp.Notification.Worker/Erp.Notification.Worker.csproj" />
   </Folder>
+  <Folder Name="/src/Erp/Modules/Inventory/">
+    <Project Path="src/Services/Erp.Inventory.Application/Erp.Inventory.Application.csproj" />
+    <Project Path="src/Services/Erp.Inventory.Domain/Erp.Inventory.Domain.csproj" />
+    <Project Path="src/Services/Erp.Inventory.Infrastructure/Erp.Inventory.Infrastructure.csproj" />
+    <Project Path="src/Services/Erp.Inventory.Storage/Erp.Inventory.Storage.csproj" />
+  </Folder>
   <Folder Name="/src/Erp/Modules/Sales/">
     <Project Path="src/Services/Erp.Sales.Application/Erp.Sales.Application.csproj" />
     <Project Path="src/Services/Erp.Sales.Domain/Erp.Sales.Domain.csproj" />
@@ -45,6 +51,7 @@
     <Project Path="tests/Erp.Core.Tests/Erp.Core.Tests.csproj" />
     <Project Path="tests/Erp.FiscalPT.Tests/Erp.FiscalPT.Tests.csproj" />
     <Project Path="tests/Erp.Notification.Tests/Erp.Notification.Tests.csproj" />
+    <Project Path="tests/Erp.Inventory.Tests/Erp.Inventory.Tests.csproj" />
     <Project Path="tests/Erp.Sales.Tests/Erp.Sales.Tests.csproj" />
   </Folder>
   <Folder Name="/tests/Identity/">

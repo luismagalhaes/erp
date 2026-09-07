@@ -49,6 +49,7 @@ public sealed class ProductService(
             ProductType = request.ProductType,
             UnitOfMeasure = request.UnitOfMeasure,
             UnitPrice = request.UnitPrice,
+            UnitCost = request.UnitCost,
             DefaultTaxCountryRegion = request.DefaultTaxCountryRegion,
             DefaultTaxCode = request.DefaultTaxCode,
             DefaultTaxPercentage = request.DefaultTaxPercentage,
@@ -78,6 +79,7 @@ public sealed class ProductService(
 
         product.Description = request.Description.Trim();
         product.UnitPrice = request.UnitPrice;
+        product.UnitCost = request.UnitCost;
         product.ProductType = request.ProductType;
         product.UnitOfMeasure = request.UnitOfMeasure;
         product.DefaultTaxCountryRegion = request.DefaultTaxCountryRegion;
@@ -158,5 +160,6 @@ public sealed class ProductService(
             product.Subfamily?.Name,
             product.BrandId,
             product.Brand?.Name,
-            product.IsActive);
+            product.IsActive,
+            product.UnitCost);
 }

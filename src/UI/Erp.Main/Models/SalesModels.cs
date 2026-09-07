@@ -50,14 +50,16 @@ public sealed record SalesSeries(
     int CurrentSequence,
     string? ValidationCode,
     string Status,
-    bool CanIssue);
+    bool CanIssue,
+    string StockEffect = "None");
 
 public sealed record CreateSeriesRequest(
     Guid CompanyId,
     string DocumentType,
     string SeriesCode,
     int InitialSequence = 1,
-    string? EstablishmentCode = null);
+    string? EstablishmentCode = null,
+    string? StockEffect = null);
 
 public sealed record CommunicateSeriesRequest(string ValidationCode);
 

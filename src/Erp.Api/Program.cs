@@ -4,6 +4,8 @@ using Erp.Core.Storage;
 using Erp.Common;
 using Erp.Notification.Application;
 using Erp.Notification.Storage;
+using Erp.Inventory.Application;
+using Erp.Inventory.Storage;
 using Erp.Sales.Application;
 using Erp.Sales.Storage;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -31,6 +33,9 @@ try
     builder.Services.AddSalesApplication(
         builder.Configuration,
         allowDevelopmentKeyGeneration: builder.Environment.IsDevelopment());
+
+    builder.Services.AddInventoryStorage(builder.Configuration);
+    builder.Services.AddInventoryApplication();
 
     builder.Services.AddNotificationStorage(builder.Configuration);
     builder.Services.AddNotificationApplication(builder.Configuration);

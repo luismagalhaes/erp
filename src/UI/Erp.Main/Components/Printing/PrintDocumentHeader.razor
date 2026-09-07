@@ -1,0 +1,58 @@
+@using Erp.Main.Models
+
+@*
+    Emitter block and document identification. The designation has to be spelled out in full and
+    the copy has to say which one it is — both are mandatory mentions, not decoration.
+*@
+
+<div class="print-header">
+    <div class="print-emitter">
+        <div class="name">@(Company?.LegalName ?? Company?.Name ?? "—")</div>
+        @if (Company is not null)
+        {
+            @if (!string.IsNullOrWhiteSpace(Company.Address))
+            {
+                <div>@Company.Address</div>
+            }
+            <div>@FormatCity(Company)</div>
+            <div>NIF @Company.TaxId</div>
+            @if (!string.IsNullOrWhiteSpace(Company.Phone))
+            {
+                <div>Tel. @Company.Phone</div>
+            }
+            @if (!string.IsNullOrWhiteSpace(Company.Email))
+            {
+                <div>@Company.Email</div>
+            }
+        }
+    </div>
+
+    <div class="print-doc-id">
+        <div class="designation">@Designation</div>
+        <div class="number">@DocumentNumber</div>
+        <div>Data: @DocumentDate.ToString("yyyy-MM-dd")</div>
+        <div>@Copy</div>
+    </div>
+</div>
+
+@code {
+    [Parameter]
+    public CompanyDetail? Company { get; set; }
+
+    /// <summary>The document type written out, e.g. "Fatura" rather than "FT".</summary>
+    [Parameter]
+    public string Designation { get; set; } = string.Empty;
+
+    [Parameter]
+    public string DocumentNumber { get; set; } = string.Empty;
+
+    [Parameter]
+    public DateOnly DocumentDate { get; set; }
+
+    /// <summary>Original, Duplicado or Triplicado.</summary>
+    [Parameter]
+    public string Copy { get; set; } = "Original";
+
+    private static string FormatCity(CompanyDetail company) =>
+        string.Join(" ", new[] { company.PostalCode, company.City }.Where(part => !string.IsNullOrWhiteSpace(part)));
+}

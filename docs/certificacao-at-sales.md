@@ -21,11 +21,11 @@ esquema de base de dados que garante a inviolabilidade dos registos.
 | 2 — Modelo de dados imutável | **Feito** — entidades, `SalesDbContext`, migration `InitialSales` e [script de permissões](../src/Services/Erp.Sales.Storage/Data/Scripts/harden-sales-permissions.sql) |
 | 3 — Motor de assinatura | **Feito** — `DocumentSignatureString`, `RsaDocumentSigner`, `DocumentSigner` e 22 testes |
 | 4 — Séries e ATCUD | **Parcial** — modelo, ciclo de vida, gestão no frontend e registo manual do código de validação; falta o cliente SOAP do *SeriesWSService* |
-| 5 — Código QR | **Parcial** — `QrCodePayloadBuilder` gera a mensagem; falta renderizar a imagem no documento |
+| 5 — Código QR | **Feito** — `QrCodePayloadBuilder` gera a mensagem e `QrCodeImage` renderiza a imagem PNG, impressa no documento |
 | 6 — Emissão e API | **Feito** — emissão transacional com lock por série, listagem, detalhe, anulação e ficheiro de artigos |
 | 6b — Movimentação de mercadorias | **Parcial** — guias GR/GT/GA/GC/GD emitidas, assinadas e numeradas como as faturas, com locais de carga e descarga, início de transporte e matrícula; o código da AT regista-se manualmente, falta a comunicação prévia por webservice |
 | 6c — Recibos | **Feito** — recibos RC/RG emitidos, assinados e numerados como as faturas, com as faturas que liquidam, os meios de pagamento e a anulação que devolve as faturas a dívida |
-| 7 — Documento impresso | **Por fazer** |
+| 7 — Documento impresso | **Parcial** — impressão em HTML/A4 para faturas, guias e recibos, com todas as menções obrigatórias, cópias e código QR; falta o PDF assinado exigido a partir de 2027 |
 | 8 — SAF-T (PT) | **Feito** — ficheiro 1.04_01 gerado em `Erp.FiscalPT/Saft` com header, master files, `SalesInvoices`, `MovementOfGoods` e `Payments`, validado contra o XSD oficial da AT na emissão e nos testes, com página de exportação em `/saft` |
 | 9 — Pedido de certificação | **Por fazer** |
 
@@ -34,8 +34,8 @@ com o hash, o ATCUD, a mensagem do QR e a anulação com motivo. As tabelas auxi
 próprias em `/series` e `/products`, e a empresa ativa escolhe-se no cabeçalho.
 
 Ainda não implementado e necessário antes de qualquer utilização real: comunicação automática de
-séries à AT, idempotência na emissão, validação da empresa contra o `Erp.Core` e impressão do
-documento.
+séries à AT, comunicação prévia dos documentos de transporte, idempotência na emissão e validação da
+empresa contra o `Erp.Core`.
 
 ---
 
@@ -292,6 +292,12 @@ especificação técnica oficial é a referência a seguir campo a campo.
 O gerador vive em `Erp.FiscalPT` e produz a string; o `QRCoder` renderiza a imagem. Em documentos
 com várias páginas, o código pode constar na primeira ou na última.
 
+**Como está implementado.** O `QrCodeImage` renderiza o PNG com o `PngByteQRCode` do QRCoder — o
+renderizador de bytes, não o de *bitmap* — para funcionar igual em Windows, Linux e contentores sem
+qualquer biblioteca de desenho. O nível de correção de erro é M, o mínimo que a portaria admite, e
+o resultado é determinístico: o mesmo documento imprime sempre o mesmo código. O `RenderDataUri`
+devolve-o pronto a entrar num `img`, que é como a página de impressão o consome.
+
 **Critério de aceitação:** QR de um documento de teste lido por uma aplicação de leitura devolve
 todos os campos com os valores esperados, incluindo bases e IVA por taxa.
 
@@ -341,6 +347,26 @@ Menções obrigatórias cuja ausência é, por si só, motivo de não conformida
 > [!NOTE]
 > Faturas em PDF passam a exigir **assinatura eletrónica qualificada** a partir de 1 de janeiro de
 > 2027. Se o Sales vai gerar PDF, desenhar já o ponto de extensão para assinar o ficheiro.
+
+**Como está implementado.** Cada família de documento tem a sua página de impressão —
+`/invoices/{id}/print`, `/stock-movements/{id}/print` e `/payments/{id}/print` — em HTML dimensionado
+para A4, com um `PrintLayout` sem menu nem barra, para o que se vê no ecrã ser o que sai na
+impressora. As partes legalmente obrigatórias vivem em componentes partilhados, não copiadas por
+página: o `PrintDocumentHeader` (emitente completo, designação por extenso, série e número, cópia) e
+o `PrintFiscalFooter` (os 4 caracteres do hash seguidos de *Processado por programa certificado
+n.º XXXX/AT*, o ATCUD e o código QR).
+
+Duas decisões que vale a pena registar:
+
+- **O número do certificado é lido do próprio documento**, do campo `R` do QR, e não da configuração
+  atual. Se o certificado mudar, um documento emitido antes continua a imprimir o número com que
+  foi emitido — que é o que tem de constar.
+- **As cópias** — `Original`, `Duplicado`, `Triplicado` — escolhem-se numa barra que só existe no
+  ecrã: o `@media print` remove-a, tal como remove os *providers* do MudBlazor.
+
+Os motivos de isenção aparecem uma vez cada, por baixo do resumo de IVA, e um documento anulado sai
+com a marca bem visível. Falta o PDF: hoje o utilizador imprime pelo navegador, o que basta para
+papel mas não para a fatura eletrónica assinada exigida a partir de 2027.
 
 **Critério de aceitação:** documento de teste impresso com todas as menções, validado contra a
 checklist da AT.

@@ -36,6 +36,9 @@ public sealed record InvoiceListItemDto(
     decimal GrossTotal,
     string Status);
 
+/// <param name="TaxExemptionReason">
+/// Required by law on the printed document whenever the line carries no tax.
+/// </param>
 public sealed record InvoiceLineDto(
     int LineNumber,
     string ProductCode,
@@ -46,7 +49,9 @@ public sealed record InvoiceLineDto(
     decimal LineAmount,
     string TaxCode,
     decimal TaxPercentage,
-    decimal TaxAmount);
+    decimal TaxAmount,
+    string? TaxExemptionCode = null,
+    string? TaxExemptionReason = null);
 
 public sealed record InvoiceTaxDto(
     string TaxCountryRegion,
@@ -55,9 +60,11 @@ public sealed record InvoiceTaxDto(
     decimal TaxableBase,
     decimal TaxAmount);
 
+/// <param name="DocumentType">FT, FS, FR, NC or ND — the printed document spells it out in full.</param>
 public sealed record InvoiceDetailDto(
     Guid Id,
     string DocumentNumber,
+    string DocumentType,
     string Atcud,
     DateOnly DocumentDate,
     DateTime SystemEntryDateUtc,

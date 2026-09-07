@@ -1,0 +1,164 @@
+@page "/payments/{Id:guid}/print"
+@attribute [Authorize]
+@layout PrintLayout
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.AspNetCore.Components.Web
+@using MudBlazor
+@using Erp.Main.Components.Printing
+@using Erp.Main.Layout
+@using Erp.Main.Models
+@using Erp.Main.Services
+@inject SalesApiClient SalesApi
+@inject CoreApiClient CoreApi
+@inject CompanyState Company
+
+<PageTitle>@(_payment?.PaymentRefNo ?? "Recibo")</PageTitle>
+
+<PrintToolbar Copy="_copy" CopyChanged="@(copy => _copy = copy)" BackUrl="@($"payments/{Id}")" />
+
+@if (_loading)
+{
+    <MudProgressLinear Indeterminate="true" Color="Color.Primary" />
+}
+else if (_payment is null)
+{
+    <MudAlert Severity="Severity.Error">@(_error ?? "Recibo não encontrado.")</MudAlert>
+}
+else
+{
+    <PrintDocumentHeader Company="_company"
+                         Designation="Recibo"
+                         DocumentNumber="@_payment.PaymentRefNo"
+                         DocumentDate="_payment.TransactionDate"
+                         Copy="@_copy" />
+
+    @if (_payment.Status == "A")
+    {
+        <div class="print-voided">Recibo anulado</div>
+    }
+
+    <div class="print-parties">
+        <div class="print-box">
+            <div class="label">Cliente</div>
+            <div><strong>@_payment.PartyName</strong></div>
+            <div>NIF @_payment.PartyTaxId</div>
+        </div>
+
+        @if (!string.IsNullOrWhiteSpace(_payment.Description))
+        {
+            <div class="print-box">
+                <div class="label">Observações</div>
+                <div>@_payment.Description</div>
+            </div>
+        }
+    </div>
+
+    <table class="print-table">
+        <thead>
+            <tr>
+                <th style="width: 24px;">#</th>
+                <th>Documento liquidado</th>
+                <th style="width: 80px;">Data</th>
+                <th class="num" style="width: 90px;">Valor</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var line in _payment.Lines)
+            {
+                <tr>
+                    <td>@line.LineNumber</td>
+                    <td>@line.OriginatingNumber</td>
+                    <td>@line.OriginatingDate.ToString("yyyy-MM-dd")</td>
+                    <td class="num">@line.AppliedAmount.ToString("N2")</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+
+    <div class="print-summary">
+        <div>
+            <table class="print-table" style="width: auto;">
+                <thead>
+                    <tr>
+                        <th>Meio de pagamento</th>
+                        <th style="width: 80px;">Data</th>
+                        <th class="num" style="width: 90px;">Valor</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var method in _payment.Methods)
+                    {
+                        <tr>
+                            <td>@PaymentMechanismOptions.Describe(method.Mechanism)</td>
+                            <td>@method.PaymentDate.ToString("yyyy-MM-dd")</td>
+                            <td class="num">@method.Amount.ToString("N2")</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+
+        <div class="print-totals">
+            <div class="row"><span>IVA</span><span>@_payment.TaxPayable.ToString("N2")</span></div>
+            <div class="row grand"><span>Total recebido</span><span>@_payment.GrossTotal.ToString("N2") EUR</span></div>
+        </div>
+    </div>
+
+    <PrintFiscalFooter PrintableHash="@_payment.PrintableHash"
+                       Atcud="@_payment.Atcud"
+                       QrCodePayload="@_payment.QrCodePayload">
+        <div>Emitido em @_payment.SystemEntryDateUtc.ToString("yyyy-MM-dd HH:mm:ss") UTC</div>
+    </PrintFiscalFooter>
+}
+
+@code {
+    [Parameter]
+    public Guid Id { get; set; }
+
+    private bool _loading = true;
+    private string? _error;
+    private string _copy = "Original";
+    private Guid? _loadedId;
+
+    private PaymentDetail? _payment;
+    private CompanyDetail? _company;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        // A layout re-render sets the parameters again; only reload when the route changed.
+        if (_loadedId == Id)
+            return;
+
+        _loadedId = Id;
+        await LoadAsync();
+    }
+
+    private async Task LoadAsync()
+    {
+        _loading = true;
+
+        try
+        {
+            await Company.EnsureLoadedAsync();
+
+            _payment = await SalesApi.GetPaymentAsync(Id);
+
+            if (_payment is null)
+            {
+                _error = "Recibo não encontrado.";
+                return;
+            }
+
+            if (Company.HasCompany)
+                _company = await CoreApi.GetCompanyAsync(Company.SelectedCompanyId);
+        }
+        catch (Exception ex)
+        {
+            _error = $"Não foi possível carregar o recibo: {ex.Message}";
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+}

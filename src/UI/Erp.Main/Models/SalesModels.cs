@@ -83,7 +83,9 @@ public sealed record InvoiceLine(
     decimal LineAmount,
     string TaxCode,
     decimal TaxPercentage,
-    decimal TaxAmount);
+    decimal TaxAmount,
+    string? TaxExemptionCode = null,
+    string? TaxExemptionReason = null);
 
 public sealed record InvoiceTax(
     string TaxCountryRegion,
@@ -95,6 +97,7 @@ public sealed record InvoiceTax(
 public sealed record InvoiceDetail(
     Guid Id,
     string DocumentNumber,
+    string DocumentType,
     string Atcud,
     DateOnly DocumentDate,
     DateTime SystemEntryDateUtc,
@@ -109,6 +112,24 @@ public sealed record InvoiceDetail(
     string QrCodePayload,
     IReadOnlyList<InvoiceLine> Lines,
     IReadOnlyList<InvoiceTax> Taxes);
+
+/// <summary>
+/// Invoicing document types with the designation the printed document has to spell out in full.
+/// </summary>
+public static class InvoiceTypes
+{
+    public static readonly (string Code, string Label)[] All =
+    [
+        ("FT", "Fatura"),
+        ("FS", "Fatura simplificada"),
+        ("FR", "Fatura-recibo"),
+        ("NC", "Nota de crédito"),
+        ("ND", "Nota de débito")
+    ];
+
+    public static string Describe(string code) =>
+        All.FirstOrDefault(type => type.Code == code).Label ?? code;
+}
 
 public sealed record CustomerRequest(string? TaxId, string Name, string? Address, string Country = "PT");
 

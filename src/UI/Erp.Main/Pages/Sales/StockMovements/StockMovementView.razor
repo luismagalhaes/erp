@@ -24,10 +24,18 @@
             }
         </MudStack>
 
-        <MudButton Variant="Variant.Text" StartIcon="@Icons.Material.Filled.ArrowBack"
-                   OnClick="@(() => Navigation.NavigateTo("stock-movements"))">
-            Voltar
-        </MudButton>
+        <MudStack Row="true" Spacing="2">
+            <MudButton Variant="Variant.Outlined" Color="Color.Primary"
+                       StartIcon="@Icons.Material.Filled.Print"
+                       Disabled="@(_movement is null)"
+                       OnClick="@(() => Navigation.NavigateTo($"stock-movements/{Id}/print"))">
+                Imprimir
+            </MudButton>
+            <MudButton Variant="Variant.Text" StartIcon="@Icons.Material.Filled.ArrowBack"
+                       OnClick="@(() => Navigation.NavigateTo("stock-movements"))">
+                Voltar
+            </MudButton>
+        </MudStack>
     </MudStack>
 
     @if (!string.IsNullOrWhiteSpace(_error))

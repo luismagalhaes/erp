@@ -226,6 +226,7 @@ public sealed class SalesDocumentService(
     private static InvoiceDetailDto Map(SalesDocument document) =>
         new(document.Id,
             document.DocumentNumber,
+            document.DocumentType,
             document.Atcud,
             document.DocumentDate,
             document.SystemEntryDateUtc,
@@ -250,7 +251,9 @@ public sealed class SalesDocumentService(
                     x.LineAmount,
                     x.TaxCode,
                     x.TaxPercentage,
-                    x.TaxAmount))
+                    x.TaxAmount,
+                    x.TaxExemptionCode,
+                    x.TaxExemptionReason))
                 .ToList(),
             document.TaxSummaries
                 .Select(x => new InvoiceTaxDto(

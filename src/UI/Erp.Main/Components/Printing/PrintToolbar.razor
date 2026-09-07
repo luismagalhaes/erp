@@ -1,0 +1,44 @@
+@using Microsoft.JSInterop
+@using MudBlazor
+@inject IJSRuntime JS
+@inject NavigationManager Navigation
+
+@* On screen only: the copy selector and the print button never reach the paper. *@
+
+<div class="print-toolbar">
+    <MudButton Variant="Variant.Text" StartIcon="@Icons.Material.Filled.ArrowBack" Size="Size.Small"
+               OnClick="@(() => Navigation.NavigateTo(BackUrl))">
+        Voltar
+    </MudButton>
+
+    <MudSelect T="string" Value="Copy" ValueChanged="OnCopyChanged" Dense="true" Margin="Margin.Dense"
+               Variant="Variant.Outlined" Style="max-width: 160px;">
+        @foreach (var copy in Copies)
+        {
+            <MudSelectItem T="string" Value="@copy">@copy</MudSelectItem>
+        }
+    </MudSelect>
+
+    <MudButton Variant="Variant.Filled" Color="Color.Primary" Size="Size.Small"
+               StartIcon="@Icons.Material.Filled.Print" OnClick="PrintAsync">
+        Imprimir
+    </MudButton>
+</div>
+
+@code {
+    /// <summary>The copies a fiscal document may be issued as, in the order the law names them.</summary>
+    public static readonly string[] Copies = ["Original", "Duplicado", "Triplicado"];
+
+    [Parameter]
+    public string Copy { get; set; } = "Original";
+
+    [Parameter]
+    public EventCallback<string> CopyChanged { get; set; }
+
+    [Parameter]
+    public string BackUrl { get; set; } = string.Empty;
+
+    private Task OnCopyChanged(string copy) => CopyChanged.InvokeAsync(copy);
+
+    private async Task PrintAsync() => await JS.InvokeVoidAsync("window.print");
+}

@@ -1,0 +1,182 @@
+@page "/stock-movements/{Id:guid}/print"
+@attribute [Authorize]
+@layout PrintLayout
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.AspNetCore.Components.Web
+@using MudBlazor
+@using Erp.Main.Components.Printing
+@using Erp.Main.Layout
+@using Erp.Main.Models
+@using Erp.Main.Services
+@inject SalesApiClient SalesApi
+@inject CoreApiClient CoreApi
+@inject CompanyState Company
+
+<PageTitle>@(_movement?.DocumentNumber ?? "Guia")</PageTitle>
+
+<PrintToolbar Copy="_copy" CopyChanged="@(copy => _copy = copy)" BackUrl="@($"stock-movements/{Id}")" />
+
+@if (_loading)
+{
+    <MudProgressLinear Indeterminate="true" Color="Color.Primary" />
+}
+else if (_movement is null)
+{
+    <MudAlert Severity="Severity.Error">@(_error ?? "Guia não encontrada.")</MudAlert>
+}
+else
+{
+    <PrintDocumentHeader Company="_company"
+                         Designation="@MovementTypes.Describe(_movement.MovementType)"
+                         DocumentNumber="@_movement.DocumentNumber"
+                         DocumentDate="_movement.MovementDate"
+                         Copy="@_copy" />
+
+    @if (_movement.Status == "A")
+    {
+        <div class="print-voided">Guia anulada</div>
+    }
+    else if (string.IsNullOrWhiteSpace(_movement.AtDocCodeId))
+    {
+        <div class="print-voided">Documento por comunicar à AT — a mercadoria não pode circular</div>
+    }
+
+    <div class="print-parties">
+        <div class="print-box">
+            <div class="label">@(_movement.PartyIsSupplier ? "Fornecedor" : "Adquirente")</div>
+            <div><strong>@_movement.PartyName</strong></div>
+            <div>NIF @_movement.PartyTaxId</div>
+        </div>
+
+        <div class="print-box">
+            <div class="label">Local de carga</div>
+            <div>@_movement.ShipFrom.Address</div>
+            <div>@FormatCity(_movement.ShipFrom)</div>
+        </div>
+
+        <div class="print-box">
+            <div class="label">Local de descarga</div>
+            <div>@_movement.ShipTo.Address</div>
+            <div>@FormatCity(_movement.ShipTo)</div>
+        </div>
+    </div>
+
+    <div class="print-parties">
+        <div class="print-box">
+            <div class="label">Início do transporte</div>
+            <div>@_movement.MovementStartAtUtc.ToString("yyyy-MM-dd HH:mm")</div>
+        </div>
+        <div class="print-box">
+            <div class="label">Matrícula</div>
+            <div>@(_movement.VehiclePlate ?? "—")</div>
+        </div>
+        <div class="print-box">
+            <div class="label">Código atribuído pela AT</div>
+            <div>@(_movement.AtDocCodeId ?? "—")</div>
+        </div>
+    </div>
+
+    <table class="print-table">
+        <thead>
+            <tr>
+                <th style="width: 24px;">#</th>
+                <th style="width: 70px;">Código</th>
+                <th>Descrição</th>
+                <th class="num" style="width: 60px;">Qtd.</th>
+                <th style="width: 34px;">Un.</th>
+                <th class="num" style="width: 70px;">Preço</th>
+                <th class="num" style="width: 76px;">Valor</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var line in _movement.Lines)
+            {
+                <tr>
+                    <td>@line.LineNumber</td>
+                    <td>@line.ProductCode</td>
+                    <td>@line.ProductDescription</td>
+                    <td class="num">@line.Quantity.ToString("N3")</td>
+                    <td>@line.UnitOfMeasure</td>
+                    <td class="num">@line.UnitPrice.ToString("N2")</td>
+                    <td class="num">@line.LineAmount.ToString("N2")</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+
+    <div class="print-summary">
+        <div></div>
+        <div class="print-totals">
+            <div class="row"><span>Quantidade total</span><span>@_movement.TotalQuantity.ToString("N3")</span></div>
+            <div class="row"><span>Base tributável</span><span>@_movement.NetTotal.ToString("N2")</span></div>
+            <div class="row"><span>IVA</span><span>@_movement.TaxPayable.ToString("N2")</span></div>
+            <div class="row grand"><span>Total</span><span>@_movement.GrossTotal.ToString("N2") EUR</span></div>
+        </div>
+    </div>
+
+    @if (!string.IsNullOrWhiteSpace(_movement.Comments))
+    {
+        <div class="print-exemptions">Observações: @_movement.Comments</div>
+    }
+
+    <PrintFiscalFooter PrintableHash="@_movement.PrintableHash"
+                       Atcud="@_movement.Atcud"
+                       QrCodePayload="@_movement.QrCodePayload">
+        <div>Emitido em @_movement.SystemEntryDateUtc.ToString("yyyy-MM-dd HH:mm:ss") UTC</div>
+    </PrintFiscalFooter>
+}
+
+@code {
+    [Parameter]
+    public Guid Id { get; set; }
+
+    private bool _loading = true;
+    private string? _error;
+    private string _copy = "Original";
+    private Guid? _loadedId;
+
+    private StockMovementDetail? _movement;
+    private CompanyDetail? _company;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        // A layout re-render sets the parameters again; only reload when the route changed.
+        if (_loadedId == Id)
+            return;
+
+        _loadedId = Id;
+        await LoadAsync();
+    }
+
+    private async Task LoadAsync()
+    {
+        _loading = true;
+
+        try
+        {
+            await Company.EnsureLoadedAsync();
+
+            _movement = await SalesApi.GetStockMovementAsync(Id);
+
+            if (_movement is null)
+            {
+                _error = "Guia não encontrada.";
+                return;
+            }
+
+            if (Company.HasCompany)
+                _company = await CoreApi.GetCompanyAsync(Company.SelectedCompanyId);
+        }
+        catch (Exception ex)
+        {
+            _error = $"Não foi possível carregar a guia: {ex.Message}";
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private static string FormatCity(MovementLocation location) =>
+        string.Join(" ", new[] { location.PostalCode, location.City }.Where(part => !string.IsNullOrWhiteSpace(part)));
+}

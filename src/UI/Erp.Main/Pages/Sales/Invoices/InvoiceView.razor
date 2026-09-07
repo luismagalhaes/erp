@@ -23,10 +23,18 @@
             }
         </MudStack>
 
-        <MudButton Variant="Variant.Text" StartIcon="@Icons.Material.Filled.ArrowBack"
-                   OnClick="@(() => Navigation.NavigateTo("invoices"))">
-            Voltar
-        </MudButton>
+        <MudStack Row="true" Spacing="2">
+            <MudButton Variant="Variant.Outlined" Color="Color.Primary"
+                       StartIcon="@Icons.Material.Filled.Print"
+                       Disabled="@(_invoice is null)"
+                       OnClick="@(() => Navigation.NavigateTo($"invoices/{Id}/print"))">
+                Imprimir
+            </MudButton>
+            <MudButton Variant="Variant.Text" StartIcon="@Icons.Material.Filled.ArrowBack"
+                       OnClick="@(() => Navigation.NavigateTo("invoices"))">
+                Voltar
+            </MudButton>
+        </MudStack>
     </MudStack>
 
     @if (!string.IsNullOrWhiteSpace(_error))

@@ -1,0 +1,11 @@
+@inherits LayoutComponentBase
+@using MudBlazor
+
+@* No app bar and no drawer: what shows on screen is what comes out of the printer. *@
+<MudThemeProvider />
+<MudPopoverProvider />
+<MudSnackbarProvider />
+
+<div class="print-page">
+    @Body
+</div>

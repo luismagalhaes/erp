@@ -1,0 +1,64 @@
+@using Erp.FiscalPT.QrCode
+
+@*
+    The mentions whose absence is, by itself, grounds for non-conformity: the four characters of
+    the signature followed by the certified program notice, the ATCUD, and the QR code.
+*@
+
+<div class="print-footer">
+    @if (!string.IsNullOrWhiteSpace(QrCodePayload))
+    {
+        <img src="@_qrCodeDataUri" alt="Código QR do documento" />
+    }
+
+    <div class="mentions">
+        <div class="certified">
+            @PrintableHash — Processado por programa certificado n.º @(_certificateNumber ?? "—")/AT
+        </div>
+        <div>ATCUD: @Atcud</div>
+        @if (ChildContent is not null)
+        {
+            @ChildContent
+        }
+    </div>
+</div>
+
+@code {
+    [Parameter]
+    public string PrintableHash { get; set; } = string.Empty;
+
+    [Parameter]
+    public string Atcud { get; set; } = string.Empty;
+
+    [Parameter]
+    public string QrCodePayload { get; set; } = string.Empty;
+
+    [Parameter]
+    public RenderFragment? ChildContent { get; set; }
+
+    private string? _qrCodeDataUri;
+    private string? _certificateNumber;
+    private string? _renderedPayload;
+
+    protected override void OnParametersSet()
+    {
+        // Rendering the code is not free, so it is redone only when the document changes.
+        if (_renderedPayload == QrCodePayload)
+            return;
+
+        _renderedPayload = QrCodePayload;
+
+        if (string.IsNullOrWhiteSpace(QrCodePayload))
+        {
+            _qrCodeDataUri = null;
+            _certificateNumber = null;
+            return;
+        }
+
+        _qrCodeDataUri = QrCodeImage.RenderDataUri(QrCodePayload);
+
+        // The certificate number of the program that issued the document travels in the payload,
+        // which is what has to be printed — not whatever is configured today.
+        _certificateNumber = QrCodePayloadReader.GetCertificateNumber(QrCodePayload);
+    }
+}

@@ -125,13 +125,24 @@
 </MudStack>
 
 @code {
+    /// <summary>
+    /// Every document family that is numbered from a series: faturação, movimentação de
+    /// mercadorias e recibos. The API validates against the same list.
+    /// </summary>
     private static readonly DocumentTypeOption[] DocumentTypes =
     [
         new("FT", "Fatura"),
         new("FS", "Fatura simplificada"),
         new("FR", "Fatura-recibo"),
         new("NC", "Nota de crédito"),
-        new("ND", "Nota de débito")
+        new("ND", "Nota de débito"),
+        new("GR", "Guia de remessa"),
+        new("GT", "Guia de transporte"),
+        new("GA", "Guia de ativos próprios"),
+        new("GC", "Guia de consignação"),
+        new("GD", "Guia de devolução"),
+        new("RC", "Recibo (regime de IVA de caixa)"),
+        new("RG", "Outros recibos")
     ];
 
     [Parameter]

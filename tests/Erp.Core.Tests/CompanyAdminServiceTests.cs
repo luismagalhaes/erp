@@ -46,6 +46,46 @@ public class CompanyAdminServiceTests
         await _storage.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
     }
 
+    /// <summary>The address is not decoration: the SAF-T header will not validate without it.</summary>
+    [Fact]
+    public async Task CreateAsync_keeps_the_registered_address()
+    {
+        var service = CreateService();
+
+        var created = await service.CreateAsync(new CreateCompanyRequest(
+            "Alfa", "500000001", Address: " Rua Um, 10 ", City: " Lisboa ", PostalCode: " 1000-001 "));
+
+        created.Address.Should().Be("Rua Um, 10");
+        created.City.Should().Be("Lisboa");
+        created.PostalCode.Should().Be("1000-001");
+        created.Country.Should().Be("PT");
+    }
+
+    [Fact]
+    public async Task CreateAsync_normalizes_the_country_to_an_upper_case_code()
+    {
+        var service = CreateService();
+
+        var created = await service.CreateAsync(new CreateCompanyRequest("Alfa", "500000001", Country: " es "));
+
+        created.Country.Should().Be("ES");
+    }
+
+    [Fact]
+    public async Task UpdateAsync_changes_the_registered_address()
+    {
+        var company = new Company { Id = Guid.NewGuid(), Name = "Alfa", TaxId = "500000001", City = "Porto" };
+        _storage.GetByIdAsync(company.Id, Arg.Any<CancellationToken>()).Returns(company);
+        var service = CreateService();
+
+        var updated = await service.UpdateAsync(company.Id, new UpdateCompanyRequest(
+            "Alfa", "500000001", null, null, null, true, "Rua Dois", "Lisboa", "1000-002"));
+
+        updated!.Address.Should().Be("Rua Dois");
+        updated.City.Should().Be("Lisboa");
+        updated.PostalCode.Should().Be("1000-002");
+    }
+
     [Fact]
     public async Task CreateAsync_rejects_a_duplicate_tax_id()
     {

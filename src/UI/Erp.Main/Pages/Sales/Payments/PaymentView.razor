@@ -1,0 +1,246 @@
+@page "/payments/{Id:guid}"
+@attribute [Authorize]
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.AspNetCore.Components.Web
+@using MudBlazor
+@using Erp.Main.Models
+@using Erp.Main.Services
+@inject SalesApiClient SalesApi
+@inject NavigationManager Navigation
+@inject ISnackbar Snackbar
+
+<PageTitle>@(_payment?.PaymentRefNo ?? "Recibo")</PageTitle>
+
+<MudStack Spacing="4">
+    <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center">
+        <MudStack Spacing="0">
+            <MudText Typo="Typo.h4">@(_payment?.PaymentRefNo ?? "Recibo")</MudText>
+            @if (_payment is not null)
+            {
+                <MudText Typo="Typo.body2" Color="Color.Secondary">
+                    @PaymentTypes.Describe(_payment.PaymentType) ·
+                    <span style="font-family: monospace;">ATCUD:@_payment.Atcud</span>
+                </MudText>
+            }
+        </MudStack>
+
+        <MudButton Variant="Variant.Text" StartIcon="@Icons.Material.Filled.ArrowBack"
+                   OnClick="@(() => Navigation.NavigateTo("payments"))">
+            Voltar
+        </MudButton>
+    </MudStack>
+
+    @if (!string.IsNullOrWhiteSpace(_error))
+    {
+        <MudAlert Severity="Severity.Error" Dense="true">@_error</MudAlert>
+    }
+
+    @if (_loading)
+    {
+        <MudProgressLinear Indeterminate="true" Color="Color.Primary" />
+    }
+    else if (_payment is not null)
+    {
+        @if (_payment.Status == "A")
+        {
+            <MudAlert Severity="Severity.Warning" Dense="true">
+                Recibo anulado. O registo original é preservado e as faturas voltaram a ficar em dívida.
+            </MudAlert>
+        }
+
+        <MudPaper Elevation="1" Class="pa-4">
+            <MudGrid>
+                <MudItem xs="12" md="3">
+                    <MudText Typo="Typo.caption" Color="Color.Secondary">Cliente</MudText>
+                    <MudText>@_payment.PartyName</MudText>
+                    <MudText Typo="Typo.body2" Color="Color.Secondary">NIF @_payment.PartyTaxId</MudText>
+                </MudItem>
+                <MudItem xs="12" md="3">
+                    <MudText Typo="Typo.caption" Color="Color.Secondary">Data do recibo</MudText>
+                    <MudText>@_payment.TransactionDate.ToString("yyyy-MM-dd")</MudText>
+                </MudItem>
+                <MudItem xs="12" md="3">
+                    <MudText Typo="Typo.caption" Color="Color.Secondary">Registo no sistema</MudText>
+                    <MudText>@_payment.SystemEntryDateUtc.ToString("yyyy-MM-dd HH:mm:ss") UTC</MudText>
+                </MudItem>
+                <MudItem xs="12" md="3">
+                    <MudText Typo="Typo.caption" Color="Color.Secondary">Assinatura</MudText>
+                    <MudText Style="font-family: monospace;">@_payment.PrintableHash</MudText>
+                    <MudText Typo="Typo.body2" Color="Color.Secondary">Processado por programa certificado</MudText>
+                </MudItem>
+
+                @if (!string.IsNullOrWhiteSpace(_payment.Description))
+                {
+                    <MudItem xs="12">
+                        <MudText Typo="Typo.caption" Color="Color.Secondary">Observações</MudText>
+                        <MudText>@_payment.Description</MudText>
+                    </MudItem>
+                }
+            </MudGrid>
+        </MudPaper>
+
+        <MudPaper Elevation="1" Class="pa-2">
+            <MudText Typo="Typo.h6" Class="pa-2">Faturas liquidadas</MudText>
+            <MudTable Items="_payment.Lines" Dense="true" Hover="true" Striped="true" Breakpoint="Breakpoint.Sm">
+                <HeaderContent>
+                    <MudTh>#</MudTh>
+                    <MudTh>Fatura</MudTh>
+                    <MudTh>Data da fatura</MudTh>
+                    <MudTh Style="text-align: right;">Valor liquidado</MudTh>
+                    <MudTh Style="width: 70px; text-align: right;">Ações</MudTh>
+                </HeaderContent>
+                <RowTemplate>
+                    <MudTd DataLabel="#">@context.LineNumber</MudTd>
+                    <MudTd DataLabel="Fatura">
+                        <MudText Typo="Typo.body2" Style="font-family: monospace;">@context.OriginatingNumber</MudText>
+                    </MudTd>
+                    <MudTd DataLabel="Data da fatura">@context.OriginatingDate.ToString("yyyy-MM-dd")</MudTd>
+                    <MudTd DataLabel="Valor liquidado" Style="text-align: right;">@context.AppliedAmount.ToString("N2")</MudTd>
+                    <MudTd DataLabel="Ações" Style="text-align: right;">
+                        <MudIconButton Icon="@Icons.Material.Filled.Visibility" Size="Size.Small"
+                                       title="Ver fatura"
+                                       OnClick="@(() => Navigation.NavigateTo($"invoices/{context.OriginatingDocumentId}"))" />
+                    </MudTd>
+                </RowTemplate>
+            </MudTable>
+        </MudPaper>
+
+        <MudPaper Elevation="1" Class="pa-2">
+            <MudText Typo="Typo.h6" Class="pa-2">Meios de pagamento</MudText>
+            <MudTable Items="_payment.Methods" Dense="true" Hover="true" Striped="true" Breakpoint="Breakpoint.Sm">
+                <HeaderContent>
+                    <MudTh>Meio</MudTh>
+                    <MudTh>Data</MudTh>
+                    <MudTh Style="text-align: right;">Valor</MudTh>
+                </HeaderContent>
+                <RowTemplate>
+                    <MudTd DataLabel="Meio">@PaymentMechanismOptions.Describe(context.Mechanism)</MudTd>
+                    <MudTd DataLabel="Data">@context.PaymentDate.ToString("yyyy-MM-dd")</MudTd>
+                    <MudTd DataLabel="Valor" Style="text-align: right;">@context.Amount.ToString("N2")</MudTd>
+                </RowTemplate>
+            </MudTable>
+        </MudPaper>
+
+        <MudStack Row="true" Spacing="4" Justify="Justify.FlexEnd">
+            <MudPaper Elevation="1" Class="pa-4" Style="min-width: 300px;">
+                <MudStack Spacing="2">
+                    <MudStack Row="true" Justify="Justify.SpaceBetween">
+                        <MudText Typo="Typo.body2">Valor liquidado</MudText>
+                        <MudText Typo="Typo.body2">@_payment.NetTotal.ToString("N2")</MudText>
+                    </MudStack>
+                    <MudStack Row="true" Justify="Justify.SpaceBetween">
+                        <MudText Typo="Typo.body2">IVA</MudText>
+                        <MudText Typo="Typo.body2">@_payment.TaxPayable.ToString("N2")</MudText>
+                    </MudStack>
+                    <MudDivider />
+                    <MudStack Row="true" Justify="Justify.SpaceBetween">
+                        <MudText Typo="Typo.h6">Total recebido</MudText>
+                        <MudText Typo="Typo.h6" Color="Color.Primary">@_payment.GrossTotal.ToString("N2")</MudText>
+                    </MudStack>
+                </MudStack>
+            </MudPaper>
+        </MudStack>
+
+        <MudExpansionPanels Elevation="1">
+            <MudExpansionPanel Text="Dados do código QR">
+                <MudPaper Elevation="0" Class="pa-3" Style="overflow-x: auto;">
+                    <MudText Style="font-family: monospace; font-size: 0.8rem; white-space: nowrap;">
+                        @_payment.QrCodePayload
+                    </MudText>
+                </MudPaper>
+            </MudExpansionPanel>
+
+            @if (_payment.Status != "A")
+            {
+                <MudExpansionPanel Text="Anular recibo">
+                    <MudText Typo="Typo.body2" Color="Color.Secondary" Class="mb-3">
+                        A anulação não apaga nem altera o documento: regista o novo estado e o motivo, mantendo o
+                        registo original e o seu lugar na cadeia de assinatura. As faturas voltam a ficar em dívida.
+                    </MudText>
+                    <MudStack Row="true" Spacing="2" AlignItems="AlignItems.Center">
+                        <MudTextField @bind-Value="_voidReason" Label="Motivo" Variant="Variant.Outlined"
+                                      Margin="Margin.Dense" Style="max-width: 480px;" />
+                        <MudButton Variant="Variant.Filled" Color="Color.Error"
+                                   StartIcon="@Icons.Material.Filled.Cancel"
+                                   Disabled="@(_working || string.IsNullOrWhiteSpace(_voidReason))"
+                                   OnClick="VoidAsync">
+                            Anular
+                        </MudButton>
+                    </MudStack>
+                </MudExpansionPanel>
+            }
+        </MudExpansionPanels>
+    }
+</MudStack>
+
+@code {
+    [Parameter]
+    public Guid Id { get; set; }
+
+    private bool _loading = true;
+    private bool _working;
+    private string? _error;
+    private string _voidReason = string.Empty;
+    private Guid? _loadedId;
+
+    private PaymentDetail? _payment;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        // A layout re-render sets the parameters again; only reload when the route changed.
+        if (_loadedId == Id)
+            return;
+
+        _loadedId = Id;
+        await LoadAsync();
+    }
+
+    private async Task LoadAsync()
+    {
+        _loading = true;
+
+        try
+        {
+            _payment = await SalesApi.GetPaymentAsync(Id);
+            if (_payment is null)
+                _error = "Recibo não encontrado.";
+        }
+        catch (Exception ex)
+        {
+            _error = $"Não foi possível carregar o recibo: {ex.Message}";
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private async Task VoidAsync()
+    {
+        _working = true;
+        _error = null;
+
+        try
+        {
+            var error = await SalesApi.VoidPaymentAsync(Id, _voidReason.Trim());
+
+            if (error is not null)
+            {
+                _error = error;
+                return;
+            }
+
+            Snackbar.Add("Recibo anulado.", Severity.Success);
+            _voidReason = string.Empty;
+            await LoadAsync();
+        }
+        catch (Exception ex)
+        {
+            _error = $"Não foi possível anular o recibo: {ex.Message}";
+        }
+        finally
+        {
+            _working = false;
+        }
+    }
+}

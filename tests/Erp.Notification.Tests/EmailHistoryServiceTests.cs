@@ -86,4 +86,22 @@ public class EmailHistoryServiceTests
 
         result.Should().BeSameAs(history);
     }
+
+    [Fact]
+    public async Task GetByIdAsync_returns_what_the_storage_gives()
+    {
+        var notification = Given(EmailNotificationStatus.Sent);
+
+        var result = await CreateService().GetByIdAsync(notification.Id);
+
+        result.Should().BeSameAs(notification);
+    }
+
+    [Fact]
+    public async Task GetByIdAsync_returns_null_for_an_unknown_email()
+    {
+        var result = await CreateService().GetByIdAsync(Guid.NewGuid());
+
+        result.Should().BeNull();
+    }
 }

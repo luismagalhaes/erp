@@ -23,8 +23,10 @@ esquema de base de dados que garante a inviolabilidade dos registos.
 | 4 — Séries e ATCUD | **Parcial** — modelo, ciclo de vida, gestão no frontend e registo manual do código de validação; falta o cliente SOAP do *SeriesWSService* |
 | 5 — Código QR | **Parcial** — `QrCodePayloadBuilder` gera a mensagem; falta renderizar a imagem no documento |
 | 6 — Emissão e API | **Feito** — emissão transacional com lock por série, listagem, detalhe, anulação e ficheiro de artigos |
+| 6b — Movimentação de mercadorias | **Parcial** — guias GR/GT/GA/GC/GD emitidas, assinadas e numeradas como as faturas, com locais de carga e descarga, início de transporte e matrícula; o código da AT regista-se manualmente, falta a comunicação prévia por webservice |
+| 6c — Recibos | **Feito** — recibos RC/RG emitidos, assinados e numerados como as faturas, com as faturas que liquidam, os meios de pagamento e a anulação que devolve as faturas a dívida |
 | 7 — Documento impresso | **Por fazer** |
-| 8 — SAF-T (PT) | **Por fazer** |
+| 8 — SAF-T (PT) | **Feito** — ficheiro 1.04_01 gerado em `Erp.FiscalPT/Saft` com header, master files, `SalesInvoices`, `MovementOfGoods` e `Payments`, validado contra o XSD oficial da AT na emissão e nos testes, com página de exportação em `/saft` |
 | 9 — Pedido de certificação | **Por fazer** |
 
 Na UI (`Erp.Main`): `/invoices` lista, `/invoices/new` emite e `/invoices/{id}` mostra o documento
@@ -32,7 +34,8 @@ com o hash, o ATCUD, a mensagem do QR e a anulação com motivo. As tabelas auxi
 próprias em `/series` e `/products`, e a empresa ativa escolhe-se no cabeçalho.
 
 Ainda não implementado e necessário antes de qualquer utilização real: comunicação automática de
-séries à AT, idempotência na emissão, validação da empresa contra o `Erp.Core`, impressão e SAF-T.
+séries à AT, idempotência na emissão, validação da empresa contra o `Erp.Core` e impressão do
+documento.
 
 ---
 
@@ -106,8 +109,10 @@ Antes de escrever uma linha, fechar as decisões que condicionam o modelo de dad
 de mudar depois.
 
 - **Âmbito documental.** Que tipos de documento o Sales emite na v1 — o mínimo viável é `FT`,
-  `FS`, `FR`, `NC` e `ND`. Guias de transporte (`GT`/`GR`) e recibos (`RC`) trazem regras próprias
-  e podem ficar para depois.
+  `FS`, `FR`, `NC` e `ND`. As guias de movimentação (`GR`, `GT`, `GA`, `GC`, `GD`) já estão
+  implementadas e exportam-se em `MovementOfGoods`; os recibos (`RC`, `RG`) também, e exportam-se
+  em `Payments`. Fora do regime de IVA de caixa o recibo leva `TaxPayable` a zero — o IVA foi
+  apurado na fatura — e as suas linhas apontam para os documentos de origem que liquida.
 - **Quem é o produtor certificado.** A certificação é atribuída a uma entidade com sede ou
   estabelecimento estável em Portugal, contabilidade organizada e IVA no regime normal. É essa
   entidade que gera o par de chaves e recebe o número de certificado.
@@ -351,9 +356,46 @@ que a AT usa para auditar. Sem exportação válida não há certificação.
 - **MasterFiles**: `Customer`, `Product`, `TaxTable`.
 - **SourceDocuments/SalesInvoices**: cada documento com `Hash`, `HashControl`, `ATCUD`,
   `SystemEntryDate` e estado.
+- **SourceDocuments/MovementOfGoods** e **SourceDocuments/Payments** para guias e recibos.
 - Validação automatizada contra o XSD oficial como parte dos testes, não como verificação manual.
 - Totais de controlo (`NumberOfEntries`, `TotalDebit`, `TotalCredit`) conferidos contra a base de
   dados.
+
+**Como está implementado.** O gerador vive no [`Erp.FiscalPT/Saft`](../src/Shared/Erp.FiscalPT/Saft/),
+que é a biblioteca fiscal partilhada e não sabe nada de EF nem do módulo de vendas: recebe um
+`SaftAuditFile` e escreve o XML. O `SaftExportService` do Sales lê os documentos do período e
+preenche esse modelo; o `SaftController` junta-lhe a empresa, que pertence ao Core. Três decisões
+que valem a pena registar:
+
+- **Os *master files* derivam dos próprios documentos.** Cada documento traz o snapshot do cliente,
+  dos artigos e das taxas, por isso `Customer`, `Product` e `TaxTable` são construídos a partir das
+  linhas exportadas. O ficheiro fica coerente consigo mesmo mesmo que a ficha de cliente ou de
+  artigo tenha mudado entretanto — que é precisamente o que a AT verifica.
+- **Os totais de controlo são calculados pelo escritor**, nunca recebidos do chamador: assim não há
+  como divergirem do conteúdo. Documentos anulados entram no ficheiro com estado `A`, porque o
+  SAF-T tem de dar conta de todos os números emitidos, mas ficam fora dos totais.
+- **A morada da empresa passou a ser obrigatória** no `Erp.Core`: o `CompanyAddress` do Header
+  exige-a, e sem ela o ficheiro não valida.
+
+**Validação contra o esquema oficial.** O
+[`SAFTPT1.04_01.xsd`](../src/Shared/Erp.FiscalPT/Saft/Schemas/SAFTPT1.04_01.xsd) publicado pela AT
+está no repositório e vai embebido no assembly, para a validação nunca depender da rede. O
+`SaftSchemaValidator` valida contra ele, e a exportação valida sempre antes de entregar o ficheiro:
+os erros vão para o log do servidor e a contagem viaja no cabeçalho `X-Saft-Validation-Errors`, que
+a página mostra ao utilizador.
+
+Duas limitações que convém ter presentes, porque o esquema publicado é XSD 1.1 e o .NET só
+implementa 1.0:
+
+- As **19 regras `xs:assert`** são descartadas ao carregar o esquema (`SkippedAssertions` expõe a
+  contagem, e há um teste que a fixa para que uma atualização do esquema não passe despercebida).
+  São regras de co-ocorrência — por exemplo, exigir motivo de isenção quando o imposto é zero.
+- O único `xs:all` do esquema, dentro de `GeneralLedgerEntries`, é convertido em `xs:sequence`.
+  Só acrescenta uma restrição de ordem, e está numa parte que o ficheiro de faturação não contém.
+
+Passar aqui é, portanto, necessário mas não suficiente: o validador da AT continua a ser a última
+palavra. Ainda assim já apanhou dois defeitos reais — um `TaxTable` vazio, que o esquema recusa, e
+a unicidade de `InvoiceNo` dentro do ficheiro.
 
 O SAF-T de contabilidade é obrigação distinta e posterior — aplica-se a períodos a partir de 2027,
 com submissão em 2028.
@@ -451,6 +493,13 @@ de dados.
 | `SalesDocumentLine` | Linhas com snapshot do artigo, taxa e motivo de isenção | INSERT apenas |
 | `DocumentTaxSummary` | Totais de base tributável e IVA por espaço fiscal e taxa | INSERT apenas |
 | `DocumentStatusChange` | Anulações: motivo, utilizador e data-hora, sem tocar no documento | INSERT apenas |
+| `StockMovement` | Cabeçalho da guia de movimentação, com locais de carga e descarga e dados do transporte | INSERT + UPDATE do código da AT |
+| `StockMovementLine` | Mercadoria transportada, com snapshot do artigo e da taxa | INSERT apenas |
+| `MovementStatusChange` | Anulações de guias, sem tocar no documento | INSERT apenas |
+| `Payment` | Cabeçalho do recibo: numeração, assinatura, cliente e total recebido | INSERT apenas |
+| `PaymentLine` | Faturas liquidadas pelo recibo, com número e data copiados e o valor aplicado | INSERT apenas |
+| `PaymentMethod` | Meios de pagamento do recibo (`NU`, `CH`, `TB`, ...), que têm de somar o total | INSERT apenas |
+| `PaymentStatusChange` | Anulações de recibos; as faturas voltam a ficar em dívida | INSERT apenas |
 | `DocumentDraft` | Rascunhos antes da emissão, em tabela separada e sem valor fiscal | livre |
 | `Customer` | Master file de clientes para o SAF-T | temporal |
 | `Product` | Master file de artigos e serviços | temporal |
@@ -466,7 +515,7 @@ Series
   Id                  uniqueidentifier  PK
   CompanyId           uniqueidentifier  -- Erp.Core, sem FK física
   EstablishmentCode   nvarchar(20)      NULL
-  DocumentType        nvarchar(4)       -- FT, FS, FR, NC, ND
+  DocumentType        nvarchar(4)       -- FT, FS, FR, NC, ND, GR, GT, GA, GC, GD, RC, RG
   SeriesCode          nvarchar(35)      -- A2026
   InitialSequence     int               DEFAULT 1
   CurrentSequence     int               DEFAULT 0

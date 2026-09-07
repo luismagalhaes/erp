@@ -24,10 +24,11 @@ public sealed class SeriesService(ISeriesStorage storage, ISalesUnitOfWork unitO
     {
         ArgumentNullException.ThrowIfNull(request);
 
-        // A series numbers either invoicing documents or movement documents; both are numbered
-        // and signed the same way.
+        // A series numbers invoicing documents, movement documents or receipts; all three are
+        // numbered and signed the same way.
         if (!SalesDocumentTypes.IsSupported(request.DocumentType)
-            && !MovementDocumentTypes.IsSupported(request.DocumentType))
+            && !MovementDocumentTypes.IsSupported(request.DocumentType)
+            && !PaymentDocumentTypes.IsSupported(request.DocumentType))
         {
             throw new ArgumentException($"Unsupported document type '{request.DocumentType}'.", nameof(request));
         }

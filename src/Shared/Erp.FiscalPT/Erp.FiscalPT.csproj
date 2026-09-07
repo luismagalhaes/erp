@@ -11,4 +11,9 @@
     <PackageReference Include="SonarAnalyzer.CSharp" Version="9.32.0.97167" PrivateAssets="all" />
   </ItemGroup>
 
+  <ItemGroup>
+    <!-- The official schema travels with the library, so validation never depends on the network. -->
+    <EmbeddedResource Include="Saft\Schemas\SAFTPT1.04_01.xsd" />
+  </ItemGroup>
+
 </Project>

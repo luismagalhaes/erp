@@ -9,10 +9,12 @@
 DECLARE @principal SYSNAME = N'$(principal)';
 DECLARE @sql NVARCHAR(MAX) = N'';
 
--- Documents, lines, tax totals and status changes are append-only.
+-- Documents, lines, tax totals, receipts and status changes are append-only.
 DECLARE @appendOnlyTables TABLE (name SYSNAME);
 INSERT INTO @appendOnlyTables (name)
-VALUES (N'SalesDocument'), (N'SalesDocumentLine'), (N'DocumentTaxSummary'), (N'DocumentStatusChange');
+VALUES (N'SalesDocument'), (N'SalesDocumentLine'), (N'DocumentTaxSummary'), (N'DocumentStatusChange'),
+       (N'StockMovementLine'), (N'MovementStatusChange'),
+       (N'Payment'), (N'PaymentLine'), (N'PaymentMethod'), (N'PaymentStatusChange');
 
 SELECT @sql = @sql
     + N'GRANT SELECT, INSERT ON [dbo].[' + name + N'] TO [' + @principal + N'];' + CHAR(13)
@@ -24,6 +26,12 @@ FROM @appendOnlyTables;
 SET @sql = @sql
     + N'GRANT SELECT, INSERT, UPDATE ON [dbo].[Series] TO [' + @principal + N'];' + CHAR(13)
     + N'DENY DELETE ON [dbo].[Series] TO [' + @principal + N'];' + CHAR(13);
+
+-- The movement header also needs UPDATE, and only for one column: the code the tax authority
+-- returns when the transport is communicated. Everything else about it is written once.
+SET @sql = @sql
+    + N'GRANT SELECT, INSERT, UPDATE ON [dbo].[StockMovement] TO [' + @principal + N'];' + CHAR(13)
+    + N'DENY DELETE ON [dbo].[StockMovement] TO [' + @principal + N'];' + CHAR(13);
 
 EXEC sp_executesql @sql;
 

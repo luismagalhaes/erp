@@ -1,0 +1,28 @@
+namespace Erp.Sales.Infrastructure.Contracts;
+
+public sealed record StockMovementDetailDto(
+    Guid Id,
+    string DocumentNumber,
+    string MovementType,
+    string Atcud,
+    DateOnly MovementDate,
+    DateTime SystemEntryDateUtc,
+    string Status,
+    string PartyName,
+    string PartyTaxId,
+    bool PartyIsSupplier,
+    MovementLocationDto ShipFrom,
+    MovementLocationDto ShipTo,
+    DateTime MovementStartAtUtc,
+    DateTime? MovementEndAtUtc,
+    string? VehiclePlate,
+    string? Comments,
+    decimal TotalQuantity,
+    decimal NetTotal,
+    decimal TaxPayable,
+    decimal GrossTotal,
+    string PrintableHash,
+    string QrCodePayload,
+    string? AtDocCodeId,
+    DateTime? CommunicatedAtUtc,
+    IReadOnlyList<StockMovementLineDto> Lines);

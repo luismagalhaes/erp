@@ -26,6 +26,10 @@ public sealed class CoreDbContext(DbContextOptions<CoreDbContext> options) : DbC
             entity.Property(x => x.TaxId).HasMaxLength(20).IsRequired();
             entity.Property(x => x.Email).HasMaxLength(200);
             entity.Property(x => x.Phone).HasMaxLength(30);
+            entity.Property(x => x.Address).HasMaxLength(400);
+            entity.Property(x => x.City).HasMaxLength(120);
+            entity.Property(x => x.PostalCode).HasMaxLength(20);
+            entity.Property(x => x.Country).HasMaxLength(2).IsRequired();
             entity.HasIndex(x => x.TaxId).IsUnique();
         });
 

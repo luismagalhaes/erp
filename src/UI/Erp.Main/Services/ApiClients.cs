@@ -220,6 +220,117 @@ public class SalesApiClient(HttpClient http)
         return response.IsSuccessStatusCode ? null : await ApiResponse.ReadErrorAsync(response, cancellationToken);
     }
 
+    // --- SAF-T (PT) ---
+
+    public async Task<(SaftPeriodSummary? Summary, string? Error)> GetSaftSummaryAsync(
+        Guid companyId,
+        DateOnly startDate,
+        DateOnly endDate,
+        CancellationToken cancellationToken = default)
+    {
+        var response = await Http.GetAsync(
+            $"api/saft/summary?companyId={companyId}&startDate={startDate:yyyy-MM-dd}&endDate={endDate:yyyy-MM-dd}",
+            cancellationToken);
+
+        if (!response.IsSuccessStatusCode)
+            return (null, await ApiResponse.ReadErrorAsync(response, cancellationToken));
+
+        return (await response.Content.ReadFromJsonAsync<SaftPeriodSummary>(cancellationToken), null);
+    }
+
+    /// <summary>
+    /// Fetches the generated file. The name comes from the API, because it is the tax authority's
+    /// naming convention and belongs with the code that builds the file.
+    /// </summary>
+    public async Task<(SaftFile? File, string? Error)> DownloadSaftAsync(
+        Guid companyId,
+        DateOnly startDate,
+        DateOnly endDate,
+        CancellationToken cancellationToken = default)
+    {
+        var response = await Http.GetAsync(
+            $"api/saft?companyId={companyId}&startDate={startDate:yyyy-MM-dd}&endDate={endDate:yyyy-MM-dd}",
+            cancellationToken);
+
+        if (!response.IsSuccessStatusCode)
+            return (null, await ApiResponse.ReadErrorAsync(response, cancellationToken));
+
+        var fileName = response.Content.Headers.ContentDisposition?.FileNameStar
+            ?? response.Content.Headers.ContentDisposition?.FileName?.Trim('"')
+            ?? $"SAFT_{startDate:yyyyMMdd}_{endDate:yyyyMMdd}.xml";
+
+        var content = await response.Content.ReadAsByteArrayAsync(cancellationToken);
+
+        var validationErrors = response.Headers.TryGetValues("X-Saft-Validation-Errors", out var values)
+                               && int.TryParse(values.FirstOrDefault(), out var count)
+            ? count
+            : 0;
+
+        return (new SaftFile(fileName, content, validationErrors), null);
+    }
+
+    // --- Receipts ---
+
+    public async Task<(IReadOnlyList<PaymentListItem> Items, string? Error)> GetPaymentsAsync(
+        Guid companyId,
+        CancellationToken cancellationToken = default)
+    {
+        var response = await Http.GetAsync($"api/payments?companyId={companyId}", cancellationToken);
+
+        if (!response.IsSuccessStatusCode)
+            return ([], await ApiResponse.ReadErrorAsync(response, cancellationToken));
+
+        var items = await response.Content.ReadFromJsonAsync<List<PaymentListItem>>(cancellationToken);
+        return (items ?? [], null);
+    }
+
+    public async Task<PaymentDetail?> GetPaymentAsync(Guid id, CancellationToken cancellationToken = default)
+    {
+        var response = await Http.GetAsync($"api/payments/{id}", cancellationToken);
+        return response.IsSuccessStatusCode
+            ? await response.Content.ReadFromJsonAsync<PaymentDetail>(cancellationToken)
+            : null;
+    }
+
+    /// <summary>Invoices that still owe money, which are what a receipt can be built from.</summary>
+    public async Task<(IReadOnlyList<OutstandingInvoice> Items, string? Error)> GetOutstandingInvoicesAsync(
+        Guid companyId,
+        string? customerTaxId = null,
+        CancellationToken cancellationToken = default)
+    {
+        var url = $"api/payments/outstanding-invoices?companyId={companyId}";
+
+        if (!string.IsNullOrWhiteSpace(customerTaxId))
+            url += $"&customerTaxId={Uri.EscapeDataString(customerTaxId)}";
+
+        var response = await Http.GetAsync(url, cancellationToken);
+
+        if (!response.IsSuccessStatusCode)
+            return ([], await ApiResponse.ReadErrorAsync(response, cancellationToken));
+
+        var items = await response.Content.ReadFromJsonAsync<List<OutstandingInvoice>>(cancellationToken);
+        return (items ?? [], null);
+    }
+
+    public async Task<(PaymentDetail? Payment, string? Error)> IssuePaymentAsync(
+        CreatePaymentRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        var response = await Http.PostAsJsonAsync("api/payments", request, cancellationToken);
+
+        return response.IsSuccessStatusCode
+            ? (await response.Content.ReadFromJsonAsync<PaymentDetail>(cancellationToken), null)
+            : (null, await ApiResponse.ReadErrorAsync(response, cancellationToken));
+    }
+
+    public async Task<string?> VoidPaymentAsync(Guid id, string reason, CancellationToken cancellationToken = default)
+    {
+        var response = await Http.PostAsJsonAsync(
+            $"api/payments/{id}/void", new VoidPaymentRequest(reason), cancellationToken);
+
+        return response.IsSuccessStatusCode ? null : await ApiResponse.ReadErrorAsync(response, cancellationToken);
+    }
+
     public async Task<IReadOnlyList<SalesSeries>> GetSeriesAsync(Guid companyId, CancellationToken cancellationToken = default)
     {
         var series = await Http.GetFromJsonAsync<List<SalesSeries>>(

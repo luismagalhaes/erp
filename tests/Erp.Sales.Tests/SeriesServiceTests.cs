@@ -28,6 +28,30 @@ public class SeriesServiceTests
         created.CurrentSequence.Should().Be(0);
     }
 
+    /// <summary>Every family numbered from a series: faturação, movimentação e recibos.</summary>
+    [Theory]
+    [InlineData("FT")]
+    [InlineData("FS")]
+    [InlineData("FR")]
+    [InlineData("NC")]
+    [InlineData("ND")]
+    [InlineData("GR")]
+    [InlineData("GT")]
+    [InlineData("GA")]
+    [InlineData("GC")]
+    [InlineData("GD")]
+    [InlineData("RC")]
+    [InlineData("RG")]
+    public async Task CreateAsync_accepts_every_supported_document_type(string documentType)
+    {
+        var service = CreateService();
+
+        var created = await service.CreateAsync(
+            new CreateSeriesRequest(_companyId, documentType, "A2026"), "user-1");
+
+        created.DocumentType.Should().Be(documentType);
+    }
+
     [Fact]
     public async Task CreateAsync_rejects_an_unsupported_document_type()
     {

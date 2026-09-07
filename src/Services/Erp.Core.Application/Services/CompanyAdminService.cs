@@ -46,6 +46,10 @@ public sealed class CompanyAdminService(ICompanyStorage storage) : ICompanyAdmin
             TaxId = taxId,
             Email = request.Email?.Trim(),
             Phone = request.Phone?.Trim(),
+            Address = request.Address?.Trim(),
+            City = request.City?.Trim(),
+            PostalCode = request.PostalCode?.Trim(),
+            Country = NormalizeCountry(request.Country),
             IsActive = true,
             CreatedAtUtc = DateTime.UtcNow
         };
@@ -76,6 +80,10 @@ public sealed class CompanyAdminService(ICompanyStorage storage) : ICompanyAdmin
         company.TaxId = taxId;
         company.Email = request.Email?.Trim();
         company.Phone = request.Phone?.Trim();
+        company.Address = request.Address?.Trim();
+        company.City = request.City?.Trim();
+        company.PostalCode = request.PostalCode?.Trim();
+        company.Country = NormalizeCountry(request.Country);
         company.IsActive = request.IsActive;
         company.UpdatedAtUtc = DateTime.UtcNow;
 
@@ -84,6 +92,10 @@ public sealed class CompanyAdminService(ICompanyStorage storage) : ICompanyAdmin
         return Map(company);
     }
 
+    /// <summary>The SAF-T header carries a two letter country code, so an empty one falls back to PT.</summary>
+    private static string NormalizeCountry(string? country) =>
+        string.IsNullOrWhiteSpace(country) ? "PT" : country.Trim().ToUpperInvariant();
+
     private static CompanyDetailDto Map(Company company) =>
         new(company.Id,
             company.Name,
@@ -91,6 +103,10 @@ public sealed class CompanyAdminService(ICompanyStorage storage) : ICompanyAdmin
             company.TaxId,
             company.Email,
             company.Phone,
+            company.Address,
+            company.City,
+            company.PostalCode,
+            company.Country,
             company.IsActive,
             company.CreatedAtUtc,
             company.UpdatedAtUtc);

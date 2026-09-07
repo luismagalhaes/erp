@@ -1,0 +1,323 @@
+@page "/stock-movements/{Id:guid}"
+@attribute [Authorize]
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.AspNetCore.Components.Web
+@using MudBlazor
+@using Erp.Main.Models
+@using Erp.Main.Services
+@inject SalesApiClient SalesApi
+@inject NavigationManager Navigation
+@inject ISnackbar Snackbar
+
+<PageTitle>@(_movement?.DocumentNumber ?? "Guia")</PageTitle>
+
+<MudStack Spacing="4">
+    <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center">
+        <MudStack Spacing="0">
+            <MudText Typo="Typo.h4">@(_movement?.DocumentNumber ?? "Guia")</MudText>
+            @if (_movement is not null)
+            {
+                <MudText Typo="Typo.body2" Color="Color.Secondary">
+                    @MovementTypes.Describe(_movement.MovementType) ·
+                    <span style="font-family: monospace;">ATCUD:@_movement.Atcud</span>
+                </MudText>
+            }
+        </MudStack>
+
+        <MudButton Variant="Variant.Text" StartIcon="@Icons.Material.Filled.ArrowBack"
+                   OnClick="@(() => Navigation.NavigateTo("stock-movements"))">
+            Voltar
+        </MudButton>
+    </MudStack>
+
+    @if (!string.IsNullOrWhiteSpace(_error))
+    {
+        <MudAlert Severity="Severity.Error" Dense="true">@_error</MudAlert>
+    }
+
+    @if (_loading)
+    {
+        <MudProgressLinear Indeterminate="true" Color="Color.Primary" />
+    }
+    else if (_movement is not null)
+    {
+        @if (_movement.Status == "A")
+        {
+            <MudAlert Severity="Severity.Warning" Dense="true">
+                Guia anulada. O registo original é preservado, como exige a certificação.
+            </MudAlert>
+        }
+        else if (string.IsNullOrWhiteSpace(_movement.AtDocCodeId))
+        {
+            <MudAlert Severity="Severity.Warning" Dense="true">
+                Por comunicar à AT. O transporte só pode começar depois de comunicado e com o código atribuído.
+            </MudAlert>
+        }
+
+        <MudPaper Elevation="1" Class="pa-4">
+            <MudGrid>
+                <MudItem xs="12" md="3">
+                    <MudText Typo="Typo.caption" Color="Color.Secondary">
+                        @(_movement.PartyIsSupplier ? "Fornecedor" : "Cliente")
+                    </MudText>
+                    <MudText>@_movement.PartyName</MudText>
+                    <MudText Typo="Typo.body2" Color="Color.Secondary">NIF @_movement.PartyTaxId</MudText>
+                </MudItem>
+                <MudItem xs="12" md="3">
+                    <MudText Typo="Typo.caption" Color="Color.Secondary">Data do documento</MudText>
+                    <MudText>@_movement.MovementDate.ToString("yyyy-MM-dd")</MudText>
+                </MudItem>
+                <MudItem xs="12" md="3">
+                    <MudText Typo="Typo.caption" Color="Color.Secondary">Registo no sistema</MudText>
+                    <MudText>@_movement.SystemEntryDateUtc.ToString("yyyy-MM-dd HH:mm:ss") UTC</MudText>
+                </MudItem>
+                <MudItem xs="12" md="3">
+                    <MudText Typo="Typo.caption" Color="Color.Secondary">Assinatura</MudText>
+                    <MudText Style="font-family: monospace;">@_movement.PrintableHash</MudText>
+                    <MudText Typo="Typo.body2" Color="Color.Secondary">Processado por programa certificado</MudText>
+                </MudItem>
+            </MudGrid>
+        </MudPaper>
+
+        <MudPaper Elevation="1" Class="pa-4">
+            <MudText Typo="Typo.h6" Class="mb-3">Transporte</MudText>
+            <MudGrid>
+                <MudItem xs="12" md="4">
+                    <MudText Typo="Typo.caption" Color="Color.Secondary">Local de carga</MudText>
+                    <MudText>@_movement.ShipFrom.Address</MudText>
+                    <MudText Typo="Typo.body2" Color="Color.Secondary">@FormatCity(_movement.ShipFrom)</MudText>
+                </MudItem>
+                <MudItem xs="12" md="4">
+                    <MudText Typo="Typo.caption" Color="Color.Secondary">Local de descarga</MudText>
+                    <MudText>@_movement.ShipTo.Address</MudText>
+                    <MudText Typo="Typo.body2" Color="Color.Secondary">@FormatCity(_movement.ShipTo)</MudText>
+                </MudItem>
+                <MudItem xs="12" md="2">
+                    <MudText Typo="Typo.caption" Color="Color.Secondary">Início do transporte</MudText>
+                    <MudText>@_movement.MovementStartAtUtc.ToString("yyyy-MM-dd HH:mm")</MudText>
+                </MudItem>
+                <MudItem xs="12" md="2">
+                    <MudText Typo="Typo.caption" Color="Color.Secondary">Matrícula</MudText>
+                    <MudText>@(_movement.VehiclePlate ?? "—")</MudText>
+                </MudItem>
+
+                @if (!string.IsNullOrWhiteSpace(_movement.Comments))
+                {
+                    <MudItem xs="12">
+                        <MudText Typo="Typo.caption" Color="Color.Secondary">Observações</MudText>
+                        <MudText>@_movement.Comments</MudText>
+                    </MudItem>
+                }
+            </MudGrid>
+        </MudPaper>
+
+        <MudPaper Elevation="1" Class="pa-2">
+            <MudTable Items="_movement.Lines" Dense="true" Hover="true" Striped="true" Breakpoint="Breakpoint.Sm">
+                <HeaderContent>
+                    <MudTh>#</MudTh>
+                    <MudTh>Código</MudTh>
+                    <MudTh>Descrição</MudTh>
+                    <MudTh Style="text-align: right;">Qtd.</MudTh>
+                    <MudTh Style="text-align: right;">Preço unit.</MudTh>
+                    <MudTh Style="text-align: right;">Base</MudTh>
+                    <MudTh Style="text-align: right;">IVA</MudTh>
+                </HeaderContent>
+                <RowTemplate>
+                    <MudTd DataLabel="#">@context.LineNumber</MudTd>
+                    <MudTd DataLabel="Código">@context.ProductCode</MudTd>
+                    <MudTd DataLabel="Descrição">@context.ProductDescription</MudTd>
+                    <MudTd DataLabel="Qtd." Style="text-align: right;">@context.Quantity.ToString("N3")</MudTd>
+                    <MudTd DataLabel="Preço unit." Style="text-align: right;">@context.UnitPrice.ToString("N2")</MudTd>
+                    <MudTd DataLabel="Base" Style="text-align: right;">@context.LineAmount.ToString("N2")</MudTd>
+                    <MudTd DataLabel="IVA" Style="text-align: right;">@context.TaxAmount.ToString("N2")</MudTd>
+                </RowTemplate>
+            </MudTable>
+        </MudPaper>
+
+        <MudStack Row="true" Spacing="4" Justify="Justify.FlexEnd">
+            <MudPaper Elevation="1" Class="pa-4" Style="min-width: 300px;">
+                <MudStack Spacing="2">
+                    <MudStack Row="true" Justify="Justify.SpaceBetween">
+                        <MudText Typo="Typo.body2">Quantidade total</MudText>
+                        <MudText Typo="Typo.body2">@_movement.TotalQuantity.ToString("N3")</MudText>
+                    </MudStack>
+                    <MudStack Row="true" Justify="Justify.SpaceBetween">
+                        <MudText Typo="Typo.body2">Base tributável</MudText>
+                        <MudText Typo="Typo.body2">@_movement.NetTotal.ToString("N2")</MudText>
+                    </MudStack>
+                    <MudStack Row="true" Justify="Justify.SpaceBetween">
+                        <MudText Typo="Typo.body2">IVA</MudText>
+                        <MudText Typo="Typo.body2">@_movement.TaxPayable.ToString("N2")</MudText>
+                    </MudStack>
+                    <MudDivider />
+                    <MudStack Row="true" Justify="Justify.SpaceBetween">
+                        <MudText Typo="Typo.h6">Total</MudText>
+                        <MudText Typo="Typo.h6" Color="Color.Primary">@_movement.GrossTotal.ToString("N2")</MudText>
+                    </MudStack>
+                </MudStack>
+            </MudPaper>
+        </MudStack>
+
+        <MudExpansionPanels Elevation="1">
+            <MudExpansionPanel Text="Comunicação à AT" Expanded="@string.IsNullOrWhiteSpace(_movement.AtDocCodeId)">
+                @if (string.IsNullOrWhiteSpace(_movement.AtDocCodeId))
+                {
+                    <MudText Typo="Typo.body2" Color="Color.Secondary" Class="mb-3">
+                        Registe aqui o código que a AT devolve ao comunicar o documento de transporte. Enquanto não
+                        existir, a mercadoria não pode circular.
+                    </MudText>
+                    <MudStack Row="true" Spacing="2" AlignItems="AlignItems.Center">
+                        <MudTextField @bind-Value="_atDocCodeId" Label="Código atribuído pela AT"
+                                      Variant="Variant.Outlined" Margin="Margin.Dense" Style="max-width: 360px;" />
+                        <MudButton Variant="Variant.Filled" Color="Color.Primary"
+                                   StartIcon="@Icons.Material.Filled.CloudDone"
+                                   Disabled="@(_working || string.IsNullOrWhiteSpace(_atDocCodeId))"
+                                   OnClick="CommunicateAsync">
+                            Registar código
+                        </MudButton>
+                    </MudStack>
+                }
+                else
+                {
+                    <MudAlert Severity="Severity.Success" Dense="true">
+                        Comunicada em @_movement.CommunicatedAtUtc?.ToString("yyyy-MM-dd HH:mm") UTC com o código
+                        <strong>@_movement.AtDocCodeId</strong>.
+                    </MudAlert>
+                }
+            </MudExpansionPanel>
+
+            <MudExpansionPanel Text="Dados do código QR">
+                <MudPaper Elevation="0" Class="pa-3" Style="overflow-x: auto;">
+                    <MudText Style="font-family: monospace; font-size: 0.8rem; white-space: nowrap;">
+                        @_movement.QrCodePayload
+                    </MudText>
+                </MudPaper>
+            </MudExpansionPanel>
+
+            @if (_movement.Status != "A")
+            {
+                <MudExpansionPanel Text="Anular guia">
+                    <MudText Typo="Typo.body2" Color="Color.Secondary" Class="mb-3">
+                        A anulação não apaga nem altera o documento: regista o novo estado e o motivo,
+                        mantendo o registo original e o seu lugar na cadeia de assinatura.
+                    </MudText>
+                    <MudStack Row="true" Spacing="2" AlignItems="AlignItems.Center">
+                        <MudTextField @bind-Value="_voidReason" Label="Motivo" Variant="Variant.Outlined"
+                                      Margin="Margin.Dense" Style="max-width: 480px;" />
+                        <MudButton Variant="Variant.Filled" Color="Color.Error"
+                                   StartIcon="@Icons.Material.Filled.Cancel"
+                                   Disabled="@(_working || string.IsNullOrWhiteSpace(_voidReason))"
+                                   OnClick="VoidAsync">
+                            Anular
+                        </MudButton>
+                    </MudStack>
+                </MudExpansionPanel>
+            }
+        </MudExpansionPanels>
+    }
+</MudStack>
+
+@code {
+    [Parameter]
+    public Guid Id { get; set; }
+
+    private bool _loading = true;
+    private bool _working;
+    private string? _error;
+    private string _voidReason = string.Empty;
+    private string _atDocCodeId = string.Empty;
+    private Guid? _loadedId;
+
+    private StockMovementDetail? _movement;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        // A layout re-render sets the parameters again; only reload when the route changed.
+        if (_loadedId == Id)
+            return;
+
+        _loadedId = Id;
+        await LoadAsync();
+    }
+
+    private async Task LoadAsync()
+    {
+        _loading = true;
+
+        try
+        {
+            _movement = await SalesApi.GetStockMovementAsync(Id);
+            if (_movement is null)
+                _error = "Guia não encontrada.";
+        }
+        catch (Exception ex)
+        {
+            _error = $"Não foi possível carregar a guia: {ex.Message}";
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private async Task CommunicateAsync()
+    {
+        _working = true;
+        _error = null;
+
+        try
+        {
+            var error = await SalesApi.CommunicateStockMovementAsync(Id, _atDocCodeId.Trim());
+
+            if (error is not null)
+            {
+                _error = error;
+                return;
+            }
+
+            Snackbar.Add("Código da AT registado. A mercadoria já pode circular.", Severity.Success);
+            _atDocCodeId = string.Empty;
+            await LoadAsync();
+        }
+        catch (Exception ex)
+        {
+            _error = $"Não foi possível registar o código: {ex.Message}";
+        }
+        finally
+        {
+            _working = false;
+        }
+    }
+
+    private async Task VoidAsync()
+    {
+        _working = true;
+        _error = null;
+
+        try
+        {
+            var error = await SalesApi.VoidStockMovementAsync(Id, _voidReason.Trim());
+
+            if (error is not null)
+            {
+                _error = error;
+                return;
+            }
+
+            Snackbar.Add("Guia anulada.", Severity.Success);
+            _voidReason = string.Empty;
+            await LoadAsync();
+        }
+        catch (Exception ex)
+        {
+            _error = $"Não foi possível anular a guia: {ex.Message}";
+        }
+        finally
+        {
+            _working = false;
+        }
+    }
+
+    private static string FormatCity(MovementLocation location) =>
+        string.Join(" ", new[] { location.PostalCode, location.City }.Where(part => !string.IsNullOrWhiteSpace(part)));
+}

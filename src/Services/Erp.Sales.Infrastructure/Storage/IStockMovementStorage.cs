@@ -8,6 +8,13 @@ public interface IStockMovementStorage
 
     Task<StockMovement?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default);
 
+    /// <summary>Movements of a period, fully loaded, in issuing order. Read by the SAF-T export.</summary>
+    Task<IReadOnlyList<StockMovement>> GetForPeriodAsync(
+        Guid companyId,
+        DateOnly startDate,
+        DateOnly endDate,
+        CancellationToken cancellationToken = default);
+
     /// <summary>Signature of the last movement issued in the series, or empty for the first one.</summary>
     Task<string> GetLastHashAsync(Guid seriesId, CancellationToken cancellationToken = default);
 

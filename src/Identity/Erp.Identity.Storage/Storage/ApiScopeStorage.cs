@@ -60,7 +60,8 @@ public sealed class ApiScopeStorage(IDbContextFactory<ConfigurationDbContext> db
             Enabled = request.Enabled,
             Required = request.Required,
             Emphasize = request.Emphasize,
-            ShowInDiscoveryDocument = request.ShowInDiscoveryDocument
+            ShowInDiscoveryDocument = request.ShowInDiscoveryDocument,
+            UserClaims = []
         };
 
         ReplaceCollection(entity.UserClaims, request.UserClaims, x => new ApiScopeClaim { Type = x });
@@ -92,6 +93,8 @@ public sealed class ApiScopeStorage(IDbContextFactory<ConfigurationDbContext> db
         entity.Required = request.Required;
         entity.Emphasize = request.Emphasize;
         entity.ShowInDiscoveryDocument = request.ShowInDiscoveryDocument;
+
+        entity.UserClaims ??= [];
 
         ReplaceCollection(entity.UserClaims, request.UserClaims, x => new ApiScopeClaim { Type = x });
 

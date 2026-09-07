@@ -4,7 +4,7 @@ namespace Erp.Sales.Domain;
 /// Append-only record of a movement status transition. Voiding is written here instead of
 /// updating the document header, which keeps the original record intact.
 /// </summary>
-public sealed class MovementStatusChange
+public sealed class MovementStatusChange : IStatusChange
 {
     public Guid Id { get; set; } = Guid.NewGuid();
 

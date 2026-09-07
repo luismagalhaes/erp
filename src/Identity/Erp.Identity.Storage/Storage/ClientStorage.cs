@@ -111,7 +111,13 @@ public sealed class ClientStorage(IDbContextFactory<ConfigurationDbContext> dbCo
             SlidingRefreshTokenLifetime = request.SlidingRefreshTokenLifetime,
             AbsoluteRefreshTokenLifetime = request.AbsoluteRefreshTokenLifetime,
             RefreshTokenUsage = ParseRefreshTokenUsage(request.RefreshTokenUsage),
-            RefreshTokenExpiration = ParseRefreshTokenExpiration(request.RefreshTokenExpiration)
+            RefreshTokenExpiration = ParseRefreshTokenExpiration(request.RefreshTokenExpiration),
+            RedirectUris = [],
+            PostLogoutRedirectUris = [],
+            AllowedCorsOrigins = [],
+            AllowedGrantTypes = [],
+            AllowedScopes = [],
+            ClientSecrets = []
         };
 
         AddCollectionItems(client, request);
@@ -146,6 +152,13 @@ public sealed class ClientStorage(IDbContextFactory<ConfigurationDbContext> dbCo
         client.AbsoluteRefreshTokenLifetime = request.AbsoluteRefreshTokenLifetime;
         client.RefreshTokenUsage = ParseRefreshTokenUsage(request.RefreshTokenUsage);
         client.RefreshTokenExpiration = ParseRefreshTokenExpiration(request.RefreshTokenExpiration);
+
+        client.RedirectUris ??= [];
+        client.PostLogoutRedirectUris ??= [];
+        client.AllowedCorsOrigins ??= [];
+        client.AllowedGrantTypes ??= [];
+        client.AllowedScopes ??= [];
+        client.ClientSecrets ??= [];
 
         ReplaceCollection(
             client.RedirectUris,

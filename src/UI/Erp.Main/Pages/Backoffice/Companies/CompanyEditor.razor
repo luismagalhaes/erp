@@ -4,6 +4,7 @@
 @using Microsoft.AspNetCore.Authorization
 @using Microsoft.AspNetCore.Components.Web
 @using MudBlazor
+@using Erp.Common
 @using Erp.Main.Models
 @using Erp.Main.Services
 @inject CoreApiClient CoreApi
@@ -58,6 +59,25 @@
                         </MudItem>
                         <MudItem xs="12" md="4">
                             <MudTextField @bind-Value="_phone" Label="Telefone" Variant="Variant.Outlined" />
+                        </MudItem>
+
+                        <MudItem xs="12">
+                            <MudText Typo="Typo.subtitle2" Color="Color.Secondary">
+                                Sede — o cabeçalho do SAF-T exige a morada, por isso sem ela o ficheiro sai incompleto.
+                            </MudText>
+                        </MudItem>
+                        <MudItem xs="12" md="6">
+                            <MudTextField @bind-Value="_address" Label="Morada" Variant="Variant.Outlined" />
+                        </MudItem>
+                        <MudItem xs="12" md="2">
+                            <MudTextField @bind-Value="_postalCode" Label="Código postal" Variant="Variant.Outlined" />
+                        </MudItem>
+                        <MudItem xs="12" md="2">
+                            <MudTextField @bind-Value="_city" Label="Localidade" Variant="Variant.Outlined" />
+                        </MudItem>
+                        <MudItem xs="12" md="2">
+                            <MudTextField @bind-Value="_country" Label="País" Variant="Variant.Outlined"
+                                          HelperText="Código de 2 letras" />
                         </MudItem>
 
                         @if (!IsNew)
@@ -170,8 +190,8 @@
 </MudStack>
 
 @code {
-    /// <summary>Papéis dentro da empresa, alinhados com as roles do Identity.</summary>
-    private static readonly string[] CompanyRoles = ["Admin", "Manager", "User", "Accountant", "Auditor"];
+    /// <summary>As mesmas roles que o Identity emite, para não haver duas listas a divergir.</summary>
+    private static readonly string[] CompanyRoles = Constants.Roles.All;
 
     [Parameter]
     public Guid? Id { get; set; }
@@ -192,10 +212,14 @@
     private string _taxId = string.Empty;
     private string _email = string.Empty;
     private string _phone = string.Empty;
+    private string _address = string.Empty;
+    private string _city = string.Empty;
+    private string _postalCode = string.Empty;
+    private string _country = "PT";
     private bool _isActive = true;
 
     private string _newUserId = string.Empty;
-    private string _newRole = "User";
+    private string _newRole = Constants.Roles.User;
 
     private List<UserCompanyAdmin> _memberships = [];
     private List<IdentityUser> _users = [];
@@ -234,6 +258,10 @@
             _taxId = company.TaxId;
             _email = company.Email ?? string.Empty;
             _phone = company.Phone ?? string.Empty;
+            _address = company.Address ?? string.Empty;
+            _city = company.City ?? string.Empty;
+            _postalCode = company.PostalCode ?? string.Empty;
+            _country = string.IsNullOrWhiteSpace(company.Country) ? "PT" : company.Country;
             _isActive = company.IsActive;
 
             await LoadUsersAsync();
@@ -305,7 +333,8 @@
             if (IsNew)
             {
                 var request = new CreateCompanyRequest(
-                    _name.Trim(), _taxId.Trim(), Normalize(_legalName), Normalize(_email), Normalize(_phone));
+                    _name.Trim(), _taxId.Trim(), Normalize(_legalName), Normalize(_email), Normalize(_phone),
+                    Normalize(_address), Normalize(_city), Normalize(_postalCode), NormalizeCountry(_country));
 
                 var (created, error) = await CoreApi.CreateCompanyAsync(request);
 
@@ -324,7 +353,8 @@
             }
 
             var updateRequest = new UpdateCompanyRequest(
-                _name.Trim(), _taxId.Trim(), Normalize(_legalName), Normalize(_email), Normalize(_phone), _isActive);
+                _name.Trim(), _taxId.Trim(), Normalize(_legalName), Normalize(_email), Normalize(_phone), _isActive,
+                Normalize(_address), Normalize(_city), Normalize(_postalCode), NormalizeCountry(_country));
 
             var (_, updateError) = await CoreApi.UpdateCompanyAsync(Id!.Value, updateRequest);
 
@@ -410,4 +440,7 @@
 
     private static string? Normalize(string value) =>
         string.IsNullOrWhiteSpace(value) ? null : value.Trim();
+
+    private static string NormalizeCountry(string value) =>
+        string.IsNullOrWhiteSpace(value) ? "PT" : value.Trim().ToUpperInvariant();
 }

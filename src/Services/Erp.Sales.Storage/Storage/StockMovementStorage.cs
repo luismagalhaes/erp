@@ -26,6 +26,23 @@ public sealed class StockMovementStorage(SalesDbContext dbContext) : IStockMovem
             .FirstOrDefaultAsync(x => x.Id == id, cancellationToken);
     }
 
+    public async Task<IReadOnlyList<StockMovement>> GetForPeriodAsync(
+        Guid companyId,
+        DateOnly startDate,
+        DateOnly endDate,
+        CancellationToken cancellationToken = default)
+    {
+        return await dbContext.StockMovements
+            .AsNoTracking()
+            .AsSplitQuery()
+            .Include(x => x.Lines)
+            .Include(x => x.StatusChanges)
+            .Where(x => x.CompanyId == companyId && x.MovementDate >= startDate && x.MovementDate <= endDate)
+            .OrderBy(x => x.SeriesId)
+            .ThenBy(x => x.SequenceNumber)
+            .ToListAsync(cancellationToken);
+    }
+
     /// <summary>
     /// Signature of the last movement of the series. Safe to read without extra locking because
     /// the caller already holds the update lock on the series row.

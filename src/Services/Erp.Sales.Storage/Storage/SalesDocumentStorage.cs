@@ -27,6 +27,24 @@ public sealed class SalesDocumentStorage(SalesDbContext dbContext) : ISalesDocum
             .FirstOrDefaultAsync(x => x.Id == id, cancellationToken);
     }
 
+    public async Task<IReadOnlyList<SalesDocument>> GetForPeriodAsync(
+        Guid companyId,
+        DateOnly startDate,
+        DateOnly endDate,
+        CancellationToken cancellationToken = default)
+    {
+        return await dbContext.SalesDocuments
+            .AsNoTracking()
+            .AsSplitQuery()
+            .Include(x => x.Lines)
+            .Include(x => x.TaxSummaries)
+            .Include(x => x.StatusChanges)
+            .Where(x => x.CompanyId == companyId && x.DocumentDate >= startDate && x.DocumentDate <= endDate)
+            .OrderBy(x => x.SeriesId)
+            .ThenBy(x => x.SequenceNumber)
+            .ToListAsync(cancellationToken);
+    }
+
     /// <summary>
     /// Signature of the last document of the series. Safe to read without extra locking because
     /// the caller already holds the update lock on the series row.

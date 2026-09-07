@@ -290,7 +290,7 @@ Contextos disponíveis no Identity: `ApplicationDbContext`, `ConfigurationDbCont
 dotnet test Erp.slnx
 ```
 
-168 testes em cinco projetos, sem dependência de base de dados: as camadas Application são testadas com storages substituídos (NSubstitute), a biblioteca fiscal é testada diretamente, e o cliente de email e a obtenção de tokens do Identity com um `HttpMessageHandler` e um `TimeProvider` de teste.
+185 testes em cinco projetos, sem dependência de base de dados: as camadas Application são testadas com storages substituídos (NSubstitute), a biblioteca fiscal é testada diretamente, e o cliente de email e a obtenção de tokens do Identity com um `HttpMessageHandler` e um `TimeProvider` de teste.
 
 ---
 
@@ -322,12 +322,32 @@ dotnet test Erp.slnx
 
 ## Endpoints do módulo Sales
 
+Além da faturação, o módulo emite os **documentos de movimentação de mercadorias** — guias de remessa (`GR`), transporte (`GT`), ativos próprios (`GA`), consignação (`GC`) e devolução (`GD`), exportados no SAF-T em `MovementOfGoods`. Seguem exatamente as mesmas regras dos documentos de faturação: numeração sequencial por série, cadeia de assinatura, ATCUD, código QR e imutabilidade. Acrescentam o que o regime de bens em circulação exige: locais de carga e descarga, início do transporte, matrícula do veículo, e o **código que a AT devolve na comunicação prévia** — sem o qual a mercadoria não pode circular.
+
+A **exportação do SAF-T (PT) 1.04_01** vive em [`Erp.FiscalPT/Saft`](src/Shared/Erp.FiscalPT/Saft/), que é a biblioteca fiscal partilhada: recebe um `SaftAuditFile` e escreve o XML, sem saber nada de EF Core nem do módulo de vendas. O `SaftExportService` preenche esse modelo a partir dos documentos do período, e o controller junta-lhe a empresa, que pertence ao Core. Os *master files* (`Customer`, `Product`, `TaxTable`) são derivados dos próprios documentos — cada um traz o snapshot do cliente, dos artigos e das taxas — por isso o ficheiro é coerente consigo mesmo mesmo que as fichas tenham mudado entretanto. Os totais de controlo são calculados pelo escritor, nunca recebidos de fora, e os documentos anulados vão no ficheiro com estado `A` mas fora dos totais. A exportação faz-se em `/saft`, por mês, trimestre, ano ou intervalo livre.
+
+O [esquema oficial da AT](src/Shared/Erp.FiscalPT/Saft/Schemas/SAFTPT1.04_01.xsd) está no repositório e vai embebido no assembly, e **cada exportação é validada contra ele** antes de o ficheiro ser entregue: os erros vão para o log e a contagem viaja no cabeçalho `X-Saft-Validation-Errors`, que a página mostra. Como o esquema publicado é XSD 1.1 e o .NET só implementa 1.0, as 19 regras `xs:assert` (co-ocorrência, como exigir motivo de isenção quando o imposto é zero) não são verificadas — passar aqui é necessário, não suficiente.
+
+Emite também os **recibos** — `RC` (regime de IVA de caixa) e `RG` (restantes), exportados no SAF-T em `Payments`. Um recibo é um documento fiscalmente relevante como qualquer outro: numerado por série, assinado na mesma cadeia e imutável. As suas linhas dizem **que faturas liquida e por que valor**, e o serviço recusa liquidar mais do que a fatura ainda deve, liquidar uma fatura anulada, ou repetir a mesma fatura no mesmo recibo. Os meios de pagamento (`NU`, `CH`, `CD`, `CC`, `TB`, ...) têm de somar exatamente o total do recibo. Fora do regime de IVA de caixa o `TaxPayable` é zero: o IVA já foi apurado na fatura, o recibo só movimenta dinheiro. Anular um recibo não altera o registo original — escreve uma mudança de estado, e as faturas voltam a ficar em dívida.
+
 | Método | Rota | Autorização |
 |---|---|---|
 | `GET` | `/api/invoices?companyId=` | `Read` |
 | `GET` | `/api/invoices/{id}` | `Read` |
 | `POST` | `/api/invoices` | `Write` |
 | `POST` | `/api/invoices/{id}/void` | `Write` |
+| `GET` | `/api/stock-movements?companyId=` | `Read` |
+| `GET` | `/api/stock-movements/{id}` | `Read` |
+| `POST` | `/api/stock-movements` | `Write` |
+| `POST` | `/api/stock-movements/{id}/communicate` | `Write` |
+| `POST` | `/api/stock-movements/{id}/void` | `Write` |
+| `GET` | `/api/payments?companyId=` | `Read` |
+| `GET` | `/api/payments/outstanding-invoices?companyId=&customerTaxId=` | `Read` |
+| `GET` | `/api/payments/{id}` | `Read` |
+| `POST` | `/api/payments` | `Write` |
+| `POST` | `/api/payments/{id}/void` | `Write` |
+| `GET` | `/api/saft/summary?companyId=&startDate=&endDate=` | `Read` |
+| `GET` | `/api/saft?companyId=&startDate=&endDate=` | `Read` |
 | `GET` | `/api/series?companyId=` | `Read` |
 | `GET` | `/api/series/{id}` | `Read` |
 | `POST` | `/api/series` | `Admin` |
@@ -378,6 +398,13 @@ A empresa ativa escolhe-se no cabeçalho e é partilhada por todas as páginas (
 | `/invoices` | Lista de faturas |
 | `/invoices/new` | Emissão de fatura |
 | `/invoices/{id}` | Documento emitido, com hash, QR e anulação |
+| `/stock-movements` | Guias de movimentação de mercadorias |
+| `/stock-movements/new` | Emissão de guia, com locais de carga e descarga e início de transporte |
+| `/stock-movements/{id}` | Guia emitida, com comunicação à AT, QR e anulação |
+| `/payments` | Recibos emitidos |
+| `/payments/new` | Emissão de recibo, a partir das faturas em dívida do cliente |
+| `/payments/{id}` | Recibo emitido, com faturas liquidadas, meios de pagamento, QR e anulação |
+| `/saft` | Exportação do SAF-T (PT), por mês, trimestre, ano ou intervalo livre |
 | `/series` | Séries de faturação |
 | `/series/new`, `/series/{id}` | Criar série e registar o código de validação da AT |
 | `/products` | Ficheiro de artigos, com filtros por família, marca e texto |

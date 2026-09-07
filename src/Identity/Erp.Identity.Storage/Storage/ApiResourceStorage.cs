@@ -60,7 +60,9 @@ public sealed class ApiResourceStorage(IDbContextFactory<ConfigurationDbContext>
             Description = ToNullable(request.Description),
             Enabled = request.Enabled,
             ShowInDiscoveryDocument = request.ShowInDiscoveryDocument,
-            RequireResourceIndicator = request.RequireResourceIndicator
+            RequireResourceIndicator = request.RequireResourceIndicator,
+            Scopes = [],
+            UserClaims = []
         };
 
         ReplaceCollection(entity.Scopes, request.Scopes, x => new ApiResourceScope { Scope = x });
@@ -93,6 +95,9 @@ public sealed class ApiResourceStorage(IDbContextFactory<ConfigurationDbContext>
         entity.Enabled = request.Enabled;
         entity.ShowInDiscoveryDocument = request.ShowInDiscoveryDocument;
         entity.RequireResourceIndicator = request.RequireResourceIndicator;
+
+        entity.Scopes ??= [];
+        entity.UserClaims ??= [];
 
         ReplaceCollection(entity.Scopes, request.Scopes, x => new ApiResourceScope { Scope = x });
         ReplaceCollection(entity.UserClaims, request.UserClaims, x => new ApiResourceClaim { Type = x });

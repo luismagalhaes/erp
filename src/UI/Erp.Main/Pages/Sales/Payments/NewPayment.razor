@@ -1,0 +1,438 @@
+@page "/payments/new"
+@attribute [Authorize]
+@implements IDisposable
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.AspNetCore.Components.Web
+@using MudBlazor
+@using Erp.Main.Models
+@using Erp.Main.Services
+@inject SalesApiClient SalesApi
+@inject CompanyState Company
+@inject NavigationManager Navigation
+@inject ISnackbar Snackbar
+
+<PageTitle>Novo recibo</PageTitle>
+
+<MudStack Spacing="4">
+    <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center">
+        <MudStack Spacing="0">
+            <MudText Typo="Typo.h4">Novo recibo</MudText>
+            <MudText Typo="Typo.body2" Color="Color.Secondary">
+                O recibo é assinado e numerado na emissão, e liquida faturas que ainda tenham valor em dívida.
+            </MudText>
+        </MudStack>
+
+        <MudButton Variant="Variant.Text" StartIcon="@Icons.Material.Filled.ArrowBack"
+                   OnClick="@(() => Navigation.NavigateTo("payments"))">
+            Voltar
+        </MudButton>
+    </MudStack>
+
+    @if (!string.IsNullOrWhiteSpace(_error))
+    {
+        <MudAlert Severity="Severity.Error" Dense="true">@_error</MudAlert>
+    }
+
+    @if (_loading)
+    {
+        <MudProgressLinear Indeterminate="true" Color="Color.Primary" />
+    }
+    else if (_series.Count == 0)
+    {
+        <MudAlert Severity="Severity.Warning">
+            Não existe nenhuma série de recibos comunicada à AT. Crie uma série do tipo RC ou RG.
+            <MudLink Href="series/new" Class="ml-2">Criar série</MudLink>
+        </MudAlert>
+    }
+    else if (_outstanding.Count == 0)
+    {
+        <MudAlert Severity="Severity.Info">
+            Não há faturas por liquidar. Um recibo só pode ser emitido sobre faturas com valor em dívida.
+        </MudAlert>
+    }
+    else
+    {
+        <MudPaper Elevation="1" Class="pa-4">
+            <MudText Typo="Typo.h6" Class="mb-3">Documento</MudText>
+            <MudGrid>
+                <MudItem xs="12" md="5">
+                    <MudSelect @bind-Value="_seriesId" Label="Série" Variant="Variant.Outlined" Required="true">
+                        @foreach (var series in _series)
+                        {
+                            <MudSelectItem T="Guid" Value="@series.Id">
+                                @series.DocumentType @series.SeriesCode — @PaymentTypes.Describe(series.DocumentType)
+                                (próximo n.º @(series.CurrentSequence + 1))
+                            </MudSelectItem>
+                        }
+                    </MudSelect>
+                </MudItem>
+                <MudItem xs="12" md="3">
+                    <MudDatePicker @bind-Date="_transactionDate" Label="Data do recibo"
+                                   Variant="Variant.Outlined" DateFormat="yyyy-MM-dd" />
+                </MudItem>
+                <MudItem xs="12" md="4">
+                    <MudTextField @bind-Value="_description" Label="Observações" Variant="Variant.Outlined" />
+                </MudItem>
+            </MudGrid>
+        </MudPaper>
+
+        <MudPaper Elevation="1" Class="pa-4">
+            <MudText Typo="Typo.h6" Class="mb-3">Cliente</MudText>
+            <MudGrid>
+                <MudItem xs="12" md="6">
+                    <MudSelect T="string" Value="_partyTaxId" ValueChanged="OnCustomerChanged"
+                               Label="Cliente" Variant="Variant.Outlined" Required="true"
+                               HelperText="Um recibo liquida faturas de um único cliente">
+                        @foreach (var customer in _customers)
+                        {
+                            <MudSelectItem T="string" Value="@customer.TaxId">
+                                @customer.Name (@customer.TaxId)
+                            </MudSelectItem>
+                        }
+                    </MudSelect>
+                </MudItem>
+                <MudItem xs="12" md="6">
+                    <MudTextField @bind-Value="_partyName" Label="Nome" Variant="Variant.Outlined" Required="true" />
+                </MudItem>
+            </MudGrid>
+        </MudPaper>
+
+        <MudPaper Elevation="1" Class="pa-4">
+            <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center" Class="mb-3">
+                <MudText Typo="Typo.h6">Faturas a liquidar</MudText>
+                <MudButton Variant="Variant.Text" Color="Color.Primary" Size="Size.Small"
+                           Disabled="@(_visibleInvoices.Count == 0)"
+                           OnClick="SelectAll">
+                    Liquidar tudo
+                </MudButton>
+            </MudStack>
+
+            <MudTable Items="_visibleInvoices" Dense="true" Hover="true" Striped="true" Breakpoint="Breakpoint.Sm">
+                <HeaderContent>
+                    <MudTh Style="width: 60px;"></MudTh>
+                    <MudTh>Fatura</MudTh>
+                    <MudTh>Data</MudTh>
+                    <MudTh Style="text-align: right;">Total</MudTh>
+                    <MudTh Style="text-align: right;">Já liquidado</MudTh>
+                    <MudTh Style="text-align: right;">Em dívida</MudTh>
+                    <MudTh Style="width: 150px; text-align: right;">A liquidar</MudTh>
+                </HeaderContent>
+                <RowTemplate>
+                    <MudTd>
+                        <MudCheckBox T="bool" Value="@IsSelected(context)"
+                                     ValueChanged="@(selected => ToggleInvoice(context, selected))"
+                                     Color="Color.Primary" Dense="true" />
+                    </MudTd>
+                    <MudTd DataLabel="Fatura">
+                        <MudText Typo="Typo.body2" Style="font-family: monospace;">@context.DocumentNumber</MudText>
+                    </MudTd>
+                    <MudTd DataLabel="Data">@context.DocumentDate.ToString("yyyy-MM-dd")</MudTd>
+                    <MudTd DataLabel="Total" Style="text-align: right;">@context.GrossTotal.ToString("N2")</MudTd>
+                    <MudTd DataLabel="Já liquidado" Style="text-align: right;">@context.SettledAmount.ToString("N2")</MudTd>
+                    <MudTd DataLabel="Em dívida" Style="text-align: right;">@context.OutstandingAmount.ToString("N2")</MudTd>
+                    <MudTd DataLabel="A liquidar" Style="text-align: right;">
+                        @if (IsSelected(context))
+                        {
+                            <MudNumericField T="decimal" Value="@_selected[context.DocumentId]"
+                                             ValueChanged="@(amount => SetAmount(context, amount))"
+                                             Margin="Margin.Dense" Min="0" Max="@context.OutstandingAmount" Format="N2" />
+                        }
+                        else
+                        {
+                            <MudText Typo="Typo.body2" Color="Color.Secondary">—</MudText>
+                        }
+                    </MudTd>
+                </RowTemplate>
+                <NoRecordsContent>
+                    <MudText Typo="Typo.body2" Color="Color.Secondary">
+                        Este cliente não tem faturas por liquidar.
+                    </MudText>
+                </NoRecordsContent>
+            </MudTable>
+        </MudPaper>
+
+        <MudPaper Elevation="1" Class="pa-4">
+            <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center" Class="mb-3">
+                <MudText Typo="Typo.h6">Meios de pagamento</MudText>
+                <MudButton Variant="Variant.Outlined" Color="Color.Primary" Size="Size.Small"
+                           StartIcon="@Icons.Material.Filled.Add" OnClick="AddMethod">
+                    Adicionar meio
+                </MudButton>
+            </MudStack>
+
+            <MudTable Items="_methods" Dense="true" Hover="true" Striped="true" Breakpoint="Breakpoint.Sm">
+                <HeaderContent>
+                    <MudTh>Meio</MudTh>
+                    <MudTh Style="width: 160px;">Data</MudTh>
+                    <MudTh Style="width: 160px; text-align: right;">Valor</MudTh>
+                    <MudTh Style="width: 70px; text-align: right;">Ações</MudTh>
+                </HeaderContent>
+                <RowTemplate>
+                    <MudTd DataLabel="Meio">
+                        <MudSelect @bind-Value="context.Mechanism" Margin="Margin.Dense">
+                            @foreach (var mechanism in PaymentMechanismOptions.All)
+                            {
+                                <MudSelectItem T="string" Value="@mechanism.Code">@mechanism.Label</MudSelectItem>
+                            }
+                        </MudSelect>
+                    </MudTd>
+                    <MudTd DataLabel="Data">
+                        <MudDatePicker @bind-Date="context.PaymentDate" Margin="Margin.Dense" DateFormat="yyyy-MM-dd" />
+                    </MudTd>
+                    <MudTd DataLabel="Valor" Style="text-align: right;">
+                        <MudNumericField @bind-Value="context.Amount" Margin="Margin.Dense" Min="0" Format="N2" />
+                    </MudTd>
+                    <MudTd DataLabel="Ações" Style="text-align: right;">
+                        <MudIconButton Icon="@Icons.Material.Filled.Delete" Size="Size.Small" Color="Color.Error"
+                                       title="Remover meio de pagamento"
+                                       Disabled="@(_methods.Count == 1)"
+                                       OnClick="@(() => RemoveMethod(context))" />
+                    </MudTd>
+                </RowTemplate>
+            </MudTable>
+
+            <MudButton Variant="Variant.Text" Color="Color.Primary" Size="Size.Small" Class="mt-2"
+                       Disabled="@(_methods.Count != 1 || SelectedTotal <= 0)"
+                       OnClick="MatchMethodToTotal">
+                Igualar ao total liquidado
+            </MudButton>
+        </MudPaper>
+
+        <MudPaper Elevation="1" Class="pa-4">
+            <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center">
+                <MudStack Row="true" Spacing="6">
+                    <MudStack Spacing="0">
+                        <MudText Typo="Typo.caption" Color="Color.Secondary">Faturas selecionadas</MudText>
+                        <MudText Typo="Typo.h6">@_selected.Count</MudText>
+                    </MudStack>
+                    <MudStack Spacing="0">
+                        <MudText Typo="Typo.caption" Color="Color.Secondary">Meios de pagamento</MudText>
+                        <MudText Typo="Typo.h6" Color="@(MethodsTotal == SelectedTotal ? Color.Default : Color.Warning)">
+                            @MethodsTotal.ToString("N2")
+                        </MudText>
+                    </MudStack>
+                    <MudStack Spacing="0">
+                        <MudText Typo="Typo.caption" Color="Color.Secondary">Total do recibo</MudText>
+                        <MudText Typo="Typo.h5" Color="Color.Primary">@SelectedTotal.ToString("N2")</MudText>
+                    </MudStack>
+                </MudStack>
+
+                <MudButton Variant="Variant.Filled" Color="Color.Primary" Size="Size.Large"
+                           StartIcon="@Icons.Material.Filled.ReceiptLong"
+                           Disabled="@(_issuing || !CanIssue)"
+                           OnClick="IssueAsync">
+                    @(_issuing ? "A emitir..." : "Emitir recibo")
+                </MudButton>
+            </MudStack>
+
+            @if (_selected.Count > 0 && MethodsTotal != SelectedTotal)
+            {
+                <MudAlert Severity="Severity.Warning" Dense="true" Class="mt-3">
+                    Os meios de pagamento somam @MethodsTotal.ToString("N2") e o recibo liquida @SelectedTotal.ToString("N2").
+                    Os dois valores têm de coincidir.
+                </MudAlert>
+            }
+        </MudPaper>
+    }
+</MudStack>
+
+@code {
+    private bool _loading = true;
+    private bool _issuing;
+    private string? _error;
+
+    private Guid _seriesId;
+    private DateTime? _transactionDate = DateTime.Today;
+    private string _description = string.Empty;
+
+    private string _partyTaxId = string.Empty;
+    private string _partyName = string.Empty;
+
+    private List<SalesSeries> _series = [];
+    private List<OutstandingInvoice> _outstanding = [];
+    private List<CustomerOption> _customers = [];
+    private readonly List<MethodEditor> _methods = [new()];
+
+    /// <summary>Amount applied to each selected invoice, keyed by invoice.</summary>
+    private readonly Dictionary<Guid, decimal> _selected = [];
+
+    private List<OutstandingInvoice> _visibleInvoices = [];
+
+    private decimal SelectedTotal =>
+        Math.Round(_selected.Values.Sum(), 2, MidpointRounding.AwayFromZero);
+
+    private decimal MethodsTotal =>
+        Math.Round(_methods.Sum(method => method.Amount), 2, MidpointRounding.AwayFromZero);
+
+    private bool CanIssue =>
+        _seriesId != Guid.Empty
+        && _transactionDate is not null
+        && !string.IsNullOrWhiteSpace(_partyName)
+        && _selected.Count > 0
+        && _selected.Values.All(amount => amount > 0)
+        && _methods.All(method => method.Amount > 0 && method.PaymentDate is not null)
+        && MethodsTotal == SelectedTotal;
+
+    protected override async Task OnInitializedAsync()
+    {
+        Company.Changed += OnCompanyChanged;
+        await Company.EnsureLoadedAsync();
+        await LoadAsync();
+    }
+
+    private async void OnCompanyChanged() => await InvokeAsync(LoadAsync);
+
+    private async Task LoadAsync()
+    {
+        _loading = true;
+        _error = Company.LoadError;
+
+        if (!Company.HasCompany)
+        {
+            _series = [];
+            _outstanding = [];
+            _loading = false;
+            StateHasChanged();
+            return;
+        }
+
+        try
+        {
+            // Only series of a receipt type can issue these documents.
+            var series = await SalesApi.GetSeriesAsync(Company.SelectedCompanyId);
+            _series = [.. series.Where(x => x.CanIssue && PaymentTypes.All.Any(type => type.Code == x.DocumentType))];
+            _seriesId = _series.FirstOrDefault()?.Id ?? Guid.Empty;
+
+            // The customer list comes from the invoices that still owe money: offering a customer
+            // with nothing to settle would only lead to an empty receipt.
+            var (outstanding, error) = await SalesApi.GetOutstandingInvoicesAsync(Company.SelectedCompanyId);
+            _outstanding = [.. outstanding];
+            _error ??= error;
+
+            _customers = [.. _outstanding
+                .GroupBy(invoice => invoice.CustomerTaxId)
+                .Select(group => new CustomerOption(group.Key, group.First().CustomerName))
+                .OrderBy(customer => customer.Name)];
+
+            OnCustomerChanged(_customers.FirstOrDefault()?.TaxId ?? string.Empty);
+        }
+        catch (Exception ex)
+        {
+            _error = $"Não foi possível preparar a emissão: {ex.Message}";
+        }
+        finally
+        {
+            _loading = false;
+            StateHasChanged();
+        }
+    }
+
+    /// <summary>Changing customer restarts the selection: a receipt settles one customer only.</summary>
+    private void OnCustomerChanged(string taxId)
+    {
+        _partyTaxId = taxId;
+        _partyName = _customers.FirstOrDefault(customer => customer.TaxId == taxId)?.Name ?? string.Empty;
+
+        _selected.Clear();
+        _visibleInvoices = [.. _outstanding.Where(invoice => invoice.CustomerTaxId == taxId)];
+    }
+
+    private bool IsSelected(OutstandingInvoice invoice) => _selected.ContainsKey(invoice.DocumentId);
+
+    private void ToggleInvoice(OutstandingInvoice invoice, bool selected)
+    {
+        if (selected)
+            _selected[invoice.DocumentId] = invoice.OutstandingAmount;
+        else
+            _selected.Remove(invoice.DocumentId);
+
+        SyncSingleMethodAmount();
+    }
+
+    private void SetAmount(OutstandingInvoice invoice, decimal amount)
+    {
+        // Never let the form propose more than the invoice owes; the API would reject it anyway.
+        _selected[invoice.DocumentId] = Math.Clamp(amount, 0m, invoice.OutstandingAmount);
+        SyncSingleMethodAmount();
+    }
+
+    private void SelectAll()
+    {
+        foreach (var invoice in _visibleInvoices)
+            _selected[invoice.DocumentId] = invoice.OutstandingAmount;
+
+        SyncSingleMethodAmount();
+    }
+
+    private void AddMethod() => _methods.Add(new MethodEditor());
+
+    private void RemoveMethod(MethodEditor method)
+    {
+        if (_methods.Count > 1)
+            _methods.Remove(method);
+    }
+
+    private void MatchMethodToTotal() => _methods[0].Amount = SelectedTotal;
+
+    /// <summary>
+    /// While there is a single payment method, it follows the total being settled. Once the user
+    /// splits the receipt across several methods, the amounts are theirs to set.
+    /// </summary>
+    private void SyncSingleMethodAmount()
+    {
+        if (_methods.Count == 1)
+            _methods[0].Amount = SelectedTotal;
+    }
+
+    private async Task IssueAsync()
+    {
+        _issuing = true;
+        _error = null;
+
+        try
+        {
+            var request = new CreatePaymentRequest(
+                Company.SelectedCompanyId,
+                _seriesId,
+                DateOnly.FromDateTime(_transactionDate!.Value),
+                string.IsNullOrWhiteSpace(_partyTaxId) ? null : _partyTaxId.Trim(),
+                _partyName.Trim(),
+                [.. _selected.Select(entry => new CreatePaymentLineRequest(entry.Key, entry.Value))],
+                [.. _methods.Select(method => new CreatePaymentMethodRequest(
+                    method.Mechanism,
+                    method.Amount,
+                    DateOnly.FromDateTime(method.PaymentDate!.Value)))],
+                Description: string.IsNullOrWhiteSpace(_description) ? null : _description.Trim());
+
+            var (payment, error) = await SalesApi.IssuePaymentAsync(request);
+
+            if (payment is null)
+            {
+                _error = error ?? "Não foi possível emitir o recibo.";
+                return;
+            }
+
+            Snackbar.Add($"Recibo {payment.PaymentRefNo} emitido.", Severity.Success);
+            Navigation.NavigateTo($"payments/{payment.Id}");
+        }
+        catch (Exception ex)
+        {
+            _error = $"Não foi possível emitir o recibo: {ex.Message}";
+        }
+        finally
+        {
+            _issuing = false;
+        }
+    }
+
+    private sealed record CustomerOption(string TaxId, string Name);
+
+    private sealed class MethodEditor
+    {
+        public string Mechanism { get; set; } = "TB";
+        public decimal Amount { get; set; }
+        public DateTime? PaymentDate { get; set; } = DateTime.Today;
+    }
+
+    public void Dispose() => Company.Changed -= OnCompanyChanged;
+}

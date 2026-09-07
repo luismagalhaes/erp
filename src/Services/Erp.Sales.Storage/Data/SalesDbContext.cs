@@ -13,6 +13,10 @@ public sealed class SalesDbContext(DbContextOptions<SalesDbContext> options) : D
     public DbSet<StockMovement> StockMovements => Set<StockMovement>();
     public DbSet<StockMovementLine> StockMovementLines => Set<StockMovementLine>();
     public DbSet<MovementStatusChange> MovementStatusChanges => Set<MovementStatusChange>();
+    public DbSet<Payment> Payments => Set<Payment>();
+    public DbSet<PaymentLine> PaymentLines => Set<PaymentLine>();
+    public DbSet<PaymentMethodEntry> PaymentMethods => Set<PaymentMethodEntry>();
+    public DbSet<PaymentStatusChange> PaymentStatusChanges => Set<PaymentStatusChange>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -237,6 +241,102 @@ public sealed class SalesDbContext(DbContextOptions<SalesDbContext> options) : D
             entity.Property(x => x.UserId).HasMaxLength(450);
 
             entity.HasIndex(x => x.MovementId);
+        });
+
+        modelBuilder.Entity<Payment>(entity =>
+        {
+            entity.ToTable("Payment");
+            entity.HasKey(x => x.Id);
+
+            entity.Property(x => x.PaymentType).HasMaxLength(2).IsRequired();
+            entity.Property(x => x.PaymentRefNo).HasMaxLength(60).IsRequired();
+            entity.Property(x => x.Atcud).HasMaxLength(50).IsRequired();
+            entity.Property(x => x.Status).HasMaxLength(1).IsFixedLength().IsRequired();
+            entity.Property(x => x.SourcePayment).HasMaxLength(1).IsFixedLength().IsRequired();
+            entity.Property(x => x.PartyTaxId).HasMaxLength(30).IsRequired();
+            entity.Property(x => x.PartyName).HasMaxLength(200).IsRequired();
+            entity.Property(x => x.Description).HasMaxLength(400);
+            entity.Property(x => x.CreatedByUserId).HasMaxLength(450);
+
+            entity.Property(x => x.NetTotal).HasPrecision(19, 2);
+            entity.Property(x => x.TaxPayable).HasPrecision(19, 2);
+            entity.Property(x => x.GrossTotal).HasPrecision(19, 2);
+
+            entity.Property(x => x.Hash).HasMaxLength(200).IsRequired();
+            entity.Property(x => x.PreviousHash).HasMaxLength(200).IsRequired();
+            entity.Property(x => x.HashControl).HasMaxLength(70).IsRequired();
+            entity.Property(x => x.QrCodePayload).HasMaxLength(1024);
+
+            entity.Ignore(x => x.EffectiveStatus);
+            entity.Ignore(x => x.IsVoided);
+
+            // Numbering has no gaps and no repeats inside a series.
+            entity.HasIndex(x => new { x.SeriesId, x.SequenceNumber }).IsUnique();
+            entity.HasIndex(x => new { x.CompanyId, x.PaymentRefNo }).IsUnique();
+            entity.HasIndex(x => new { x.CompanyId, x.TransactionDate });
+
+            entity.HasOne(x => x.Series)
+                .WithMany()
+                .HasForeignKey(x => x.SeriesId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasMany(x => x.Lines)
+                .WithOne(x => x.Payment)
+                .HasForeignKey(x => x.PaymentId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasMany(x => x.Methods)
+                .WithOne(x => x.Payment)
+                .HasForeignKey(x => x.PaymentId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasMany(x => x.StatusChanges)
+                .WithOne(x => x.Payment)
+                .HasForeignKey(x => x.PaymentId)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        modelBuilder.Entity<PaymentLine>(entity =>
+        {
+            entity.ToTable("PaymentLine");
+            entity.HasKey(x => x.Id);
+
+            entity.Property(x => x.OriginatingNumber).HasMaxLength(60).IsRequired();
+            entity.Property(x => x.AppliedAmount).HasPrecision(19, 2);
+
+            entity.HasIndex(x => new { x.PaymentId, x.LineNumber }).IsUnique();
+
+            // The settled invoice is looked up by this column when computing what is still owed.
+            entity.HasIndex(x => x.OriginatingDocumentId);
+
+            entity.HasOne<SalesDocument>()
+                .WithMany()
+                .HasForeignKey(x => x.OriginatingDocumentId)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        modelBuilder.Entity<PaymentMethodEntry>(entity =>
+        {
+            entity.ToTable("PaymentMethod");
+            entity.HasKey(x => x.Id);
+
+            entity.Property(x => x.Mechanism).HasMaxLength(2).IsRequired();
+            entity.Property(x => x.Amount).HasPrecision(19, 2);
+
+            entity.HasIndex(x => x.PaymentId);
+        });
+
+        modelBuilder.Entity<PaymentStatusChange>(entity =>
+        {
+            entity.ToTable("PaymentStatusChange");
+            entity.HasKey(x => x.Id);
+
+            entity.Property(x => x.PreviousStatus).HasMaxLength(1).IsFixedLength().IsRequired();
+            entity.Property(x => x.NewStatus).HasMaxLength(1).IsFixedLength().IsRequired();
+            entity.Property(x => x.Reason).HasMaxLength(400).IsRequired();
+            entity.Property(x => x.UserId).HasMaxLength(450);
+
+            entity.HasIndex(x => x.PaymentId);
         });
 
         modelBuilder.Entity<DocumentStatusChange>(entity =>

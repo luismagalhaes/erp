@@ -115,6 +115,7 @@ public sealed class SalesDbContext(DbContextOptions<SalesDbContext> options) : D
             entity.Property(x => x.TaxCode).HasMaxLength(10).IsRequired();
             entity.Property(x => x.TaxExemptionCode).HasMaxLength(10);
             entity.Property(x => x.TaxExemptionReason).HasMaxLength(200);
+            entity.Property(x => x.OriginatingNumber).HasMaxLength(60);
 
             entity.Property(x => x.Quantity).HasPrecision(19, 6);
             entity.Property(x => x.UnitPrice).HasPrecision(19, 6);
@@ -123,6 +124,14 @@ public sealed class SalesDbContext(DbContextOptions<SalesDbContext> options) : D
             entity.Property(x => x.TaxAmount).HasPrecision(19, 2);
 
             entity.HasIndex(x => new { x.DocumentId, x.LineNumber }).IsUnique();
+
+            // What a movement line still has left to invoice is read through this column.
+            entity.HasIndex(x => x.OriginatingLineId);
+
+            entity.HasOne<StockMovementLine>()
+                .WithMany()
+                .HasForeignKey(x => x.OriginatingLineId)
+                .OnDelete(DeleteBehavior.Restrict);
         });
 
         modelBuilder.Entity<DocumentTaxSummary>(entity =>

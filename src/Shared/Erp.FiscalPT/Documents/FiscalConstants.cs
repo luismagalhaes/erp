@@ -60,6 +60,16 @@ public static class MovementDocumentTypes
 
     public static bool IsSupported(string movementType) =>
         All.Contains(movementType, StringComparer.Ordinal);
+
+    /// <summary>
+    /// Movements that precede a sale and can therefore be turned into an invoice. Guias de ativos
+    /// próprios (GA) move the entity's own goods and guias de devolução (GD) bring goods back, so
+    /// neither is ever invoiced.
+    /// </summary>
+    public static readonly string[] Invoiceable = [DeliveryNote, TransportNote, ConsignmentNote];
+
+    public static bool IsInvoiceable(string movementType) =>
+        Invoiceable.Contains(movementType, StringComparer.Ordinal);
 }
 
 /// <summary>SAF-T (PT) InvoiceStatus and MovementStatus values.</summary>

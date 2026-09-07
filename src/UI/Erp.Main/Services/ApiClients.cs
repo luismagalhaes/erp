@@ -152,6 +152,26 @@ public class SalesApiClient(HttpClient http)
             : null;
     }
 
+    /// <summary>Delivery note lines with quantity still to invoice.</summary>
+    public async Task<(IReadOnlyList<PendingMovementLine> Items, string? Error)> GetPendingMovementLinesAsync(
+        Guid companyId,
+        string? partyTaxId = null,
+        CancellationToken cancellationToken = default)
+    {
+        var url = $"api/invoices/pending-movements?companyId={companyId}";
+
+        if (!string.IsNullOrWhiteSpace(partyTaxId))
+            url += $"&partyTaxId={Uri.EscapeDataString(partyTaxId)}";
+
+        var response = await Http.GetAsync(url, cancellationToken);
+
+        if (!response.IsSuccessStatusCode)
+            return ([], await ApiResponse.ReadErrorAsync(response, cancellationToken));
+
+        var items = await response.Content.ReadFromJsonAsync<List<PendingMovementLine>>(cancellationToken);
+        return (items ?? [], null);
+    }
+
     /// <summary>Issues a document. Returns the error message from the API when it refuses.</summary>
     public async Task<(InvoiceDetail? Invoice, string? Error)> IssueInvoiceAsync(
         CreateInvoiceRequest request,

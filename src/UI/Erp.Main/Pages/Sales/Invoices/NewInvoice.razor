@@ -51,8 +51,7 @@
         <MudPaper Elevation="1" Class="pa-4">
             <MudGrid>
                 <MudItem xs="12" md="6">
-                    <MudSelect T="Guid" Value="_seriesId" ValueChanged="OnSeriesChanged"
-                               Label="Série" Variant="Variant.Outlined" Required="true">
+                    <MudSelect @bind-Value="_seriesId" Label="Série" Variant="Variant.Outlined" Required="true">
                         @foreach (var series in _series)
                         {
                             <MudSelectItem T="Guid" Value="@series.Id">
@@ -68,43 +67,6 @@
                 </MudItem>
             </MudGrid>
         </MudPaper>
-
-        @* Artigo 36.º n.º 5 do CIVA: um documento retificativo tem de dizer o que corrige e porquê. *@
-        @if (IsRectifying)
-        {
-            <MudPaper Elevation="1" Class="pa-4">
-                <MudText Typo="Typo.h6" Class="mb-1">Documento retificado</MudText>
-                <MudText Typo="Typo.body2" Color="Color.Secondary" Class="mb-3">
-                    Uma @InvoiceTypes.Describe(SelectedDocumentType).ToLowerInvariant() tem de identificar o
-                    documento que corrige e o motivo da correção.
-                </MudText>
-
-                <MudGrid>
-                    <MudItem xs="12" md="5">
-                        <MudSelect T="Guid?" Value="_rectifiedDocumentId" ValueChanged="OnRectifiedDocumentChanged"
-                                   Label="Documento a retificar" Variant="Variant.Outlined" Required="true">
-                            @foreach (var document in _rectifiable)
-                            {
-                                <MudSelectItem T="Guid?" Value="@document.Id">
-                                    @document.DocumentNumber — @document.CustomerName (@document.GrossTotal.ToString("N2"))
-                                </MudSelectItem>
-                            }
-                        </MudSelect>
-                    </MudItem>
-                    <MudItem xs="12" md="7">
-                        <MudTextField @bind-Value="_rectificationReason" @bind-Value:after="StateHasChanged"
-                                      Immediate="true" Label="Motivo" Variant="Variant.Outlined" Required="true" />
-                    </MudItem>
-                </MudGrid>
-
-                @if (_rectifiable.Count == 0)
-                {
-                    <MudAlert Severity="Severity.Warning" Dense="true" Class="mt-3">
-                        Não há documentos por retificar nesta empresa.
-                    </MudAlert>
-                }
-            </MudPaper>
-        }
 
         <MudPaper Elevation="1" Class="pa-4">
             <MudText Typo="Typo.h6" Class="mb-3">Cliente</MudText>
@@ -249,18 +211,9 @@
     private string _customerAddress = string.Empty;
     private string _exemptionReason = string.Empty;
 
-    private Guid? _rectifiedDocumentId;
-    private string _rectificationReason = string.Empty;
-
     private List<SalesSeries> _series = [];
     private List<ProductListItem> _products = [];
-    private List<InvoiceListItem> _rectifiable = [];
     private readonly List<LineEditor> _lines = [new()];
-
-    private string SelectedDocumentType =>
-        _series.FirstOrDefault(x => x.Id == _seriesId)?.DocumentType ?? string.Empty;
-
-    private bool IsRectifying => InvoiceTypes.IsRectifying(SelectedDocumentType);
 
     private decimal NetTotal => _lines.Sum(LineTotal);
 
@@ -274,8 +227,7 @@
         && _documentDate is not null
         && !string.IsNullOrWhiteSpace(_customerName)
         && _lines.All(line => line.Quantity > 0 && !string.IsNullOrWhiteSpace(line.ProductDescription))
-        && (!_lines.Any(line => line.TaxCode == ExemptCode) || !string.IsNullOrWhiteSpace(_exemptionReason))
-        && (!IsRectifying || (_rectifiedDocumentId is not null && !string.IsNullOrWhiteSpace(_rectificationReason)));
+        && (!_lines.Any(line => line.TaxCode == ExemptCode) || !string.IsNullOrWhiteSpace(_exemptionReason));
 
     protected override async Task OnInitializedAsync()
     {
@@ -285,33 +237,6 @@
     }
 
     private async void OnCompanyChanged() => await InvokeAsync(LoadAsync);
-
-    /// <summary>
-    /// Changing the series can change the document family, so the rectification fields are
-    /// cleared: what was chosen for a credit note means nothing on an invoice.
-    /// </summary>
-    private void OnSeriesChanged(Guid seriesId)
-    {
-        _seriesId = seriesId;
-        _rectifiedDocumentId = null;
-        _rectificationReason = string.Empty;
-    }
-
-    /// <summary>
-    /// A rectifying document is issued to the customer of the document it corrects, so picking the
-    /// document fills the customer in.
-    /// </summary>
-    private void OnRectifiedDocumentChanged(Guid? documentId)
-    {
-        _rectifiedDocumentId = documentId;
-
-        var rectified = _rectifiable.FirstOrDefault(x => x.Id == documentId);
-        if (rectified is null)
-            return;
-
-        _customerName = rectified.CustomerName;
-        _customerTaxId = rectified.CustomerTaxId;
-    }
 
     private async Task LoadAsync()
     {
@@ -330,17 +255,15 @@
         try
         {
             var series = await SalesApi.GetSeriesAsync(Company.SelectedCompanyId);
-            // Only invoicing series belong here; guias and recibos have their own screens.
-            _series = [.. series.Where(x => x.CanIssue && InvoiceTypes.All.Any(type => type.Code == x.DocumentType))];
+
+            // Only series that create a sale. Notas de crédito e de débito têm ecrã próprio, onde
+            // partem da fatura em vez de se escreverem outra vez, e as guias e recibos também.
+            _series = [.. series.Where(x => x.CanIssue && InvoiceTypes.IsSale(x.DocumentType))];
             _seriesId = _series.FirstOrDefault()?.Id ?? Guid.Empty;
 
             // The catalogue is master data served by the Core module, not by Sales.
             var (products, _) = await Catalog.GetProductsAsync(Company.SelectedCompanyId);
             _products = [.. products.Where(x => x.IsActive)];
-
-            // Only a document that is not itself a correction, and is not voided, can be rectified.
-            var invoices = await SalesApi.GetInvoicesAsync(Company.SelectedCompanyId);
-            _rectifiable = [.. invoices.Where(x => x.Status != "A" && !InvoiceTypes.IsRectifying(x.DocumentType))];
         }
         catch (Exception ex)
         {
@@ -407,9 +330,7 @@
                     line.UnitPrice,
                     line.TaxCode,
                     line.TaxPercentage,
-                    TaxExemptionReason: line.TaxCode == ExemptCode ? _exemptionReason : null))],
-                RectifiedDocumentId: IsRectifying ? _rectifiedDocumentId : null,
-                RectificationReason: IsRectifying ? _rectificationReason.Trim() : null);
+                    TaxExemptionReason: line.TaxCode == ExemptCode ? _exemptionReason : null))]);
 
             var (invoice, error) = await SalesApi.IssueInvoiceAsync(request);
 

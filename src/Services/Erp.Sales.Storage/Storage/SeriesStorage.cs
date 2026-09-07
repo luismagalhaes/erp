@@ -39,7 +39,9 @@ public sealed class SeriesStorage(SalesDbContext dbContext) : ISeriesStorage
         // EF1002: the only thing interpolated is the table name, and it comes from the EF model,
         // never from a caller. The id is passed as parameter {0}, so it is parameterized as usual.
         return await dbContext.Series
-            .FromSqlRaw($"SELECT * FROM {SeriesTableName()} WITH (UPDLOCK, ROWLOCK) WHERE [Id] = {{0}}", id)
+            .FromSqlRaw(
+                $"SELECT * FROM {QualifiedTableName.For<Series>(dbContext)} WITH (UPDLOCK, ROWLOCK) WHERE [Id] = {{0}}",
+                id)
             .FirstOrDefaultAsync(cancellationToken);
     }
 
@@ -59,25 +61,4 @@ public sealed class SeriesStorage(SalesDbContext dbContext) : ISeriesStorage
         await dbContext.Series.AddAsync(series, cancellationToken);
     }
 
-    /// <summary>
-    /// Where the Series entity is mapped, taken from the model rather than written by hand. A
-    /// literal here would silently point at the wrong place the next time the schema moves.
-    /// </summary>
-    private string SeriesTableName()
-    {
-        var entityType = dbContext.Model.FindEntityType(typeof(Series))
-            ?? throw new InvalidOperationException($"{nameof(Series)} is not part of the model.");
-
-        var table = entityType.GetTableName()
-            ?? throw new InvalidOperationException($"{nameof(Series)} is not mapped to a table.");
-
-        var schema = entityType.GetSchema();
-
-        return string.IsNullOrEmpty(schema)
-            ? Quote(table)
-            : $"{Quote(schema)}.{Quote(table)}";
-    }
-
-    private static string Quote(string identifier) =>
-        $"[{identifier.Replace("]", "]]", StringComparison.Ordinal)}]";
 }

@@ -183,6 +183,7 @@ public static class SaftXmlWriter
         {
             element.Add(new XElement(Ns + "Line",
                 new XElement(Ns + "LineNumber", line.LineNumber),
+                BuildOrderReferences(line),
                 new XElement(Ns + "ProductCode", line.ProductCode),
                 new XElement(Ns + "ProductDescription", line.ProductDescription),
                 new XElement(Ns + "Quantity", Quantity(line.Quantity)),
@@ -322,6 +323,20 @@ public static class SaftXmlWriter
         element.Add(BuildTotals(payment.Totals));
 
         return element;
+    }
+
+    /// <summary>
+    /// OrderReferences, present only on a line that invoices a delivery note. The schema puts it
+    /// right after LineNumber.
+    /// </summary>
+    private static XElement? BuildOrderReferences(SaftInvoiceLine line)
+    {
+        if (string.IsNullOrWhiteSpace(line.OriginatingOn))
+            return null;
+
+        return new XElement(Ns + "OrderReferences",
+            new XElement(Ns + "OriginatingON", line.OriginatingOn),
+            line.OrderDate is null ? null : new XElement(Ns + "OrderDate", Date(line.OrderDate.Value)));
     }
 
     /// <summary>

@@ -1,3 +1,4 @@
+using Erp.FiscalPT.Documents;
 using Erp.Sales.Domain;
 using Erp.Sales.Infrastructure.Storage;
 using Erp.Sales.Storage.Data;
@@ -43,6 +44,61 @@ public sealed class SalesDocumentStorage(SalesDbContext dbContext) : ISalesDocum
             .OrderBy(x => x.SeriesId)
             .ThenBy(x => x.SequenceNumber)
             .ToListAsync(cancellationToken);
+    }
+
+    /// <summary>
+    /// Locks the document row, then loads it. Two statements on purpose: the lock has to come from
+    /// raw SQL, because EF has no way to express a hint, and the entity is needed with its status
+    /// changes — which the locking statement alone would not bring. The lock is held by the
+    /// transaction either way, so what matters is that it is taken first.
+    /// </summary>
+    public async Task<SalesDocument?> GetForUpdateAsync(Guid id, CancellationToken cancellationToken = default)
+    {
+        // EF1002: only the table name is interpolated, and it comes from the model. The id is
+        // passed as parameter {0}.
+#pragma warning disable EF1002
+        var locked = await dbContext.SalesDocuments
+            .FromSqlRaw(
+                $"SELECT * FROM {QualifiedTableName.For<SalesDocument>(dbContext)} WITH (UPDLOCK, ROWLOCK) WHERE [Id] = {{0}}",
+                id)
+            .FirstOrDefaultAsync(cancellationToken);
+#pragma warning restore EF1002
+
+        return locked is null ? null : await GetByIdAsync(id, cancellationToken);
+    }
+
+    public async Task<decimal> GetCreditedAmountAsync(Guid documentId, CancellationToken cancellationToken = default)
+    {
+        // A voided credit note credits nothing, so the value it carried goes back to the invoice.
+        // The status lives in the status-change table, so "voided" is "has a change to A".
+        return await dbContext.SalesDocuments
+            .AsNoTracking()
+            .Where(x => x.RectifiedDocumentId == documentId)
+            .Where(x => x.DocumentType == SalesDocumentTypes.CreditNote)
+            .Where(x => !dbContext.DocumentStatusChanges
+                .Any(change => change.DocumentId == x.Id && change.NewStatus == DocumentStatuses.Voided))
+            .SumAsync(x => x.GrossTotal, cancellationToken);
+    }
+
+    public async Task<IReadOnlyDictionary<Guid, decimal>> GetInvoicedQuantitiesAsync(
+        IReadOnlyCollection<Guid> movementLineIds,
+        CancellationToken cancellationToken = default)
+    {
+        if (movementLineIds.Count == 0)
+            return new Dictionary<Guid, decimal>();
+
+        // A voided invoice takes nothing from the movement, so its lines go back to pending.
+        var invoiced = await dbContext.SalesDocumentLines
+            .AsNoTracking()
+            .Where(line => line.OriginatingLineId != null && movementLineIds.Contains(line.OriginatingLineId.Value))
+            .Where(line => !dbContext.DocumentStatusChanges
+                .Any(change => change.DocumentId == line.DocumentId
+                               && change.NewStatus == DocumentStatuses.Voided))
+            .GroupBy(line => line.OriginatingLineId!.Value)
+            .Select(group => new { LineId = group.Key, Quantity = group.Sum(line => line.Quantity) })
+            .ToListAsync(cancellationToken);
+
+        return invoiced.ToDictionary(x => x.LineId, x => x.Quantity);
     }
 
     /// <summary>

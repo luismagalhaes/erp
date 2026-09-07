@@ -1,0 +1,440 @@
+@page "/credit-notes/new"
+@attribute [Authorize]
+@implements IDisposable
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.AspNetCore.Components.Web
+@using MudBlazor
+@using Erp.Main.Models
+@using Erp.Main.Services
+@inject SalesApiClient SalesApi
+@inject CompanyState Company
+@inject NavigationManager Navigation
+@inject ISnackbar Snackbar
+
+<PageTitle>Nova nota de crédito</PageTitle>
+
+<MudStack Spacing="4">
+    <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center">
+        <MudStack Spacing="0">
+            <MudText Typo="Typo.h4">@Heading</MudText>
+            <MudText Typo="Typo.body2" Color="Color.Secondary">
+                Escolha a fatura a corrigir: as linhas vêm dela. Credite tudo, ou ajuste as quantidades
+                para creditar só uma parte.
+            </MudText>
+        </MudStack>
+
+        <MudButton Variant="Variant.Text" StartIcon="@Icons.Material.Filled.ArrowBack"
+                   OnClick="@(() => Navigation.NavigateTo("credit-notes"))">
+            Voltar
+        </MudButton>
+    </MudStack>
+
+    @if (!string.IsNullOrWhiteSpace(_error))
+    {
+        <MudAlert Severity="Severity.Error" Dense="true">@_error</MudAlert>
+    }
+
+    @if (_loading)
+    {
+        <MudProgressLinear Indeterminate="true" Color="Color.Primary" />
+    }
+    else if (_series.Count == 0)
+    {
+        <MudAlert Severity="Severity.Warning">
+            Não existe nenhuma série de notas comunicada à AT. Crie uma série do tipo NC ou ND.
+            <MudLink Href="series/new" Class="ml-2">Criar série</MudLink>
+        </MudAlert>
+    }
+    else if (_rectifiable.Count == 0)
+    {
+        <MudAlert Severity="Severity.Info">
+            Não há faturas por corrigir nesta empresa.
+        </MudAlert>
+    }
+    else
+    {
+        <MudPaper Elevation="1" Class="pa-4">
+            <MudGrid>
+                <MudItem xs="12" md="5">
+                    <MudSelect T="Guid?" Value="_rectifiedDocumentId" ValueChanged="OnDocumentChangedAsync"
+                               Label="Fatura a corrigir" Variant="Variant.Outlined" Required="true">
+                        @foreach (var document in _rectifiable)
+                        {
+                            <MudSelectItem T="Guid?" Value="@document.Id">
+                                @document.DocumentNumber — @document.CustomerName (@document.GrossTotal.ToString("N2"))
+                            </MudSelectItem>
+                        }
+                    </MudSelect>
+                </MudItem>
+                <MudItem xs="12" md="3">
+                    <MudSelect @bind-Value="_seriesId" Label="Série" Variant="Variant.Outlined" Required="true">
+                        @foreach (var series in _series)
+                        {
+                            <MudSelectItem T="Guid" Value="@series.Id">
+                                @series.DocumentType @series.SeriesCode (próximo n.º @(series.CurrentSequence + 1))
+                            </MudSelectItem>
+                        }
+                    </MudSelect>
+                </MudItem>
+                <MudItem xs="12" md="4">
+                    <MudDatePicker @bind-Date="_documentDate" Label="Data" Variant="Variant.Outlined"
+                                   DateFormat="yyyy-MM-dd" />
+                </MudItem>
+
+                <MudItem xs="12">
+                    <MudTextField @bind-Value="_reason" @bind-Value:after="StateHasChanged" Immediate="true"
+                                  Label="Motivo da correção" Variant="Variant.Outlined" Required="true"
+                                  HelperText="Menção obrigatória, vai no documento e no SAF-T" />
+                </MudItem>
+            </MudGrid>
+        </MudPaper>
+
+        @if (_source is not null)
+        {
+            <MudPaper Elevation="1" Class="pa-4">
+                <MudGrid>
+                    <MudItem xs="12" md="4">
+                        <MudText Typo="Typo.caption" Color="Color.Secondary">Cliente</MudText>
+                        <MudText>@_source.CustomerName</MudText>
+                        <MudText Typo="Typo.body2" Color="Color.Secondary">NIF @_source.CustomerTaxId</MudText>
+                    </MudItem>
+                    <MudItem xs="12" md="4">
+                        <MudText Typo="Typo.caption" Color="Color.Secondary">Documento corrigido</MudText>
+                        <MudText Style="font-family: monospace;">@_source.DocumentNumber</MudText>
+                        <MudText Typo="Typo.body2" Color="Color.Secondary">
+                            @_source.DocumentDate.ToString("yyyy-MM-dd") · @_source.GrossTotal.ToString("N2")
+                        </MudText>
+                        @if (_source.CreditedAmount > 0)
+                        {
+                            <MudText Typo="Typo.body2" Color="Color.Warning">
+                                Já creditado @_source.CreditedAmount.ToString("N2") · resta @Creditable.ToString("N2")
+                            </MudText>
+                        }
+                    </MudItem>
+                    <MudItem xs="12" md="4" Class="d-flex align-center justify-end">
+                        <MudButtonGroup Variant="Variant.Outlined" Size="Size.Small">
+                            <MudButton OnClick="CreditEverything">Creditar tudo</MudButton>
+                            <MudButton OnClick="CreditNothing">Limpar</MudButton>
+                        </MudButtonGroup>
+                    </MudItem>
+                </MudGrid>
+            </MudPaper>
+
+            <MudPaper Elevation="1" Class="pa-4">
+                <MudText Typo="Typo.h6" Class="mb-3">Linhas a creditar</MudText>
+
+                <MudTable Items="_lines" Dense="true" Hover="true" Striped="true" Breakpoint="Breakpoint.Sm">
+                    <HeaderContent>
+                        <MudTh Style="width: 60px;"></MudTh>
+                        <MudTh style="width: 90px;">Código</MudTh>
+                        <MudTh>Descrição</MudTh>
+                        <MudTh Style="width: 110px;">Qtd. faturada</MudTh>
+                        <MudTh Style="width: 130px;">Qtd. a creditar</MudTh>
+                        <MudTh Style="width: 100px; text-align: right;">Preço</MudTh>
+                        <MudTh Style="width: 70px; text-align: right;">IVA</MudTh>
+                        <MudTh Style="width: 100px; text-align: right;">Total</MudTh>
+                    </HeaderContent>
+                    <RowTemplate>
+                        <MudTd>
+                            <MudCheckBox T="bool" Value="@context.Selected"
+                                         ValueChanged="@(selected => ToggleLine(context, selected))"
+                                         Color="Color.Primary" Dense="true" />
+                        </MudTd>
+                        <MudTd DataLabel="Código">@context.ProductCode</MudTd>
+                        <MudTd DataLabel="Descrição">@context.ProductDescription</MudTd>
+                        <MudTd DataLabel="Qtd. faturada">@context.InvoicedQuantity.ToString("N3")</MudTd>
+                        <MudTd DataLabel="Qtd. a creditar">
+                            @if (context.Selected)
+                            {
+                                <MudNumericField T="decimal" Value="@context.Quantity"
+                                                 ValueChanged="@(quantity => SetQuantity(context, quantity))"
+                                                 Margin="Margin.Dense" Min="0" Max="@context.InvoicedQuantity" />
+                            }
+                            else
+                            {
+                                <MudText Typo="Typo.body2" Color="Color.Secondary">—</MudText>
+                            }
+                        </MudTd>
+                        <MudTd DataLabel="Preço" Style="text-align: right;">@context.UnitPrice.ToString("N2")</MudTd>
+                        <MudTd DataLabel="IVA" Style="text-align: right;">@context.TaxPercentage.ToString("N0")%</MudTd>
+                        <MudTd DataLabel="Total" Style="text-align: right;">@LineTotal(context).ToString("N2")</MudTd>
+                    </RowTemplate>
+                </MudTable>
+            </MudPaper>
+
+            <MudPaper Elevation="1" Class="pa-4">
+                <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center">
+                    <MudStack Row="true" Spacing="6">
+                        <MudStack Spacing="0">
+                            <MudText Typo="Typo.caption" Color="Color.Secondary">Base tributável</MudText>
+                            <MudText Typo="Typo.h6">@NetTotal.ToString("N2")</MudText>
+                        </MudStack>
+                        <MudStack Spacing="0">
+                            <MudText Typo="Typo.caption" Color="Color.Secondary">IVA</MudText>
+                            <MudText Typo="Typo.h6">@TaxTotal.ToString("N2")</MudText>
+                        </MudStack>
+                        <MudStack Spacing="0">
+                            <MudText Typo="Typo.caption" Color="Color.Secondary">Total a creditar</MudText>
+                            <MudText Typo="Typo.h5" Color="Color.Primary">@GrossTotal.ToString("N2")</MudText>
+                        </MudStack>
+                    </MudStack>
+
+                    <MudButton Variant="Variant.Filled" Color="Color.Primary" Size="Size.Large"
+                               StartIcon="@Icons.Material.Filled.CreditCard"
+                               Disabled="@(_issuing || !CanIssue)"
+                               OnClick="IssueAsync">
+                        @(_issuing ? "A emitir..." : $"Emitir {Designation.ToLowerInvariant()}")
+                    </MudButton>
+                </MudStack>
+
+                @if (ExceedsCreditable)
+                {
+                    <MudAlert Severity="Severity.Error" Dense="true" Class="mt-3">
+                        A fatura @_source.DocumentNumber só admite mais @Creditable.ToString("N2") de crédito
+                        @(_source.CreditedAmount > 0 ? $" (já foram creditados {_source.CreditedAmount:N2})" : string.Empty).
+                        Reduza as quantidades.
+                    </MudAlert>
+                }
+                else if (IsFullCredit)
+                {
+                    <MudAlert Severity="Severity.Info" Dense="true" Class="mt-3">
+                        Crédito total: a nota anula o valor da fatura @_source.DocumentNumber.
+                    </MudAlert>
+                }
+            </MudPaper>
+        }
+    }
+</MudStack>
+
+@code {
+    private bool _loading = true;
+    private bool _issuing;
+    private string? _error;
+
+    private Guid _seriesId;
+    private Guid? _rectifiedDocumentId;
+    private DateTime? _documentDate = DateTime.Today;
+    private string _reason = string.Empty;
+
+    private List<SalesSeries> _series = [];
+    private List<InvoiceListItem> _rectifiable = [];
+    private List<CreditLine> _lines = [];
+    private InvoiceDetail? _source;
+
+    private string SelectedDocumentType =>
+        _series.FirstOrDefault(x => x.Id == _seriesId)?.DocumentType ?? "NC";
+
+    private string Designation => InvoiceTypes.Describe(SelectedDocumentType);
+
+    private string Heading => $"Nova {Designation.ToLowerInvariant()}";
+
+    private decimal NetTotal => _lines.Sum(LineTotal);
+
+    private decimal TaxTotal => _lines.Sum(line =>
+        Math.Round(LineTotal(line) * line.TaxPercentage / 100m, 2, MidpointRounding.AwayFromZero));
+
+    private decimal GrossTotal => NetTotal + TaxTotal;
+
+    /// <summary>True when every line is credited in full, which is the common case.</summary>
+    private bool IsFullCredit =>
+        _source is not null
+        && _lines.Count > 0
+        && _lines.All(line => line.Selected && line.Quantity == line.InvoicedQuantity);
+
+    /// <summary>
+    /// What is left of the invoice to credit: its total minus the credit notes already issued
+    /// against it. The API enforces the same ceiling; this is only so the user sees it first.
+    /// </summary>
+    private decimal Creditable =>
+        _source is null ? 0m : Math.Round(_source.GrossTotal - _source.CreditedAmount, 2, MidpointRounding.AwayFromZero);
+
+    /// <summary>Only a credit note is capped; a debit note adds to what is owed.</summary>
+    private bool IsCredit => !string.Equals(SelectedDocumentType, "ND", StringComparison.Ordinal);
+
+    private bool ExceedsCreditable => _source is not null && IsCredit && GrossTotal > Creditable;
+
+    private bool CanIssue =>
+        _seriesId != Guid.Empty
+        && _rectifiedDocumentId is not null
+        && _documentDate is not null
+        && !string.IsNullOrWhiteSpace(_reason)
+        && _lines.Any(line => line.Selected && line.Quantity > 0)
+        && !ExceedsCreditable;
+
+    protected override async Task OnInitializedAsync()
+    {
+        Company.Changed += OnCompanyChanged;
+        await Company.EnsureLoadedAsync();
+        await LoadAsync();
+    }
+
+    private async void OnCompanyChanged() => await InvokeAsync(LoadAsync);
+
+    private async Task LoadAsync()
+    {
+        _loading = true;
+        _error = Company.LoadError;
+
+        if (!Company.HasCompany)
+        {
+            _series = [];
+            _rectifiable = [];
+            _loading = false;
+            StateHasChanged();
+            return;
+        }
+
+        try
+        {
+            var series = await SalesApi.GetSeriesAsync(Company.SelectedCompanyId);
+            _series = [.. series.Where(x => x.CanIssue && InvoiceTypes.IsRectifying(x.DocumentType))];
+            _seriesId = _series.FirstOrDefault()?.Id ?? Guid.Empty;
+
+            // A voided document has nothing to correct, and a note cannot correct another note.
+            var documents = await SalesApi.GetInvoicesAsync(Company.SelectedCompanyId);
+            _rectifiable = [.. documents.Where(x => x.Status != "A" && !InvoiceTypes.IsRectifying(x.DocumentType))];
+
+            await OnDocumentChangedAsync(_rectifiable.FirstOrDefault()?.Id);
+        }
+        catch (Exception ex)
+        {
+            _error = $"Não foi possível preparar a emissão: {ex.Message}";
+        }
+        finally
+        {
+            _loading = false;
+            StateHasChanged();
+        }
+    }
+
+    /// <summary>
+    /// Loads the invoice and copies its lines. Everything starts selected in full, so the common
+    /// case — credit the whole invoice — is a single click away.
+    /// </summary>
+    private async Task OnDocumentChangedAsync(Guid? documentId)
+    {
+        _rectifiedDocumentId = documentId;
+        _source = null;
+        _lines = [];
+
+        if (documentId is null)
+            return;
+
+        _source = await SalesApi.GetInvoiceAsync(documentId.Value);
+
+        if (_source is null)
+        {
+            _error = "Não foi possível carregar a fatura escolhida.";
+            return;
+        }
+
+        _lines = [.. _source.Lines.Select(line => new CreditLine
+        {
+            ProductCode = line.ProductCode,
+            ProductDescription = line.ProductDescription,
+            InvoicedQuantity = line.Quantity,
+            Quantity = line.Quantity,
+            UnitOfMeasure = line.UnitOfMeasure,
+            UnitPrice = line.UnitPrice,
+            TaxCode = line.TaxCode,
+            TaxPercentage = line.TaxPercentage,
+            TaxExemptionReason = line.TaxExemptionReason,
+            Selected = true
+        })];
+    }
+
+    private void ToggleLine(CreditLine line, bool selected)
+    {
+        line.Selected = selected;
+
+        // Re-selecting a line brings back the full quantity, which is what is usually wanted.
+        if (selected && line.Quantity == 0)
+            line.Quantity = line.InvoicedQuantity;
+    }
+
+    private static void SetQuantity(CreditLine line, decimal quantity) =>
+        line.Quantity = Math.Clamp(quantity, 0m, line.InvoicedQuantity);
+
+    private void CreditEverything()
+    {
+        foreach (var line in _lines)
+        {
+            line.Selected = true;
+            line.Quantity = line.InvoicedQuantity;
+        }
+    }
+
+    private void CreditNothing()
+    {
+        foreach (var line in _lines)
+            line.Selected = false;
+    }
+
+    private static decimal LineTotal(CreditLine line) =>
+        line.Selected ? Math.Round(line.Quantity * line.UnitPrice, 2, MidpointRounding.AwayFromZero) : 0m;
+
+    private async Task IssueAsync()
+    {
+        _issuing = true;
+        _error = null;
+
+        try
+        {
+            var request = new CreateInvoiceRequest(
+                Company.SelectedCompanyId,
+                _seriesId,
+                DateOnly.FromDateTime(_documentDate!.Value),
+                // The note is issued to the customer of the document it corrects.
+                new CustomerRequest(_source!.CustomerTaxId, _source.CustomerName, _source.CustomerAddress),
+                [.. _lines
+                    .Where(line => line.Selected && line.Quantity > 0)
+                    .Select(line => new CreateInvoiceLineRequest(
+                        line.ProductCode,
+                        line.ProductDescription,
+                        line.Quantity,
+                        line.UnitPrice,
+                        line.TaxCode,
+                        line.TaxPercentage,
+                        line.UnitOfMeasure,
+                        TaxExemptionReason: line.TaxExemptionReason))],
+                RectifiedDocumentId: _rectifiedDocumentId,
+                RectificationReason: _reason.Trim());
+
+            var (note, error) = await SalesApi.IssueInvoiceAsync(request);
+
+            if (note is null)
+            {
+                _error = error ?? "Não foi possível emitir a nota.";
+                return;
+            }
+
+            Snackbar.Add($"{InvoiceTypes.Describe(note.DocumentType)} {note.DocumentNumber} emitida.", Severity.Success);
+            Navigation.NavigateTo($"invoices/{note.Id}");
+        }
+        catch (Exception ex)
+        {
+            _error = $"Não foi possível emitir a nota: {ex.Message}";
+        }
+        finally
+        {
+            _issuing = false;
+        }
+    }
+
+    /// <summary>A line of the corrected invoice, with how much of it is being credited.</summary>
+    private sealed class CreditLine
+    {
+        public bool Selected { get; set; }
+        public string ProductCode { get; set; } = string.Empty;
+        public string ProductDescription { get; set; } = string.Empty;
+        public decimal InvoicedQuantity { get; set; }
+        public decimal Quantity { get; set; }
+        public string UnitOfMeasure { get; set; } = "UN";
+        public decimal UnitPrice { get; set; }
+        public string TaxCode { get; set; } = string.Empty;
+        public decimal TaxPercentage { get; set; }
+        public string? TaxExemptionReason { get; set; }
+    }
+
+    public void Dispose() => Company.Changed -= OnCompanyChanged;
+}

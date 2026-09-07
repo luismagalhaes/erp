@@ -1,0 +1,383 @@
+@page "/invoices/from-movements"
+@attribute [Authorize]
+@implements IDisposable
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.AspNetCore.Components.Web
+@using MudBlazor
+@using Erp.Main.Models
+@using Erp.Main.Services
+@inject SalesApiClient SalesApi
+@inject CompanyState Company
+@inject NavigationManager Navigation
+@inject ISnackbar Snackbar
+
+<PageTitle>Faturar guias</PageTitle>
+
+<MudStack Spacing="4">
+    <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center">
+        <MudStack Spacing="0">
+            <MudText Typo="Typo.h4">Faturar guias</MudText>
+            <MudText Typo="Typo.body2" Color="Color.Secondary">
+                Escolha o cliente e as guias a faturar: as linhas vêm delas. Uma guia pode ser faturada
+                em várias vezes.
+            </MudText>
+        </MudStack>
+
+        <MudButton Variant="Variant.Text" StartIcon="@Icons.Material.Filled.ArrowBack"
+                   OnClick="@(() => Navigation.NavigateTo("invoices"))">
+            Voltar
+        </MudButton>
+    </MudStack>
+
+    @if (!string.IsNullOrWhiteSpace(_error))
+    {
+        <MudAlert Severity="Severity.Error" Dense="true">@_error</MudAlert>
+    }
+
+    @if (_loading)
+    {
+        <MudProgressLinear Indeterminate="true" Color="Color.Primary" />
+    }
+    else if (_series.Count == 0)
+    {
+        <MudAlert Severity="Severity.Warning">
+            Não existe nenhuma série de faturação comunicada à AT.
+            <MudLink Href="series/new" Class="ml-2">Criar série</MudLink>
+        </MudAlert>
+    }
+    else if (_customers.Count == 0)
+    {
+        <MudAlert Severity="Severity.Info">
+            Não há guias por faturar. As guias de ativos próprios e de devolução nunca são faturadas.
+        </MudAlert>
+    }
+    else
+    {
+        <MudPaper Elevation="1" Class="pa-4">
+            <MudGrid>
+                <MudItem xs="12" md="5">
+                    <MudSelect T="string" Value="_partyTaxId" ValueChanged="OnCustomerChanged"
+                               Label="Cliente" Variant="Variant.Outlined" Required="true"
+                               HelperText="Uma fatura agrupa guias de um só cliente">
+                        @foreach (var customer in _customers)
+                        {
+                            <MudSelectItem T="string" Value="@customer.TaxId">
+                                @customer.Name (@customer.TaxId)
+                            </MudSelectItem>
+                        }
+                    </MudSelect>
+                </MudItem>
+                <MudItem xs="12" md="4">
+                    <MudSelect @bind-Value="_seriesId" Label="Série" Variant="Variant.Outlined" Required="true">
+                        @foreach (var series in _series)
+                        {
+                            <MudSelectItem T="Guid" Value="@series.Id">
+                                @series.DocumentType @series.SeriesCode (próximo n.º @(series.CurrentSequence + 1))
+                            </MudSelectItem>
+                        }
+                    </MudSelect>
+                </MudItem>
+                <MudItem xs="12" md="3">
+                    <MudDatePicker @bind-Date="_documentDate" Label="Data" Variant="Variant.Outlined"
+                                   DateFormat="yyyy-MM-dd" />
+                </MudItem>
+            </MudGrid>
+        </MudPaper>
+
+        <MudPaper Elevation="1" Class="pa-4">
+            <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center" Class="mb-3">
+                <MudText Typo="Typo.h6">Linhas por faturar</MudText>
+                <MudButtonGroup Variant="Variant.Outlined" Size="Size.Small">
+                    <MudButton OnClick="SelectEverything">Faturar tudo</MudButton>
+                    <MudButton OnClick="SelectNothing">Limpar</MudButton>
+                </MudButtonGroup>
+            </MudStack>
+
+            <MudTable Items="_visible" Dense="true" Hover="true" Striped="true" Breakpoint="Breakpoint.Sm"
+                      GroupBy="_groupBy" T="PendingLine">
+                <HeaderContent>
+                    <MudTh Style="width: 60px;"></MudTh>
+                    <MudTh Style="width: 90px;">Artigo</MudTh>
+                    <MudTh>Descrição</MudTh>
+                    <MudTh Style="width: 100px; text-align: right;">Guia</MudTh>
+                    <MudTh Style="width: 110px; text-align: right;">Já faturado</MudTh>
+                    <MudTh Style="width: 130px;">A faturar</MudTh>
+                    <MudTh Style="width: 100px; text-align: right;">Preço</MudTh>
+                    <MudTh Style="width: 70px; text-align: right;">IVA</MudTh>
+                    <MudTh Style="width: 100px; text-align: right;">Total</MudTh>
+                </HeaderContent>
+                <GroupHeaderTemplate>
+                    <MudTh Class="mud-table-cell-custom-group" colspan="9">
+                        <MudText Typo="Typo.body2">
+                            <strong>@context.Key</strong>
+                        </MudText>
+                    </MudTh>
+                </GroupHeaderTemplate>
+                <RowTemplate>
+                    <MudTd>
+                        <MudCheckBox T="bool" Value="@context.Selected"
+                                     ValueChanged="@(selected => ToggleLine(context, selected))"
+                                     Color="Color.Primary" Dense="true" />
+                    </MudTd>
+                    <MudTd DataLabel="Artigo">@context.Source.ProductCode</MudTd>
+                    <MudTd DataLabel="Descrição">@context.Source.ProductDescription</MudTd>
+                    <MudTd DataLabel="Guia" Style="text-align: right;">
+                        @context.Source.PendingQuantity.ToString("N3")
+                    </MudTd>
+                    <MudTd DataLabel="Já faturado" Style="text-align: right;">
+                        @(context.Source.InvoicedQuantity > 0 ? context.Source.InvoicedQuantity.ToString("N3") : "—")
+                    </MudTd>
+                    <MudTd DataLabel="A faturar">
+                        @if (context.Selected)
+                        {
+                            <MudNumericField T="decimal" Value="@context.Quantity"
+                                             ValueChanged="@(quantity => SetQuantity(context, quantity))"
+                                             Margin="Margin.Dense" Min="0" Max="@context.Source.PendingQuantity" />
+                        }
+                        else
+                        {
+                            <MudText Typo="Typo.body2" Color="Color.Secondary">—</MudText>
+                        }
+                    </MudTd>
+                    <MudTd DataLabel="Preço" Style="text-align: right;">@context.Source.UnitPrice.ToString("N2")</MudTd>
+                    <MudTd DataLabel="IVA" Style="text-align: right;">@context.Source.TaxPercentage.ToString("N0")%</MudTd>
+                    <MudTd DataLabel="Total" Style="text-align: right;">@LineTotal(context).ToString("N2")</MudTd>
+                </RowTemplate>
+                <NoRecordsContent>
+                    <MudText Typo="Typo.body2" Color="Color.Secondary">
+                        Este cliente não tem guias por faturar.
+                    </MudText>
+                </NoRecordsContent>
+            </MudTable>
+        </MudPaper>
+
+        <MudPaper Elevation="1" Class="pa-4">
+            <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center">
+                <MudStack Row="true" Spacing="6">
+                    <MudStack Spacing="0">
+                        <MudText Typo="Typo.caption" Color="Color.Secondary">Guias</MudText>
+                        <MudText Typo="Typo.h6">@SelectedMovementCount</MudText>
+                    </MudStack>
+                    <MudStack Spacing="0">
+                        <MudText Typo="Typo.caption" Color="Color.Secondary">Base tributável</MudText>
+                        <MudText Typo="Typo.h6">@NetTotal.ToString("N2")</MudText>
+                    </MudStack>
+                    <MudStack Spacing="0">
+                        <MudText Typo="Typo.caption" Color="Color.Secondary">IVA</MudText>
+                        <MudText Typo="Typo.h6">@TaxTotal.ToString("N2")</MudText>
+                    </MudStack>
+                    <MudStack Spacing="0">
+                        <MudText Typo="Typo.caption" Color="Color.Secondary">Total</MudText>
+                        <MudText Typo="Typo.h5" Color="Color.Primary">@GrossTotal.ToString("N2")</MudText>
+                    </MudStack>
+                </MudStack>
+
+                <MudButton Variant="Variant.Filled" Color="Color.Primary" Size="Size.Large"
+                           StartIcon="@Icons.Material.Filled.ReceiptLong"
+                           Disabled="@(_issuing || !CanIssue)"
+                           OnClick="IssueAsync">
+                    @(_issuing ? "A emitir..." : "Emitir fatura")
+                </MudButton>
+            </MudStack>
+        </MudPaper>
+    }
+</MudStack>
+
+@code {
+    private bool _loading = true;
+    private bool _issuing;
+    private string? _error;
+
+    private Guid _seriesId;
+    private DateTime? _documentDate = DateTime.Today;
+    private string _partyTaxId = string.Empty;
+
+    private List<SalesSeries> _series = [];
+    private List<PendingMovementLine> _pending = [];
+    private List<CustomerOption> _customers = [];
+    private List<PendingLine> _visible = [];
+
+    /// <summary>Groups the lines by the delivery note they came from.</summary>
+    private readonly TableGroupDefinition<PendingLine> _groupBy = new()
+    {
+        Selector = line => $"{line.Source.MovementType} {line.Source.DocumentNumber} · {line.Source.MovementDate:yyyy-MM-dd}"
+    };
+
+    private decimal NetTotal => _visible.Sum(LineTotal);
+
+    private decimal TaxTotal => _visible.Sum(line =>
+        Math.Round(LineTotal(line) * line.Source.TaxPercentage / 100m, 2, MidpointRounding.AwayFromZero));
+
+    private decimal GrossTotal => NetTotal + TaxTotal;
+
+    private int SelectedMovementCount =>
+        _visible.Where(line => line.Selected && line.Quantity > 0)
+            .Select(line => line.Source.MovementId)
+            .Distinct()
+            .Count();
+
+    private bool CanIssue =>
+        _seriesId != Guid.Empty
+        && _documentDate is not null
+        && !string.IsNullOrWhiteSpace(_partyTaxId)
+        && _visible.Any(line => line.Selected && line.Quantity > 0);
+
+    protected override async Task OnInitializedAsync()
+    {
+        Company.Changed += OnCompanyChanged;
+        await Company.EnsureLoadedAsync();
+        await LoadAsync();
+    }
+
+    private async void OnCompanyChanged() => await InvokeAsync(LoadAsync);
+
+    private async Task LoadAsync()
+    {
+        _loading = true;
+        _error = Company.LoadError;
+
+        if (!Company.HasCompany)
+        {
+            _series = [];
+            _pending = [];
+            _customers = [];
+            _loading = false;
+            StateHasChanged();
+            return;
+        }
+
+        try
+        {
+            var series = await SalesApi.GetSeriesAsync(Company.SelectedCompanyId);
+            _series = [.. series.Where(x => x.CanIssue && InvoiceTypes.IsSale(x.DocumentType))];
+            _seriesId = _series.FirstOrDefault()?.Id ?? Guid.Empty;
+
+            var (pending, error) = await SalesApi.GetPendingMovementLinesAsync(Company.SelectedCompanyId);
+            _pending = [.. pending];
+            _error ??= error;
+
+            // The customer list comes from the guias themselves: offering one with nothing pending
+            // would only lead to an empty invoice.
+            _customers = [.. _pending
+                .GroupBy(line => line.PartyTaxId)
+                .Select(group => new CustomerOption(group.Key, group.First().PartyName))
+                .OrderBy(customer => customer.Name)];
+
+            OnCustomerChanged(_customers.FirstOrDefault()?.TaxId ?? string.Empty);
+        }
+        catch (Exception ex)
+        {
+            _error = $"Não foi possível preparar a faturação: {ex.Message}";
+        }
+        finally
+        {
+            _loading = false;
+            StateHasChanged();
+        }
+    }
+
+    /// <summary>One invoice covers one customer, so changing customer restarts the selection.</summary>
+    private void OnCustomerChanged(string taxId)
+    {
+        _partyTaxId = taxId;
+
+        _visible = [.. _pending
+            .Where(line => line.PartyTaxId == taxId)
+            .Select(line => new PendingLine
+            {
+                Source = line,
+                Quantity = line.PendingQuantity,
+                Selected = true
+            })];
+    }
+
+    private static void ToggleLine(PendingLine line, bool selected)
+    {
+        line.Selected = selected;
+
+        if (selected && line.Quantity == 0)
+            line.Quantity = line.Source.PendingQuantity;
+    }
+
+    private static void SetQuantity(PendingLine line, decimal quantity) =>
+        line.Quantity = Math.Clamp(quantity, 0m, line.Source.PendingQuantity);
+
+    private void SelectEverything()
+    {
+        foreach (var line in _visible)
+        {
+            line.Selected = true;
+            line.Quantity = line.Source.PendingQuantity;
+        }
+    }
+
+    private void SelectNothing()
+    {
+        foreach (var line in _visible)
+            line.Selected = false;
+    }
+
+    private static decimal LineTotal(PendingLine line) =>
+        line.Selected ? Math.Round(line.Quantity * line.Source.UnitPrice, 2, MidpointRounding.AwayFromZero) : 0m;
+
+    private async Task IssueAsync()
+    {
+        _issuing = true;
+        _error = null;
+
+        try
+        {
+            var selected = _visible.Where(line => line.Selected && line.Quantity > 0).ToList();
+            var party = selected[0].Source;
+
+            var request = new CreateInvoiceRequest(
+                Company.SelectedCompanyId,
+                _seriesId,
+                DateOnly.FromDateTime(_documentDate!.Value),
+                new CustomerRequest(party.PartyTaxId, party.PartyName, null),
+                [.. selected.Select(line => new CreateInvoiceLineRequest(
+                    line.Source.ProductCode,
+                    line.Source.ProductDescription,
+                    line.Quantity,
+                    line.Source.UnitPrice,
+                    line.Source.TaxCode,
+                    line.Source.TaxPercentage,
+                    line.Source.UnitOfMeasure,
+                    line.Source.TaxCountryRegion,
+                    line.Source.TaxExemptionCode,
+                    line.Source.TaxExemptionReason,
+                    line.Source.LineId))]);
+
+            var (invoice, error) = await SalesApi.IssueInvoiceAsync(request);
+
+            if (invoice is null)
+            {
+                _error = error ?? "Não foi possível emitir a fatura.";
+                return;
+            }
+
+            Snackbar.Add($"{InvoiceTypes.Describe(invoice.DocumentType)} {invoice.DocumentNumber} emitida.", Severity.Success);
+            Navigation.NavigateTo($"invoices/{invoice.Id}");
+        }
+        catch (Exception ex)
+        {
+            _error = $"Não foi possível emitir a fatura: {ex.Message}";
+        }
+        finally
+        {
+            _issuing = false;
+        }
+    }
+
+    private sealed record CustomerOption(string TaxId, string Name);
+
+    /// <summary>A pending delivery note line and how much of it is going into this invoice.</summary>
+    private sealed class PendingLine
+    {
+        public PendingMovementLine Source { get; init; } = null!;
+        public bool Selected { get; set; }
+        public decimal Quantity { get; set; }
+    }
+
+    public void Dispose() => Company.Changed -= OnCompanyChanged;
+}

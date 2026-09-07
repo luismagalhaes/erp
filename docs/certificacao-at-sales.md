@@ -23,6 +23,7 @@ esquema de base de dados que garante a inviolabilidade dos registos.
 | 4 — Séries e ATCUD | **Parcial** — modelo, ciclo de vida, gestão no frontend e registo manual do código de validação; falta o cliente SOAP do *SeriesWSService* |
 | 5 — Código QR | **Feito** — `QrCodePayloadBuilder` gera a mensagem e `QrCodeImage` renderiza a imagem PNG, impressa no documento |
 | 6 — Emissão e API | **Feito** — emissão transacional com lock por série, listagem, detalhe, anulação e ficheiro de artigos |
+| 6d — Faturação de guias | **Feito** — faturas emitidas a partir das guias em `/invoices/from-movements`, com faturação parcial e repetida até ao limite do que a guia moveu, e referência em `OrderReferences` no SAF-T |
 | 6b — Movimentação de mercadorias | **Parcial** — guias GR/GT/GA/GC/GD emitidas, assinadas e numeradas como as faturas, com locais de carga e descarga, início de transporte e matrícula; o código da AT regista-se manualmente, falta a comunicação prévia por webservice |
 | 6c — Recibos | **Feito** — recibos RC/RG emitidos, assinados e numerados como as faturas, com as faturas que liquidam, os meios de pagamento e a anulação que devolve as faturas a dívida |
 | 7 — Documento impresso | **Parcial** — impressão em HTML/A4 para faturas, guias e recibos, com todas as menções obrigatórias, cópias e código QR; falta o PDF assinado exigido a partir de 2027 |
@@ -353,6 +354,18 @@ Menções obrigatórias cuja ausência é, por si só, motivo de não conformida
 > documento, como qualquer outro *snapshot*, e vai para o SAF-T em `References/Reference` e
 > `Reason` em cada linha. Note-se que **o XSD não obriga**: o `References` é opcional e nenhuma das
 > 19 regras `xs:assert` o verifica, pelo que a validação do ficheiro não apanharia a falta.
+>
+> **Um documento não pode ser creditado além do seu valor.** As notas de crédito já emitidas contra
+> ele contam para esse tecto; as anuladas não, porque não creditam nada. As notas de débito não são
+> limitadas — acrescentam ao que o cliente deve em vez de retirarem. O `InvoiceDetailDto` devolve o
+> `CreditedAmount` para o ecrã mostrar quanto resta antes de se emitir, mas quem impõe a regra é o
+> `SalesDocumentService`.
+>
+> O tecto só é seguro porque a **linha do documento a creditar é bloqueada** com
+> `WITH (UPDLOCK, ROWLOCK)` antes de se ler o que já foi creditado. Sem isso, duas notas emitidas ao
+> mesmo tempo por séries diferentes liam ambas o valor antigo e passavam as duas. A ordem de
+> bloqueio é sempre a mesma — primeiro a série, depois o documento — pelo que não há risco de
+> *deadlock* entre emissões concorrentes.
 
 > [!NOTE]
 > Faturas em PDF passam a exigir **assinatura eletrónica qualificada** a partir de 1 de janeiro de

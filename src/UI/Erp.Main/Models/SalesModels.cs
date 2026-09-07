@@ -86,7 +86,32 @@ public sealed record InvoiceLine(
     decimal TaxPercentage,
     decimal TaxAmount,
     string? TaxExemptionCode = null,
-    string? TaxExemptionReason = null);
+    string? TaxExemptionReason = null,
+    string? OriginatingNumber = null,
+    DateOnly? OriginatingDate = null);
+
+/// <summary>A delivery note line with quantity still to invoice.</summary>
+public sealed record PendingMovementLine(
+    Guid MovementId,
+    Guid LineId,
+    string DocumentNumber,
+    string MovementType,
+    DateOnly MovementDate,
+    string PartyName,
+    string PartyTaxId,
+    int LineNumber,
+    string ProductCode,
+    string ProductDescription,
+    string UnitOfMeasure,
+    decimal MovedQuantity,
+    decimal InvoicedQuantity,
+    decimal PendingQuantity,
+    decimal UnitPrice,
+    string TaxCountryRegion,
+    string TaxCode,
+    decimal TaxPercentage,
+    string? TaxExemptionCode,
+    string? TaxExemptionReason);
 
 public sealed record InvoiceTax(
     string TaxCountryRegion,
@@ -114,7 +139,8 @@ public sealed record InvoiceDetail(
     IReadOnlyList<InvoiceLine> Lines,
     IReadOnlyList<InvoiceTax> Taxes,
     string? RectifiedDocumentNumber = null,
-    string? RectificationReason = null);
+    string? RectificationReason = null,
+    decimal CreditedAmount = 0m);
 
 /// <summary>
 /// Invoicing document types with the designation the printed document has to spell out in full.
@@ -136,8 +162,14 @@ public static class InvoiceTypes
     /// </summary>
     public static readonly string[] Rectifying = ["NC", "ND"];
 
+    /// <summary>Types that create a sale, as opposed to correcting one.</summary>
+    public static readonly string[] Sale = ["FT", "FS", "FR"];
+
     public static bool IsRectifying(string code) =>
         Rectifying.Contains(code, StringComparer.Ordinal);
+
+    public static bool IsSale(string code) =>
+        Sale.Contains(code, StringComparer.Ordinal);
 
     public static string Describe(string code) =>
         All.FirstOrDefault(type => type.Code == code).Label ?? code;
@@ -155,7 +187,8 @@ public sealed record CreateInvoiceLineRequest(
     string UnitOfMeasure = "UN",
     string TaxCountryRegion = "PT",
     string? TaxExemptionCode = null,
-    string? TaxExemptionReason = null);
+    string? TaxExemptionReason = null,
+    Guid? OriginatingLineId = null);
 
 public sealed record CreateInvoiceRequest(
     Guid CompanyId,

@@ -2,6 +2,7 @@ using Erp.Sales.Domain;
 using Erp.Sales.Infrastructure.Storage;
 using Erp.Sales.Storage.Data;
 using Microsoft.EntityFrameworkCore;
+using QualifiedTableName = Erp.Sales.Storage.Data.QualifiedTableName;
 
 namespace Erp.Sales.Storage.Storage;
 
@@ -41,6 +42,66 @@ public sealed class StockMovementStorage(SalesDbContext dbContext) : IStockMovem
             .OrderBy(x => x.SeriesId)
             .ThenBy(x => x.SequenceNumber)
             .ToListAsync(cancellationToken);
+    }
+
+    public async Task<IReadOnlyList<StockMovement>> GetInvoiceableAsync(
+        Guid companyId,
+        CancellationToken cancellationToken = default)
+    {
+        return await dbContext.StockMovements
+            .AsNoTracking()
+            .AsSplitQuery()
+            .Include(x => x.Lines)
+            .Include(x => x.StatusChanges)
+            .Where(x => x.CompanyId == companyId)
+            .Where(x => !x.PartyIsSupplier)
+            .OrderBy(x => x.MovementDate)
+            .ThenBy(x => x.SequenceNumber)
+            .ToListAsync(cancellationToken);
+    }
+
+    public async Task<IReadOnlyList<StockMovement>> GetForUpdateByLinesAsync(
+        IReadOnlyCollection<Guid> lineIds,
+        CancellationToken cancellationToken = default)
+    {
+        if (lineIds.Count == 0)
+            return [];
+
+        // Ordered so that two transactions touching the same movements always take the locks in
+        // the same sequence, which is what keeps them from deadlocking against each other.
+        var movementIds = await dbContext.StockMovementLines
+            .AsNoTracking()
+            .Where(line => lineIds.Contains(line.Id))
+            .Select(line => line.MovementId)
+            .Distinct()
+            .OrderBy(id => id)
+            .ToListAsync(cancellationToken);
+
+        var movements = new List<StockMovement>(movementIds.Count);
+
+        foreach (var movementId in movementIds)
+        {
+            // EF1002: only the table name is interpolated, and it comes from the model.
+#pragma warning disable EF1002
+            var locked = await dbContext.StockMovements
+                .FromSqlRaw(
+                    $"SELECT * FROM {QualifiedTableName.For<StockMovement>(dbContext)} WITH (UPDLOCK, ROWLOCK) WHERE [Id] = {{0}}",
+                    movementId)
+                .FirstOrDefaultAsync(cancellationToken);
+#pragma warning restore EF1002
+
+            if (locked is null)
+                continue;
+
+            // Loaded separately, because the locking statement alone brings neither the lines nor
+            // the status changes that say whether the movement still stands.
+            var movement = await GetByIdAsync(movementId, cancellationToken);
+
+            if (movement is not null)
+                movements.Add(movement);
+        }
+
+        return movements;
     }
 
     /// <summary>

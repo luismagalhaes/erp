@@ -236,6 +236,9 @@ public sealed class SaftExportService(
                 .Select(line => new SaftInvoiceLine
                 {
                     LineNumber = line.LineNumber,
+                    // Set when the line invoices a delivery note.
+                    OriginatingOn = line.OriginatingNumber,
+                    OrderDate = line.OriginatingDate,
                     ProductCode = line.ProductCode,
                     ProductDescription = line.ProductDescription,
                     Quantity = line.Quantity,

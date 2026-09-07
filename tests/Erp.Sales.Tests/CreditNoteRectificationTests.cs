@@ -37,6 +37,10 @@ public class CreditNoteRectificationTests
         var persisted = _context.Persisted[^1];
         _context.DocumentStorage.GetByIdAsync(persisted.Id, Arg.Any<CancellationToken>()).Returns(persisted);
 
+        // The service reaches the document through the locking read, so that is what the tests
+        // have to serve.
+        _context.DocumentStorage.GetForUpdateAsync(persisted.Id, Arg.Any<CancellationToken>()).Returns(persisted);
+
         return invoice;
     }
 
@@ -118,7 +122,7 @@ public class CreditNoteRectificationTests
             RectifyingRequest(creditSeries.Id, _context.Persisted[0].Id), "user-1");
 
         var creditNote = _context.Persisted[^1];
-        _context.DocumentStorage.GetByIdAsync(creditNote.Id, Arg.Any<CancellationToken>()).Returns(creditNote);
+        _context.DocumentStorage.GetForUpdateAsync(creditNote.Id, Arg.Any<CancellationToken>()).Returns(creditNote);
 
         var secondSeries = _context.GivenCommunicatedSeries(_companyId, "NC2027", "NC");
 
@@ -126,6 +130,119 @@ public class CreditNoteRectificationTests
             RectifyingRequest(secondSeries.Id, creditNote.Id), "user-1");
 
         await act.Should().ThrowAsync<ArgumentException>().WithMessage("*itself a rectifying document*");
+    }
+
+    /// <summary>
+    /// The ceiling is only safe if the document row is locked before the credit already issued is
+    /// read: otherwise two notes issued at the same time would both see the old amount. Reading
+    /// without the lock is exactly the bug this guards against, so the order is asserted.
+    /// </summary>
+    [Fact]
+    public async Task IssueAsync_locks_the_document_before_reading_what_is_already_credited()
+    {
+        await GivenIssuedInvoiceAsync();
+        var invoice = _context.Persisted[0];
+        var creditSeries = _context.GivenCommunicatedSeries(_companyId, "NC2026", "NC");
+
+        await _context.CreateService().IssueAsync(
+            RectifyingRequest(creditSeries.Id, invoice.Id), "user-1");
+
+        Received.InOrder(() =>
+        {
+            _context.DocumentStorage.GetForUpdateAsync(invoice.Id, Arg.Any<CancellationToken>());
+            _context.DocumentStorage.GetCreditedAmountAsync(invoice.Id, Arg.Any<CancellationToken>());
+        });
+    }
+
+    /// <summary>A document cannot be credited for more than it is worth.</summary>
+    [Fact]
+    public async Task IssueAsync_refuses_a_credit_note_larger_than_the_document()
+    {
+        await GivenIssuedInvoiceAsync();
+        var creditSeries = _context.GivenCommunicatedSeries(_companyId, "NC2026", "NC");
+
+        // The invoice is worth 246.00; three units of the same line come to 369.00.
+        var request = RectifyingRequest(creditSeries.Id, _context.Persisted[0].Id) with
+        {
+            Lines = [SalesTestContext.Line(quantity: 3)]
+        };
+
+        var act = () => _context.CreateService().IssueAsync(request, "user-1");
+
+        await act.Should().ThrowAsync<ArgumentException>().WithMessage("*cannot be credited for*");
+    }
+
+    [Fact]
+    public async Task IssueAsync_allows_a_credit_note_up_to_the_full_value()
+    {
+        await GivenIssuedInvoiceAsync();
+        var creditSeries = _context.GivenCommunicatedSeries(_companyId, "NC2026", "NC");
+
+        var creditNote = await _context.CreateService().IssueAsync(
+            RectifyingRequest(creditSeries.Id, _context.Persisted[0].Id), "user-1");
+
+        creditNote.GrossTotal.Should().Be(246m);
+    }
+
+    /// <summary>
+    /// Credit notes already issued eat into what is left, so a second one has to fit the remainder.
+    /// </summary>
+    [Fact]
+    public async Task IssueAsync_counts_the_credit_already_issued()
+    {
+        await GivenIssuedInvoiceAsync();
+        var invoice = _context.Persisted[0];
+
+        _context.DocumentStorage.GetCreditedAmountAsync(invoice.Id, Arg.Any<CancellationToken>()).Returns(200m);
+
+        var creditSeries = _context.GivenCommunicatedSeries(_companyId, "NC2026", "NC");
+
+        var act = () => _context.CreateService().IssueAsync(
+            RectifyingRequest(creditSeries.Id, invoice.Id), "user-1");
+
+        // 246.00 worth, 200.00 already credited, so only 46.00 is left.
+        await act.Should().ThrowAsync<ArgumentException>()
+            .WithMessage("*already credited: only 46,00 can still be credited*");
+    }
+
+    [Fact]
+    public async Task IssueAsync_allows_a_credit_note_that_fits_the_remainder()
+    {
+        await GivenIssuedInvoiceAsync();
+        var invoice = _context.Persisted[0];
+
+        _context.DocumentStorage.GetCreditedAmountAsync(invoice.Id, Arg.Any<CancellationToken>()).Returns(123m);
+
+        var creditSeries = _context.GivenCommunicatedSeries(_companyId, "NC2026", "NC");
+
+        var request = RectifyingRequest(creditSeries.Id, invoice.Id) with
+        {
+            Lines = [SalesTestContext.Line(quantity: 1)]
+        };
+
+        var creditNote = await _context.CreateService().IssueAsync(request, "user-1");
+
+        creditNote.GrossTotal.Should().Be(123m);
+    }
+
+    /// <summary>
+    /// A debit note adds to what the customer owes, so it takes nothing from the original document
+    /// and is not capped by its value.
+    /// </summary>
+    [Fact]
+    public async Task IssueAsync_does_not_cap_a_debit_note()
+    {
+        await GivenIssuedInvoiceAsync();
+        var debitSeries = _context.GivenCommunicatedSeries(_companyId, "ND2026", "ND");
+
+        var request = RectifyingRequest(debitSeries.Id, _context.Persisted[0].Id) with
+        {
+            Lines = [SalesTestContext.Line(quantity: 5)]
+        };
+
+        var debitNote = await _context.CreateService().IssueAsync(request, "user-1");
+
+        debitNote.GrossTotal.Should().Be(615m);
     }
 
     [Fact]
@@ -139,7 +256,7 @@ public class CreditNoteRectificationTests
             SalesTestContext.InvoiceRequest(otherCompanyId, otherSeries.Id), "user-2");
 
         var foreignInvoice = _context.Persisted[^1];
-        _context.DocumentStorage.GetByIdAsync(foreignInvoice.Id, Arg.Any<CancellationToken>())
+        _context.DocumentStorage.GetForUpdateAsync(foreignInvoice.Id, Arg.Any<CancellationToken>())
             .Returns(foreignInvoice);
 
         var creditSeries = _context.GivenCommunicatedSeries(_companyId, "NC2026", "NC");

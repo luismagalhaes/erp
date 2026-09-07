@@ -13,6 +13,7 @@ public sealed class CoreDbContext(DbContextOptions<CoreDbContext> options) : DbC
     public DbSet<Product> Products => Set<Product>();
     public DbSet<Customer> Customers => Set<Customer>();
     public DbSet<Supplier> Suppliers => Set<Supplier>();
+    public DbSet<Warehouse> Warehouses => Set<Warehouse>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -47,6 +48,26 @@ public sealed class CoreDbContext(DbContextOptions<CoreDbContext> options) : DbC
                 .WithMany(x => x.UserCompanies)
                 .HasForeignKey(x => x.CompanyId)
                 .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        modelBuilder.Entity<Warehouse>(entity =>
+        {
+            entity.HasKey(x => x.Id);
+            entity.Property(x => x.Code).HasMaxLength(20).IsRequired();
+            entity.Property(x => x.Name).HasMaxLength(200).IsRequired();
+            entity.Property(x => x.Address).HasMaxLength(400);
+            entity.Property(x => x.City).HasMaxLength(120);
+            entity.Property(x => x.PostalCode).HasMaxLength(20);
+            entity.Property(x => x.Country).HasMaxLength(2).IsRequired();
+
+            entity.HasIndex(x => new { x.CompanyId, x.Code }).IsUnique();
+
+            // At most one default per company, enforced by the database rather than only by the
+            // service: a second default would make "where does the stock go" ambiguous.
+            entity.HasIndex(x => x.CompanyId)
+                .IsUnique()
+                .HasFilter("[IsDefault] = 1")
+                .HasDatabaseName("IX_Warehouse_CompanyId_Default");
         });
 
         modelBuilder.Entity<Brand>(entity =>

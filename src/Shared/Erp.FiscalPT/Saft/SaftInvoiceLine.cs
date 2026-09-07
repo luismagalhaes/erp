@@ -5,6 +5,14 @@ public sealed class SaftInvoiceLine
 {
     public int LineNumber { get; init; }
 
+    /// <summary>
+    /// Number of the delivery note this line invoices, written as OrderReferences/OriginatingON.
+    /// </summary>
+    public string? OriginatingOn { get; init; }
+
+    /// <summary>Date of that delivery note, written as OrderReferences/OrderDate.</summary>
+    public DateOnly? OrderDate { get; init; }
+
     public string ProductCode { get; init; } = string.Empty;
 
     public string ProductDescription { get; init; } = string.Empty;

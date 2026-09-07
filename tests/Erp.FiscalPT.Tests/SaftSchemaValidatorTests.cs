@@ -230,6 +230,62 @@ public class SaftSchemaValidatorTests
         SaftSchemaValidator.Validate(SaftXmlWriter.Build(file)).Should().BeEmpty();
     }
 
+    /// <summary>
+    /// An invoice raised from a delivery note points at it through OrderReferences, which the
+    /// schema places right after LineNumber.
+    /// </summary>
+    [Fact]
+    public void Validate_accepts_a_line_that_invoices_a_delivery_note()
+    {
+        var invoice = Invoice();
+        var line = invoice.Lines[0];
+
+        var fromMovement = new SaftInvoice
+        {
+            InvoiceNo = invoice.InvoiceNo,
+            Atcud = invoice.Atcud,
+            InvoiceType = invoice.InvoiceType,
+            DocumentStatus = invoice.DocumentStatus,
+            Hash = invoice.Hash,
+            HashControl = invoice.HashControl,
+            Period = invoice.Period,
+            InvoiceDate = invoice.InvoiceDate,
+            SourceId = invoice.SourceId,
+            SystemEntryDate = invoice.SystemEntryDate,
+            CustomerId = invoice.CustomerId,
+            Lines =
+            [
+                new SaftInvoiceLine
+                {
+                    LineNumber = line.LineNumber,
+                    OriginatingOn = "GR G2026/3",
+                    OrderDate = new DateOnly(2026, 1, 10),
+                    ProductCode = line.ProductCode,
+                    ProductDescription = line.ProductDescription,
+                    Quantity = line.Quantity,
+                    UnitOfMeasure = line.UnitOfMeasure,
+                    UnitPrice = line.UnitPrice,
+                    TaxPointDate = line.TaxPointDate,
+                    Description = line.Description,
+                    Amount = line.Amount,
+                    Tax = line.Tax
+                }
+            ],
+            Totals = invoice.Totals
+        };
+
+        var file = new SaftAuditFile
+        {
+            Header = Header(),
+            Customers = [Customer()],
+            Products = [Product()],
+            TaxTable = [TaxEntry()],
+            Invoices = [fromMovement]
+        };
+
+        SaftSchemaValidator.Validate(SaftXmlWriter.Build(file)).Should().BeEmpty();
+    }
+
     /// <summary>The reference the law requires on a credit note has to fit the schema too.</summary>
     [Fact]
     public void Validate_accepts_a_credit_note_carrying_its_reference()

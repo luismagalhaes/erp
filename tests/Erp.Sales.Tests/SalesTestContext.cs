@@ -17,6 +17,7 @@ namespace Erp.Sales.Tests;
 internal sealed class SalesTestContext
 {
     public ISalesDocumentStorage DocumentStorage { get; } = Substitute.For<ISalesDocumentStorage>();
+    public IStockMovementStorage MovementStorage { get; } = Substitute.For<IStockMovementStorage>();
     public ISeriesStorage SeriesStorage { get; } = Substitute.For<ISeriesStorage>();
     public ISalesUnitOfWork UnitOfWork { get; } = Substitute.For<ISalesUnitOfWork>();
     public IDocumentSigner Signer { get; } = Substitute.For<IDocumentSigner>();
@@ -58,7 +59,7 @@ internal sealed class SalesTestContext
     }
 
     public SalesDocumentService CreateService() =>
-        new(DocumentStorage, SeriesStorage, UnitOfWork, Signer, Options.Create(Fiscal));
+        new(DocumentStorage, SeriesStorage, MovementStorage, UnitOfWork, Signer, Options.Create(Fiscal));
 
     /// <summary>A series ready to issue, already carrying a validation code from the tax authority.</summary>
     public Series GivenCommunicatedSeries(Guid companyId, string seriesCode = "A2026", string documentType = "FT")

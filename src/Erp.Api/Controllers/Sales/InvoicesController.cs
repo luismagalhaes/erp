@@ -30,6 +30,25 @@ public sealed class InvoicesController(ISalesDocumentService salesDocumentServic
         return Ok(result);
     }
 
+    /// <summary>
+    /// Goods movement lines with quantity still to invoice, so an invoice can be built from the
+    /// delivery notes instead of being typed again.
+    /// </summary>
+    [HttpGet("pending-movements")]
+    [Authorize(Policy = Policies.Read)]
+    [ProducesResponseType<IReadOnlyList<PendingMovementLineDto>>(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<ActionResult<IReadOnlyList<PendingMovementLineDto>>> GetPendingMovements(
+        [FromQuery] Guid companyId,
+        [FromQuery] string? partyTaxId,
+        CancellationToken cancellationToken)
+    {
+        if (companyId == Guid.Empty)
+            return BadRequest(new { error = "companyId is required." });
+
+        return Ok(await salesDocumentService.GetPendingMovementLinesAsync(companyId, partyTaxId, cancellationToken));
+    }
+
     /// <summary>Gets a document with its lines, tax totals, signature and QR code message.</summary>
     [HttpGet("{id:guid}")]
     [Authorize(Policy = Policies.Read)]

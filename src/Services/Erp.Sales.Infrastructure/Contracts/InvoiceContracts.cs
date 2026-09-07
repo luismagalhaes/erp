@@ -3,6 +3,9 @@ namespace Erp.Sales.Infrastructure.Contracts;
 /// <param name="TaxId">Leave empty for an unidentified final consumer.</param>
 public sealed record CustomerRequest(string? TaxId, string Name, string? Address, string Country = "PT");
 
+/// <param name="OriginatingLineId">
+/// The goods movement line this one invoices, when the invoice comes from a delivery note.
+/// </param>
 public sealed record CreateInvoiceLineRequest(
     string ProductCode,
     string ProductDescription,
@@ -13,7 +16,8 @@ public sealed record CreateInvoiceLineRequest(
     string UnitOfMeasure = "UN",
     string TaxCountryRegion = "PT",
     string? TaxExemptionCode = null,
-    string? TaxExemptionReason = null);
+    string? TaxExemptionReason = null,
+    Guid? OriginatingLineId = null);
 
 /// <param name="RectifiedDocumentId">
 /// The document being corrected. Required for a credit or debit note, refused on any other type.
@@ -58,7 +62,9 @@ public sealed record InvoiceLineDto(
     decimal TaxPercentage,
     decimal TaxAmount,
     string? TaxExemptionCode = null,
-    string? TaxExemptionReason = null);
+    string? TaxExemptionReason = null,
+    string? OriginatingNumber = null,
+    DateOnly? OriginatingDate = null);
 
 public sealed record InvoiceTaxDto(
     string TaxCountryRegion,
@@ -87,4 +93,5 @@ public sealed record InvoiceDetailDto(
     IReadOnlyList<InvoiceLineDto> Lines,
     IReadOnlyList<InvoiceTaxDto> Taxes,
     string? RectifiedDocumentNumber = null,
-    string? RectificationReason = null);
+    string? RectificationReason = null,
+    decimal CreditedAmount = 0m);

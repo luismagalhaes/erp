@@ -35,7 +35,7 @@ public sealed record PaymentListItem(
     string PartyName,
     string PartyTaxId,
     decimal GrossTotal,
-    int LineCount,
+    int SettledInvoiceCount,
     string Status);
 
 public sealed record PaymentLine(

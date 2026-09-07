@@ -47,6 +47,16 @@ else
             }
             <div>NIF @_invoice.CustomerTaxId</div>
         </div>
+
+        @* Menção obrigatória num documento retificativo. *@
+        @if (!string.IsNullOrWhiteSpace(_invoice.RectifiedDocumentNumber))
+        {
+            <div class="print-box">
+                <div class="label">Documento retificado</div>
+                <div><strong>@_invoice.RectifiedDocumentNumber</strong></div>
+                <div>@_invoice.RectificationReason</div>
+            </div>
+        }
     </div>
 
     <table class="print-table">

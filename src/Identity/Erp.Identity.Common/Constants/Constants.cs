@@ -53,6 +53,13 @@
 
             /// <summary>Reading users from the Identity host, to assign them to companies.</summary>
             public const string ErpIdentityRead = "erp.identity.read";
+
+            /// <summary>
+            /// Identity scope, not an API scope: it carries the role claim into the id_token so the
+            /// UI can hide what a user may not reach. The API reads roles from the access token,
+            /// where the API resources already declare them.
+            /// </summary>
+            public const string Roles = "roles";
         }
 
         public static class ScopeDisplayNames
@@ -61,6 +68,7 @@
             public const string ErpWrite = "ERP — Write";
             public const string NotificationSend = "Notification — Send";
             public const string IdentityRead = "Identity — Read";
+            public const string Roles = "Roles";
         }
 
         public static class ApiResources

@@ -27,10 +27,19 @@ public sealed class SeriesStorage(SalesDbContext dbContext) : ISeriesStorage
     /// serializes issuing: a second transaction blocks here instead of reading the same
     /// sequence number and the same previous hash.
     /// </summary>
+    /// <remarks>
+    /// The one place in this module that drops to SQL, and not because of the query — EF has no
+    /// way to express a lock hint, and <c>WITH (UPDLOCK, ROWLOCK)</c> is the whole point of the
+    /// statement. The id still goes through as a parameter, and the table name is read from the
+    /// mapping so it cannot drift away from where the entity actually lives.
+    /// </remarks>
+    [System.Diagnostics.CodeAnalysis.SuppressMessage("Security", "EF1002:Risk of vulnerability to SQL injection.")]
     public async Task<Series?> GetForUpdateAsync(Guid id, CancellationToken cancellationToken = default)
     {
+        // EF1002: the only thing interpolated is the table name, and it comes from the EF model,
+        // never from a caller. The id is passed as parameter {0}, so it is parameterized as usual.
         return await dbContext.Series
-            .FromSql($"SELECT * FROM [sales].[Series] WITH (UPDLOCK, ROWLOCK) WHERE [Id] = {id}")
+            .FromSqlRaw($"SELECT * FROM {SeriesTableName()} WITH (UPDLOCK, ROWLOCK) WHERE [Id] = {{0}}", id)
             .FirstOrDefaultAsync(cancellationToken);
     }
 
@@ -49,4 +58,26 @@ public sealed class SeriesStorage(SalesDbContext dbContext) : ISeriesStorage
     {
         await dbContext.Series.AddAsync(series, cancellationToken);
     }
+
+    /// <summary>
+    /// Where the Series entity is mapped, taken from the model rather than written by hand. A
+    /// literal here would silently point at the wrong place the next time the schema moves.
+    /// </summary>
+    private string SeriesTableName()
+    {
+        var entityType = dbContext.Model.FindEntityType(typeof(Series))
+            ?? throw new InvalidOperationException($"{nameof(Series)} is not part of the model.");
+
+        var table = entityType.GetTableName()
+            ?? throw new InvalidOperationException($"{nameof(Series)} is not mapped to a table.");
+
+        var schema = entityType.GetSchema();
+
+        return string.IsNullOrEmpty(schema)
+            ? Quote(table)
+            : $"{Quote(schema)}.{Quote(table)}";
+    }
+
+    private static string Quote(string identifier) =>
+        $"[{identifier.Replace("]", "]]", StringComparison.Ordinal)}]";
 }

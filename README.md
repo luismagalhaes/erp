@@ -90,7 +90,7 @@ Controllers/Notification/   Notifications
 Controllers/HealthController.cs
 ```
 
-Um único audience (`erp-api`) e **dois scopes globais** (`erp.read` e `erp.write`), aplicados pelas políticas em [ErpPolicies](src/Erp.Api/Authorization/ErpPolicies.cs). Os módulos partilham o host e a base de dados; o que os separa são os projetos de camadas e o seu próprio `DbContext`.
+Um único audience (`erp-api`) e **dois scopes globais** (`erp.read` e `erp.write`), aplicados pelas políticas em [Policies](src/Erp.Api/Authorization/Policies.cs). Os módulos partilham o host e a base de dados; o que os separa são os projetos de camadas e o seu próprio `DbContext`.
 
 Módulos ainda por implementar: Inventory (obrigação de comunicação de inventários), Purchasing, Accounting e Reporting. Entram como mais uma pasta de controllers e o seu conjunto de camadas.
 
@@ -164,16 +164,18 @@ O `Erp.Identity` é o único emissor de tokens. O `Erp.Main` autentica por **Aut
 
 Como todos os módulos de negócio correm num só host, não há um par de scopes por módulo: o token diz apenas se a aplicação **lê** ou **escreve**, e o que o chamador alcança dentro da API é depois decidido por role e por pertença à empresa. Repare que `erp.notification.send` e `erp.identity.read` apontam em sentidos opostos e validam audiences diferentes: o primeiro é o Identity a chamar a `erp-api`, o segundo é a UI a chamar a `identity-api`.
 
-**Políticas** ([ErpPolicies.cs](src/Erp.Api/Authorization/ErpPolicies.cs)):
+**Políticas** ([Policies.cs](src/Erp.Api/Authorization/Policies.cs)):
 
 | Política | Exige |
 |---|---|
 | `Read` | scope `erp.read` ou `erp.write` |
 | `Write` | scope `erp.write` |
-| `Admin` | scope `erp.write` **e** role `SuperAdmin` |
+| `Admin` | role `SuperAdmin` |
 | `NotificationSend` | scope `erp.notification.send` |
 
-O valor da constante `Admin` (`"erp.admin"`) é apenas o **nome da política**, não um scope: não está semeado nem existe em token nenhum. A administração do tenant depende de quem é o utilizador, não do que a aplicação pode fazer — por isso exige a role e não um scope, o que impede um token de serviço de reconfigurar empresas ou séries.
+A `Admin` é a única que não olha para o scope: a administração do tenant depende de **quem é o utilizador**, não do que a aplicação pode fazer. O valor da constante é a própria role `SuperAdmin` e serve apenas de **nome da política** — não é um scope, não está semeado nem existe em token nenhum.
+
+Em contrapartida, como o scope deixou de ser exigido, qualquer token que traga a role `SuperAdmin` satisfaz a `Admin`, mesmo tendo sido emitido só com `erp.read`. A contenção passa a assentar inteiramente no controlo de quem recebe a role.
 
 Os scopes são lidos da claim `scope`, aceitando tanto a forma separada por espaços como claims repetidas.
 
@@ -324,6 +326,8 @@ dotnet test Erp.slnx
 
 Além da faturação, o módulo emite os **documentos de movimentação de mercadorias** — guias de remessa (`GR`), transporte (`GT`), ativos próprios (`GA`), consignação (`GC`) e devolução (`GD`), exportados no SAF-T em `MovementOfGoods`. Seguem exatamente as mesmas regras dos documentos de faturação: numeração sequencial por série, cadeia de assinatura, ATCUD, código QR e imutabilidade. Acrescentam o que o regime de bens em circulação exige: locais de carga e descarga, início do transporte, matrícula do veículo, e o **código que a AT devolve na comunicação prévia** — sem o qual a mercadoria não pode circular.
 
+As **notas de crédito e de débito** identificam o documento que corrigem e o motivo, como exige o artigo 36.º n.º 5 do CIVA. A regra vale nos dois sentidos: uma `NC` ou `ND` sem referência é recusada, e uma `FT`, `FS` ou `FR` com referência também. O documento corrigido tem de ser da mesma empresa, não estar anulado e não ser ele próprio retificativo; o seu número é copiado para o documento novo e sai no SAF-T em `References/Reference` e `Reason` de cada linha, além de constar do documento impresso.
+
 O **documento impresso** tem página própria para cada família (`/invoices/{id}/print` e as equivalentes das guias e dos recibos), em HTML dimensionado para A4 e com um layout sem menu nem barra. As menções que a lei exige vivem em componentes partilhados em vez de copiadas por página: o cabeçalho com o emitente completo e a designação por extenso, e o rodapé com os 4 caracteres do hash seguidos de *Processado por programa certificado n.º XXXX/AT*, o ATCUD e o código QR — este renderizado pelo `QrCodeImage` do `Erp.FiscalPT`, que usa o renderizador de bytes do QRCoder e por isso não depende de nenhuma biblioteca de desenho. O número do certificado é lido do campo `R` do próprio QR, não da configuração atual: um documento emitido antes de o certificado mudar continua a imprimir o número com que foi emitido.
 
 A **exportação do SAF-T (PT) 1.04_01** vive em [`Erp.FiscalPT/Saft`](src/Shared/Erp.FiscalPT/Saft/), que é a biblioteca fiscal partilhada: recebe um `SaftAuditFile` e escreve o XML, sem saber nada de EF Core nem do módulo de vendas. O `SaftExportService` preenche esse modelo a partir dos documentos do período, e o controller junta-lhe a empresa, que pertence ao Core. Os *master files* (`Customer`, `Product`, `TaxTable`) são derivados dos próprios documentos — cada um traz o snapshot do cliente, dos artigos e das taxas — por isso o ficheiro é coerente consigo mesmo mesmo que as fichas tenham mudado entretanto. Os totais de controlo são calculados pelo escritor, nunca recebidos de fora, e os documentos anulados vão no ficheiro com estado `A` mas fora dos totais. A exportação faz-se em `/saft`, por mês, trimestre, ano ou intervalo livre.
@@ -355,7 +359,7 @@ Emite também os **recibos** — `RC` (regime de IVA de caixa) e `RG` (restantes
 | `POST` | `/api/series` | `Admin` |
 | `POST` | `/api/series/{id}/communicate` | `Admin` |
 
-O acesso é por **scope** do token (políticas em [ErpPolicies.cs](src/Erp.Api/Authorization/ErpPolicies.cs)); a gestão de séries exige adicionalmente a role `SuperAdmin`, através da política `Admin`. Não existe endpoint de alteração nem de remoção de documentos: correções fazem-se por documento retificativo e a anulação escreve um registo de mudança de estado.
+O acesso é por **scope** do token (políticas em [Policies.cs](src/Erp.Api/Authorization/Policies.cs)); a gestão de séries não depende do scope mas sim da role `SuperAdmin`, através da política `Admin`. Não existe endpoint de alteração nem de remoção de documentos: correções fazem-se por documento retificativo e a anulação escreve um registo de mudança de estado.
 
 ---
 

@@ -242,6 +242,9 @@ public sealed class SaftExportService(
                     UnitOfMeasure = line.UnitOfMeasure,
                     UnitPrice = line.UnitPrice,
                     TaxPointDate = document.DocumentDate,
+                    // A credit or debit note carries the reference on every line.
+                    Reference = document.RectifiedDocumentNumber,
+                    ReferenceReason = document.RectificationReason,
                     Description = line.ProductDescription,
                     Amount = line.LineAmount,
                     Tax = new SaftTax
@@ -405,8 +408,23 @@ public sealed class SaftExportService(
             throw new ArgumentException("The end date cannot be before the start date.", nameof(endDate));
     }
 
-    private static string SourceId(string? userId) =>
-        string.IsNullOrWhiteSpace(userId) ? SaftConstants.Unknown : userId;
+    /// <summary>
+    /// Who recorded the document. The schema allows 30 characters and Identity issues 36 character
+    /// GUIDs, so a long id is trimmed — the remainder is still unique enough to trace the author.
+    /// Recording a short user name at issuing time would read better, but it cannot be done
+    /// retroactively for documents already issued.
+    /// </summary>
+    private static string SourceId(string? userId)
+    {
+        if (string.IsNullOrWhiteSpace(userId))
+            return SaftConstants.Unknown;
+
+        var trimmed = userId.Trim();
+
+        return trimmed.Length <= SaftConstants.SourceIdMaxLength
+            ? trimmed
+            : trimmed[..SaftConstants.SourceIdMaxLength];
+    }
 
     private static string OnlyDigits(string value) =>
         new([.. value.Where(char.IsDigit)]);

@@ -15,18 +15,25 @@ public sealed record CreateInvoiceLineRequest(
     string? TaxExemptionCode = null,
     string? TaxExemptionReason = null);
 
+/// <param name="RectifiedDocumentId">
+/// The document being corrected. Required for a credit or debit note, refused on any other type.
+/// </param>
+/// <param name="RectificationReason">Why the document is being corrected.</param>
 public sealed record CreateInvoiceRequest(
     Guid CompanyId,
     Guid SeriesId,
     DateOnly DocumentDate,
     CustomerRequest Customer,
-    IReadOnlyList<CreateInvoiceLineRequest> Lines);
+    IReadOnlyList<CreateInvoiceLineRequest> Lines,
+    Guid? RectifiedDocumentId = null,
+    string? RectificationReason = null);
 
 public sealed record VoidInvoiceRequest(string Reason);
 
 public sealed record InvoiceListItemDto(
     Guid Id,
     string DocumentNumber,
+    string DocumentType,
     string Atcud,
     DateOnly DocumentDate,
     string CustomerName,
@@ -78,4 +85,6 @@ public sealed record InvoiceDetailDto(
     string PrintableHash,
     string QrCodePayload,
     IReadOnlyList<InvoiceLineDto> Lines,
-    IReadOnlyList<InvoiceTaxDto> Taxes);
+    IReadOnlyList<InvoiceTaxDto> Taxes,
+    string? RectifiedDocumentNumber = null,
+    string? RectificationReason = null);

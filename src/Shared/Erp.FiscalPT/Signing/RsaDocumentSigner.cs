@@ -45,8 +45,10 @@ public static class RsaDocumentSigner
     }
 
     /// <summary>
-    /// The four characters printed on the document, taken from positions 1, 11, 21 and 31
-    /// of the Base64 signature and separated by a hyphen.
+    /// The four characters taken from positions 1, 11, 21 and 31 of the Base64 signature, one
+    /// after the other and with nothing between them. They go both on the printed document — where
+    /// a hyphen separates them from the "Processado por programa certificado" notice — and into
+    /// field Q of the QR code.
     /// </summary>
     public static string ExtractPrintableHash(string hash)
     {
@@ -56,10 +58,6 @@ public static class RsaDocumentSigner
         if (hash.Length < maxPosition)
             throw new ArgumentException($"Hash must have at least {maxPosition} characters.", nameof(hash));
 
-        return string.Join('-', PrintablePositions.Select(position => hash[position - 1]));
+        return string.Concat(PrintablePositions.Select(position => hash[position - 1]));
     }
-
-    /// <summary>The same four characters without separators, as they go into the QR code field Q.</summary>
-    public static string ExtractQrCodeHash(string hash) =>
-        ExtractPrintableHash(hash).Replace("-", string.Empty, StringComparison.Ordinal);
 }

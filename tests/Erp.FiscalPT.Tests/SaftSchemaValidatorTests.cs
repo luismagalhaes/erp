@@ -230,6 +230,59 @@ public class SaftSchemaValidatorTests
         SaftSchemaValidator.Validate(SaftXmlWriter.Build(file)).Should().BeEmpty();
     }
 
+    /// <summary>The reference the law requires on a credit note has to fit the schema too.</summary>
+    [Fact]
+    public void Validate_accepts_a_credit_note_carrying_its_reference()
+    {
+        var creditNote = Invoice("NC A2026/1", "NC");
+        var line = creditNote.Lines[0];
+
+        var withReference = new SaftInvoice
+        {
+            InvoiceNo = creditNote.InvoiceNo,
+            Atcud = creditNote.Atcud,
+            InvoiceType = "NC",
+            DocumentStatus = creditNote.DocumentStatus,
+            Hash = creditNote.Hash,
+            HashControl = creditNote.HashControl,
+            Period = creditNote.Period,
+            InvoiceDate = creditNote.InvoiceDate,
+            SourceId = creditNote.SourceId,
+            SystemEntryDate = creditNote.SystemEntryDate,
+            CustomerId = creditNote.CustomerId,
+            Lines =
+            [
+                new SaftInvoiceLine
+                {
+                    LineNumber = line.LineNumber,
+                    ProductCode = line.ProductCode,
+                    ProductDescription = line.ProductDescription,
+                    Quantity = line.Quantity,
+                    UnitOfMeasure = line.UnitOfMeasure,
+                    UnitPrice = line.UnitPrice,
+                    TaxPointDate = line.TaxPointDate,
+                    Description = line.Description,
+                    Amount = line.Amount,
+                    Tax = line.Tax,
+                    Reference = "FT A2026/7",
+                    ReferenceReason = "Devolução de mercadoria"
+                }
+            ],
+            Totals = creditNote.Totals
+        };
+
+        var file = new SaftAuditFile
+        {
+            Header = Header(),
+            Customers = [Customer()],
+            Products = [Product()],
+            TaxTable = [TaxEntry()],
+            Invoices = [withReference]
+        };
+
+        SaftSchemaValidator.Validate(SaftXmlWriter.Build(file)).Should().BeEmpty();
+    }
+
     [Fact]
     public void Validate_accepts_the_serialized_bytes()
     {

@@ -24,6 +24,12 @@ public static class SaftConstants
     /// <summary>Placeholder the tax authority expects where a value is unknown.</summary>
     public const string Unknown = "Desconhecido";
 
+    /// <summary>
+    /// The schema caps SourceID at 30 characters, which is shorter than the 36 character GUIDs
+    /// ASP.NET Identity hands out.
+    /// </summary>
+    public const int SourceIdMaxLength = 30;
+
     /// <summary>Only VAT is exported; stamp duty would be "IS".</summary>
     public const string TaxTypeVat = "IVA";
 

@@ -59,6 +59,9 @@ public sealed class PaymentService(
 
         var candidates = documents
             .Where(document => !document.IsVoided)
+            // A fatura-recibo carries its own receipt and a nota de crédito lowers the debt, so
+            // neither is ever waiting to be settled.
+            .Where(document => SalesDocumentTypes.IsSettledByReceipt(document.DocumentType))
             .Where(document => string.IsNullOrWhiteSpace(customerTaxId)
                                || string.Equals(document.CustomerTaxId, customerTaxId, StringComparison.Ordinal))
             .ToList();
@@ -216,6 +219,15 @@ public sealed class PaymentService(
             if (document.IsVoided)
                 throw new ArgumentException($"Invoice '{document.DocumentNumber}' is voided and cannot be settled.", nameof(request));
 
+            // Filtering the list is not enough: the request carries document ids, so the rule has
+            // to hold here too.
+            if (!SalesDocumentTypes.IsSettledByReceipt(document.DocumentType))
+            {
+                throw new ArgumentException(
+                    $"Document '{document.DocumentNumber}' is a '{document.DocumentType}' and leaves nothing owed, so a receipt cannot settle it.",
+                    nameof(request));
+            }
+
             var alreadySettled = settled.TryGetValue(document.Id, out var amount) ? amount : 0m;
             var outstanding = FiscalRounding.Amount(document.GrossTotal - alreadySettled);
 
@@ -277,7 +289,7 @@ public sealed class PaymentService(
             Atcud = payment.Atcud,
             TotalTaxes = payment.TaxPayable,
             GrossTotal = payment.GrossTotal,
-            HashCharacters = RsaDocumentSigner.ExtractQrCodeHash(hash),
+            HashCharacters = RsaDocumentSigner.ExtractPrintableHash(hash),
             CertificateNumber = _fiscal.CertificateNumber
         };
 

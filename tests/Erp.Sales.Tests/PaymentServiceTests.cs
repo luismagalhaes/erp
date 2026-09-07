@@ -70,12 +70,16 @@ public class PaymentServiceTests
     }
 
     /// <summary>An issued invoice to settle, registered in the substituted document storage.</summary>
-    private SalesDocument GivenInvoice(decimal grossTotal = 246m, Guid? companyId = null, string taxId = "500123456")
+    private SalesDocument GivenInvoice(
+        decimal grossTotal = 246m,
+        Guid? companyId = null,
+        string taxId = "500123456",
+        string documentType = "FT")
     {
         var invoiceSeries = new Series
         {
             CompanyId = companyId ?? _companyId,
-            DocumentType = "FT",
+            DocumentType = documentType,
             SeriesCode = "A2026"
         };
 
@@ -87,7 +91,7 @@ public class PaymentServiceTests
             companyId ?? _companyId,
             invoiceSeries,
             sequence,
-            $"FT A2026/{sequence}",
+            $"{documentType} A2026/{sequence}",
             "JFTX7RK9-1",
             new DateOnly(2026, 1, 15),
             new DateTime(2026, 1, 15, 10, 0, 0, DateTimeKind.Utc),
@@ -350,6 +354,59 @@ public class PaymentServiceTests
         var outstanding = await CreateService().GetOutstandingInvoicesAsync(_companyId);
 
         outstanding.Should().BeEmpty();
+    }
+
+    /// <summary>
+    /// A fatura-recibo is paid as it is issued, so it must never show up as waiting to be settled.
+    /// </summary>
+    [Theory]
+    [InlineData("FR")]
+    [InlineData("NC")]
+    public async Task GetOutstandingInvoicesAsync_leaves_out_documents_that_owe_nothing(string documentType)
+    {
+        GivenInvoice(documentType: documentType);
+
+        var outstanding = await CreateService().GetOutstandingInvoicesAsync(_companyId);
+
+        outstanding.Should().BeEmpty();
+    }
+
+    [Theory]
+    [InlineData("FT")]
+    [InlineData("FS")]
+    [InlineData("ND")]
+    public async Task GetOutstandingInvoicesAsync_keeps_the_documents_that_leave_money_owed(string documentType)
+    {
+        GivenInvoice(documentType: documentType);
+
+        var outstanding = await CreateService().GetOutstandingInvoicesAsync(_companyId);
+
+        outstanding.Should().ContainSingle();
+    }
+
+    [Fact]
+    public async Task IssueAsync_refuses_to_settle_a_fatura_recibo()
+    {
+        var series = GivenSeries();
+        var invoiceReceipt = GivenInvoice(documentType: "FR");
+
+        var act = () => CreateService().IssueAsync(
+            Request(series.Id, new CreatePaymentLineRequest(invoiceReceipt.Id, 246m)), "user-1");
+
+        await act.Should().ThrowAsync<ArgumentException>().WithMessage("*leaves nothing owed*");
+    }
+
+    /// <summary>
+    /// The id is what the receipt is built from, so it has to be the document's own.
+    /// </summary>
+    [Fact]
+    public async Task GetOutstandingInvoicesAsync_identifies_the_document_to_settle()
+    {
+        var invoice = GivenInvoice();
+
+        var outstanding = await CreateService().GetOutstandingInvoicesAsync(_companyId);
+
+        outstanding.Should().ContainSingle().Which.DocumentId.Should().Be(invoice.Id);
     }
 
     [Fact]

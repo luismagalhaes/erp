@@ -17,7 +17,7 @@ public static class Policies
     /// <summary>Changing data.</summary>
     public const string Write = Constants.Scopes.ErpWrite;
 
-    /// <summary>Configuration that affects the whole tenant: companies, memberships, series.</summary>
+    /// <summary>Configuration that affects the whole tenant: companies, memberships, series. Role only.</summary>
     public const string Admin = Constants.Roles.SuperAdmin;
 
     /// <summary>Queueing email. Service only, never granted to the user facing client.</summary>
@@ -31,10 +31,10 @@ public static class Policies
                 HasScope(context.User, Constants.Scopes.ErpRead, Constants.Scopes.ErpWrite)))
             .AddPolicy(Write, policy => policy.RequireAssertion(context =>
                 HasScope(context.User, Constants.Scopes.ErpWrite)))
-            // Administration is a write operation that only a SuperAdmin may perform, so the
-            // scope alone is not enough: a service token cannot reconfigure the tenant.
+            // Administration is decided by role alone: being a SuperAdmin is what grants access
+            // to tenant wide configuration.
             .AddPolicy(Admin, policy => policy.RequireAssertion(context =>
-                HasScope(context.User, Constants.Scopes.ErpWrite) && context.User.IsInRole(Constants.Roles.SuperAdmin)))
+                context.User.IsInRole(Constants.Roles.SuperAdmin)))
             .AddPolicy(NotificationSend, policy => policy.RequireAssertion(context =>
                 HasScope(context.User, Constants.Scopes.ErpNotificationSend)));
 

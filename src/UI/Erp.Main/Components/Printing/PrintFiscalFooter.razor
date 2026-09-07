@@ -12,8 +12,9 @@
     }
 
     <div class="mentions">
+        @* The four characters run together, and the hyphen separates them from the notice. *@
         <div class="certified">
-            @PrintableHash — Processado por programa certificado n.º @(_certificateNumber ?? "—")/AT
+            @PrintableHash-Processado por programa certificado n.º @(_certificateNumber ?? "—")/AT
         </div>
         <div>ATCUD: @Atcud</div>
         @if (ChildContent is not null)

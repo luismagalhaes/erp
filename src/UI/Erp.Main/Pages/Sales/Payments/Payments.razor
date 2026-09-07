@@ -58,7 +58,7 @@
                 <MudTd DataLabel="Data">@context.TransactionDate.ToString("yyyy-MM-dd")</MudTd>
                 <MudTd DataLabel="Cliente">@context.PartyName</MudTd>
                 <MudTd DataLabel="NIF">@context.PartyTaxId</MudTd>
-                <MudTd DataLabel="Faturas" Style="text-align: right;">@context.LineCount</MudTd>
+                <MudTd DataLabel="Faturas" Style="text-align: right;">@context.SettledInvoiceCount</MudTd>
                 <MudTd DataLabel="Total" Style="text-align: right;">@context.GrossTotal.ToString("C2")</MudTd>
                 <MudTd DataLabel="Estado">
                     <MudChip T="string" Size="Size.Small" Variant="Variant.Outlined"

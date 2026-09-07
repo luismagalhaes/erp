@@ -56,8 +56,20 @@ public class RsaDocumentSignerTests
         // 40 characters, so the sampled positions are easy to read off.
         const string hash = "ABCDEFGHIJ" + "KLMNOPQRST" + "UVWXYZabcd" + "efghijklmn";
 
-        RsaDocumentSigner.ExtractPrintableHash(hash).Should().Be("A-K-U-e");
-        RsaDocumentSigner.ExtractQrCodeHash(hash).Should().Be("AKUe");
+        // The four characters run together: on the printed document the hyphen goes between them
+        // and the "Processado por programa certificado" notice, never between the characters.
+        RsaDocumentSigner.ExtractPrintableHash(hash).Should().Be("AKUe");
+    }
+
+    [Fact]
+    public void ExtractPrintableHash_never_puts_a_separator_between_the_characters()
+    {
+        const string hash = "ABCDEFGHIJ" + "KLMNOPQRST" + "UVWXYZabcd" + "efghijklmn";
+
+        var characters = RsaDocumentSigner.ExtractPrintableHash(hash);
+
+        characters.Should().HaveLength(4);
+        characters.Should().NotContain("-");
     }
 
     [Fact]

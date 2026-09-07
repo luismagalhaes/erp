@@ -170,6 +170,81 @@ public class SaftXmlWriterTests
             .Element(Ns + "DebitAmount").Should().NotBeNull();
     }
 
+    /// <summary>
+    /// Artigo 36.º n.º 5 do CIVA: a rectifying document must name the document it corrects. In the
+    /// SAF-T that goes on the line, between TaxPointDate and Description.
+    /// </summary>
+    [Fact]
+    public void Build_writes_the_reference_of_a_rectifying_line()
+    {
+        var creditNote = Invoice("NC A2026/1", "NC");
+        var line = creditNote.Lines[0];
+
+        var file = new SaftAuditFile
+        {
+            Header = Header(),
+            Invoices =
+            [
+                new SaftInvoice
+                {
+                    InvoiceNo = creditNote.InvoiceNo,
+                    Atcud = creditNote.Atcud,
+                    InvoiceType = "NC",
+                    DocumentStatus = creditNote.DocumentStatus,
+                    Hash = creditNote.Hash,
+                    HashControl = creditNote.HashControl,
+                    Period = creditNote.Period,
+                    InvoiceDate = creditNote.InvoiceDate,
+                    SystemEntryDate = creditNote.SystemEntryDate,
+                    CustomerId = creditNote.CustomerId,
+                    Lines =
+                    [
+                        new SaftInvoiceLine
+                        {
+                            LineNumber = line.LineNumber,
+                            ProductCode = line.ProductCode,
+                            ProductDescription = line.ProductDescription,
+                            Quantity = line.Quantity,
+                            UnitPrice = line.UnitPrice,
+                            TaxPointDate = line.TaxPointDate,
+                            Description = line.Description,
+                            Amount = line.Amount,
+                            Tax = line.Tax,
+                            Reference = "FT A2026/7",
+                            ReferenceReason = "Devolução de mercadoria"
+                        }
+                    ],
+                    Totals = creditNote.Totals
+                }
+            ]
+        };
+
+        var element = Root(file).Element(Ns + "SourceDocuments")!
+            .Element(Ns + "SalesInvoices")!
+            .Element(Ns + "Invoice")!
+            .Element(Ns + "Line")!;
+
+        var references = element.Element(Ns + "References")!;
+        references.Element(Ns + "Reference")!.Value.Should().Be("FT A2026/7");
+        references.Element(Ns + "Reason")!.Value.Should().Be("Devolução de mercadoria");
+
+        // The schema fixes where it sits, so the order is part of the contract.
+        element.Elements().Select(x => x.Name.LocalName)
+            .Should().ContainInOrder("TaxPointDate", "References", "Description");
+    }
+
+    [Fact]
+    public void Build_leaves_out_the_reference_on_a_line_that_corrects_nothing()
+    {
+        var file = new SaftAuditFile { Header = Header(), Invoices = [Invoice()] };
+
+        Root(file).Element(Ns + "SourceDocuments")!
+            .Element(Ns + "SalesInvoices")!
+            .Element(Ns + "Invoice")!
+            .Element(Ns + "Line")!
+            .Element(Ns + "References").Should().BeNull();
+    }
+
     [Fact]
     public void Build_records_the_reason_of_a_voided_document()
     {

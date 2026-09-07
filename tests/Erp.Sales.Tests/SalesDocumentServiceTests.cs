@@ -9,6 +9,25 @@ public class SalesDocumentServiceTests
     private readonly SalesTestContext _context = new();
     private readonly Guid _companyId = Guid.NewGuid();
 
+    /// <summary>
+    /// An invoice must not take its number from a receipt or transport series: that would burn
+    /// numbers in a series belonging to another document family.
+    /// </summary>
+    [Theory]
+    [InlineData("GT")]
+    [InlineData("RG")]
+    public async Task IssueAsync_rejects_a_series_of_another_document_family(string documentType)
+    {
+        var context = new SalesTestContext();
+        var companyId = Guid.NewGuid();
+        var series = context.GivenCommunicatedSeries(companyId, documentType: documentType);
+
+        var act = () => context.CreateService().IssueAsync(
+            SalesTestContext.InvoiceRequest(companyId, series.Id), "user-1");
+
+        await act.Should().ThrowAsync<ArgumentException>().WithMessage("*not for invoicing*");
+    }
+
     [Fact]
     public async Task IssueAsync_numbers_the_document_from_the_series()
     {

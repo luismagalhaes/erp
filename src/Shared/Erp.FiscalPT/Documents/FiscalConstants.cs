@@ -13,6 +13,25 @@ public static class SalesDocumentTypes
 
     public static bool IsSupported(string documentType) =>
         All.Contains(documentType, StringComparer.Ordinal);
+
+    /// <summary>
+    /// Types that leave money owed, and so can be settled by a receipt. A fatura-recibo is paid at
+    /// the moment it is issued — the receipt is part of the document — and a nota de crédito
+    /// reduces the debt instead of creating it, so neither is ever settled by a receipt.
+    /// </summary>
+    public static readonly string[] SettledByReceipt = [Invoice, SimplifiedInvoice, DebitNote];
+
+    public static bool IsSettledByReceipt(string documentType) =>
+        SettledByReceipt.Contains(documentType, StringComparer.Ordinal);
+
+    /// <summary>
+    /// Types that correct another document. Article 36.º n.º 5 of the CIVA requires them to
+    /// identify the document being rectified and the reason for it.
+    /// </summary>
+    public static readonly string[] Rectifying = [CreditNote, DebitNote];
+
+    public static bool IsRectifying(string documentType) =>
+        Rectifying.Contains(documentType, StringComparer.Ordinal);
 }
 
 /// <summary>

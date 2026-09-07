@@ -81,11 +81,20 @@ public static class SeedData
         }
     }
 
+    /// <summary>
+    /// The role claim needs an identity resource of its own: identity resources feed the id_token,
+    /// and without one the UI principal carries no roles, so an AuthorizeView by role hides itself
+    /// even from a SuperAdmin. The API is unaffected, it reads roles from the access token.
+    /// </summary>
     public static IEnumerable<IdentityResource> IdentityResources =>
     [
         new IdentityResources.OpenId(),
         new IdentityResources.Profile(),
-        new IdentityResources.Email()
+        new IdentityResources.Email(),
+        new IdentityResource(
+            Constants.Scopes.Roles,
+            Constants.ScopeDisplayNames.Roles,
+            [Constants.Claims.Role])
     ];
 
     /// <summary>
@@ -142,6 +151,7 @@ public static class SeedData
             AllowedScopes =
             {
                 Constants.Scopes.OpenId, Constants.Scopes.Profile, Constants.Scopes.Email, Constants.Scopes.OfflineAccess,
+                Constants.Scopes.Roles,
                 Constants.Scopes.ErpRead,
                 Constants.Scopes.ErpWrite,
                 Constants.Scopes.ErpIdentityRead

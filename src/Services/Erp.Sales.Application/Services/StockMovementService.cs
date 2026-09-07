@@ -233,7 +233,7 @@ public sealed class StockMovementService(
             TaxAmounts = taxAmounts,
             TotalTaxes = movement.TaxPayable,
             GrossTotal = movement.GrossTotal,
-            HashCharacters = RsaDocumentSigner.ExtractQrCodeHash(hash),
+            HashCharacters = RsaDocumentSigner.ExtractPrintableHash(hash),
             CertificateNumber = _fiscal.CertificateNumber
         };
 

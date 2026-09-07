@@ -28,6 +28,7 @@ public sealed class SalesDocumentService(
             .Select(x => new InvoiceListItemDto(
                 x.Id,
                 x.DocumentNumber,
+                x.DocumentType,
                 x.Atcud,
                 x.DocumentDate,
                 x.CustomerName,
@@ -62,9 +63,18 @@ public sealed class SalesDocumentService(
         if (series.CompanyId != request.CompanyId)
             throw new ArgumentException("The series does not belong to the requested company.", nameof(request));
 
+        // Without this an invoice could be numbered from a receipt or transport series, burning
+        // numbers in a series that belongs to another document family.
+        if (!SalesDocumentTypes.IsSupported(series.DocumentType))
+            throw new ArgumentException(
+                $"Series '{series.SeriesCode}' is for '{series.DocumentType}' documents, not for invoicing.",
+                nameof(request));
+
         if (!series.CanIssue)
             throw new InvalidOperationException(
                 $"Series '{series.SeriesCode}' has no validation code from the tax authority yet, so it cannot issue documents.");
+
+        var rectifies = await ResolveRectifiedDocumentAsync(request, series.DocumentType, cancellationToken);
 
         var lines = BuildLines(request.Lines);
         var taxSummaries = BuildTaxSummaries(lines);
@@ -102,7 +112,8 @@ public sealed class SalesDocumentService(
             signature.Hash,
             previousHash,
             signature.HashControl,
-            userId);
+            userId,
+            rectifies);
 
         document.AttachQrCodePayload(BuildQrCodePayload(document, signature.Hash));
 
@@ -125,6 +136,65 @@ public sealed class SalesDocumentService(
         await unitOfWork.SaveChangesAsync(cancellationToken);
 
         return Map(document);
+    }
+
+    /// <summary>
+    /// Resolves the document a credit or debit note corrects. Article 36.º n.º 5 of the CIVA makes
+    /// the reference mandatory on a rectifying document, and meaningless on any other, so both
+    /// directions are enforced here.
+    /// </summary>
+    private async Task<RectifiedDocument?> ResolveRectifiedDocumentAsync(
+        CreateInvoiceRequest request,
+        string documentType,
+        CancellationToken cancellationToken)
+    {
+        if (!SalesDocumentTypes.IsRectifying(documentType))
+        {
+            if (request.RectifiedDocumentId is not null)
+            {
+                throw new ArgumentException(
+                    $"A '{documentType}' does not correct another document, so it cannot reference one.",
+                    nameof(request));
+            }
+
+            return null;
+        }
+
+        if (request.RectifiedDocumentId is not { } rectifiedId || rectifiedId == Guid.Empty)
+        {
+            throw new ArgumentException(
+                $"A '{documentType}' must identify the document it corrects.",
+                nameof(request));
+        }
+
+        if (string.IsNullOrWhiteSpace(request.RectificationReason))
+        {
+            throw new ArgumentException(
+                $"A '{documentType}' must state why the document is being corrected.",
+                nameof(request));
+        }
+
+        var rectified = await documentStorage.GetByIdAsync(rectifiedId, cancellationToken)
+            ?? throw new ArgumentException($"Document '{rectifiedId}' was not found.", nameof(request));
+
+        if (rectified.CompanyId != request.CompanyId)
+            throw new ArgumentException("The corrected document belongs to another company.", nameof(request));
+
+        if (rectified.IsVoided)
+        {
+            throw new ArgumentException(
+                $"Document '{rectified.DocumentNumber}' is voided, so there is nothing to correct.",
+                nameof(request));
+        }
+
+        if (SalesDocumentTypes.IsRectifying(rectified.DocumentType))
+        {
+            throw new ArgumentException(
+                $"Document '{rectified.DocumentNumber}' is itself a rectifying document.",
+                nameof(request));
+        }
+
+        return new RectifiedDocument(rectified.Id, rectified.DocumentNumber, request.RectificationReason.Trim());
     }
 
     private static List<SalesDocumentLine> BuildLines(IReadOnlyList<CreateInvoiceLineRequest> requestLines)
@@ -205,7 +275,7 @@ public sealed class SalesDocumentService(
                 .ToList(),
             TotalTaxes = document.TaxPayable,
             GrossTotal = document.GrossTotal,
-            HashCharacters = RsaDocumentSigner.ExtractQrCodeHash(hash),
+            HashCharacters = RsaDocumentSigner.ExtractPrintableHash(hash),
             CertificateNumber = _fiscal.CertificateNumber
         };
 
@@ -262,5 +332,7 @@ public sealed class SalesDocumentService(
                     x.TaxPercentage,
                     x.TaxableBase,
                     x.TaxAmount))
-                .ToList());
+                .ToList(),
+            document.RectifiedDocumentNumber,
+            document.RectificationReason);
 }

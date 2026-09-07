@@ -75,6 +75,17 @@
                     <MudText Style="font-family: monospace;">@_invoice.PrintableHash</MudText>
                     <MudText Typo="Typo.body2" Color="Color.Secondary">Processado por programa certificado</MudText>
                 </MudItem>
+
+                @if (!string.IsNullOrWhiteSpace(_invoice.RectifiedDocumentNumber))
+                {
+                    <MudItem xs="12">
+                        <MudText Typo="Typo.caption" Color="Color.Secondary">Documento retificado</MudText>
+                        <MudText>
+                            <span style="font-family: monospace;">@_invoice.RectifiedDocumentNumber</span>
+                            — @_invoice.RectificationReason
+                        </MudText>
+                    </MudItem>
+                }
             </MudGrid>
         </MudPaper>
 

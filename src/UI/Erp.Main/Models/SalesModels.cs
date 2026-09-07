@@ -64,6 +64,7 @@ public sealed record CommunicateSeriesRequest(string ValidationCode);
 public sealed record InvoiceListItem(
     Guid Id,
     string DocumentNumber,
+    string DocumentType,
     string Atcud,
     DateOnly DocumentDate,
     string CustomerName,
@@ -111,7 +112,9 @@ public sealed record InvoiceDetail(
     string PrintableHash,
     string QrCodePayload,
     IReadOnlyList<InvoiceLine> Lines,
-    IReadOnlyList<InvoiceTax> Taxes);
+    IReadOnlyList<InvoiceTax> Taxes,
+    string? RectifiedDocumentNumber = null,
+    string? RectificationReason = null);
 
 /// <summary>
 /// Invoicing document types with the designation the printed document has to spell out in full.
@@ -126,6 +129,15 @@ public static class InvoiceTypes
         ("NC", "Nota de crédito"),
         ("ND", "Nota de débito")
     ];
+
+    /// <summary>
+    /// Types that correct another document, and so must name it and say why — artigo 36.º n.º 5
+    /// do CIVA. The API enforces the same rule.
+    /// </summary>
+    public static readonly string[] Rectifying = ["NC", "ND"];
+
+    public static bool IsRectifying(string code) =>
+        Rectifying.Contains(code, StringComparer.Ordinal);
 
     public static string Describe(string code) =>
         All.FirstOrDefault(type => type.Code == code).Label ?? code;
@@ -150,7 +162,9 @@ public sealed record CreateInvoiceRequest(
     Guid SeriesId,
     DateOnly DocumentDate,
     CustomerRequest Customer,
-    IReadOnlyList<CreateInvoiceLineRequest> Lines);
+    IReadOnlyList<CreateInvoiceLineRequest> Lines,
+    Guid? RectifiedDocumentId = null,
+    string? RectificationReason = null);
 
 public sealed record VoidInvoiceRequest(string Reason);
 

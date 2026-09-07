@@ -1,46 +1,65 @@
 @using MudBlazor
 @using Erp.Main.Models
 
-@* Customers and suppliers are filled in the same way, so they share these fields. *@
+@*
+    Customers and suppliers are filled in the same way, so they share these fields.
+
+    Every field reports back through ModelChanged. Without it the parent never re-renders when the
+    model changes here, and anything it derives from the model — a save button enabled by
+    Model.IsValid, for one — would stay frozen at whatever it was on first render.
+
+    The three fields that decide validity are Immediate so the parent reacts as the user types,
+    instead of only when the field loses focus.
+*@
 <MudGrid>
     <MudItem xs="12" md="3">
-        <MudTextField @bind-Value="Model.Code" Label="Código" Variant="Variant.Outlined"
+        <MudTextField @bind-Value="Model.Code" @bind-Value:after="NotifyChangedAsync" Immediate="true"
+                      Label="Código" Variant="Variant.Outlined"
                       Required="true" Disabled="@(!AllowCodeEdit)"
                       HelperText="@(AllowCodeEdit ? null : "O código não pode ser alterado")" />
     </MudItem>
     <MudItem xs="12" md="6">
-        <MudTextField @bind-Value="Model.Name" Label="Nome" Variant="Variant.Outlined" Required="true" />
+        <MudTextField @bind-Value="Model.Name" @bind-Value:after="NotifyChangedAsync" Immediate="true"
+                      Label="Nome" Variant="Variant.Outlined" Required="true" />
     </MudItem>
     <MudItem xs="12" md="3">
-        <MudTextField @bind-Value="Model.TaxId" Label="NIF" Variant="Variant.Outlined" Required="true"
+        <MudTextField @bind-Value="Model.TaxId" @bind-Value:after="NotifyChangedAsync" Immediate="true"
+                      Label="NIF" Variant="Variant.Outlined" Required="true"
                       HelperText="999999990 para consumidor final" />
     </MudItem>
 
     <MudItem xs="12" md="6">
-        <MudTextField @bind-Value="Model.Address" Label="Morada" Variant="Variant.Outlined" />
+        <MudTextField @bind-Value="Model.Address" @bind-Value:after="NotifyChangedAsync"
+                      Label="Morada" Variant="Variant.Outlined" />
     </MudItem>
     <MudItem xs="12" md="2">
-        <MudTextField @bind-Value="Model.PostalCode" Label="Código postal" Variant="Variant.Outlined" />
+        <MudTextField @bind-Value="Model.PostalCode" @bind-Value:after="NotifyChangedAsync"
+                      Label="Código postal" Variant="Variant.Outlined" />
     </MudItem>
     <MudItem xs="12" md="2">
-        <MudTextField @bind-Value="Model.City" Label="Localidade" Variant="Variant.Outlined" />
+        <MudTextField @bind-Value="Model.City" @bind-Value:after="NotifyChangedAsync"
+                      Label="Localidade" Variant="Variant.Outlined" />
     </MudItem>
     <MudItem xs="12" md="2">
-        <MudTextField @bind-Value="Model.Country" Label="País" Variant="Variant.Outlined"
+        <MudTextField @bind-Value="Model.Country" @bind-Value:after="NotifyChangedAsync"
+                      Label="País" Variant="Variant.Outlined"
                       HelperText="Código ISO, ex. PT" />
     </MudItem>
 
     <MudItem xs="12" md="6">
-        <MudTextField @bind-Value="Model.Email" Label="Email" Variant="Variant.Outlined" InputType="InputType.Email" />
+        <MudTextField @bind-Value="Model.Email" @bind-Value:after="NotifyChangedAsync"
+                      Label="Email" Variant="Variant.Outlined" InputType="InputType.Email" />
     </MudItem>
     <MudItem xs="12" md="6">
-        <MudTextField @bind-Value="Model.Phone" Label="Telefone" Variant="Variant.Outlined" />
+        <MudTextField @bind-Value="Model.Phone" @bind-Value:after="NotifyChangedAsync"
+                      Label="Telefone" Variant="Variant.Outlined" />
     </MudItem>
 
     @if (ShowActive)
     {
         <MudItem xs="12">
-            <MudSwitch @bind-Value="Model.IsActive" Color="Color.Primary" Label="@ActiveLabel" />
+            <MudSwitch @bind-Value="Model.IsActive" @bind-Value:after="NotifyChangedAsync"
+                       Color="Color.Primary" Label="@ActiveLabel" />
         </MudItem>
     }
 </MudGrid>
@@ -48,6 +67,13 @@
 @code {
     [Parameter, EditorRequired]
     public PartnerFormModel Model { get; set; } = new();
+
+    /// <summary>
+    /// Raised whenever a field changes. Invoking it re-renders the parent, which is what keeps
+    /// anything derived from the model in step with what the user typed.
+    /// </summary>
+    [Parameter]
+    public EventCallback<PartnerFormModel> ModelChanged { get; set; }
 
     [Parameter]
     public bool AllowCodeEdit { get; set; } = true;
@@ -57,4 +83,6 @@
 
     [Parameter]
     public string ActiveLabel { get; set; } = "Ativo";
+
+    private Task NotifyChangedAsync() => ModelChanged.InvokeAsync(Model);
 }

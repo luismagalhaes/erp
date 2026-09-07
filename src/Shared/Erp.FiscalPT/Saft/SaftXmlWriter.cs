@@ -189,6 +189,7 @@ public static class SaftXmlWriter
                 new XElement(Ns + "UnitOfMeasure", line.UnitOfMeasure),
                 new XElement(Ns + "UnitPrice", Quantity(line.UnitPrice)),
                 new XElement(Ns + "TaxPointDate", Date(line.TaxPointDate)),
+                BuildReferences(line),
                 new XElement(Ns + "Description", line.Description),
                 new XElement(Ns + amountElement, Money(line.Amount)),
                 BuildTax(line.Tax),
@@ -321,6 +322,20 @@ public static class SaftXmlWriter
         element.Add(BuildTotals(payment.Totals));
 
         return element;
+    }
+
+    /// <summary>
+    /// References/Reference and Reason, present only on a line that corrects another document.
+    /// The element sits between TaxPointDate and Description, where the schema puts it.
+    /// </summary>
+    private static XElement? BuildReferences(SaftInvoiceLine line)
+    {
+        if (string.IsNullOrWhiteSpace(line.Reference) && string.IsNullOrWhiteSpace(line.ReferenceReason))
+            return null;
+
+        return new XElement(Ns + "References",
+            Optional("Reference", line.Reference),
+            Optional("Reason", line.ReferenceReason));
     }
 
     private static XElement BuildTax(SaftTax tax) =>

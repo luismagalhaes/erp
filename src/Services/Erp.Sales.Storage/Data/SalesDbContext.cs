@@ -56,6 +56,8 @@ public sealed class SalesDbContext(DbContextOptions<SalesDbContext> options) : D
             entity.Property(x => x.CustomerAddress).HasMaxLength(400);
             entity.Property(x => x.CustomerCountry).HasMaxLength(2).IsRequired();
             entity.Property(x => x.CreatedByUserId).HasMaxLength(450);
+            entity.Property(x => x.RectifiedDocumentNumber).HasMaxLength(60);
+            entity.Property(x => x.RectificationReason).HasMaxLength(400);
 
             entity.Property(x => x.NetTotal).HasPrecision(19, 2);
             entity.Property(x => x.TaxPayable).HasPrecision(19, 2);
@@ -68,6 +70,7 @@ public sealed class SalesDbContext(DbContextOptions<SalesDbContext> options) : D
 
             entity.Ignore(x => x.EffectiveStatus);
             entity.Ignore(x => x.IsVoided);
+            entity.Ignore(x => x.IsRectifying);
 
             // Numbering has no gaps and no repeats inside a series.
             entity.HasIndex(x => new { x.SeriesId, x.SequenceNumber }).IsUnique();

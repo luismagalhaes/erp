@@ -37,6 +37,7 @@
                   Breakpoint="Breakpoint.Sm">
             <HeaderContent>
                 <MudTh>Documento</MudTh>
+                <MudTh>Tipo</MudTh>
                 <MudTh>ATCUD</MudTh>
                 <MudTh>Data</MudTh>
                 <MudTh>Cliente</MudTh>
@@ -50,6 +51,9 @@
             <RowTemplate>
                 <MudTd DataLabel="Documento">
                     <MudText Typo="Typo.body2" Style="font-family: monospace;">@context.DocumentNumber</MudText>
+                </MudTd>
+                <MudTd DataLabel="Tipo">
+                    <MudChip T="string" Size="Size.Small" Variant="Variant.Outlined">@context.DocumentType</MudChip>
                 </MudTd>
                 <MudTd DataLabel="ATCUD">
                     <MudText Typo="Typo.caption" Style="font-family: monospace;">@context.Atcud</MudText>

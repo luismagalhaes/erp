@@ -72,7 +72,17 @@ public sealed class SalesDocument
 
     public string QrCodePayload { get; private set; } = string.Empty;
 
+    // --- Rectification, for credit and debit notes ---
+
     public Guid? RectifiedDocumentId { get; private set; }
+
+    /// <summary>Number of the rectified document, copied at issuing time.</summary>
+    public string? RectifiedDocumentNumber { get; private set; }
+
+    public string? RectificationReason { get; private set; }
+
+    /// <summary>True when this document corrects another one.</summary>
+    public bool IsRectifying => RectifiedDocumentId is not null;
 
     public string? CreatedByUserId { get; private set; }
 
@@ -111,7 +121,7 @@ public sealed class SalesDocument
         string previousHash,
         string hashControl,
         string? createdByUserId,
-        Guid? rectifiedDocumentId = null)
+        RectifiedDocument? rectifies = null)
     {
         ArgumentNullException.ThrowIfNull(series);
         ArgumentNullException.ThrowIfNull(customer);
@@ -141,7 +151,9 @@ public sealed class SalesDocument
             PreviousHash = previousHash,
             HashControl = hashControl,
             CreatedByUserId = createdByUserId,
-            RectifiedDocumentId = rectifiedDocumentId
+            RectifiedDocumentId = rectifies?.DocumentId,
+            RectifiedDocumentNumber = rectifies?.DocumentNumber,
+            RectificationReason = rectifies?.Reason
         };
 
         foreach (var line in lines)

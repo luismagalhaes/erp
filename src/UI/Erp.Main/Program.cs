@@ -57,9 +57,25 @@ builder.Services
         options.Scope.Add(Constants.Scopes.Profile);
         options.Scope.Add(Constants.Scopes.Email);
         options.Scope.Add(Constants.Scopes.OfflineAccess);
+        options.Scope.Add(Constants.Scopes.Roles);
         options.Scope.Add(Constants.Scopes.ErpRead);
         options.Scope.Add(Constants.Scopes.ErpWrite);
         options.Scope.Add(Constants.Scopes.ErpIdentityRead);
+
+        // Duende emits the claim as "role". The default inbound mapping renames it to the long
+        // WS-Federation URI, so IsInRole stops matching and an AuthorizeView by role hides
+        // itself even from a SuperAdmin. Erp.Api already disables this mapping.
+        options.MapInboundClaims = false;
+        options.TokenValidationParameters.RoleClaimType = Constants.Claims.Role;
+        options.TokenValidationParameters.NameClaimType = Constants.Claims.Name;
+
+        // In code flow the id_token carries no user claims: they live on the userinfo endpoint.
+        // Without fetching them the principal has no role at all.
+        options.GetClaimsFromUserInfoEndpoint = true;
+
+        // The handler only keeps userinfo claims that a ClaimAction maps, so role needs one of
+        // its own. MapJsonKey also expands the array a user with several roles comes back as.
+        options.ClaimActions.MapJsonKey(Constants.Claims.Role, Constants.Claims.Role);
     });
 
 // MudBlazor

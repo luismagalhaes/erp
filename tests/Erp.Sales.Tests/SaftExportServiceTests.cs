@@ -74,7 +74,8 @@ public class SaftExportServiceTests
         string customerName = "Cliente Teste",
         decimal net = 200m,
         decimal tax = 46m,
-        string productCode = "ART001")
+        string productCode = "ART001",
+        string userId = "user-1")
     {
         var series = IssuedSeries(documentType);
         var sequence = series.TakeNextSequence();
@@ -110,7 +111,7 @@ public class SaftExportServiceTests
             new string('x', 44),
             string.Empty,
             "1",
-            "user-1");
+            userId);
 
         _documentsInPeriod.Add(document);
 
@@ -306,6 +307,30 @@ public class SaftExportServiceTests
 
         result.ValidationErrors.Should().BeEmpty();
         SaftSchemaValidator.Validate(result.Content).Should().BeEmpty();
+    }
+
+    /// <summary>
+    /// Identity issues 36 character GUIDs and the schema allows 30, so a document issued by a real
+    /// logged-in user used to fail validation twice over — once on the document, once on its status.
+    /// </summary>
+    [Fact]
+    public async Task ExportAsync_fits_a_guid_user_id_into_the_source_id()
+    {
+        const string userId = "19299b77-e3e4-43d9-be67-e52ed731a541";
+
+        var invoice = GivenInvoice(userId: userId);
+        invoice.Void("Erro de faturação", userId, new DateTime(2026, 1, 16, 11, 0, 0, DateTimeKind.Utc));
+
+        var result = await CreateService().ExportAsync(Request());
+
+        result.ValidationErrors.Should().BeEmpty();
+
+        var element = Parse(result).Element(Ns + "SourceDocuments")!
+            .Element(Ns + "SalesInvoices")!
+            .Element(Ns + "Invoice")!;
+
+        element.Element(Ns + "SourceID")!.Value.Should().Be(userId[..30]);
+        element.Element(Ns + "DocumentStatus")!.Element(Ns + "SourceID")!.Value.Should().HaveLength(30);
     }
 
     [Fact]

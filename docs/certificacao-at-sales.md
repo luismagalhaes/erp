@@ -345,6 +345,16 @@ Menções obrigatórias cuja ausência é, por si só, motivo de não conformida
 - Nos documentos retificativos, referência ao documento retificado.
 
 > [!NOTE]
+> **Documentos retificativos.** As notas de crédito e de débito identificam o documento que
+> corrigem e o motivo, como exige o artigo 36.º n.º 5 do CIVA. A regra é imposta nos dois sentidos
+> pelo `SalesDocumentService`: uma `NC` ou `ND` sem referência é recusada, e uma `FT`, `FS` ou `FR`
+> com referência também — porque aí não significa nada. O documento corrigido tem de pertencer à
+> mesma empresa, não estar anulado e não ser ele próprio retificativo. O número é copiado para o
+> documento, como qualquer outro *snapshot*, e vai para o SAF-T em `References/Reference` e
+> `Reason` em cada linha. Note-se que **o XSD não obriga**: o `References` é opcional e nenhuma das
+> 19 regras `xs:assert` o verifica, pelo que a validação do ficheiro não apanharia a falta.
+
+> [!NOTE]
 > Faturas em PDF passam a exigir **assinatura eletrónica qualificada** a partir de 1 de janeiro de
 > 2027. Se o Sales vai gerar PDF, desenhar já o ponto de extensão para assinar o ficheiro.
 

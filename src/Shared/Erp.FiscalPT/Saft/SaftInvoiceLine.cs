@@ -25,6 +25,15 @@ public sealed class SaftInvoiceLine
 
     public SaftTax Tax { get; init; } = new();
 
+    /// <summary>
+    /// Number of the document this line corrects, for a credit or debit note. Written as
+    /// References/Reference, which the law requires on a rectifying document.
+    /// </summary>
+    public string? Reference { get; init; }
+
+    /// <summary>Why the document is being corrected, written as References/Reason.</summary>
+    public string? ReferenceReason { get; init; }
+
     /// <summary>Required by law whenever the line carries no tax.</summary>
     public string? TaxExemptionReason { get; init; }
 

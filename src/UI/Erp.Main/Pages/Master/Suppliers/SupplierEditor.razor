@@ -37,6 +37,14 @@
         <MudAlert Severity="Severity.Error" Dense="true">@_error</MudAlert>
     }
 
+    @* Without this the button would just sit disabled with nothing explaining why. *@
+    @if (!Company.HasCompany)
+    {
+        <MudAlert Severity="Severity.Warning" Dense="true">
+            Escolha uma empresa no cabeçalho antes de criar fornecedores.
+        </MudAlert>
+    }
+
     @if (_loading)
     {
         <MudProgressLinear Indeterminate="true" Color="Color.Primary" />
@@ -44,7 +52,9 @@
     else
     {
         <MudPaper Elevation="1" Class="pa-4">
-            <PartnerFormFields Model="_model" AllowCodeEdit="IsNew" ShowActive="@(!IsNew)" ActiveLabel="Fornecedor ativo" />
+            @* ModelChanged is what re-renders this page, so the save button follows what is typed. *@
+            <PartnerFormFields Model="_model" ModelChanged="OnModelChanged"
+                               AllowCodeEdit="IsNew" ShowActive="@(!IsNew)" ActiveLabel="Fornecedor ativo" />
 
             <MudStack Row="true" Justify="Justify.FlexEnd" Class="mt-4">
                 <MudButton Variant="Variant.Filled" Color="Color.Primary"
@@ -113,6 +123,12 @@
             _loading = false;
         }
     }
+
+    /// <summary>
+    /// The model is mutated in place by the field component; receiving the callback is what makes
+    /// this page render again and re-evaluate the save button.
+    /// </summary>
+    private void OnModelChanged(PartnerFormModel model) => _model = model;
 
     private async Task SaveAsync()
     {

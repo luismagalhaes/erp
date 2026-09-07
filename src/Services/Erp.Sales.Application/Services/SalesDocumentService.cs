@@ -1,3 +1,4 @@
+using System.Globalization;
 using Erp.FiscalPT;
 using Erp.FiscalPT.Documents;
 using Erp.FiscalPT.QrCode;
@@ -295,8 +296,8 @@ public sealed class SalesDocumentService(
 
         throw new ArgumentException(
             alreadyCredited > 0
-                ? $"Document '{rectified.DocumentNumber}' is worth {rectified.GrossTotal:0.00}, of which {alreadyCredited:0.00} is already credited: only {creditable:0.00} can still be credited, not {grossTotal:0.00}."
-                : $"Document '{rectified.DocumentNumber}' is worth {creditable:0.00}, so it cannot be credited for {grossTotal:0.00}.",
+                ? string.Create(CultureInfo.InvariantCulture, $"Document '{rectified.DocumentNumber}' is worth {rectified.GrossTotal:0.00}, of which {alreadyCredited:0.00} is already credited: only {creditable:0.00} can still be credited, not {grossTotal:0.00}.")
+                : string.Create(CultureInfo.InvariantCulture, $"Document '{rectified.DocumentNumber}' is worth {creditable:0.00}, so it cannot be credited for {grossTotal:0.00}."),
             nameof(grossTotal));
     }
 

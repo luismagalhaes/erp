@@ -122,22 +122,41 @@ O que é mesmo partilhado divide-se em três, e cada parte tem a sua resposta:
 |---|---|---|
 | Assinatura, ATCUD, número, QR | `Erp.FiscalPT`, funções puras sem estado | Purchasing usa como o Sales usa. Nada a fazer |
 | Cadeia de hash da série | Uma consulta por família, já triplicada | Purchasing acrescenta a sua. Nada a fazer |
-| **Registo de séries** | `Erp.Sales.Domain.Series` | **É o único problema a sério.** Ver a decisão seguinte |
+| **Registo de séries** | `Erp.Sales.Domain.Series` | **É o único problema a sério.** Parte vai para o FiscalPT, parte não pode. Ver a decisão seguinte |
 
-### [decisão] O registo de séries sai do `Erp.Sales` para um módulo próprio
+### [decisão] A *regra* da série vai para o `Erp.FiscalPT`; a *linha* fica num módulo próprio
 
-A `Series` está no `Erp.Sales` por acidente de ter sido escrita primeiro. Olhe-se para ela: empresa,
-estabelecimento, tipo de documento, código, sequência, código de validação da AT, estado. **Não sabe
-o que é uma fatura.** É um registo fiscal ao nível da empresa, e a AT vê-o como um só — comunicam-se
-séries por tipo de documento e por estabelecimento, venham elas de que módulo vierem.
+A pergunta natural é: por que não pôr a série inteira no `Erp.FiscalPT`, que Sales e Purchasing já
+referenciam? A resposta obriga a separar duas coisas que a `Series` de hoje mistura.
 
-Deixá-la no Sales obrigaria o Purchasing a ter a sua própria tabela de séries, o seu ecrã de séries e
-o seu fluxo de comunicação à AT. Aí sim haveria duplicação real, e da pior espécie: dois sítios para
-registar o código de validação, e o utilizador a ter de saber em qual.
+O `Erp.FiscalPT` não tem EF Core, não tem *storage*, não tem `DbContext` — só QRCoder e os XSD
+embebidos. Tudo o que lá vive é função pura ou modelo imutável, e é isso que o torna testável sem
+nada montado. A `Series`, tal como está, não cabe:
 
-Então: um módulo `Erp.Series` pequeno — Domain, Infrastructure, Application, Storage — que possui a
-série, a numeração sequencial com o bloqueio de linha, e a comunicação à AT. Sales e Purchasing
-tiram números de lá.
+| Campo / comportamento | Natureza |
+|---|---|
+| `SeriesStatus`, `CanIssue`, `Communicate`, `TakeNextSequence` | **Lei fiscal.** Cabe no FiscalPT |
+| `RowVersion` | Token de concorrência do EF Core. Infraestrutura pura |
+| `CompanyId` | Conceito do Core |
+| `StockEffect` | Configuração de negócio — se a série dá entrada ou saída. Não é fiscal |
+| A leitura com `WITH (UPDLOCK, ROWLOCK)` | **É a razão de a série ser uma linha e não um cálculo** |
+
+E há o argumento que fecha a questão: **mesmo que a classe vivesse no FiscalPT, algum `DbContext`
+teria de possuir a tabela e as suas migrations.** Se fosse o `SalesDbContext`, o Purchasing passaria
+a depender do *storage* do Sales — exatamente o acoplamento que se está a evitar. Pôr só a classe lá
+pouparia criar um projeto e custaria ao FiscalPT a pureza que é o seu valor.
+
+Então o corte é entre a regra e a linha:
+
+- **no `Erp.FiscalPT`**, ao lado do ATCUD e do número de documento, que são a mesma matéria: o estado
+  da série e a regra de numeração, como tipos puros;
+- **num módulo `Erp.Series`**, a linha: a entidade EF, a leitura bloqueada, a comunicação à AT, o
+  ecrã. Sales e Purchasing tiram números de lá.
+
+O ganho de levar a regra para o FiscalPT não é poupar código — são dez linhas. É que a série, o
+ATCUD e a assinatura são **um corpo só de regras**, saídas da mesma legislação, e hoje estão em dois
+sítios. O ATCUD constrói-se a partir do código de validação da série e da sequência: tê-los
+separados é o que obriga a saber que existe essa ligação em vez de a ver.
 
 > **A numeração tem de acontecer na mesma transação que a inserção do documento**, senão um número é
 > consumido por um documento que nunca chega a existir. Com a série noutro `DbContext` isso continua
@@ -149,8 +168,16 @@ histórico de migrations de outro módulo, mudam-se as referências em três ser
 de séries muda de dono. Não é grande, mas é real, e não traz funcionalidade nenhuma no dia em que se
 faz.
 
-**Por isso fica na fase 5**, junto com a autofaturação, que é a primeira coisa que precisa dela. As
-fases 1 a 4 não tocam em séries — nenhum documento de compras é numerado por nós.
+**Alternativa considerada e rejeitada**: o `Purchasing.Application` referenciar o
+`Erp.Sales.Infrastructure` — só as interfaces — e pedir lá os números. Há precedente exato disto no
+código, que é como o `Erp.Sales.Application` fala com o `Erp.Inventory.Infrastructure`, e não moveria
+nada. Rejeitada porque o custo é conceptual e permanente: o Purchasing passaria a depender do Sales
+para uma coisa que não é venda, e o ecrã de séries ficaria em Faturação a numerar autofaturas. É o
+mesmo problema de pôr fornecedores no Sales, um degrau abaixo — resolver-se-ia hoje e pagar-se-ia
+sempre.
+
+**Fica na fase 5a**, junto com a autofaturação, que é a primeira coisa que precisa dela. As fases 1 a
+4 não tocam em séries — nenhum documento de compras é numerado por nós.
 
 ### [decisão] A exportação do SAF-T passa a compor-se a partir dos módulos
 
@@ -184,11 +211,19 @@ não emitimos nada: escrituramos o documento de outra pessoa. Um documento escri
 errado corrige-se corrigindo — não há retificativo a emitir, porque o retificativo, a existir, virá
 do fornecedor.
 
-Isto separa limpamente os dois módulos: **`Erp.Sales` é *append-only*, `Erp.Purchasing` não é.** Vale
-a pena dizê-lo em voz alta para que ninguém copie o padrão errado de um lado para o outro.
+A linha não é entre módulos, é entre **o que emitimos e o que escrituramos** — e passa dentro do
+`Erp.Purchasing`:
 
-O que **não** é editável é o que já passou para o razão de stock: alterar a quantidade recebida
-depois de ela ter movimentado tem de gerar movimento, não reescrever o antigo.
+| | Emitido por nós | Escriturado |
+|---|---|---|
+| **Quais** | Autofaturas, guias de devolução | Faturas e notas de crédito de fornecedor, encomendas, receções |
+| **Regime** | *Append-only*: numeração por série, assinatura, ATCUD, anulação por mudança de estado | Editável e apagável |
+
+Vale a pena dizê-lo em voz alta, porque o mesmo módulo vai ter os dois regimes lado a lado e é fácil
+copiar o padrão errado de um para o outro.
+
+O que **não** é editável, mesmo do lado escriturado, é o que já passou para o razão de stock: alterar
+a quantidade recebida depois de ela ter movimentado tem de gerar movimento, não reescrever o antigo.
 
 ### [decisão] O stock entra na receção, e a fatura não volta a movimentar
 
@@ -288,6 +323,25 @@ PurchaseInvoice                   PurchaseInvoiceLine
                                     TaxCode, TaxPercentage, TaxableBase, TaxAmount
 ```
 
+E, do lado emitido, a autofatura — que se parece com um `SalesDocument` e não com nada acima:
+
+```
+SelfBilledInvoice                 SelfBilledInvoiceLine
+  Id, CompanyId, SupplierId         Id, InvoiceId, LineNumber
+  SeriesId  ← do Erp.Series         ProductCode, Description
+  Number, Atcud                     Quantity, UnitPrice
+  IssueDate, SystemEntryDate        TaxCode, TaxPercentage, TaxAmount
+  Hash, PreviousHash, HashControl
+  QrCodePayload                   SelfBilledInvoiceStatusChange
+  Status, AcceptedBySupplierAt      ↑ anulação, como no Sales
+  NetTotal, TaxPayable, GrossTotal
+  SupplierSnapshot
+```
+
+`AcceptedBySupplierAt` porque o artigo 36.º n.º 11 exige que o fornecedor **aceite** cada documento,
+não só que tenha havido acordo prévio. Sem isso registado, o documento existe mas o regime não está
+cumprido.
+
 Índice único **`(CompanyId, SupplierTaxId, SupplierDocumentNumber)`** em `PurchaseInvoice` — a
 defesa contra a dupla dedução, na base de dados e não só no serviço.
 
@@ -304,8 +358,13 @@ declaração de IVA separa-os.
 | 2 | Receção de mercadoria, com entrada em stock e conferência contra a encomenda | Por fazer |
 | 3 | Registo de faturas de fornecedor, com a regra do documento integrador e o índice anti-duplicação | Por fazer |
 | 4 | Devoluções e notas de crédito de fornecedor | Por fazer |
-| 5 | Autofaturação, no `Erp.Sales`, com série própria e `SelfBillingIndicator` no SAF-T | Por fazer |
+| 5a | Regra da série para o `Erp.FiscalPT`, linha para o `Erp.Series`, e exportação do SAF-T composta por módulo | Por fazer |
+| 5b | Autofaturação no `Erp.Purchasing`, com série própria e `SelfBillingIndicator` no SAF-T | Por fazer |
 | 6 | Custo médio ponderado a partir do razão, substituindo o custo da ficha na valorização | Por fazer |
+
+A fase 5a é refactorização pura: no fim dela o sistema faz exatamente o mesmo que fazia, e os testes
+existentes do SAF-T e das séries são a rede que diz que assim é. Convém fazê-la **antes** de escrever
+a autofaturação e não ao mesmo tempo, para que uma falha se saiba logo de que lado veio.
 
 Fora deste plano, e deliberadamente: contas correntes de fornecedores e pagamentos (é outro módulo),
 lançamento contabilístico (Accounting), e a conferência contra o e-Fatura (precisa dos *webservices*

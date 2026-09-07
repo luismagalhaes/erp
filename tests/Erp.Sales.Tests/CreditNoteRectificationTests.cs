@@ -202,7 +202,7 @@ public class CreditNoteRectificationTests
 
         // 246.00 worth, 200.00 already credited, so only 46.00 is left.
         await act.Should().ThrowAsync<ArgumentException>()
-            .WithMessage("*already credited: only 46,00 can still be credited*");
+            .WithMessage("*already credited: only 46.00 can still be credited*");
     }
 
     [Fact]

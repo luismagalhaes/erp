@@ -33,7 +33,29 @@ jobs:
         run: dotnet build Erp.slnx --configuration Release --no-restore
 
       - name: Test
-        run: dotnet test Erp.slnx --configuration Release --no-build --verbosity normal --results-directory ./TestResults --logger "trx;LogFilePrefix=test-results"
+        run: dotnet test Erp.slnx --configuration Release --no-build --results-directory ./TestResults --logger "trx;LogFilePrefix=test-results" --logger "console;verbosity=detailed"
+
+      - name: List failed tests
+        if: failure()
+        run: |
+          for file in ./TestResults/*.trx; do
+            echo "::group::$file"
+            python3 - "$file" <<'PY'
+          import sys, xml.etree.ElementTree as ET
+          ns = {'t': 'http://microsoft.com/schemas/VisualStudio/TeamTest/2010'}
+          root = ET.parse(sys.argv[1]).getroot()
+          for result in root.findall('.//t:UnitTestResult', ns):
+              if result.get('outcome') != 'Failed':
+                  continue
+              print(f"FAILED: {result.get('testName')}")
+              for tag in ('Message', 'StackTrace'):
+                  node = result.find(f'.//t:Output/t:ErrorInfo/t:{tag}', ns)
+                  if node is not None and node.text:
+                      print(node.text)
+              print('-' * 80)
+          PY
+            echo "::endgroup::"
+          done
 
       - name: Publish test report
         if: always()

@@ -33,7 +33,7 @@ registamos.
 | Fatura de fornecedor | **O fornecedor** | **Não** | IVA dedutível, contabilidade, pagamentos |
 | Nota de crédito de fornecedor | **O fornecedor** | **Não** | Regularização de IVA a favor do Estado |
 | Guia de devolução ao fornecedor | Nós | **Sim** | Documento de transporte — já existe no Sales (`GD`) |
-| **Autofatura** | **Nós, por conta do fornecedor** | **Sim** | Série, assinatura, ATCUD, QR, SAF-T |
+| **Autofatura** | **Nós, por conta do fornecedor** | **Sim** | Série, assinatura, ATCUD, QR, e SAF-T próprio do tipo `"S"` |
 
 ### O que "não certificado" quer mesmo dizer
 
@@ -69,26 +69,45 @@ emitida pelo nosso programa**, com tudo o que isso arrasta: série comunicada à
 sequencial, assinatura encadeada, ATCUD, código QR, imutabilidade e anulação por registo de estado.
 O documento impresso tem de dizer **"Autofaturação"**.
 
-No SAF-T sai em `SalesInvoices` com `SpecialRegimes/SelfBillingIndicator = 1`. O esquema já o suporta
-— tanto na estrutura `SpecialRegimes` da fatura como no `SelfBillingIndicator` do `Customer` e do
-`Supplier` nos *master files*.
+#### A autofaturação é um SAF-T distinto, não uma extensão do de faturação
 
-> Como o `Invoice` do SAF-T exige `CustomerID`, o fornecedor entra na tabela `Customer` desse
-> ficheiro, com `SelfBillingIndicator = 1`. Este ponto **merece confirmação contra a documentação
-> técnica da AT** antes de se escrever o gerador — é o único detalhe deste documento que não está
-> fechado só a ler o XSD.
+Este ponto é contraintuitivo e é o que mais condiciona o desenho, por isso vem em destaque.
 
-### O nosso SAF-T ainda não leva compras nenhumas
+O `TaxAccountingBasis` tem um valor dedicado — **`"S"` para Autofaturação** — a par de `"C"`
+contabilidade, `"F"` faturação e `"E"` faturação emitida por terceiros. Está na anotação do próprio
+esquema oficial.
+
+A distinção é **entre ficheiros, não entre blocos**, e é fácil enunciá-la mal:
+
+- o ficheiro de autofaturação **tem** `SalesInvoices` — é lá que as autofaturas vão, como quaisquer
+  outras faturas emitidas;
+- o que não acontece é essas faturas aparecerem no SAF-T `"F"` de faturação normal, nem no nosso nem
+  no do fornecedor. Pertencem ao ficheiro `"S"` e só a ele.
+
+Por outras palavras: a estrutura é a mesma, o ficheiro é que é outro.
+
+Dentro dele, quem vai na tabela `Customer` é o **cliente autofaturador** — quem emite por conta do
+fornecedor, portanto **nós**, com `SelfBillingIndicator = 1`. Não é o fornecedor. Faz sentido assim
+que se olha do lado certo: o documento titula uma **venda do fornecedor**, e nessa venda o cliente
+somos nós.
+
+E o `Header` leva o **NIF do fornecedor**, o autofaturado. O ficheiro é dos documentos dele; nós é
+que o geramos, porque fomos nós que os emitimos em seu nome. Daí que se produza **um ficheiro `"S"`
+por fornecedor**, e não um só para todos.
+
+### O nosso SAF-T `"F"` continua a não levar compras nenhumas
 
 O `SaftXmlWriter` escreve `TaxAccountingBasis = "F"`, faturação. Um ficheiro desse tipo **não leva
-`GeneralLedgerEntries` nem a tabela `Supplier`**: só o que foi emitido. Portanto, e ao contrário do
-que se poderia esperar, implementar as compras **não muda nada no SAF-T** — a autofatura entra por
-ser uma fatura emitida, não por ser uma compra.
+`GeneralLedgerEntries` nem a tabela `Supplier`**: só o que foi emitido. Nem sequer as autofaturas,
+que vão no seu ficheiro `"S"`.
 
-As compras só aparecem no SAF-T no dia em que o ficheiro passar a ser de contabilidade (`"C"`), e
-isso é trabalho do módulo Accounting, não deste. O que este módulo tem de garantir é que os dados
-existem e estão certos para quando esse dia chegar: NIF, taxas, e o `SupplierID` a bater com o código
-do fornecedor no Core.
+Portanto, e ao contrário do que se poderia esperar, **implementar as fases 1 a 4 não muda nada no
+SAF-T que hoje exportamos.** O que muda é ganharmos uma exportação nova, ao lado da que existe.
+
+As compras propriamente ditas só aparecem no SAF-T no dia em que houver um ficheiro de contabilidade
+(`"C"` ou `"I"`), e isso é trabalho do módulo Accounting, não deste. O que este módulo tem de
+garantir é que os dados existem e estão certos para quando esse dia chegar: NIF, taxas, e o
+`SupplierID` a bater com o código do fornecedor no Core.
 
 ### Onde as compras pesam mesmo
 
@@ -192,17 +211,29 @@ proveniências antes de escrever é, por isso, seguro por construção.
 
 O desenho:
 
-- uma interface `ISaftDocumentSource` — "dá-me o que tens para este período, já em modelo SAF-T";
-- o `Erp.Sales.Application` implementa-a para faturas, guias e recibos;
-- o `Erp.Purchasing.Application` implementa-a para as autofaturas;
-- um `SaftExportService` neutro pergunta a todas as fontes registadas, junta e manda escrever.
+- uma interface `ISaftDocumentSource` — "dá-me o que tens para este período, já em modelo SAF-T",
+  declarando **para que tipo de ficheiro** serve;
+- o `Erp.Sales.Application` implementa-a para o ficheiro `"F"`: faturas, guias e recibos;
+- o `Erp.Purchasing.Application` implementa-a para o ficheiro `"S"`: as autofaturas, por fornecedor;
+- um `SaftExportService` neutro pergunta às fontes do tipo pedido, junta e manda escrever.
 
-As autofaturas entram no mesmo bloco `SalesInvoices` das outras faturas — são faturas emitidas —
-distinguidas pelo `SelfBillingIndicator`. Os *master files* continuam a ser derivados dos documentos,
-agora dos de ambas as fontes, com os clientes, artigos e taxas desduplicados na junção.
+**Não são dois módulos a alimentar o mesmo ficheiro — são dois ficheiros de tipos diferentes.** É por
+isso que o tipo entra na interface em vez de ficar implícito: o `TaxAccountingBasis` deixa de ser a
+constante `"F"` que o `SaftXmlWriter` escreve hoje e passa a vir de quem exporta, o que a estrutura
+oficial suporta bem — `"F"` e `"S"` são tipos de ficheiro distintos, não variantes do mesmo.
 
-Nada disto muda o `Erp.FiscalPT`: ele já não sabe de onde vêm os documentos, e é essa a razão de a
-proposta funcionar.
+**O que não muda é a estrutura.** Ambos os ficheiros levam `SalesInvoices`, ambos derivam os seus
+*master files* dos próprios documentos, e ambos passam pelo mesmo `SaftAuditFile` e pelo mesmo
+`SaftXmlWriter`. A separação está em **que documentos entram em que ficheiro** e no `Header` de cada
+um — não em haver duas formas de escrever.
+
+Daí que a interface tenha de dizer três coisas e não uma: que **tipo** de ficheiro serve, de que
+**entidade** é o cabeçalho, e que documentos traz. Uma fonte que só devolvesse documentos não
+chegaria — o ficheiro `"S"` sai um por fornecedor, com o NIF dele no `Header`, enquanto o `"F"` sai
+um só, com o nosso.
+
+Nada disto muda o `Erp.FiscalPT`, tirando o `TaxAccountingBasis` deixar de ser constante: o escritor
+já não sabe de onde vêm os documentos, e é essa a razão de a proposta funcionar.
 
 ### [decisão] A fatura do fornecedor é registo, não emissão — e portanto é editável
 
@@ -359,7 +390,7 @@ declaração de IVA separa-os.
 | 3 | Registo de faturas de fornecedor, com a regra do documento integrador e o índice anti-duplicação | Por fazer |
 | 4 | Devoluções e notas de crédito de fornecedor | Por fazer |
 | 5a | Regra da série para o `Erp.FiscalPT`, linha para o `Erp.Series`, e exportação do SAF-T composta por módulo | Por fazer |
-| 5b | Autofaturação no `Erp.Purchasing`, com série própria e `SelfBillingIndicator` no SAF-T | Por fazer |
+| 5b | Autofaturação no `Erp.Purchasing`, com série própria e exportação SAF-T `"S"` por fornecedor | Por fazer |
 | 6 | Custo médio ponderado a partir do razão, substituindo o custo da ficha na valorização | Por fazer |
 
 A fase 5a é refactorização pura: no fim dela o sistema faz exatamente o mesmo que fazia, e os testes

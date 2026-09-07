@@ -1,0 +1,68 @@
+using Erp.Purchasing.Domain;
+using Erp.Purchasing.Infrastructure.Storage;
+using Erp.Purchasing.Storage.Data;
+using Microsoft.EntityFrameworkCore;
+
+namespace Erp.Purchasing.Storage.Storage;
+
+public sealed class PurchaseInvoiceStorage(PurchasingDbContext dbContext) : IPurchaseInvoiceStorage
+{
+    public async Task<IReadOnlyList<PurchaseInvoice>> GetAllAsync(
+        Guid companyId,
+        Guid? supplierId = null,
+        CancellationToken cancellationToken = default)
+    {
+        return await dbContext.PurchaseInvoices
+            .AsNoTracking()
+            .Include(x => x.Lines)
+            .Include(x => x.TaxSummary)
+            .Where(x => x.CompanyId == companyId)
+            .Where(x => supplierId == null || x.SupplierId == supplierId)
+            .OrderByDescending(x => x.SupplierDocumentDate)
+            .ThenByDescending(x => x.CreatedAtUtc)
+            .ToListAsync(cancellationToken);
+    }
+
+    public Task<PurchaseInvoice?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default) =>
+        dbContext.PurchaseInvoices
+            .Include(x => x.Lines)
+            .Include(x => x.TaxSummary)
+            .FirstOrDefaultAsync(x => x.Id == id, cancellationToken);
+
+    public Task<bool> ExistsAsync(
+        Guid companyId,
+        string supplierTaxId,
+        string supplierDocumentNumber,
+        CancellationToken cancellationToken = default) =>
+        dbContext.PurchaseInvoices.AnyAsync(
+            x => x.CompanyId == companyId
+                 && x.Supplier.TaxId == supplierTaxId
+                 && x.SupplierDocumentNumber == supplierDocumentNumber,
+            cancellationToken);
+
+    public async Task<IReadOnlyDictionary<Guid, decimal>> GetInvoicedQuantitiesAsync(
+        IReadOnlyCollection<Guid> receiptLineIds,
+        Guid? excludeInvoiceId = null,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(receiptLineIds);
+
+        if (receiptLineIds.Count == 0)
+            return new Dictionary<Guid, decimal>();
+
+        var rows = await dbContext.PurchaseInvoiceLines
+            .AsNoTracking()
+            .Where(line => line.ReceiptLineId != null && receiptLineIds.Contains(line.ReceiptLineId.Value))
+            // A voided invoice invoices nothing, so what it took goes back on the shelf.
+            .Where(line => line.Invoice.Status == PurchaseInvoiceStatus.Recorded)
+            .Where(line => excludeInvoiceId == null || line.InvoiceId != excludeInvoiceId)
+            .GroupBy(line => line.ReceiptLineId!.Value)
+            .Select(group => new { ReceiptLineId = group.Key, Quantity = group.Sum(line => line.Quantity) })
+            .ToListAsync(cancellationToken);
+
+        return rows.ToDictionary(row => row.ReceiptLineId, row => row.Quantity);
+    }
+
+    public async Task AddAsync(PurchaseInvoice invoice, CancellationToken cancellationToken = default) =>
+        await dbContext.PurchaseInvoices.AddAsync(invoice, cancellationToken);
+}

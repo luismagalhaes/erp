@@ -198,6 +198,29 @@ sempre.
 **Fica na fase 5a**, junto com a autofaturação, que é a primeira coisa que precisa dela. As fases 1 a
 4 não tocam em séries — nenhum documento de compras é numerado por nós.
 
+#### O que o `Erp.Series` passa a servir, e o que não
+
+O ponto de o extrair é deixar de ser coisa do Sales: o mesmo registo passa a numerar do **lado do
+cliente** (faturas, guias, recibos) e do **lado do fornecedor** (autofaturas), com um só ecrã e um só
+fluxo de comunicação à AT.
+
+O que **não** entra lá é o contador interno das encomendas e das receções. Um `ENC2026/7` parece uma
+série mas não é:
+
+| | Série da AT | Número de encomenda |
+|---|---|---|
+| Quem o conhece | A AT | Só nós |
+| Código de validação | Obrigatório para emitir | Não existe |
+| Cadeia de assinatura | Sim | Não |
+| Concorrência | `WITH (UPDLOCK, ROWLOCK)` na linha | Índice único |
+| Uma falha na sequência | Tem de ser explicada | Custa um número |
+
+Passá-lo pela `Series` exigiria uma série que emite sem código de validação — enfraquecer o
+`CanIssue`, que é uma guarda fiscal, para acomodar um documento que não é fiscal. Fica onde está.
+
+Se um dia se quiser um contador partilhado para números internos, é um segundo tipo dentro do
+`Erp.Series`, não o mesmo. Hoje não há procura para isso: são dez linhas por módulo.
+
 ### [decisão] A exportação do SAF-T passa a compor-se a partir dos módulos
 
 Hoje o `SaftExportService` vive no `Erp.Sales.Application` e lê diretamente os três *storages* de
@@ -385,10 +408,10 @@ declaração de IVA separa-os.
 
 | Fase | Conteúdo | Estado |
 |---|---|---|
-| 1 | Encomendas a fornecedores: emissão, estado, e ecrã do que está por receber | Por fazer |
-| 2 | Receção de mercadoria, com entrada em stock e conferência contra a encomenda | Por fazer |
-| 3 | Registo de faturas de fornecedor, com a regra do documento integrador e o índice anti-duplicação | Por fazer |
-| 4 | Devoluções e notas de crédito de fornecedor | Por fazer |
+| 1 | Encomendas a fornecedores: emissão, estado, e o que está por receber | **Feito** |
+| 2 | Receção de mercadoria, com entrada em stock e conferência contra a encomenda | **Feito** |
+| 3 | Registo de faturas de fornecedor, com a regra do documento integrador e o índice anti-duplicação | **Feito** |
+| 4 | Devoluções e notas de crédito de fornecedor | **Feito** |
 | 5a | Regra da série para o `Erp.FiscalPT`, linha para o `Erp.Series`, e exportação do SAF-T composta por módulo | Por fazer |
 | 5b | Autofaturação no `Erp.Purchasing`, com série própria e exportação SAF-T `"S"` por fornecedor | Por fazer |
 | 6 | Custo médio ponderado a partir do razão, substituindo o custo da ficha na valorização | Por fazer |
@@ -400,6 +423,120 @@ a autofaturação e não ao mesmo tempo, para que uma falha se saiba logo de que
 Fora deste plano, e deliberadamente: contas correntes de fornecedores e pagamentos (é outro módulo),
 lançamento contabilístico (Accounting), e a conferência contra o e-Fatura (precisa dos *webservices*
 da AT, que ainda não estão integrados para nada).
+
+---
+
+### Como ficou a fase 1
+
+O módulo `Erp.Purchasing` segue a divisão em camadas dos outros e tem o seu próprio
+`__EFMigrationsHistory_Purchasing`. Não depende do Core: o controller lê o fornecedor e o armazém e
+entrega-os, tal como o Sales já recebe o cliente em vez de o ir buscar.
+
+Três coisas decididas ao escrever, que o desenho não tinha fechado:
+
+- **A quantidade recebida é guardada na linha da encomenda**, não derivada como no Sales. Lá, o já
+  faturado é derivado das faturas precisamente porque a guia é *append-only* e não pode ser tocada;
+  aqui a encomenda é mutável e a leitura direta é mais simples e mais barata.
+- **As linhas deixam de poder mudar assim que chega mercadoria.** Alterá-las depois reescreveria em
+  silêncio aquilo contra o que a receção foi medida. Até lá, reescrevem-se à vontade.
+- **Receber a mais é aceite**, porque os fornecedores fazem-no, mas nunca gera dívida negativa: o
+  `PendingQuantity` tem chão em zero. Quem decide se aceita o excesso é a receção, na fase 2.
+
+A distinção entre **fechar** e **anular** é a mesma ideia por outras palavras: mercadoria que chegou
+não se desencomenda. Uma encomenda com receções fecha-se, dando o resto por não vindo; uma sem
+receções anula-se. O ecrã oferece só a que é possível.
+
+O número (`ENC2026/7`) é nosso e não tem significado fiscal, por isso **não leva bloqueio de linha**
+como uma série da AT: uma colisão é apanhada pelo índice único e uma falha custa um número, não uma
+explicação à AT.
+
+### Como ficou a fase 2
+
+É aqui que a compra encontra o stock, e o que se reaproveitou foi tudo: o `IStockRecorder` já era
+agnóstico do módulo, por isso a receção regista-se nele como qualquer documento — direção `In`, tipo
+`REC` — sem nada de novo no Inventory.
+
+A **transação partilhada** entra em serviço pela primeira vez fora do Sales. O `PurchasingUnitOfWork`
+abre a transação e publica-a no `IAmbientDbTransaction`; o `StockStorage` junta-se-lhe. Assim a
+receção, as entradas no razão e as quantidades recebidas da encomenda **caem juntas ou não caem**.
+Sem isso, o armazém e a encomenda ficariam a discordar sobre o que chegou, e ninguém daria por isso
+até um teste de stocks.
+
+Duas regras que valem a pena reter:
+
+- **Não se recebe mais do que a encomenda ainda deve.** É a conferência a três, e é o mesmo problema
+  do "não faturar mais do que a guia moveu" no Sales — logo, a mesma solução: a encomenda é
+  **bloqueada** antes de se ler o que falta. O acumulado conta também dentro do mesmo pedido, para
+  que a mesma linha duas vezes não passe por duas vias.
+- **Mercadoria sem encomenda é aceite.** Chega, e recusá-la não ajudaria ninguém: a linha fica sem
+  origem e movimenta stock na mesma.
+
+Ao contrário da encomenda, **a receção não se edita** — já moveu stock, e alterá-la deixaria o razão
+a dizer uma coisa e a receção outra. Um erro anula-se: o stock sai por lançamento contrário e a
+encomenda recebe de volta a quantidade, ficando outra vez a dever o que devia.
+
+**O custo entra aqui.** Cada linha leva o seu `UnitCost` para o razão, que é o campo que estava por
+usar a sério. É o que torna a fase 6 possível — sem isto, não há de onde tirar um custo médio.
+
+### Como ficou a fase 3
+
+O **índice anti-duplicação** existe e é `(CompanyId, SupplierTaxId, SupplierDocumentNumber)`, único.
+Teve de ser escrito à mão na migração: atravessa uma coluna da fatura e outra do *snapshot* do
+fornecedor, que é um tipo *owned*, e o construtor de modelos do EF não sabe exprimir isso. Como
+ambas são colunas da mesma tabela física, a base de dados garante-o na mesma. O serviço verifica-o
+antes, só para dar uma mensagem que se percebe.
+
+A **regra do documento integrador** não precisou de nada novo: as linhas vão todas ao
+`IStockRecorder` com o `ReceiptLineId` como origem, e ele salta as que já se moveram. Uma fatura que
+segue uma receção não é recusada — simplesmente não tem nada para movimentar. As que não têm receção
+atrás, e são de existências, dão entrada aqui: é a fatura que veio com o camião.
+
+Quem decide se uma linha mexe em stock é a **natureza da dedução**, não um campo à parte. Só
+`Existências` movimenta; imobilizado e serviços não. É um campo de que a declaração de IVA precisa de
+qualquer maneira, e evita inventar outro que dissesse o mesmo.
+
+Uma decisão que refina o que este documento dizia. Escrevi acima que as faturas de fornecedor são
+editáveis, e são — **exceto depois de terem dado entrada em stock**. Aí reescrevê-las deixaria o razão
+a dizer uma coisa e a fatura outra, tal como na receção. Nesse caso anula-se: o registo deixa de
+contar para o IVA dedutível e o stock que trouxe sai. O stock que veio por receção fica, porque essa
+receção continua de pé e desfazê-la é decisão dela.
+
+O **já faturado por linha de receção é derivado** das linhas de fatura, nunca guardado na receção — é
+isso que evita ter de reescrever a receção. Uma fatura anulada não conta, portanto o que ela tomava
+volta a ficar disponível. E a receção é **bloqueada** antes de se ler o que falta, pela mesma razão de
+sempre.
+
+### Como ficou a fase 4
+
+São **duas coisas separadas**, e mantê-las separadas é o essencial desta fase:
+
+| | Devolução | Nota de crédito |
+|---|---|---|
+| O que é | Mercadoria a sair | Dinheiro a voltar |
+| Quem faz | Nós | O fornecedor |
+| Stock | **Sai**, ao custo a que entrou | **Nenhum** |
+| Onde | `SupplierReturn` | `PurchaseInvoice` com tipo `NC` |
+
+A tentação seria a nota de crédito devolver o stock. Não pode: a mercadoria já saiu na devolução, e
+se a nota de crédito a movimentasse outra vez, o armazém ficaria com existências que estão
+fisicamente no fornecedor. Quem decide é o **tipo de documento** — `MovedStock` é sempre falso numa
+`NC`, mesmo com as mesmas linhas que numa fatura movimentariam.
+
+A `SupplierReturn` é o espelho da receção e segue-lhe as regras: só sai o que foi recebido e ainda cá
+está, com a receção **bloqueada** antes da leitura; o já devolvido é derivado das linhas de devolução,
+nunca guardado na receção; e uma devolução anulada devolve nada, portanto a quantidade fica outra vez
+disponível. Não se edita — já moveu stock.
+
+O armazém **não é perguntado**: a mercadoria sai de onde está, e a receção já o diz. Linhas de
+armazéns diferentes são recusadas, porque um movimento sai de um sítio só.
+
+Os montantes de uma nota de crédito ficam **positivos no documento**, como aparecem no papel do
+fornecedor; o sinal pertence ao tipo e aplica-se ao somar. É o mesmo critério do lado das vendas.
+
+> [!NOTE]
+> A devolução regista o **movimento**, não o transporte. Mercadoria que viaja de volta precisa de um
+> documento de transporte, e **esse é nosso e é fiscal**: uma guia de devolução (`GD`), emitida pelo
+> `Erp.Sales`, que já existe. Os ecrãs dizem-no e ligam para lá.
 
 ---
 

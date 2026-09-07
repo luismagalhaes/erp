@@ -1,0 +1,208 @@
+@page "/goods-receipts/{Id:guid}"
+@attribute [Authorize]
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.AspNetCore.Components.Web
+@using MudBlazor
+@using Erp.Main.Models
+@using Erp.Main.Services
+@inject PurchasingApiClient Purchasing
+@inject NavigationManager Navigation
+@inject ISnackbar Snackbar
+
+<PageTitle>@(_receipt?.Number ?? "Receção")</PageTitle>
+
+<MudStack Spacing="4">
+    <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center">
+        <MudStack Spacing="0">
+            <MudText Typo="Typo.h4">@(_receipt?.Number ?? "Receção")</MudText>
+            @if (_receipt is not null)
+            {
+                <MudText Typo="Typo.body2" Color="Color.Secondary">
+                    @_receipt.Supplier.Name · @_receipt.ReceiptDate.ToString("yyyy-MM-dd")
+                </MudText>
+            }
+        </MudStack>
+
+        <MudButton Variant="Variant.Text" StartIcon="@Icons.Material.Filled.ArrowBack"
+                   OnClick="@(() => Navigation.NavigateTo("goods-receipts"))">
+            Voltar
+        </MudButton>
+    </MudStack>
+
+    @if (!string.IsNullOrWhiteSpace(_error))
+    {
+        <MudAlert Severity="Severity.Error" Dense="true">@_error</MudAlert>
+    }
+
+    @if (_loading)
+    {
+        <MudProgressLinear Indeterminate="true" Color="Color.Primary" />
+    }
+    else if (_receipt is null)
+    {
+        <MudAlert Severity="Severity.Warning">Receção não encontrada.</MudAlert>
+    }
+    else
+    {
+        @if (_receipt.IsVoided)
+        {
+            <MudAlert Severity="Severity.Error">
+                Anulada em @_receipt.VoidedAtUtc?.ToString("yyyy-MM-dd HH:mm"): @_receipt.VoidReason.
+                O stock que esta receção deu entrada foi retirado.
+            </MudAlert>
+        }
+
+        <MudPaper Elevation="1" Class="pa-4">
+            <MudGrid>
+                <MudItem xs="6" md="3">
+                    <MudText Typo="Typo.caption" Color="Color.Secondary">Contribuinte</MudText>
+                    <MudText Typo="Typo.body1">@_receipt.Supplier.TaxId</MudText>
+                </MudItem>
+                <MudItem xs="6" md="3">
+                    <MudText Typo="Typo.caption" Color="Color.Secondary">Guia do fornecedor</MudText>
+                    <MudText Typo="Typo.body1">
+                        @(string.IsNullOrWhiteSpace(_receipt.SupplierDocumentNumber)
+                            ? "—"
+                            : _receipt.SupplierDocumentNumber)
+                    </MudText>
+                </MudItem>
+                <MudItem xs="6" md="3">
+                    <MudText Typo="Typo.caption" Color="Color.Secondary">Linhas</MudText>
+                    <MudText Typo="Typo.body1">@_receipt.Lines.Count</MudText>
+                </MudItem>
+                <MudItem xs="6" md="3">
+                    <MudText Typo="Typo.caption" Color="Color.Secondary">Custo total</MudText>
+                    <MudText Typo="Typo.h6" Color="Color.Primary">@_receipt.TotalCost.ToString("N2")</MudText>
+                </MudItem>
+            </MudGrid>
+        </MudPaper>
+
+        <MudPaper Elevation="1" Class="pa-2">
+            <MudTable Items="_receipt.Lines" Hover="true" Striped="true" Dense="true" Breakpoint="Breakpoint.Sm">
+                <ToolBarContent>
+                    <MudText Typo="Typo.h6">O que chegou</MudText>
+                </ToolBarContent>
+                <HeaderContent>
+                    <MudTh Style="width: 50px;">#</MudTh>
+                    <MudTh>Artigo</MudTh>
+                    <MudTh>Descrição</MudTh>
+                    <MudTh>Origem</MudTh>
+                    <MudTh Style="text-align: right;">Quantidade</MudTh>
+                    <MudTh Style="text-align: right;">Custo unit.</MudTh>
+                    <MudTh Style="text-align: right;">Total</MudTh>
+                </HeaderContent>
+                <RowTemplate>
+                    <MudTd DataLabel="#">@context.LineNumber</MudTd>
+                    <MudTd DataLabel="Artigo">
+                        <MudText Typo="Typo.body2" Style="font-family: monospace;">@context.ProductCode</MudText>
+                    </MudTd>
+                    <MudTd DataLabel="Descrição">@context.ProductDescription</MudTd>
+                    <MudTd DataLabel="Origem">
+                        @if (context.OrderId is { } orderId)
+                        {
+                            <MudLink Href="@($"purchase-orders/{orderId}")">Encomenda</MudLink>
+                        }
+                        else
+                        {
+                            <MudText Typo="Typo.caption" Color="Color.Secondary">Sem encomenda</MudText>
+                        }
+                    </MudTd>
+                    <MudTd DataLabel="Quantidade" Style="text-align: right;">
+                        @context.Quantity.ToString("N3") @context.UnitOfMeasure
+                    </MudTd>
+                    <MudTd DataLabel="Custo unit." Style="text-align: right;">
+                        @context.UnitCost.ToString("N2")
+                    </MudTd>
+                    <MudTd DataLabel="Total" Style="text-align: right;">@context.LineAmount.ToString("N2")</MudTd>
+                </RowTemplate>
+            </MudTable>
+        </MudPaper>
+
+        @if (!_receipt.IsVoided)
+        {
+            <MudExpansionPanels>
+                <MudExpansionPanel Text="Anular receção">
+                    <MudText Typo="Typo.body2" Color="Color.Secondary" Class="mb-3">
+                        Anular retira do armazém o stock que esta receção deu entrada e devolve a
+                        quantidade às encomendas. Nada é apagado: a receção fica com o motivo, e o
+                        movimento contrário fica no razão ao lado do original.
+                    </MudText>
+
+                    <MudStack Row="true" Spacing="2" AlignItems="AlignItems.Center">
+                        <MudTextField @bind-Value="_reason" @bind-Value:after="StateHasChanged" Immediate="true"
+                                      Label="Motivo" Variant="Variant.Outlined" Margin="Margin.Dense"
+                                      Style="max-width: 480px;" />
+                        <MudButton Variant="Variant.Filled" Color="Color.Error"
+                                   StartIcon="@Icons.Material.Filled.Cancel"
+                                   Disabled="@(_working || string.IsNullOrWhiteSpace(_reason))"
+                                   OnClick="VoidAsync">
+                            Anular
+                        </MudButton>
+                    </MudStack>
+                </MudExpansionPanel>
+            </MudExpansionPanels>
+        }
+    }
+</MudStack>
+
+@code {
+    [Parameter]
+    public Guid Id { get; set; }
+
+    private bool _loading = true;
+    private bool _working;
+    private string? _error;
+    private string _reason = string.Empty;
+
+    private GoodsReceipt? _receipt;
+
+    protected override async Task OnParametersSetAsync() => await LoadAsync();
+
+    private async Task LoadAsync()
+    {
+        _loading = true;
+        _error = null;
+
+        try
+        {
+            _receipt = await Purchasing.GetReceiptAsync(Id);
+        }
+        catch (Exception ex)
+        {
+            _error = $"Não foi possível carregar a receção: {ex.Message}";
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private async Task VoidAsync()
+    {
+        _working = true;
+        _error = null;
+
+        try
+        {
+            var (receipt, error) = await Purchasing.VoidReceiptAsync(Id, _reason.Trim());
+
+            if (receipt is null)
+            {
+                _error = error ?? "Não foi possível anular a receção.";
+                return;
+            }
+
+            _receipt = receipt;
+            _reason = string.Empty;
+            Snackbar.Add("Receção anulada. O stock foi retirado.", Severity.Success);
+        }
+        catch (Exception ex)
+        {
+            _error = $"Não foi possível anular a receção: {ex.Message}";
+        }
+        finally
+        {
+            _working = false;
+        }
+    }
+}

@@ -1,0 +1,503 @@
+@page "/goods-receipts/new"
+@attribute [Authorize]
+@implements IDisposable
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.AspNetCore.Components.Web
+@using MudBlazor
+@using Erp.Main.Models
+@using Erp.Main.Services
+@inject PurchasingApiClient Purchasing
+@inject CatalogApiClient Catalog
+@inject StockApiClient StockApi
+@inject CompanyState Company
+@inject NavigationManager Navigation
+@inject ISnackbar Snackbar
+
+<PageTitle>Receber mercadoria</PageTitle>
+
+<MudStack Spacing="4">
+    <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center">
+        <MudStack Spacing="0">
+            <MudText Typo="Typo.h4">Receber mercadoria</MudText>
+            <MudText Typo="Typo.body2" Color="Color.Secondary">
+                Escolha o fornecedor e o que chegou. O que está por receber vem das encomendas — não é
+                preciso copiar nada à mão.
+            </MudText>
+        </MudStack>
+
+        <MudButton Variant="Variant.Text" StartIcon="@Icons.Material.Filled.ArrowBack"
+                   OnClick="@(() => Navigation.NavigateTo("goods-receipts"))">
+            Voltar
+        </MudButton>
+    </MudStack>
+
+    @if (!string.IsNullOrWhiteSpace(_error))
+    {
+        <MudAlert Severity="Severity.Error" Dense="true">@_error</MudAlert>
+    }
+
+    @if (!Company.HasCompany)
+    {
+        <MudAlert Severity="Severity.Info">Escolha uma empresa no cabeçalho.</MudAlert>
+    }
+    else
+    {
+        <MudPaper Elevation="1" Class="pa-4">
+            <MudGrid>
+                <MudItem xs="12" md="4">
+                    <MudSelect T="Guid?" Value="_supplierId" ValueChanged="OnSupplierChangedAsync"
+                               Label="Fornecedor" Variant="Variant.Outlined" Required="true">
+                        @foreach (var supplier in _suppliers)
+                        {
+                            <MudSelectItem T="Guid?" Value="@supplier.Id">
+                                @supplier.Code — @supplier.Name
+                            </MudSelectItem>
+                        }
+                    </MudSelect>
+                </MudItem>
+                <MudItem xs="12" md="3">
+                    <MudSelect T="Guid?" @bind-Value="_warehouseId" Label="Armazém"
+                               Variant="Variant.Outlined" Required="true"
+                               HelperText="Onde a mercadoria entra">
+                        @foreach (var warehouse in _warehouses)
+                        {
+                            <MudSelectItem T="Guid?" Value="@warehouse.Id">
+                                @warehouse.Code — @warehouse.Name
+                            </MudSelectItem>
+                        }
+                    </MudSelect>
+                </MudItem>
+                <MudItem xs="12" md="2">
+                    <MudDatePicker @bind-Date="_receiptDate" Label="Data" Variant="Variant.Outlined"
+                                   DateFormat="yyyy-MM-dd" />
+                </MudItem>
+                <MudItem xs="12" md="3">
+                    <MudTextField @bind-Value="_supplierDocumentNumber" Label="Guia do fornecedor"
+                                  Variant="Variant.Outlined"
+                                  HelperText="O número dele, como referência" />
+                </MudItem>
+            </MudGrid>
+        </MudPaper>
+
+        @if (_supplierId is not null)
+        {
+            <MudPaper Elevation="1" Class="pa-4">
+                <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center" Class="mb-3">
+                    <MudStack Spacing="0">
+                        <MudText Typo="Typo.h6">Por receber</MudText>
+                        <MudText Typo="Typo.caption" Color="Color.Secondary">
+                            Das encomendas colocadas a este fornecedor. Ajuste a quantidade se chegou só parte.
+                        </MudText>
+                    </MudStack>
+                    @if (_loadingPending)
+                    {
+                        <MudProgressCircular Size="Size.Small" Indeterminate="true" Color="Color.Primary" />
+                    }
+                </MudStack>
+
+                @if (_pending.Count == 0)
+                {
+                    <MudAlert Severity="Severity.Info" Dense="true">
+                        Este fornecedor não tem nada por receber. Pode receber mesmo assim, acrescentando
+                        linhas em baixo — mercadoria que chega sem encomenda é aceite.
+                    </MudAlert>
+                }
+                else
+                {
+                    <MudTable Items="_pending" Dense="true" Hover="true" Striped="true" Breakpoint="Breakpoint.Sm">
+                        <HeaderContent>
+                            <MudTh Style="width: 60px;"></MudTh>
+                            <MudTh>Encomenda</MudTh>
+                            <MudTh>Artigo</MudTh>
+                            <MudTh Style="text-align: right;">Por receber</MudTh>
+                            <MudTh Style="width: 140px;">A receber</MudTh>
+                            <MudTh Style="width: 140px;">Custo unit.</MudTh>
+                        </HeaderContent>
+                        <RowTemplate>
+                            <MudTd>
+                                <MudCheckBox T="bool" Value="@IsChosen(context)"
+                                             ValueChanged="@(chosen => ToggleAsync(context, chosen))"
+                                             Color="Color.Primary" Dense="true" />
+                            </MudTd>
+                            <MudTd DataLabel="Encomenda">
+                                <MudStack Spacing="0">
+                                    <MudText Typo="Typo.body2" Style="font-family: monospace;">
+                                        @context.OrderNumber
+                                    </MudText>
+                                    <MudText Typo="Typo.caption" Color="Color.Secondary">
+                                        Prevista @(context.ExpectedDate?.ToString("yyyy-MM-dd") ?? "—")
+                                    </MudText>
+                                </MudStack>
+                            </MudTd>
+                            <MudTd DataLabel="Artigo">
+                                <MudStack Spacing="0">
+                                    <MudText Typo="Typo.body2">@context.ProductCode</MudText>
+                                    <MudText Typo="Typo.caption" Color="Color.Secondary">
+                                        @context.ProductDescription
+                                    </MudText>
+                                </MudStack>
+                            </MudTd>
+                            <MudTd DataLabel="Por receber" Style="text-align: right;">
+                                @context.PendingQuantity.ToString("N3") @context.UnitOfMeasure
+                            </MudTd>
+                            <MudTd DataLabel="A receber">
+                                @if (Chosen(context) is { } chosen)
+                                {
+                                    <MudNumericField T="decimal" Value="chosen.Quantity"
+                                                     ValueChanged="@(quantity => SetQuantity(chosen, context, quantity))"
+                                                     Margin="Margin.Dense" Min="0"
+                                                     Max="@context.PendingQuantity" />
+                                }
+                            </MudTd>
+                            <MudTd DataLabel="Custo unit.">
+                                @if (Chosen(context) is { } chosen)
+                                {
+                                    <MudNumericField @bind-Value="chosen.UnitCost" @bind-Value:after="StateHasChanged"
+                                                     Margin="Margin.Dense" Min="0" Format="N2" />
+                                }
+                            </MudTd>
+                        </RowTemplate>
+                    </MudTable>
+                }
+            </MudPaper>
+
+            <MudPaper Elevation="1" Class="pa-4">
+                <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center" Class="mb-3">
+                    <MudStack Spacing="0">
+                        <MudText Typo="Typo.h6">Sem encomenda</MudText>
+                        <MudText Typo="Typo.caption" Color="Color.Secondary">
+                            Mercadoria que chegou sem estar encomendada.
+                        </MudText>
+                    </MudStack>
+                    <MudButton Variant="Variant.Outlined" Color="Color.Primary" Size="Size.Small"
+                               StartIcon="@Icons.Material.Filled.Add" OnClick="AddFreeLine">
+                        Adicionar linha
+                    </MudButton>
+                </MudStack>
+
+                @if (_freeLines.Count > 0)
+                {
+                    <MudTable Items="_freeLines" Dense="true" Hover="true" Breakpoint="Breakpoint.Sm">
+                        <HeaderContent>
+                            <MudTh Style="width: 220px;">Artigo</MudTh>
+                            <MudTh>Descrição</MudTh>
+                            <MudTh Style="width: 120px;">Qtd.</MudTh>
+                            <MudTh Style="width: 90px;">Unid.</MudTh>
+                            <MudTh Style="width: 140px;">Custo unit.</MudTh>
+                            <MudTh Style="width: 70px; text-align: right;">Ações</MudTh>
+                        </HeaderContent>
+                        <RowTemplate>
+                            <MudTd DataLabel="Artigo">
+                                <MudSelect T="Guid?" Value="context.ProductId"
+                                           ValueChanged="@(productId => OnProductChanged(context, productId))"
+                                           Margin="Margin.Dense" Clearable="true" Placeholder="Livre">
+                                    @foreach (var product in _products)
+                                    {
+                                        <MudSelectItem T="Guid?" Value="@product.Id">
+                                            @product.ProductCode — @product.Description
+                                        </MudSelectItem>
+                                    }
+                                </MudSelect>
+                            </MudTd>
+                            <MudTd DataLabel="Descrição">
+                                <MudTextField @bind-Value="context.ProductDescription" Margin="Margin.Dense" />
+                            </MudTd>
+                            <MudTd DataLabel="Qtd.">
+                                <MudNumericField @bind-Value="context.Quantity" @bind-Value:after="StateHasChanged"
+                                                 Margin="Margin.Dense" Min="0" />
+                            </MudTd>
+                            <MudTd DataLabel="Unid.">
+                                <MudTextField @bind-Value="context.UnitOfMeasure" Margin="Margin.Dense" />
+                            </MudTd>
+                            <MudTd DataLabel="Custo unit.">
+                                <MudNumericField @bind-Value="context.UnitCost" @bind-Value:after="StateHasChanged"
+                                                 Margin="Margin.Dense" Min="0" Format="N2" />
+                            </MudTd>
+                            <MudTd DataLabel="Ações" Style="text-align: right;">
+                                <MudIconButton Size="Size.Small" Icon="@Icons.Material.Filled.Delete"
+                                               Color="Color.Error"
+                                               OnClick="@(() => _freeLines.Remove(context))" />
+                            </MudTd>
+                        </RowTemplate>
+                    </MudTable>
+                }
+                else
+                {
+                    <MudText Typo="Typo.body2" Color="Color.Secondary">Nenhuma.</MudText>
+                }
+            </MudPaper>
+
+            <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center">
+                <MudStack Spacing="0">
+                    <MudText Typo="Typo.caption" Color="Color.Secondary">
+                        @LineCount @(LineCount == 1 ? "linha" : "linhas") a receber
+                    </MudText>
+                    <MudText Typo="Typo.h6">Custo total: @TotalCost.ToString("N2")</MudText>
+                </MudStack>
+
+                <MudStack Row="true" Spacing="2">
+                    <MudButton Variant="Variant.Text"
+                               OnClick="@(() => Navigation.NavigateTo("goods-receipts"))">
+                        Cancelar
+                    </MudButton>
+                    <MudButton Variant="Variant.Filled" Color="Color.Primary"
+                               StartIcon="@Icons.Material.Filled.MoveToInbox"
+                               Disabled="@(_saving || !CanSave)"
+                               OnClick="SaveAsync">
+                        @(_saving ? "A receber..." : "Dar entrada")
+                    </MudButton>
+                </MudStack>
+            </MudStack>
+        }
+    }
+</MudStack>
+
+@code {
+    private bool _saving;
+    private bool _loadingPending;
+    private string? _error;
+
+    private Guid? _supplierId;
+    private Guid? _warehouseId;
+    private DateTime? _receiptDate = DateTime.Today;
+    private string _supplierDocumentNumber = string.Empty;
+
+    private List<Partner> _suppliers = [];
+    private List<Warehouse> _warehouses = [];
+    private List<ProductListItem> _products = [];
+    private List<PendingOrderLine> _pending = [];
+
+    private readonly List<ChosenLine> _chosen = [];
+    private readonly List<FreeLine> _freeLines = [];
+
+    private int LineCount => _chosen.Count(line => line.Quantity > 0) + ValidFreeLines.Count();
+
+    private decimal TotalCost =>
+        _chosen.Where(line => line.Quantity > 0).Sum(line => Round(line.Quantity * line.UnitCost))
+        + ValidFreeLines.Sum(line => Round(line.Quantity * line.UnitCost));
+
+    private IEnumerable<FreeLine> ValidFreeLines =>
+        _freeLines.Where(line => line.Quantity > 0 && !string.IsNullOrWhiteSpace(line.ProductCode));
+
+    private bool CanSave => _supplierId is not null && _warehouseId is not null && LineCount > 0;
+
+    protected override async Task OnInitializedAsync()
+    {
+        Company.Changed += OnCompanyChanged;
+        await Company.EnsureLoadedAsync();
+        await LoadAsync();
+    }
+
+    private async void OnCompanyChanged() => await InvokeAsync(async () =>
+    {
+        _supplierId = null;
+        _chosen.Clear();
+        _freeLines.Clear();
+        _pending = [];
+        await LoadAsync();
+    });
+
+    private async Task LoadAsync()
+    {
+        if (!Company.HasCompany)
+        {
+            _error = Company.LoadError;
+            StateHasChanged();
+            return;
+        }
+
+        try
+        {
+            var (suppliers, suppliersError) = await Catalog.GetSuppliersAsync(Company.SelectedCompanyId);
+            _suppliers = [.. suppliers.Where(supplier => supplier.IsActive)];
+
+            var (warehouses, warehousesError) = await StockApi.GetWarehousesAsync(Company.SelectedCompanyId);
+            _warehouses = [.. warehouses.Where(warehouse => warehouse.IsActive)];
+
+            var (products, productsError) = await Catalog.GetProductsAsync(Company.SelectedCompanyId);
+            _products = [.. products.Where(product => product.IsActive)];
+
+            _error = suppliersError ?? warehousesError ?? productsError;
+
+            _warehouseId ??= _warehouses.FirstOrDefault(warehouse => warehouse.IsDefault)?.Id
+                             ?? _warehouses.FirstOrDefault()?.Id;
+        }
+        catch (Exception ex)
+        {
+            _error = $"Não foi possível preparar a receção: {ex.Message}";
+        }
+        finally
+        {
+            StateHasChanged();
+        }
+    }
+
+    private async Task OnSupplierChangedAsync(Guid? supplierId)
+    {
+        _supplierId = supplierId;
+        _chosen.Clear();
+        _pending = [];
+
+        if (supplierId is null)
+        {
+            StateHasChanged();
+            return;
+        }
+
+        _loadingPending = true;
+        StateHasChanged();
+
+        try
+        {
+            var (pending, error) = await Purchasing.GetPendingLinesAsync(Company.SelectedCompanyId, supplierId);
+            _pending = [.. pending];
+            _error = error;
+
+            // The order already says where the goods were meant to go, so the warehouse follows it.
+            if (_pending.Count > 0)
+                _warehouseId = _pending[0].WarehouseId;
+        }
+        catch (Exception ex)
+        {
+            _error = $"Não foi possível carregar o que está por receber: {ex.Message}";
+        }
+        finally
+        {
+            _loadingPending = false;
+            StateHasChanged();
+        }
+    }
+
+    private ChosenLine? Chosen(PendingOrderLine line) =>
+        _chosen.FirstOrDefault(chosen => chosen.LineId == line.LineId);
+
+    private bool IsChosen(PendingOrderLine line) => Chosen(line) is not null;
+
+    /// <summary>
+    /// Ticking a line assumes everything still owed arrived, at the price that was ordered. Both
+    /// are the common case and both can be changed.
+    /// </summary>
+    private void ToggleAsync(PendingOrderLine line, bool chosen)
+    {
+        var existing = Chosen(line);
+
+        if (chosen && existing is null)
+        {
+            _chosen.Add(new ChosenLine
+            {
+                LineId = line.LineId,
+                ProductCode = line.ProductCode,
+                ProductDescription = line.ProductDescription,
+                UnitOfMeasure = line.UnitOfMeasure,
+                Quantity = line.PendingQuantity,
+                UnitCost = line.UnitPrice
+            });
+        }
+        else if (!chosen && existing is not null)
+        {
+            _chosen.Remove(existing);
+        }
+
+        StateHasChanged();
+    }
+
+    /// <summary>Never more than the order still owes — the API refuses it anyway.</summary>
+    private void SetQuantity(ChosenLine chosen, PendingOrderLine line, decimal quantity)
+    {
+        chosen.Quantity = Math.Clamp(quantity, 0m, line.PendingQuantity);
+        StateHasChanged();
+    }
+
+    private void AddFreeLine() => _freeLines.Add(new FreeLine());
+
+    private void OnProductChanged(FreeLine line, Guid? productId)
+    {
+        line.ProductId = productId;
+
+        var product = _products.FirstOrDefault(x => x.Id == productId);
+        if (product is null)
+            return;
+
+        line.ProductCode = product.ProductCode;
+        line.ProductDescription = product.Description;
+        line.UnitOfMeasure = product.UnitOfMeasure;
+        line.UnitCost = product.UnitCost;
+    }
+
+    private async Task SaveAsync()
+    {
+        _saving = true;
+        _error = null;
+
+        try
+        {
+            var lines = _chosen
+                .Where(line => line.Quantity > 0)
+                .Select(line => new GoodsReceiptLineRequest(
+                    line.ProductCode,
+                    line.ProductDescription,
+                    line.Quantity,
+                    line.UnitCost,
+                    line.UnitOfMeasure,
+                    line.LineId))
+                .Concat(ValidFreeLines.Select(line => new GoodsReceiptLineRequest(
+                    line.ProductCode.Trim(),
+                    string.IsNullOrWhiteSpace(line.ProductDescription)
+                        ? line.ProductCode.Trim()
+                        : line.ProductDescription.Trim(),
+                    line.Quantity,
+                    line.UnitCost,
+                    line.UnitOfMeasure)))
+                .ToList();
+
+            var (receipt, error) = await Purchasing.CreateReceiptAsync(new CreateGoodsReceiptRequest(
+                Company.SelectedCompanyId,
+                _supplierId!.Value,
+                DateOnly.FromDateTime(_receiptDate ?? DateTime.Today),
+                _warehouseId!.Value,
+                lines,
+                string.IsNullOrWhiteSpace(_supplierDocumentNumber) ? null : _supplierDocumentNumber.Trim()));
+
+            if (receipt is null)
+            {
+                _error = error ?? "Não foi possível dar entrada da mercadoria.";
+                return;
+            }
+
+            Snackbar.Add($"Receção {receipt.Number} registada. O stock foi atualizado.", Severity.Success);
+            Navigation.NavigateTo($"goods-receipts/{receipt.Id}");
+        }
+        catch (Exception ex)
+        {
+            _error = $"Não foi possível dar entrada da mercadoria: {ex.Message}";
+        }
+        finally
+        {
+            _saving = false;
+        }
+    }
+
+    private static decimal Round(decimal value) => Math.Round(value, 2, MidpointRounding.AwayFromZero);
+
+    private sealed class ChosenLine
+    {
+        public Guid LineId { get; set; }
+        public string ProductCode { get; set; } = string.Empty;
+        public string ProductDescription { get; set; } = string.Empty;
+        public string UnitOfMeasure { get; set; } = "UN";
+        public decimal Quantity { get; set; }
+        public decimal UnitCost { get; set; }
+    }
+
+    private sealed class FreeLine
+    {
+        public Guid? ProductId { get; set; }
+        public string ProductCode { get; set; } = string.Empty;
+        public string ProductDescription { get; set; } = string.Empty;
+        public string UnitOfMeasure { get; set; } = "UN";
+        public decimal Quantity { get; set; } = 1;
+        public decimal UnitCost { get; set; }
+    }
+
+    public void Dispose() => Company.Changed -= OnCompanyChanged;
+}

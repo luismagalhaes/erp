@@ -1,0 +1,352 @@
+@page "/supplier-returns/new"
+@attribute [Authorize]
+@implements IDisposable
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.AspNetCore.Components.Web
+@using MudBlazor
+@using Erp.Main.Models
+@using Erp.Main.Services
+@inject PurchasingApiClient Purchasing
+@inject CatalogApiClient Catalog
+@inject CompanyState Company
+@inject NavigationManager Navigation
+@inject ISnackbar Snackbar
+
+<PageTitle>Devolver mercadoria</PageTitle>
+
+<MudStack Spacing="4">
+    <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center">
+        <MudStack Spacing="0">
+            <MudText Typo="Typo.h4">Devolver mercadoria</MudText>
+            <MudText Typo="Typo.body2" Color="Color.Secondary">
+                Só se pode devolver o que foi recebido e ainda cá está. O stock sai ao custo a que entrou.
+            </MudText>
+        </MudStack>
+
+        <MudButton Variant="Variant.Text" StartIcon="@Icons.Material.Filled.ArrowBack"
+                   OnClick="@(() => Navigation.NavigateTo("supplier-returns"))">
+            Voltar
+        </MudButton>
+    </MudStack>
+
+    @if (!string.IsNullOrWhiteSpace(_error))
+    {
+        <MudAlert Severity="Severity.Error" Dense="true">@_error</MudAlert>
+    }
+
+    @if (!Company.HasCompany)
+    {
+        <MudAlert Severity="Severity.Info">Escolha uma empresa no cabeçalho.</MudAlert>
+    }
+    else
+    {
+        <MudPaper Elevation="1" Class="pa-4">
+            <MudGrid>
+                <MudItem xs="12" md="4">
+                    <MudSelect T="Guid?" Value="_supplierId" ValueChanged="OnSupplierChangedAsync"
+                               Label="Fornecedor" Variant="Variant.Outlined" Required="true">
+                        @foreach (var supplier in _suppliers)
+                        {
+                            <MudSelectItem T="Guid?" Value="@supplier.Id">
+                                @supplier.Code — @supplier.Name
+                            </MudSelectItem>
+                        }
+                    </MudSelect>
+                </MudItem>
+                <MudItem xs="12" md="3">
+                    <MudDatePicker @bind-Date="_returnDate" Label="Data" Variant="Variant.Outlined"
+                                   DateFormat="yyyy-MM-dd" />
+                </MudItem>
+                <MudItem xs="12" md="5">
+                    <MudTextField @bind-Value="_reason" @bind-Value:after="StateHasChanged" Immediate="true"
+                                  Label="Motivo" Variant="Variant.Outlined" Required="true"
+                                  HelperText="É o que a nota de crédito do fornecedor vai citar" />
+                </MudItem>
+            </MudGrid>
+        </MudPaper>
+
+        @if (_supplierId is not null)
+        {
+            <MudPaper Elevation="1" Class="pa-4">
+                <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center" Class="mb-3">
+                    <MudStack Spacing="0">
+                        <MudText Typo="Typo.h6">O que está cá</MudText>
+                        <MudText Typo="Typo.caption" Color="Color.Secondary">
+                            Recebido deste fornecedor e ainda não devolvido.
+                        </MudText>
+                    </MudStack>
+                    @if (_loadingReturnable)
+                    {
+                        <MudProgressCircular Size="Size.Small" Indeterminate="true" Color="Color.Primary" />
+                    }
+                </MudStack>
+
+                @if (_returnable.Count == 0)
+                {
+                    <MudAlert Severity="Severity.Info" Dense="true">
+                        Não há nada recebido deste fornecedor por devolver.
+                    </MudAlert>
+                }
+                else
+                {
+                    <MudTable Items="_returnable" Dense="true" Hover="true" Striped="true" Breakpoint="Breakpoint.Sm">
+                        <HeaderContent>
+                            <MudTh Style="width: 60px;"></MudTh>
+                            <MudTh>Receção</MudTh>
+                            <MudTh>Artigo</MudTh>
+                            <MudTh Style="text-align: right;">Recebido</MudTh>
+                            <MudTh Style="text-align: right;">Pode voltar</MudTh>
+                            <MudTh Style="width: 150px;">A devolver</MudTh>
+                            <MudTh Style="text-align: right;">Custo</MudTh>
+                        </HeaderContent>
+                        <RowTemplate>
+                            <MudTd>
+                                <MudCheckBox T="bool" Value="@IsChosen(context)"
+                                             ValueChanged="@(chosen => Toggle(context, chosen))"
+                                             Color="Color.Primary" Dense="true" />
+                            </MudTd>
+                            <MudTd DataLabel="Receção">
+                                <MudStack Spacing="0">
+                                    <MudText Typo="Typo.body2" Style="font-family: monospace;">
+                                        @context.ReceiptNumber
+                                    </MudText>
+                                    <MudText Typo="Typo.caption" Color="Color.Secondary">
+                                        @context.ReceiptDate.ToString("yyyy-MM-dd")
+                                    </MudText>
+                                </MudStack>
+                            </MudTd>
+                            <MudTd DataLabel="Artigo">
+                                <MudStack Spacing="0">
+                                    <MudText Typo="Typo.body2">@context.ProductCode</MudText>
+                                    <MudText Typo="Typo.caption" Color="Color.Secondary">
+                                        @context.ProductDescription
+                                    </MudText>
+                                </MudStack>
+                            </MudTd>
+                            <MudTd DataLabel="Recebido" Style="text-align: right;">
+                                @context.ReceivedQuantity.ToString("N3")
+                            </MudTd>
+                            <MudTd DataLabel="Pode voltar" Style="text-align: right;">
+                                @context.ReturnableQuantity.ToString("N3") @context.UnitOfMeasure
+                            </MudTd>
+                            <MudTd DataLabel="A devolver">
+                                @if (Chosen(context) is { } chosen)
+                                {
+                                    <MudNumericField T="decimal" Value="chosen.Quantity"
+                                                     ValueChanged="@(quantity => SetQuantity(chosen, context, quantity))"
+                                                     Margin="Margin.Dense" Min="0"
+                                                     Max="@context.ReturnableQuantity" />
+                                }
+                            </MudTd>
+                            <MudTd DataLabel="Custo" Style="text-align: right;">
+                                @context.UnitCost.ToString("N2")
+                            </MudTd>
+                        </RowTemplate>
+                    </MudTable>
+                }
+            </MudPaper>
+
+            <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center">
+                <MudStack Spacing="0">
+                    <MudText Typo="Typo.caption" Color="Color.Secondary">
+                        @LineCount @(LineCount == 1 ? "linha" : "linhas") a devolver
+                    </MudText>
+                    <MudText Typo="Typo.h6">Custo total: @TotalCost.ToString("N2")</MudText>
+                </MudStack>
+
+                <MudStack Row="true" Spacing="2">
+                    <MudButton Variant="Variant.Text"
+                               OnClick="@(() => Navigation.NavigateTo("supplier-returns"))">
+                        Cancelar
+                    </MudButton>
+                    <MudButton Variant="Variant.Filled" Color="Color.Primary"
+                               StartIcon="@Icons.Material.Filled.Undo"
+                               Disabled="@(_saving || !CanSave)"
+                               OnClick="SaveAsync">
+                        @(_saving ? "A devolver..." : "Devolver")
+                    </MudButton>
+                </MudStack>
+            </MudStack>
+        }
+    }
+</MudStack>
+
+@code {
+    private bool _saving;
+    private bool _loadingReturnable;
+    private string? _error;
+
+    private Guid? _supplierId;
+    private DateTime? _returnDate = DateTime.Today;
+    private string _reason = string.Empty;
+
+    private List<Partner> _suppliers = [];
+    private List<ReturnableReceiptLine> _returnable = [];
+
+    private readonly List<ChosenLine> _chosen = [];
+
+    private int LineCount => _chosen.Count(line => line.Quantity > 0);
+
+    private decimal TotalCost =>
+        _chosen.Where(line => line.Quantity > 0).Sum(line => Round(line.Quantity * line.UnitCost));
+
+    private bool CanSave =>
+        _supplierId is not null && !string.IsNullOrWhiteSpace(_reason) && LineCount > 0;
+
+    protected override async Task OnInitializedAsync()
+    {
+        Company.Changed += OnCompanyChanged;
+        await Company.EnsureLoadedAsync();
+        await LoadAsync();
+    }
+
+    private async void OnCompanyChanged() => await InvokeAsync(async () =>
+    {
+        _supplierId = null;
+        _chosen.Clear();
+        _returnable = [];
+        await LoadAsync();
+    });
+
+    private async Task LoadAsync()
+    {
+        if (!Company.HasCompany)
+        {
+            _error = Company.LoadError;
+            StateHasChanged();
+            return;
+        }
+
+        try
+        {
+            var (suppliers, error) = await Catalog.GetSuppliersAsync(Company.SelectedCompanyId);
+            _suppliers = [.. suppliers.Where(supplier => supplier.IsActive)];
+            _error = error;
+        }
+        catch (Exception ex)
+        {
+            _error = $"Não foi possível carregar os fornecedores: {ex.Message}";
+        }
+        finally
+        {
+            StateHasChanged();
+        }
+    }
+
+    private async Task OnSupplierChangedAsync(Guid? supplierId)
+    {
+        _supplierId = supplierId;
+        _chosen.Clear();
+        _returnable = [];
+
+        if (supplierId is null)
+        {
+            StateHasChanged();
+            return;
+        }
+
+        _loadingReturnable = true;
+        StateHasChanged();
+
+        try
+        {
+            var (items, error) = await Purchasing.GetReturnableLinesAsync(Company.SelectedCompanyId, supplierId);
+            _returnable = [.. items];
+            _error = error;
+        }
+        catch (Exception ex)
+        {
+            _error = $"Não foi possível carregar o que pode ser devolvido: {ex.Message}";
+        }
+        finally
+        {
+            _loadingReturnable = false;
+            StateHasChanged();
+        }
+    }
+
+    private ChosenLine? Chosen(ReturnableReceiptLine line) =>
+        _chosen.FirstOrDefault(chosen => chosen.ReceiptLineId == line.ReceiptLineId);
+
+    private bool IsChosen(ReturnableReceiptLine line) => Chosen(line) is not null;
+
+    /// <summary>
+    /// Ticking a line starts at one unit, not at everything: a return is usually part of a delivery,
+    /// unlike a receipt where the whole outstanding quantity normally arrives.
+    /// </summary>
+    private void Toggle(ReturnableReceiptLine line, bool chosen)
+    {
+        var existing = Chosen(line);
+
+        if (chosen && existing is null)
+        {
+            _chosen.Add(new ChosenLine
+            {
+                ReceiptLineId = line.ReceiptLineId,
+                Quantity = Math.Min(1m, line.ReturnableQuantity),
+                UnitCost = line.UnitCost
+            });
+        }
+        else if (!chosen && existing is not null)
+        {
+            _chosen.Remove(existing);
+        }
+
+        StateHasChanged();
+    }
+
+    private void SetQuantity(ChosenLine chosen, ReturnableReceiptLine line, decimal quantity)
+    {
+        chosen.Quantity = Math.Clamp(quantity, 0m, line.ReturnableQuantity);
+        StateHasChanged();
+    }
+
+    private async Task SaveAsync()
+    {
+        _saving = true;
+        _error = null;
+
+        try
+        {
+            var lines = _chosen
+                .Where(line => line.Quantity > 0)
+                .Select(line => new SupplierReturnLineRequest(line.ReceiptLineId, line.Quantity))
+                .ToList();
+
+            var (created, error) = await Purchasing.CreateReturnAsync(new CreateSupplierReturnRequest(
+                Company.SelectedCompanyId,
+                _supplierId!.Value,
+                DateOnly.FromDateTime(_returnDate ?? DateTime.Today),
+                _reason.Trim(),
+                lines));
+
+            if (created is null)
+            {
+                _error = error ?? "Não foi possível registar a devolução.";
+                return;
+            }
+
+            Snackbar.Add($"Devolução {created.Number} registada. O stock foi retirado.", Severity.Success);
+            Navigation.NavigateTo($"supplier-returns/{created.Id}");
+        }
+        catch (Exception ex)
+        {
+            _error = $"Não foi possível registar a devolução: {ex.Message}";
+        }
+        finally
+        {
+            _saving = false;
+        }
+    }
+
+    private static decimal Round(decimal value) => Math.Round(value, 2, MidpointRounding.AwayFromZero);
+
+    private sealed class ChosenLine
+    {
+        public Guid ReceiptLineId { get; set; }
+        public decimal Quantity { get; set; }
+        public decimal UnitCost { get; set; }
+    }
+
+    public void Dispose() => Company.Changed -= OnCompanyChanged;
+}

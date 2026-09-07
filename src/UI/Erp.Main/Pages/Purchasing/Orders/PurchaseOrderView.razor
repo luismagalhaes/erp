@@ -1,0 +1,296 @@
+@page "/purchase-orders/{Id:guid}"
+@attribute [Authorize]
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.AspNetCore.Components.Web
+@using MudBlazor
+@using Erp.Main.Models
+@using Erp.Main.Services
+@inject PurchasingApiClient Purchasing
+@inject NavigationManager Navigation
+@inject ISnackbar Snackbar
+
+<PageTitle>@(_order?.Number ?? "Encomenda")</PageTitle>
+
+<MudStack Spacing="4">
+    <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center">
+        <MudStack Spacing="0">
+            <MudText Typo="Typo.h4">@(_order?.Number ?? "Encomenda")</MudText>
+            @if (_order is not null)
+            {
+                <MudText Typo="Typo.body2" Color="Color.Secondary">
+                    @_order.Supplier.Name · @_order.OrderDate.ToString("yyyy-MM-dd")
+                </MudText>
+            }
+        </MudStack>
+
+        <MudStack Row="true" Spacing="2">
+            @if (_order is { IsDraft: true } or { IsOpen: true } && _order.CanEditLines)
+            {
+                <MudButton Variant="Variant.Outlined" Color="Color.Primary"
+                           StartIcon="@Icons.Material.Filled.Edit"
+                           OnClick="@(() => Navigation.NavigateTo($"purchase-orders/{Id}/edit"))">
+                    Editar
+                </MudButton>
+            }
+
+            @if (_order is { IsDraft: true })
+            {
+                <MudButton Variant="Variant.Filled" Color="Color.Primary"
+                           StartIcon="@Icons.Material.Filled.Send"
+                           Disabled="_working" OnClick="PlaceAsync">
+                    Colocar
+                </MudButton>
+            }
+
+            <MudButton Variant="Variant.Text" StartIcon="@Icons.Material.Filled.ArrowBack"
+                       OnClick="@(() => Navigation.NavigateTo("purchase-orders"))">
+                Voltar
+            </MudButton>
+        </MudStack>
+    </MudStack>
+
+    @if (!string.IsNullOrWhiteSpace(_error))
+    {
+        <MudAlert Severity="Severity.Error" Dense="true">@_error</MudAlert>
+    }
+
+    @if (_loading)
+    {
+        <MudProgressLinear Indeterminate="true" Color="Color.Primary" />
+    }
+    else if (_order is null)
+    {
+        <MudAlert Severity="Severity.Warning">Encomenda não encontrada.</MudAlert>
+    }
+    else
+    {
+        <MudPaper Elevation="1" Class="pa-4">
+            <MudGrid>
+                <MudItem xs="12" md="3">
+                    <MudText Typo="Typo.caption" Color="Color.Secondary">Estado</MudText>
+                    <MudChip T="string" Size="Size.Small" Variant="Variant.Text" Color="@StatusColor">
+                        @PurchaseOrderStatuses.Describe(_order.Status)
+                    </MudChip>
+                </MudItem>
+                <MudItem xs="6" md="3">
+                    <MudText Typo="Typo.caption" Color="Color.Secondary">Entrega prevista</MudText>
+                    <MudText Typo="Typo.body1">
+                        @(_order.ExpectedDate?.ToString("yyyy-MM-dd") ?? "—")
+                    </MudText>
+                </MudItem>
+                <MudItem xs="6" md="3">
+                    <MudText Typo="Typo.caption" Color="Color.Secondary">Contribuinte</MudText>
+                    <MudText Typo="Typo.body1">@_order.Supplier.TaxId</MudText>
+                </MudItem>
+                <MudItem xs="6" md="3">
+                    <MudText Typo="Typo.caption" Color="Color.Secondary">Total</MudText>
+                    <MudText Typo="Typo.h6" Color="Color.Primary">@_order.GrossTotal.ToString("N2")</MudText>
+                </MudItem>
+
+                @if (!string.IsNullOrWhiteSpace(_order.Notes))
+                {
+                    <MudItem xs="12">
+                        <MudText Typo="Typo.caption" Color="Color.Secondary">Observações</MudText>
+                        <MudText Typo="Typo.body2">@_order.Notes</MudText>
+                    </MudItem>
+                }
+            </MudGrid>
+        </MudPaper>
+
+        @if (_order.IsFinished && !string.IsNullOrWhiteSpace(_order.ClosedReason))
+        {
+            <MudAlert Severity="Severity.Info">
+                @(_order.Status == "Cancelled" ? "Anulada" : "Fechada")
+                em @_order.ClosedAtUtc?.ToString("yyyy-MM-dd HH:mm"): @_order.ClosedReason
+            </MudAlert>
+        }
+
+        <MudPaper Elevation="1" Class="pa-2">
+            <MudTable Items="_order.Lines" Hover="true" Striped="true" Dense="true" Breakpoint="Breakpoint.Sm">
+                <ToolBarContent>
+                    <MudText Typo="Typo.h6">Linhas</MudText>
+                </ToolBarContent>
+                <HeaderContent>
+                    <MudTh Style="width: 50px;">#</MudTh>
+                    <MudTh>Artigo</MudTh>
+                    <MudTh>Descrição</MudTh>
+                    <MudTh Style="text-align: right;">Encomendado</MudTh>
+                    <MudTh Style="text-align: right;">Recebido</MudTh>
+                    <MudTh Style="text-align: right;">Por receber</MudTh>
+                    <MudTh Style="text-align: right;">Custo unit.</MudTh>
+                    <MudTh Style="text-align: right;">Total</MudTh>
+                </HeaderContent>
+                <RowTemplate>
+                    <MudTd DataLabel="#">@context.LineNumber</MudTd>
+                    <MudTd DataLabel="Artigo">
+                        <MudText Typo="Typo.body2" Style="font-family: monospace;">@context.ProductCode</MudText>
+                    </MudTd>
+                    <MudTd DataLabel="Descrição">@context.ProductDescription</MudTd>
+                    <MudTd DataLabel="Encomendado" Style="text-align: right;">
+                        @context.Quantity.ToString("N3") @context.UnitOfMeasure
+                    </MudTd>
+                    <MudTd DataLabel="Recebido" Style="text-align: right;">
+                        @context.ReceivedQuantity.ToString("N3")
+                    </MudTd>
+                    <MudTd DataLabel="Por receber" Style="text-align: right;">
+                        <MudText Typo="Typo.body2"
+                                 Color="@(context.PendingQuantity > 0 ? Color.Warning : Color.Success)">
+                            <strong>@context.PendingQuantity.ToString("N3")</strong>
+                        </MudText>
+                    </MudTd>
+                    <MudTd DataLabel="Custo unit." Style="text-align: right;">
+                        @context.UnitPrice.ToString("N2")
+                    </MudTd>
+                    <MudTd DataLabel="Total" Style="text-align: right;">@context.LineAmount.ToString("N2")</MudTd>
+                </RowTemplate>
+            </MudTable>
+        </MudPaper>
+
+        @if (!_order.IsFinished && !_order.IsDraft)
+        {
+            <MudExpansionPanels>
+                <MudExpansionPanel Text="@(_order.HasReceipts ? "Fechar encomenda" : "Anular encomenda")">
+                    <MudText Typo="Typo.body2" Color="Color.Secondary" Class="mb-3">
+                        @if (_order.HasReceipts)
+                        {
+                            <text>
+                                Parte da mercadoria já chegou, por isso a encomenda fecha-se em vez de se
+                                anular: o que falta é dado como não vindo, e o que chegou fica registado.
+                            </text>
+                        }
+                        else
+                        {
+                            <text>
+                                Nada chegou ainda, por isso a encomenda pode ser anulada. A partir do momento
+                                em que houver receções, só é possível fechá-la.
+                            </text>
+                        }
+                    </MudText>
+
+                    <MudStack Row="true" Spacing="2" AlignItems="AlignItems.Center">
+                        <MudTextField @bind-Value="_reason" @bind-Value:after="StateHasChanged" Immediate="true"
+                                      Label="Motivo" Variant="Variant.Outlined" Margin="Margin.Dense"
+                                      Style="max-width: 480px;" />
+                        <MudButton Variant="Variant.Filled" Color="Color.Error"
+                                   StartIcon="@Icons.Material.Filled.Cancel"
+                                   Disabled="@(_working || string.IsNullOrWhiteSpace(_reason))"
+                                   OnClick="FinishAsync">
+                            @(_order.HasReceipts ? "Fechar" : "Anular")
+                        </MudButton>
+                    </MudStack>
+                </MudExpansionPanel>
+            </MudExpansionPanels>
+        }
+    }
+</MudStack>
+
+@code {
+    [Parameter]
+    public Guid Id { get; set; }
+
+    private bool _loading = true;
+    private bool _working;
+    private string? _error;
+    private string _reason = string.Empty;
+
+    private PurchaseOrder? _order;
+
+    private Color StatusColor => _order?.Status switch
+    {
+        "Draft" => Color.Default,
+        "Placed" => Color.Info,
+        "PartiallyReceived" => Color.Warning,
+        "Received" => Color.Success,
+        "Cancelled" => Color.Error,
+        _ => Color.Default
+    };
+
+    protected override async Task OnParametersSetAsync() => await LoadAsync();
+
+    private async Task LoadAsync()
+    {
+        _loading = true;
+        _error = null;
+
+        try
+        {
+            _order = await Purchasing.GetOrderAsync(Id);
+        }
+        catch (Exception ex)
+        {
+            _error = $"Não foi possível carregar a encomenda: {ex.Message}";
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private async Task PlaceAsync()
+    {
+        _working = true;
+        _error = null;
+
+        try
+        {
+            var (order, error) = await Purchasing.PlaceOrderAsync(Id);
+
+            if (order is null)
+            {
+                _error = error ?? "Não foi possível colocar a encomenda.";
+                return;
+            }
+
+            _order = order;
+            Snackbar.Add($"Encomenda {order.Number} colocada.", Severity.Success);
+        }
+        catch (Exception ex)
+        {
+            _error = $"Não foi possível colocar a encomenda: {ex.Message}";
+        }
+        finally
+        {
+            _working = false;
+        }
+    }
+
+    /// <summary>
+    /// Closes or cancels, whichever the order allows. Goods that arrived cannot be un-ordered, so
+    /// an order with receipts is closed and one without is cancelled.
+    /// </summary>
+    private async Task FinishAsync()
+    {
+        if (_order is null)
+            return;
+
+        _working = true;
+        _error = null;
+
+        try
+        {
+            var hadReceipts = _order.HasReceipts;
+
+            var (order, error) = hadReceipts
+                ? await Purchasing.CloseOrderAsync(Id, _reason.Trim())
+                : await Purchasing.CancelOrderAsync(Id, _reason.Trim());
+
+            if (order is null)
+            {
+                _error = error ?? "Não foi possível terminar a encomenda.";
+                return;
+            }
+
+            _order = order;
+            _reason = string.Empty;
+            Snackbar.Add(hadReceipts ? "Encomenda fechada." : "Encomenda anulada.", Severity.Success);
+        }
+        catch (Exception ex)
+        {
+            _error = $"Não foi possível terminar a encomenda: {ex.Message}";
+        }
+        finally
+        {
+            _working = false;
+        }
+    }
+}

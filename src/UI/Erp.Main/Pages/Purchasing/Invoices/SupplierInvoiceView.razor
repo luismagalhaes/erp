@@ -1,0 +1,271 @@
+@page "/supplier-invoices/{Id:guid}"
+@attribute [Authorize]
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.AspNetCore.Components.Web
+@using MudBlazor
+@using Erp.Main.Models
+@using Erp.Main.Services
+@inject PurchasingApiClient Purchasing
+@inject NavigationManager Navigation
+@inject ISnackbar Snackbar
+
+<PageTitle>@(_invoice?.SupplierDocumentNumber ?? "Fatura de fornecedor")</PageTitle>
+
+<MudStack Spacing="4">
+    <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center">
+        <MudStack Spacing="0">
+            <MudText Typo="Typo.h4">@(_invoice?.SupplierDocumentNumber ?? "Fatura de fornecedor")</MudText>
+            @if (_invoice is not null)
+            {
+                <MudText Typo="Typo.body2" Color="Color.Secondary">
+                    @PurchaseDocumentTypes.Describe(_invoice.DocumentType) ·
+                    @_invoice.Supplier.Name · @_invoice.SupplierDocumentDate.ToString("yyyy-MM-dd")
+                </MudText>
+            }
+        </MudStack>
+
+        <MudButton Variant="Variant.Text" StartIcon="@Icons.Material.Filled.ArrowBack"
+                   OnClick="@(() => Navigation.NavigateTo("supplier-invoices"))">
+            Voltar
+        </MudButton>
+    </MudStack>
+
+    @if (!string.IsNullOrWhiteSpace(_error))
+    {
+        <MudAlert Severity="Severity.Error" Dense="true">@_error</MudAlert>
+    }
+
+    @if (_loading)
+    {
+        <MudProgressLinear Indeterminate="true" Color="Color.Primary" />
+    }
+    else if (_invoice is null)
+    {
+        <MudAlert Severity="Severity.Warning">Fatura não encontrada.</MudAlert>
+    }
+    else
+    {
+        @if (_invoice.IsVoided)
+        {
+            <MudAlert Severity="Severity.Error">
+                Registo anulado em @_invoice.VoidedAtUtc?.ToString("yyyy-MM-dd HH:mm"): @_invoice.VoidReason.
+                O documento do fornecedor não é afetado — nunca foi nosso para anular.
+            </MudAlert>
+        }
+
+        <MudPaper Elevation="1" Class="pa-4">
+            <MudGrid>
+                <MudItem xs="6" md="3">
+                    <MudText Typo="Typo.caption" Color="Color.Secondary">Contribuinte</MudText>
+                    <MudText Typo="Typo.body1">@_invoice.Supplier.TaxId</MudText>
+                </MudItem>
+                <MudItem xs="6" md="3">
+                    <MudText Typo="Typo.caption" Color="Color.Secondary">ATCUD do fornecedor</MudText>
+                    <MudText Typo="Typo.body1">
+                        @(string.IsNullOrWhiteSpace(_invoice.SupplierAtcud) ? "—" : _invoice.SupplierAtcud)
+                    </MudText>
+                </MudItem>
+                <MudItem xs="6" md="3">
+                    <MudText Typo="Typo.caption" Color="Color.Secondary">Recebida em</MudText>
+                    <MudText Typo="Typo.body1">@_invoice.ReceivedDate.ToString("yyyy-MM-dd")</MudText>
+                </MudItem>
+                <MudItem xs="6" md="3">
+                    <MudText Typo="Typo.caption" Color="Color.Secondary">Vencimento</MudText>
+                    <MudText Typo="Typo.body1">@(_invoice.DueDate?.ToString("yyyy-MM-dd") ?? "—")</MudText>
+                </MudItem>
+            </MudGrid>
+
+            @if (_invoice.ReverseCharge)
+            {
+                <MudAlert Severity="Severity.Info" Dense="true" Class="mt-3">
+                    <strong>Autoliquidação.</strong> O documento veio sem IVA e somos nós a liquidá-lo
+                    e a deduzi-lo.
+                </MudAlert>
+            }
+
+            @if (_invoice.MovedStock)
+            {
+                <MudAlert Severity="Severity.Info" Dense="true" Class="mt-3">
+                    Esta fatura <strong>deu entrada em stock</strong>: trouxe mercadoria que nenhuma
+                    receção tinha dado entrada. Por isso não pode ser corrigida — só anulada.
+                </MudAlert>
+            }
+        </MudPaper>
+
+        <MudPaper Elevation="1" Class="pa-2">
+            <MudTable Items="_invoice.Lines" Hover="true" Striped="true" Dense="true" Breakpoint="Breakpoint.Sm">
+                <ToolBarContent>
+                    <MudText Typo="Typo.h6">Linhas</MudText>
+                </ToolBarContent>
+                <HeaderContent>
+                    <MudTh Style="width: 50px;">#</MudTh>
+                    <MudTh>Artigo</MudTh>
+                    <MudTh>Descrição</MudTh>
+                    <MudTh>Natureza</MudTh>
+                    <MudTh>Stock</MudTh>
+                    <MudTh Style="text-align: right;">Qtd.</MudTh>
+                    <MudTh Style="text-align: right;">Preço unit.</MudTh>
+                    <MudTh Style="text-align: right;">IVA</MudTh>
+                    <MudTh Style="text-align: right;">Total</MudTh>
+                </HeaderContent>
+                <RowTemplate>
+                    <MudTd DataLabel="#">@context.LineNumber</MudTd>
+                    <MudTd DataLabel="Artigo">
+                        <MudText Typo="Typo.body2" Style="font-family: monospace;">@context.ProductCode</MudText>
+                    </MudTd>
+                    <MudTd DataLabel="Descrição">@context.ProductDescription</MudTd>
+                    <MudTd DataLabel="Natureza">
+                        <MudText Typo="Typo.caption">@DeductionNatures.Describe(context.DeductionNature)</MudText>
+                    </MudTd>
+                    <MudTd DataLabel="Stock">
+                        @if (context.ReceiptId is { } receiptId)
+                        {
+                            <MudTooltip Text="A mercadoria já entrou na receção">
+                                <MudLink Href="@($"goods-receipts/{receiptId}")">Da receção</MudLink>
+                            </MudTooltip>
+                        }
+                        else if (context.MovesStock)
+                        {
+                            <MudChip T="string" Size="Size.Small" Color="Color.Success" Variant="Variant.Text">
+                                Deu entrada
+                            </MudChip>
+                        }
+                        else
+                        {
+                            <MudText Typo="Typo.caption" Color="Color.Secondary">—</MudText>
+                        }
+                    </MudTd>
+                    <MudTd DataLabel="Qtd." Style="text-align: right;">
+                        @context.Quantity.ToString("N3") @context.UnitOfMeasure
+                    </MudTd>
+                    <MudTd DataLabel="Preço unit." Style="text-align: right;">
+                        @context.UnitPrice.ToString("N2")
+                    </MudTd>
+                    <MudTd DataLabel="IVA" Style="text-align: right;">
+                        @context.TaxPercentage.ToString("N0")%
+                    </MudTd>
+                    <MudTd DataLabel="Total" Style="text-align: right;">@context.LineAmount.ToString("N2")</MudTd>
+                </RowTemplate>
+            </MudTable>
+        </MudPaper>
+
+        <MudPaper Elevation="1" Class="pa-4">
+            <MudText Typo="Typo.h6" Class="mb-3">IVA</MudText>
+            <MudSimpleTable Dense="true" Hover="true" Style="max-width: 620px;">
+                <thead>
+                    <tr>
+                        <th>Taxa</th>
+                        <th style="text-align: right;">Base tributável</th>
+                        <th style="text-align: right;">Imposto</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var summary in _invoice.TaxSummary)
+                    {
+                        <tr>
+                            <td>@summary.TaxCode — @summary.TaxPercentage.ToString("N0")%</td>
+                            <td style="text-align: right;">@summary.TaxableBase.ToString("N2")</td>
+                            <td style="text-align: right;">@summary.TaxAmount.ToString("N2")</td>
+                        </tr>
+                    }
+                    <tr>
+                        <td><strong>Total</strong></td>
+                        <td style="text-align: right;"><strong>@_invoice.NetTotal.ToString("N2")</strong></td>
+                        <td style="text-align: right;"><strong>@_invoice.TaxTotal.ToString("N2")</strong></td>
+                    </tr>
+                </tbody>
+            </MudSimpleTable>
+
+            <MudText Typo="Typo.h5" Color="Color.Primary" Class="mt-4">
+                Total: @_invoice.GrossTotal.ToString("N2")
+            </MudText>
+        </MudPaper>
+
+        @if (!_invoice.IsVoided)
+        {
+            <MudExpansionPanels>
+                <MudExpansionPanel Text="Anular registo">
+                    <MudText Typo="Typo.body2" Color="Color.Secondary" Class="mb-3">
+                        Anular o <strong>registo</strong>, não o documento: este nunca foi nosso. Deixa
+                        de contar para o IVA dedutível, e o stock que esta fatura tenha dado entrada é
+                        retirado. Mercadoria que veio por receção fica — essa receção continua de pé.
+                    </MudText>
+
+                    <MudStack Row="true" Spacing="2" AlignItems="AlignItems.Center">
+                        <MudTextField @bind-Value="_reason" @bind-Value:after="StateHasChanged" Immediate="true"
+                                      Label="Motivo" Variant="Variant.Outlined" Margin="Margin.Dense"
+                                      Style="max-width: 480px;" />
+                        <MudButton Variant="Variant.Filled" Color="Color.Error"
+                                   StartIcon="@Icons.Material.Filled.Cancel"
+                                   Disabled="@(_working || string.IsNullOrWhiteSpace(_reason))"
+                                   OnClick="VoidAsync">
+                            Anular
+                        </MudButton>
+                    </MudStack>
+                </MudExpansionPanel>
+            </MudExpansionPanels>
+        }
+    }
+</MudStack>
+
+@code {
+    [Parameter]
+    public Guid Id { get; set; }
+
+    private bool _loading = true;
+    private bool _working;
+    private string? _error;
+    private string _reason = string.Empty;
+
+    private PurchaseInvoice? _invoice;
+
+    protected override async Task OnParametersSetAsync() => await LoadAsync();
+
+    private async Task LoadAsync()
+    {
+        _loading = true;
+        _error = null;
+
+        try
+        {
+            _invoice = await Purchasing.GetInvoiceAsync(Id);
+        }
+        catch (Exception ex)
+        {
+            _error = $"Não foi possível carregar a fatura: {ex.Message}";
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private async Task VoidAsync()
+    {
+        _working = true;
+        _error = null;
+
+        try
+        {
+            var (invoice, error) = await Purchasing.VoidInvoiceAsync(Id, _reason.Trim());
+
+            if (invoice is null)
+            {
+                _error = error ?? "Não foi possível anular o registo.";
+                return;
+            }
+
+            _invoice = invoice;
+            _reason = string.Empty;
+            Snackbar.Add("Registo anulado.", Severity.Success);
+        }
+        catch (Exception ex)
+        {
+            _error = $"Não foi possível anular o registo: {ex.Message}";
+        }
+        finally
+        {
+            _working = false;
+        }
+    }
+}

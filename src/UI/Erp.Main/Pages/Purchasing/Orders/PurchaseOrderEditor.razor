@@ -1,0 +1,479 @@
+@page "/purchase-orders/new"
+@page "/purchase-orders/{Id:guid}/edit"
+@attribute [Authorize]
+@implements IDisposable
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.AspNetCore.Components.Web
+@using MudBlazor
+@using Erp.Main.Models
+@using Erp.Main.Services
+@inject PurchasingApiClient Purchasing
+@inject CatalogApiClient Catalog
+@inject StockApiClient StockApi
+@inject CompanyState Company
+@inject NavigationManager Navigation
+@inject ISnackbar Snackbar
+
+<PageTitle>@(IsNew ? "Nova encomenda" : "Editar encomenda")</PageTitle>
+
+<MudStack Spacing="4">
+    <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center">
+        <MudStack Spacing="0">
+            <MudText Typo="Typo.h4">@(IsNew ? "Nova encomenda" : $"Editar {_number}")</MudText>
+            <MudText Typo="Typo.body2" Color="Color.Secondary">
+                A encomenda não é um documento fiscal: o número é nosso e pode ser corrigida enquanto
+                não chegar mercadoria.
+            </MudText>
+        </MudStack>
+
+        <MudButton Variant="Variant.Text" StartIcon="@Icons.Material.Filled.ArrowBack"
+                   OnClick="GoBack">
+            Voltar
+        </MudButton>
+    </MudStack>
+
+    @if (!string.IsNullOrWhiteSpace(_error))
+    {
+        <MudAlert Severity="Severity.Error" Dense="true">@_error</MudAlert>
+    }
+
+    @if (!Company.HasCompany)
+    {
+        <MudAlert Severity="Severity.Info">Escolha uma empresa no cabeçalho.</MudAlert>
+    }
+    else if (_loading)
+    {
+        <MudProgressLinear Indeterminate="true" Color="Color.Primary" />
+    }
+    else
+    {
+        <MudPaper Elevation="1" Class="pa-4">
+            <MudText Typo="Typo.h6" Class="mb-3">Fornecedor e entrega</MudText>
+            <MudGrid>
+                <MudItem xs="12" md="4">
+                    <MudSelect T="Guid?" @bind-Value="_supplierId" Label="Fornecedor"
+                               Variant="Variant.Outlined" Required="true"
+                               Disabled="@(!IsNew)"
+                               HelperText="@(IsNew ? null : "O fornecedor não muda depois de a encomenda existir")">
+                        @foreach (var supplier in _suppliers)
+                        {
+                            <MudSelectItem T="Guid?" Value="@supplier.Id">
+                                @supplier.Code — @supplier.Name
+                            </MudSelectItem>
+                        }
+                    </MudSelect>
+                </MudItem>
+                <MudItem xs="12" md="4">
+                    <MudSelect T="Guid?" @bind-Value="_warehouseId" Label="Armazém de receção"
+                               Variant="Variant.Outlined" Required="true">
+                        @foreach (var warehouse in _warehouses)
+                        {
+                            <MudSelectItem T="Guid?" Value="@warehouse.Id">
+                                @warehouse.Code — @warehouse.Name
+                            </MudSelectItem>
+                        }
+                    </MudSelect>
+                </MudItem>
+                <MudItem xs="12" md="2">
+                    <MudDatePicker @bind-Date="_orderDate" Label="Data" Variant="Variant.Outlined"
+                                   DateFormat="yyyy-MM-dd" />
+                </MudItem>
+                <MudItem xs="12" md="2">
+                    <MudDatePicker @bind-Date="_expectedDate" Label="Entrega prevista"
+                                   Variant="Variant.Outlined" DateFormat="yyyy-MM-dd" Clearable="true" />
+                </MudItem>
+                <MudItem xs="12">
+                    <MudTextField @bind-Value="_notes" Label="Observações" Variant="Variant.Outlined" Lines="2" />
+                </MudItem>
+            </MudGrid>
+        </MudPaper>
+
+        <MudPaper Elevation="1" Class="pa-4">
+            <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center" Class="mb-3">
+                <MudText Typo="Typo.h6">Linhas</MudText>
+                <MudButton Variant="Variant.Outlined" Color="Color.Primary" Size="Size.Small"
+                           StartIcon="@Icons.Material.Filled.Add" OnClick="AddLine">
+                    Adicionar linha
+                </MudButton>
+            </MudStack>
+
+            <MudTable Items="_lines" Dense="true" Hover="true" Striped="true" Breakpoint="Breakpoint.Sm">
+                <HeaderContent>
+                    <MudTh Style="width: 220px;">Artigo</MudTh>
+                    <MudTh>Descrição</MudTh>
+                    <MudTh Style="width: 100px;">Qtd.</MudTh>
+                    <MudTh Style="width: 90px;">Unid.</MudTh>
+                    <MudTh Style="width: 130px;">Custo unit.</MudTh>
+                    <MudTh Style="width: 150px;">IVA</MudTh>
+                    <MudTh Style="width: 110px; text-align: right;">Total</MudTh>
+                    <MudTh Style="width: 70px; text-align: right;">Ações</MudTh>
+                </HeaderContent>
+                <RowTemplate>
+                    <MudTd DataLabel="Artigo">
+                        @if (_products.Count > 0)
+                        {
+                            <MudSelect T="Guid?" Value="context.ProductId"
+                                       ValueChanged="@(productId => OnProductChanged(context, productId))"
+                                       Margin="Margin.Dense" Clearable="true" Placeholder="Livre">
+                                @foreach (var product in _products)
+                                {
+                                    <MudSelectItem T="Guid?" Value="@product.Id">
+                                        @product.ProductCode — @product.Description
+                                    </MudSelectItem>
+                                }
+                            </MudSelect>
+                        }
+                        else
+                        {
+                            <MudTextField @bind-Value="context.ProductCode" Margin="Margin.Dense" Placeholder="Código" />
+                        }
+                    </MudTd>
+                    <MudTd DataLabel="Descrição">
+                        <MudTextField @bind-Value="context.ProductDescription" Margin="Margin.Dense" />
+                    </MudTd>
+                    <MudTd DataLabel="Qtd.">
+                        <MudNumericField @bind-Value="context.Quantity" @bind-Value:after="StateHasChanged"
+                                         Margin="Margin.Dense" Min="0" />
+                    </MudTd>
+                    <MudTd DataLabel="Unid.">
+                        <MudTextField @bind-Value="context.UnitOfMeasure" Margin="Margin.Dense" />
+                    </MudTd>
+                    <MudTd DataLabel="Custo unit.">
+                        <MudNumericField @bind-Value="context.UnitPrice" @bind-Value:after="StateHasChanged"
+                                         Margin="Margin.Dense" Min="0" Format="N2" />
+                    </MudTd>
+                    <MudTd DataLabel="IVA">
+                        <MudSelect T="string" Value="context.TaxCode"
+                                   ValueChanged="@(code => OnTaxCodeChanged(context, code))"
+                                   Margin="Margin.Dense">
+                            @foreach (var rate in TaxRates)
+                            {
+                                <MudSelectItem T="string" Value="@rate.Code">@rate.Label</MudSelectItem>
+                            }
+                        </MudSelect>
+                    </MudTd>
+                    <MudTd DataLabel="Total" Style="text-align: right;">@LineTotal(context).ToString("N2")</MudTd>
+                    <MudTd DataLabel="Ações" Style="text-align: right;">
+                        <MudIconButton Size="Size.Small" Icon="@Icons.Material.Filled.Delete"
+                                       Color="Color.Error" Disabled="@(_lines.Count == 1)"
+                                       OnClick="@(() => RemoveLine(context))" />
+                    </MudTd>
+                </RowTemplate>
+            </MudTable>
+
+            <MudDivider Class="my-4" />
+
+            <MudStack Row="true" Justify="Justify.FlexEnd" Spacing="6">
+                <MudStack Spacing="0" AlignItems="AlignItems.End">
+                    <MudText Typo="Typo.caption" Color="Color.Secondary">Sem IVA</MudText>
+                    <MudText Typo="Typo.body1">@NetTotal.ToString("N2")</MudText>
+                </MudStack>
+                <MudStack Spacing="0" AlignItems="AlignItems.End">
+                    <MudText Typo="Typo.caption" Color="Color.Secondary">IVA</MudText>
+                    <MudText Typo="Typo.body1">@TaxTotal.ToString("N2")</MudText>
+                </MudStack>
+                <MudStack Spacing="0" AlignItems="AlignItems.End">
+                    <MudText Typo="Typo.caption" Color="Color.Secondary">Total</MudText>
+                    <MudText Typo="Typo.h6" Color="Color.Primary">@GrossTotal.ToString("N2")</MudText>
+                </MudStack>
+            </MudStack>
+        </MudPaper>
+
+        <MudStack Row="true" Justify="Justify.FlexEnd" Spacing="2">
+            <MudButton Variant="Variant.Text" OnClick="GoBack">Cancelar</MudButton>
+
+            <MudButton Variant="Variant.Outlined" Color="Color.Primary"
+                       StartIcon="@Icons.Material.Filled.Save"
+                       Disabled="@(_saving || !CanSave)"
+                       OnClick="@(() => SaveAsync(place: false))">
+                @(IsNew ? "Guardar rascunho" : "Guardar")
+            </MudButton>
+
+            @if (IsNew)
+            {
+                <MudButton Variant="Variant.Filled" Color="Color.Primary"
+                           StartIcon="@Icons.Material.Filled.Send"
+                           Disabled="@(_saving || !CanSave)"
+                           OnClick="@(() => SaveAsync(place: true))">
+                    Guardar e colocar
+                </MudButton>
+            }
+        </MudStack>
+    }
+</MudStack>
+
+@code {
+    private static readonly TaxRateOption[] TaxRates =
+    [
+        new("NOR", 23m, "Normal - 23%"),
+        new("INT", 13m, "Intermédia - 13%"),
+        new("RED", 6m, "Reduzida - 6%"),
+        new("ISE", 0m, "Isento")
+    ];
+
+    [Parameter]
+    public Guid? Id { get; set; }
+
+    private bool IsNew => Id is null;
+
+    private bool _loading;
+    private bool _saving;
+    private bool _loaded;
+    private string? _error;
+    private string _number = string.Empty;
+
+    private Guid? _supplierId;
+    private Guid? _warehouseId;
+    private DateTime? _orderDate = DateTime.Today;
+    private DateTime? _expectedDate;
+    private string _notes = string.Empty;
+
+    private readonly List<LineEditor> _lines = [new()];
+
+    private List<Partner> _suppliers = [];
+    private List<Warehouse> _warehouses = [];
+    private List<ProductListItem> _products = [];
+
+    private bool CanSave =>
+        _supplierId is not null
+        && _warehouseId is not null
+        && _orderDate is not null
+        && _lines.Any(line => line.Quantity > 0 && !string.IsNullOrWhiteSpace(line.ProductCode));
+
+    private decimal NetTotal => _lines.Sum(LineTotal);
+
+    private decimal TaxTotal => _lines.Sum(line => Round(LineTotal(line) * line.TaxPercentage / 100m));
+
+    private decimal GrossTotal => NetTotal + TaxTotal;
+
+    protected override async Task OnInitializedAsync()
+    {
+        Company.Changed += OnCompanyChanged;
+        await Company.EnsureLoadedAsync();
+    }
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (_loaded)
+            return;
+
+        _loaded = true;
+        await LoadAsync();
+    }
+
+    private async void OnCompanyChanged() => await InvokeAsync(async () =>
+    {
+        // The catalogue belongs to the company, so switching it invalidates an order in progress.
+        if (IsNew)
+            await LoadAsync();
+        else
+            Navigation.NavigateTo("purchase-orders");
+    });
+
+    private async Task LoadAsync()
+    {
+        if (!Company.HasCompany)
+        {
+            _error = Company.LoadError;
+            StateHasChanged();
+            return;
+        }
+
+        _loading = true;
+        _error = null;
+        StateHasChanged();
+
+        try
+        {
+            var (suppliers, suppliersError) = await Catalog.GetSuppliersAsync(Company.SelectedCompanyId);
+            _suppliers = [.. suppliers.Where(supplier => supplier.IsActive)];
+
+            var (warehouses, warehousesError) = await StockApi.GetWarehousesAsync(Company.SelectedCompanyId);
+            _warehouses = [.. warehouses.Where(warehouse => warehouse.IsActive)];
+
+            var (products, productsError) = await Catalog.GetProductsAsync(Company.SelectedCompanyId);
+            _products = [.. products.Where(product => product.IsActive)];
+
+            _error = suppliersError ?? warehousesError ?? productsError;
+
+            _warehouseId ??= _warehouses.FirstOrDefault(warehouse => warehouse.IsDefault)?.Id
+                             ?? _warehouses.FirstOrDefault()?.Id;
+
+            if (!IsNew)
+                await LoadOrderAsync();
+        }
+        catch (Exception ex)
+        {
+            _error = $"Não foi possível carregar os dados: {ex.Message}";
+        }
+        finally
+        {
+            _loading = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task LoadOrderAsync()
+    {
+        var order = await Purchasing.GetOrderAsync(Id!.Value);
+
+        if (order is null)
+        {
+            _error = "Encomenda não encontrada.";
+            return;
+        }
+
+        if (!order.CanEditLines)
+        {
+            // Editing is refused by the API too; sending the user back is friendlier than letting
+            // them fill a form that will be rejected.
+            Navigation.NavigateTo($"purchase-orders/{order.Id}");
+            return;
+        }
+
+        _number = order.Number;
+        _supplierId = order.SupplierId;
+        _warehouseId = order.WarehouseId;
+        _orderDate = order.OrderDate.ToDateTime(TimeOnly.MinValue);
+        _expectedDate = order.ExpectedDate?.ToDateTime(TimeOnly.MinValue);
+        _notes = order.Notes ?? string.Empty;
+
+        _lines.Clear();
+
+        foreach (var line in order.Lines)
+        {
+            _lines.Add(new LineEditor
+            {
+                ProductId = _products.FirstOrDefault(product => product.ProductCode == line.ProductCode)?.Id,
+                ProductCode = line.ProductCode,
+                ProductDescription = line.ProductDescription,
+                Quantity = line.Quantity,
+                UnitOfMeasure = line.UnitOfMeasure,
+                UnitPrice = line.UnitPrice,
+                TaxCode = line.TaxCode,
+                TaxPercentage = line.TaxPercentage
+            });
+        }
+
+        if (_lines.Count == 0)
+            _lines.Add(new LineEditor());
+    }
+
+    private void AddLine() => _lines.Add(new LineEditor());
+
+    private void RemoveLine(LineEditor line)
+    {
+        if (_lines.Count > 1)
+            _lines.Remove(line);
+    }
+
+    /// <summary>
+    /// Picking an article fills the line from the product file. The unit cost is what values the
+    /// stock, so it is the sensible default for what we expect to pay.
+    /// </summary>
+    private void OnProductChanged(LineEditor line, Guid? productId)
+    {
+        line.ProductId = productId;
+
+        var product = _products.FirstOrDefault(x => x.Id == productId);
+        if (product is null)
+            return;
+
+        line.ProductCode = product.ProductCode;
+        line.ProductDescription = product.Description;
+        line.UnitOfMeasure = product.UnitOfMeasure;
+        line.UnitPrice = product.UnitCost;
+        OnTaxCodeChanged(line, product.DefaultTaxCode);
+    }
+
+    private void OnTaxCodeChanged(LineEditor line, string taxCode)
+    {
+        line.TaxCode = taxCode;
+        line.TaxPercentage = TaxRates.FirstOrDefault(rate => rate.Code == taxCode)?.Percentage ?? 0m;
+    }
+
+    private async Task SaveAsync(bool place)
+    {
+        _saving = true;
+        _error = null;
+
+        try
+        {
+            var lines = _lines
+                .Where(line => line.Quantity > 0 && !string.IsNullOrWhiteSpace(line.ProductCode))
+                .Select(line => new PurchaseOrderLineRequest(
+                    line.ProductCode.Trim(),
+                    string.IsNullOrWhiteSpace(line.ProductDescription)
+                        ? line.ProductCode.Trim()
+                        : line.ProductDescription.Trim(),
+                    line.Quantity,
+                    line.UnitPrice,
+                    line.UnitOfMeasure,
+                    "PT",
+                    line.TaxCode,
+                    line.TaxPercentage))
+                .ToList();
+
+            var orderDate = DateOnly.FromDateTime(_orderDate!.Value);
+            var expectedDate = _expectedDate is { } expected ? DateOnly.FromDateTime(expected) : (DateOnly?)null;
+            var notes = string.IsNullOrWhiteSpace(_notes) ? null : _notes.Trim();
+
+            var (order, error) = IsNew
+                ? await Purchasing.CreateOrderAsync(new CreatePurchaseOrderRequest(
+                    Company.SelectedCompanyId,
+                    _supplierId!.Value,
+                    orderDate,
+                    _warehouseId!.Value,
+                    lines,
+                    expectedDate,
+                    notes,
+                    place))
+                : await Purchasing.UpdateOrderAsync(Id!.Value, new UpdatePurchaseOrderRequest(
+                    orderDate,
+                    _warehouseId!.Value,
+                    lines,
+                    expectedDate,
+                    notes));
+
+            if (order is null)
+            {
+                _error = error ?? "Não foi possível guardar a encomenda.";
+                return;
+            }
+
+            Snackbar.Add($"Encomenda {order.Number} guardada.", Severity.Success);
+            Navigation.NavigateTo($"purchase-orders/{order.Id}");
+        }
+        catch (Exception ex)
+        {
+            _error = $"Não foi possível guardar a encomenda: {ex.Message}";
+        }
+        finally
+        {
+            _saving = false;
+        }
+    }
+
+    private void GoBack() =>
+        Navigation.NavigateTo(IsNew ? "purchase-orders" : $"purchase-orders/{Id}");
+
+    private static decimal LineTotal(LineEditor line) => Round(line.Quantity * line.UnitPrice);
+
+    private static decimal Round(decimal value) => Math.Round(value, 2, MidpointRounding.AwayFromZero);
+
+    private sealed record TaxRateOption(string Code, decimal Percentage, string Label);
+
+    private sealed class LineEditor
+    {
+        public Guid? ProductId { get; set; }
+        public string ProductCode { get; set; } = string.Empty;
+        public string ProductDescription { get; set; } = string.Empty;
+        public decimal Quantity { get; set; } = 1;
+        public string UnitOfMeasure { get; set; } = "UN";
+        public decimal UnitPrice { get; set; }
+        public string TaxCode { get; set; } = "NOR";
+        public decimal TaxPercentage { get; set; } = 23m;
+    }
+
+    public void Dispose() => Company.Changed -= OnCompanyChanged;
+}

@@ -1,0 +1,26 @@
+namespace Erp.Purchasing.Infrastructure.Contracts;
+
+public sealed record PurchaseInvoiceDto(
+    Guid Id,
+    Guid CompanyId,
+    Guid SupplierId,
+    string DocumentType,
+    string SupplierDocumentNumber,
+    DateOnly SupplierDocumentDate,
+    string? SupplierAtcud,
+    DateOnly ReceivedDate,
+    DateOnly? DueDate,
+    bool ReverseCharge,
+    string Status,
+    Guid? WarehouseId,
+    PurchaseOrderSupplierDto Supplier,
+    string? Notes,
+    decimal NetTotal,
+    decimal TaxTotal,
+    decimal GrossTotal,
+    DateTime CreatedAtUtc,
+    DateTime? VoidedAtUtc,
+    string? VoidReason,
+    bool MovedStock,
+    IReadOnlyList<PurchaseInvoiceLineDto> Lines,
+    IReadOnlyList<PurchaseInvoiceTaxSummaryDto> TaxSummary);

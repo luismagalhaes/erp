@@ -1,0 +1,187 @@
+@page "/purchase-orders"
+@attribute [Authorize]
+@implements IDisposable
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.AspNetCore.Components.Web
+@using MudBlazor
+@using Erp.Main.Models
+@using Erp.Main.Services
+@inject PurchasingApiClient Purchasing
+@inject CompanyState Company
+@inject NavigationManager Navigation
+
+<PageTitle>Encomendas a fornecedores</PageTitle>
+
+<MudStack Spacing="4">
+    <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center">
+        <MudStack Spacing="0">
+            <MudText Typo="Typo.h4">Encomendas</MudText>
+            <MudText Typo="Typo.body2" Color="Color.Secondary">
+                O que foi encomendado a fornecedores e o que está por receber. Não são documentos
+                fiscais: podem ser corrigidos enquanto não chegar mercadoria.
+            </MudText>
+        </MudStack>
+
+        <MudButton Variant="Variant.Filled" Color="Color.Primary"
+                   StartIcon="@Icons.Material.Filled.Add"
+                   Disabled="@(!Company.HasCompany)"
+                   OnClick="@(() => Navigation.NavigateTo("purchase-orders/new"))">
+            Nova encomenda
+        </MudButton>
+    </MudStack>
+
+    @if (!string.IsNullOrWhiteSpace(_error))
+    {
+        <MudAlert Severity="Severity.Error" Dense="true">@_error</MudAlert>
+    }
+
+    @if (!Company.HasCompany)
+    {
+        <MudAlert Severity="Severity.Info">Escolha uma empresa no cabeçalho.</MudAlert>
+    }
+    else
+    {
+        <MudPaper Elevation="1" Class="pa-2">
+            <MudTable Items="Visible" Hover="true" Striped="true" Dense="true" Loading="_loading"
+                      Breakpoint="Breakpoint.Sm">
+                <ToolBarContent>
+                    <MudTextField @bind-Value="_filter" @bind-Value:after="StateHasChanged" Immediate="true"
+                                  Placeholder="Procurar número ou fornecedor" Adornment="Adornment.Start"
+                                  AdornmentIcon="@Icons.Material.Filled.Search" Margin="Margin.Dense"
+                                  Class="mt-0" Style="max-width: 360px;" />
+                    <MudSpacer />
+                    <MudSwitch T="bool" Value="_openOnly" ValueChanged="OnOpenOnlyChangedAsync"
+                               Color="Color.Primary" Label="Só por receber" />
+                </ToolBarContent>
+                <HeaderContent>
+                    <MudTh>Número</MudTh>
+                    <MudTh>Data</MudTh>
+                    <MudTh>Prevista</MudTh>
+                    <MudTh>Fornecedor</MudTh>
+                    <MudTh>Estado</MudTh>
+                    <MudTh Style="text-align: right;">Linhas</MudTh>
+                    <MudTh Style="text-align: right;">Total</MudTh>
+                    <MudTh Style="text-align: right;">Ações</MudTh>
+                </HeaderContent>
+                <RowTemplate>
+                    <MudTd DataLabel="Número">
+                        <MudText Typo="Typo.body2" Style="font-family: monospace;">
+                            <strong>@context.Number</strong>
+                        </MudText>
+                    </MudTd>
+                    <MudTd DataLabel="Data">@context.OrderDate.ToString("yyyy-MM-dd")</MudTd>
+                    <MudTd DataLabel="Prevista">
+                        <MudText Typo="Typo.body2" Color="@ExpectedColor(context)">
+                            @(context.ExpectedDate?.ToString("yyyy-MM-dd") ?? "—")
+                        </MudText>
+                    </MudTd>
+                    <MudTd DataLabel="Fornecedor">
+                        <MudStack Spacing="0">
+                            <MudText Typo="Typo.body2">@context.SupplierName</MudText>
+                            <MudText Typo="Typo.caption" Color="Color.Secondary">@context.SupplierTaxId</MudText>
+                        </MudStack>
+                    </MudTd>
+                    <MudTd DataLabel="Estado">
+                        <MudChip T="string" Size="Size.Small" Variant="Variant.Text"
+                                 Color="@StatusColor(context.Status)">
+                            @PurchaseOrderStatuses.Describe(context.Status)
+                        </MudChip>
+                    </MudTd>
+                    <MudTd DataLabel="Linhas" Style="text-align: right;">@context.LineCount</MudTd>
+                    <MudTd DataLabel="Total" Style="text-align: right;">
+                        @context.GrossTotal.ToString("N2")
+                    </MudTd>
+                    <MudTd DataLabel="Ações" Style="text-align: right;">
+                        <MudTooltip Text="Abrir">
+                            <MudIconButton Size="Size.Small" Icon="@Icons.Material.Filled.Visibility"
+                                           OnClick="@(() => Navigation.NavigateTo($"purchase-orders/{context.Id}"))" />
+                        </MudTooltip>
+                    </MudTd>
+                </RowTemplate>
+                <NoRecordsContent>
+                    <MudText Typo="Typo.body2" Color="Color.Secondary">
+                        @(_openOnly ? "Não há nada por receber." : "Ainda não há encomendas.")
+                    </MudText>
+                </NoRecordsContent>
+            </MudTable>
+        </MudPaper>
+    }
+</MudStack>
+
+@code {
+    private bool _loading;
+    private bool _openOnly;
+    private string? _error;
+    private string _filter = string.Empty;
+
+    private List<PurchaseOrderListItem> _orders = [];
+
+    private IEnumerable<PurchaseOrderListItem> Visible => _orders
+        .Where(order => string.IsNullOrWhiteSpace(_filter)
+                        || order.Number.Contains(_filter, StringComparison.OrdinalIgnoreCase)
+                        || order.SupplierName.Contains(_filter, StringComparison.OrdinalIgnoreCase));
+
+    protected override async Task OnInitializedAsync()
+    {
+        Company.Changed += OnCompanyChanged;
+        await Company.EnsureLoadedAsync();
+        await LoadAsync();
+    }
+
+    private async void OnCompanyChanged() => await InvokeAsync(LoadAsync);
+
+    private async Task OnOpenOnlyChangedAsync(bool openOnly)
+    {
+        _openOnly = openOnly;
+        await LoadAsync();
+    }
+
+    private async Task LoadAsync()
+    {
+        if (!Company.HasCompany)
+        {
+            _orders = [];
+            _error = Company.LoadError;
+            StateHasChanged();
+            return;
+        }
+
+        _loading = true;
+        _error = null;
+        StateHasChanged();
+
+        try
+        {
+            var (items, error) = await Purchasing.GetOrdersAsync(Company.SelectedCompanyId, openOnly: _openOnly);
+            _orders = [.. items];
+            _error = error;
+        }
+        catch (Exception ex)
+        {
+            _error = $"Não foi possível carregar as encomendas: {ex.Message}";
+        }
+        finally
+        {
+            _loading = false;
+            StateHasChanged();
+        }
+    }
+
+    private static Color StatusColor(string status) => status switch
+    {
+        "Draft" => Color.Default,
+        "Placed" => Color.Info,
+        "PartiallyReceived" => Color.Warning,
+        "Received" => Color.Success,
+        "Cancelled" => Color.Error,
+        _ => Color.Default
+    };
+
+    /// <summary>An expected date already past on an order still owed is worth seeing.</summary>
+    private static Color ExpectedColor(PurchaseOrderListItem order) =>
+        order.IsOpen && order.ExpectedDate is { } expected && expected < DateOnly.FromDateTime(DateTime.Today)
+            ? Color.Error
+            : Color.Default;
+
+    public void Dispose() => Company.Changed -= OnCompanyChanged;
+}

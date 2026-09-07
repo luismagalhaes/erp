@@ -87,6 +87,7 @@ Controllers/Core/           Access, Companies, UserCompanies,
                             Customers, Suppliers, Warehouses
 Controllers/Sales/          Invoices, StockMovements, Payments, Saft, Series
 Controllers/Inventory/      Stock, InventoryCounts, InventoryFile
+Controllers/Purchasing/     PurchaseOrders, GoodsReceipts, SupplierReturns, PurchaseInvoices
 Controllers/Notification/   Notifications
 Controllers/HealthController.cs
 ```
@@ -104,6 +105,8 @@ Cada módulo segue a mesma divisão em camadas:
 | Sales | [Erp.Sales.Domain](src/Services/Erp.Sales.Domain/) | [Erp.Sales.Infrastructure](src/Services/Erp.Sales.Infrastructure/) | [Erp.Sales.Application](src/Services/Erp.Sales.Application/) | [Erp.Sales.Storage](src/Services/Erp.Sales.Storage/) |
 | Inventory | [Erp.Inventory.Domain](src/Services/Erp.Inventory.Domain/) | [Erp.Inventory.Infrastructure](src/Services/Erp.Inventory.Infrastructure/) | [Erp.Inventory.Application](src/Services/Erp.Inventory.Application/) | [Erp.Inventory.Storage](src/Services/Erp.Inventory.Storage/) |
 | | Existências por armazém, razão de movimentos, contagens e o ficheiro de inventário para a AT | | | |
+| Purchasing | [Erp.Purchasing.Domain](src/Services/Erp.Purchasing.Domain/) | [Erp.Purchasing.Infrastructure](src/Services/Erp.Purchasing.Infrastructure/) | [Erp.Purchasing.Application](src/Services/Erp.Purchasing.Application/) | [Erp.Purchasing.Storage](src/Services/Erp.Purchasing.Storage/) |
+| | Encomendas, receção, devoluções e registo de faturas de fornecedor. Autofaturação ainda não | | | |
 | Notification | [Erp.Notification.Domain](src/Notification/Erp.Notification.Domain/) | [Erp.Notification.Infrastructure](src/Notification/Erp.Notification.Infrastructure/) | [Erp.Notification.Application](src/Notification/Erp.Notification.Application/) | [Erp.Notification.Storage](src/Notification/Erp.Notification.Storage/) |
 
 O `Erp.Sales.Application` referencia o `Erp.Inventory.Infrastructure` — **só as interfaces**, para que emitir um documento e movimentar o stock caibam na mesma transação. A implementação fica atrás do módulo de inventário.
@@ -133,6 +136,7 @@ O `Erp.Sales.Application` referencia o `Erp.Inventory.Infrastructure` — **só 
 | [Erp.Sales.Tests](tests/Erp.Sales.Tests/) | Emissão, numeração de séries, documentos retificativos, faturação a partir de guias e anulação |
 | [Erp.Core.Tests](tests/Erp.Core.Tests/) | Empresas, acessos, catálogo de artigos, clientes, fornecedores e armazéns, e o tratamento das claims JWT |
 | [Erp.Inventory.Tests](tests/Erp.Inventory.Tests/) | Razão de stock, movimentação por documento, reversão na anulação, contagens e o ficheiro de inventário |
+| [Erp.Purchasing.Tests](tests/Erp.Purchasing.Tests/) | Encomendas, receção, devoluções, faturas e notas de crédito de fornecedor: conferência a três, movimento de stock, anti-duplicação e anulação |
 | [Erp.Identity.Tests](tests/Erp.Identity.Tests/) | Invariantes do seed (clients, scopes, resources), serviços e o cliente de email |
 | [Erp.Notification.Tests](tests/Erp.Notification.Tests/) | Fila de emails, processamento e histórico |
 
@@ -239,6 +243,10 @@ dotnet ef database update --context InventoryDbContext `
   --project .\src\Services\Erp.Inventory.Storage\Erp.Inventory.Storage.csproj `
   --startup-project .\src\Erp.Api\Erp.Api.csproj
 
+dotnet ef database update --context PurchasingDbContext `
+  --project .\src\Services\Erp.Purchasing.Storage\Erp.Purchasing.Storage.csproj `
+  --startup-project .\src\Erp.Api\Erp.Api.csproj
+
 dotnet ef database update --context NotificationDbContext `
   --project .\src\Notification\Erp.Notification.Storage\Erp.Notification.Storage.csproj `
   --startup-project .\src\Erp.Api\Erp.Api.csproj
@@ -271,7 +279,7 @@ Em Visual Studio existem os perfis de arranque múltiplo **"All"** e **"All + Wo
 
 **Uma base de dados para o ERP**, com todas as tabelas em `dbo`. É o que permite que emitir uma fatura, dar saída de stock e gerar o lançamento contabilístico caibam numa transação — sem transações distribuídas nem sagas dentro de um único processo — e o que devolve as chaves estrangeiras entre módulos que a separação anterior impedia.
 
-Cada módulo mantém a **sua própria tabela de histórico de migrations** (`__EFMigrationsHistory_Core`, `_Sales`, `_Inventory`, `_Notification`), pelo que as migrations continuam independentes.
+Cada módulo mantém a **sua própria tabela de histórico de migrations** (`__EFMigrationsHistory_Core`, `_Sales`, `_Inventory`, `_Purchasing`, `_Notification`), pelo que as migrations continuam independentes.
 
 Que os módulos partilhem a base é o que permite ao Sales e ao Inventory escreverem na mesma transação: uma ligação por pedido (`SharedDbConnection`) servida a todos os `DbContext`, e o `StockStorage` a juntar-se à transação que o `SalesUnitOfWork` abriu. A consequência a conhecer é que um pedido não pode correr consultas em dois contextos ao mesmo tempo — uma ligação não serve dois leitores.
 
@@ -304,7 +312,7 @@ Contextos disponíveis no Identity: `ApplicationDbContext`, `ConfigurationDbCont
 dotnet test Erp.slnx
 ```
 
-550 testes em seis projetos, sem dependência de base de dados: as camadas Application são testadas com storages substituídos (NSubstitute), a biblioteca fiscal é testada diretamente — incluindo a validação dos ficheiros SAF-T e de inventário contra os XSD oficiais — e o cliente de email e a obtenção de tokens do Identity com um `HttpMessageHandler` e um `TimeProvider` de teste.
+658 testes em sete projetos, sem dependência de base de dados: as camadas Application são testadas com storages substituídos (NSubstitute), a biblioteca fiscal é testada diretamente — incluindo a validação dos ficheiros SAF-T e de inventário contra os XSD oficiais — e o cliente de email e a obtenção de tokens do Identity com um `HttpMessageHandler` e um `TimeProvider` de teste.
 
 O reverso disto é que **nada exercita o SQL Server a sério**: os bloqueios `WITH (UPDLOCK, ROWLOCK)` que impedem duas notas de crédito simultâneas sobre a mesma fatura, a transação partilhada entre Sales e Inventory e a reversão de stock na anulação só são verificados contra storages substituídos.
 
@@ -407,6 +415,77 @@ Os armazéns são dados mestre e vivem no Core (`/api/warehouses`), ao lado dos 
 
 ---
 
+## Endpoints do módulo Purchasing
+
+Do lado das compras **só um documento é fiscalmente relevante como documento nosso: a autofatura**, que ainda não está feita. Uma encomenda é um compromisso interno, e uma fatura de fornecedor é um documento *dele* que nós escrituramos — sem série nossa, sem assinatura, sem ATCUD. Daí a diferença de regime que salta à vista ao ler os dois módulos: **o `Erp.Sales` é *append-only* e o `Erp.Purchasing` não é.** Um erro de escrituração corrige-se corrigindo, porque não fomos nós que emitimos nada. A análise completa está no [plano](docs/purchasing.md#que-documentos-de-compras-são-fiscalmente-relevantes).
+
+Por ora existem as **encomendas a fornecedores**. O número (`ENC2026/7`) é nosso e não tem significado fiscal, por isso não leva o bloqueio de linha que uma série da AT exige: uma colisão é apanhada pelo índice único, e uma falha custa um número em vez de uma explicação. As linhas podem ser reescritas à vontade **até chegar mercadoria** — depois disso não, porque alterá-las reescreveria em silêncio aquilo contra o que a receção foi medida. Receber a mais é aceite, já que os fornecedores o fazem, mas nunca gera dívida negativa. E mercadoria que chegou não se desencomenda: uma encomenda com receções **fecha-se**, dando o resto por não vindo, e uma sem receções **anula-se**.
+
+| Método | Rota | Autorização |
+|---|---|---|
+| `GET` | `/api/purchase-orders?companyId=&supplierId=&openOnly=` | `Read` |
+| `GET` | `/api/purchase-orders/pending?companyId=&supplierId=` | `Read` |
+| `GET` | `/api/purchase-orders/{id}` | `Read` |
+| `POST` | `/api/purchase-orders` | `Write` |
+| `PUT` | `/api/purchase-orders/{id}` | `Write` |
+| `POST` | `/api/purchase-orders/{id}/place` | `Write` |
+| `POST` | `/api/purchase-orders/{id}/close` | `Write` |
+| `POST` | `/api/purchase-orders/{id}/cancel` | `Write` |
+
+O `pending` devolve o que os fornecedores ainda devem, linha a linha, e é o que alimenta o ecrã de receção.
+
+### Receção de mercadoria
+
+É aqui que **uma compra movimenta stock**. A receção entra no razão como qualquer documento — o `IStockRecorder` já era agnóstico do módulo — e a receção, as entradas no razão e as quantidades recebidas da encomenda são escritas **na mesma transação**, através do `SharedDbConnection` e do `IAmbientDbTransaction`. Sem isso o armazém e a encomenda ficariam a discordar sobre o que chegou, e ninguém daria por isso até um teste de stocks.
+
+Não se recebe mais do que a encomenda ainda deve, e a encomenda é **bloqueada antes** de se ler o que falta — o mesmo problema e a mesma solução do "não faturar mais do que a guia moveu". Mercadoria que chega sem encomenda é aceite: acontece, e recusá-la não ajudaria ninguém.
+
+Ao contrário da encomenda, **a receção não se edita**, porque já moveu stock. Anular retira o stock por lançamento contrário e devolve a quantidade à encomenda, que volta a ficar a dever o que devia. E **é aqui que um custo real entra no sistema**: cada linha leva o seu custo unitário para o razão, que é o que a fase 6 vai usar para o custo médio ponderado.
+
+| Método | Rota | Autorização |
+|---|---|---|
+| `GET` | `/api/goods-receipts?companyId=&supplierId=` | `Read` |
+| `GET` | `/api/goods-receipts/{id}` | `Read` |
+| `POST` | `/api/goods-receipts` | `Write` |
+| `POST` | `/api/goods-receipts/{id}/void` | `Write` |
+
+### Devoluções a fornecedores
+
+O espelho da receção: o stock sai **ao custo a que entrou**, e só sai o que foi recebido e ainda cá está — com a receção bloqueada antes da leitura, e o já devolvido derivado das linhas de devolução. O armazém não é perguntado, porque a mercadoria sai de onde está e a receção já o diz; linhas de armazéns diferentes são recusadas, já que um movimento sai de um sítio só.
+
+Isto regista o **movimento**, não o transporte. Mercadoria que viaja de volta precisa de um documento de transporte, e **esse é nosso e é fiscal**: uma guia de devolução (`GD`) emitida em `/api/stock-movements`.
+
+| Método | Rota | Autorização |
+|---|---|---|
+| `GET` | `/api/supplier-returns?companyId=&supplierId=` | `Read` |
+| `GET` | `/api/supplier-returns/returnable?companyId=&supplierId=` | `Read` |
+| `GET` | `/api/supplier-returns/{id}` | `Read` |
+| `POST` | `/api/supplier-returns` | `Write` |
+| `POST` | `/api/supplier-returns/{id}/void` | `Write` |
+
+### Faturas de fornecedor
+
+Escrituração, não emissão. O número, a data e o ATCUD são **dele**, guardados como vieram, e daqui sai o **IVA dedutível** — separado por natureza (existências, imobilizado, outros bens e serviços), porque é assim que a declaração periódica o pede. A autoliquidação tem a sua marca, para as aquisições intracomunitárias e o artigo 2.º n.º 1 j).
+
+O risco fiscal real deste módulo é a **dupla dedução**: a mesma fatura chega em papel e outra vez por email, é lançada duas vezes e o IVA é deduzido a dobrar sem nada parecer errado. O índice único `(CompanyId, SupplierTaxId, SupplierDocumentNumber)` torna-o impossível na base de dados. O número sozinho é deliberadamente não único — dois fornecedores emitem ambos a sua `FT 2026/1`.
+
+A **regra do documento integrador** aplica-se ao contrário do lado das vendas: uma linha que vem de uma receção não movimenta stock, porque a receção já o fez; uma que não vem, e é de existências, dá entrada aqui — a fatura que veio com o camião. Quem decide é a natureza da dedução, e o já faturado por linha de receção é derivado das faturas, com a receção bloqueada antes da leitura.
+
+Como não emitimos nada, **um erro de escrituração corrige-se corrigindo** — sem documento retificativo, que a existir viria do fornecedor. A exceção é uma fatura que já deu entrada em stock: essa anula-se, porque reescrevê-la deixaria o razão a discordar dela.
+
+As **notas de crédito** do fornecedor entram por aqui, como tipo `NC`, e têm uma regra própria: **nunca dão entrada em stock**. Se houve devolução de mercadoria, foi aí que o stock saiu; a nota de crédito acerta o dinheiro e o IVA. Os montantes ficam positivos no documento, como no papel dele, e o sinal pertence ao tipo — aplica-se ao somar.
+
+| Método | Rota | Autorização |
+|---|---|---|
+| `GET` | `/api/purchase-invoices?companyId=&supplierId=` | `Read` |
+| `GET` | `/api/purchase-invoices/uninvoiced-receipts?companyId=&supplierId=` | `Read` |
+| `GET` | `/api/purchase-invoices/{id}` | `Read` |
+| `POST` | `/api/purchase-invoices` | `Write` |
+| `PUT` | `/api/purchase-invoices/{id}` | `Write` |
+| `POST` | `/api/purchase-invoices/{id}/void` | `Write` |
+
+---
+
 ## API do Identity
 
 | Método | Rota | Autorização |
@@ -470,6 +549,18 @@ A empresa ativa escolhe-se no cabeçalho e é partilhada por todas as páginas (
 | `/inventory-counts/new` | Abrir contagem, total ou parcial, com a opção de começar a zero |
 | `/inventory-counts/{id}` | Folha de contagem e fecho com acerto |
 | `/inventory-file` | Ficheiro de inventário para a AT, valorizado ou só com quantidades |
+| `/purchase-orders` | Encomendas a fornecedores, com filtro do que está por receber |
+| `/purchase-orders/new`, `/purchase-orders/{id}/edit` | Criar e corrigir encomenda |
+| `/purchase-orders/{id}` | Encomenda, com o recebido e o que falta por linha, colocar, fechar e anular |
+| `/goods-receipts` | Receções de mercadoria |
+| `/goods-receipts/new` | Receber, a partir do que o fornecedor ainda deve, com quantidades ajustáveis |
+| `/goods-receipts/{id}` | Receção, com origem por linha e anulação |
+| `/supplier-returns` | Devoluções a fornecedores |
+| `/supplier-returns/new` | Devolver, a partir do que foi recebido e ainda está cá |
+| `/supplier-returns/{id}` | Devolução, com a receção de origem por linha e anulação |
+| `/supplier-invoices` | Faturas e notas de crédito de fornecedor, com o IVA dedutível do período |
+| `/supplier-invoices/new` | Registar, a partir do que foi recebido e está por faturar |
+| `/supplier-invoices/{id}` | Fatura registada, com o IVA por taxa, o que moveu stock e anulação |
 | `/products` | Ficheiro de artigos, com filtros por família, marca e texto |
 | `/products/new`, `/products/{id}` | Criar e editar artigo |
 | `/product-families`, `/product-families/new`, `/product-families/{id}` | Famílias |
@@ -515,8 +606,8 @@ Em resumo:
 Registo honesto do que ainda não está feito, para evitar surpresas:
 
 - **Dados mestre no Core** — o catálogo de artigos (com família, subfamília e marca), os clientes, os fornecedores e os armazéns vivem no módulo Core, porque são partilhados: Sales fatura-os, Purchasing vai comprá-los e Inventory reporta-os. Cada documento emitido guarda a sua própria cópia, pelo que editá-los nunca altera o que já foi faturado.
-- **Módulos por implementar** — Purchasing, Accounting e Reporting ainda não existem: entram como pasta de controllers e camadas próprias quando forem escritos. Core, Sales, Inventory e Notification estão implementados.
-- **Menu com links por escrever** — o menu lateral já tem as entradas de Compras, Contabilidade e Relatórios, mas as páginas correspondentes ainda não existem: clicá-las leva a `/not-found`.
+- **Módulos por implementar** — Accounting e Reporting ainda não existem: entram como pasta de controllers e camadas próprias quando forem escritos. Core, Sales, Inventory e Notification estão completos; **Purchasing tem encomendas, receção, devoluções e registo de faturas de fornecedor** — autofaturação e custeio são as fases seguintes do [plano](docs/purchasing.md#fases).
+- **Menu com links por escrever** — Contabilidade e Relatórios ainda não têm páginas: clicá-las leva a `/not-found`.
 - **Comunicação à AT é manual** — as séries, as guias de transporte e os ficheiros são preparados e validados pelo ERP, mas quem os submete é o utilizador: os *webservices* SOAP da AT não estão integrados. O código de validação da série e o código de circulação da guia registam-se à mão.
 - **Sem custeio** — a valorização do stock usa o custo unitário guardado na ficha do artigo. Média ponderada ou FIFO, movidos por cada compra, são trabalho à parte e não existem.
 - **Sem testes de integração** — não há nada a correr contra um SQL Server real. Os bloqueios `UPDLOCK`, a transação partilhada entre Sales e Inventory e a reversão de stock na anulação são o tipo de coisa que só falha em concorrência, e é exatamente o que os testes com storages substituídos não conseguem apanhar.

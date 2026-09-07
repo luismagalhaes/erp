@@ -36,6 +36,9 @@
     <ProjectReference Include="..\Services\Erp.Inventory.Application\Erp.Inventory.Application.csproj" />
     <ProjectReference Include="..\Services\Erp.Inventory.Infrastructure\Erp.Inventory.Infrastructure.csproj" />
     <ProjectReference Include="..\Services\Erp.Inventory.Storage\Erp.Inventory.Storage.csproj" />
+    <ProjectReference Include="..\Services\Erp.Purchasing.Application\Erp.Purchasing.Application.csproj" />
+    <ProjectReference Include="..\Services\Erp.Purchasing.Infrastructure\Erp.Purchasing.Infrastructure.csproj" />
+    <ProjectReference Include="..\Services\Erp.Purchasing.Storage\Erp.Purchasing.Storage.csproj" />
     <ProjectReference Include="..\Notification\Erp.Notification.Application\Erp.Notification.Application.csproj" />
     <ProjectReference Include="..\Notification\Erp.Notification.Infrastructure\Erp.Notification.Infrastructure.csproj" />
     <ProjectReference Include="..\Notification\Erp.Notification.Storage\Erp.Notification.Storage.csproj" />

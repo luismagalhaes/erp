@@ -24,6 +24,12 @@
     <Project Path="src/Services/Erp.Inventory.Infrastructure/Erp.Inventory.Infrastructure.csproj" />
     <Project Path="src/Services/Erp.Inventory.Storage/Erp.Inventory.Storage.csproj" />
   </Folder>
+  <Folder Name="/src/Erp/Modules/Purchasing/">
+    <Project Path="src/Services/Erp.Purchasing.Application/Erp.Purchasing.Application.csproj" />
+    <Project Path="src/Services/Erp.Purchasing.Domain/Erp.Purchasing.Domain.csproj" />
+    <Project Path="src/Services/Erp.Purchasing.Infrastructure/Erp.Purchasing.Infrastructure.csproj" />
+    <Project Path="src/Services/Erp.Purchasing.Storage/Erp.Purchasing.Storage.csproj" />
+  </Folder>
   <Folder Name="/src/Erp/Modules/Sales/">
     <Project Path="src/Services/Erp.Sales.Application/Erp.Sales.Application.csproj" />
     <Project Path="src/Services/Erp.Sales.Domain/Erp.Sales.Domain.csproj" />
@@ -52,6 +58,7 @@
     <Project Path="tests/Erp.FiscalPT.Tests/Erp.FiscalPT.Tests.csproj" />
     <Project Path="tests/Erp.Notification.Tests/Erp.Notification.Tests.csproj" />
     <Project Path="tests/Erp.Inventory.Tests/Erp.Inventory.Tests.csproj" />
+    <Project Path="tests/Erp.Purchasing.Tests/Erp.Purchasing.Tests.csproj" />
     <Project Path="tests/Erp.Sales.Tests/Erp.Sales.Tests.csproj" />
   </Folder>
   <Folder Name="/tests/Identity/">

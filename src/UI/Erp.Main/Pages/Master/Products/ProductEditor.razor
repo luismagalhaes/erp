@@ -117,14 +117,9 @@
                                      Min="0" Format="N2" />
                 </MudItem>
                 <MudItem xs="12" md="3">
-                    <MudNumericField @bind-Value="_unitCost" Label="Custo unitário" Variant="Variant.Outlined"
-                                     Min="0" Format="N2"
-                                     HelperText="Valoriza o stock na comunicação de inventários" />
-                </MudItem>
-                <MudItem xs="12" md="2">
                     <MudTextField @bind-Value="_unitOfMeasure" Label="Unidade" Variant="Variant.Outlined" />
                 </MudItem>
-                <MudItem xs="12" md="2">
+                <MudItem xs="12" md="3">
                     <MudSelect T="string" Value="_taxCode" ValueChanged="OnTaxCodeChanged"
                                Label="IVA" Variant="Variant.Outlined">
                         @foreach (var rate in TaxRates)
@@ -133,7 +128,7 @@
                         }
                     </MudSelect>
                 </MudItem>
-                <MudItem xs="12" md="2">
+                <MudItem xs="12" md="3">
                     <MudSelect @bind-Value="_taxCountryRegion" Label="Espaço fiscal" Variant="Variant.Outlined">
                         <MudSelectItem T="string" Value="@("PT")">Continente</MudSelectItem>
                         <MudSelectItem T="string" Value="@("PT-AC")">Açores</MudSelectItem>
@@ -145,6 +140,43 @@
                 {
                     <MudItem xs="12">
                         <MudSwitch @bind-Value="_isActive" Color="Color.Primary" Label="Artigo ativo" />
+                    </MudItem>
+                }
+            </MudGrid>
+        </MudPaper>
+
+        <MudPaper Elevation="1" Class="pa-4">
+            <MudText Typo="Typo.h6" Class="mb-1">Stock e inventário</MudText>
+            <MudText Typo="Typo.body2" Color="Color.Secondary" Class="mb-3">
+                O que vai no ficheiro de inventário comunicado à AT.
+            </MudText>
+
+            <MudGrid>
+                <MudItem xs="12" md="4">
+                    <MudNumericField @bind-Value="_unitCost" Label="Custo unitário" Variant="Variant.Outlined"
+                                     Min="0" Format="N2"
+                                     HelperText="Valoriza o stock na comunicação valorizada" />
+                </MudItem>
+                <MudItem xs="12" md="8">
+                    <MudSelect @bind-Value="_inventoryCategory" Label="Categoria de inventário"
+                               Variant="Variant.Outlined"
+                               HelperText="Não é o mesmo que o tipo do SAF-T acima — são vocabulários diferentes">
+                        @foreach (var category in InventoryCategories.All)
+                        {
+                            <MudSelectItem T="string" Value="@category.Code">
+                                @category.Code — @category.Label
+                            </MudSelectItem>
+                        }
+                    </MudSelect>
+                </MudItem>
+
+                @if (_inventoryCategory == "B")
+                {
+                    <MudItem xs="12">
+                        <MudAlert Severity="Severity.Info" Dense="true">
+                            Ativos biológicos só existem no formato valorizado (2_01). Numa comunicação
+                            só com quantidades, este artigo vai como mercadoria.
+                        </MudAlert>
                     </MudItem>
                 }
             </MudGrid>
@@ -186,6 +218,7 @@
     private string _description = string.Empty;
     private string _barcode = string.Empty;
     private string _productType = "P";
+    private string _inventoryCategory = "M";
     private string _unitOfMeasure = "UN";
     private decimal _unitPrice;
     private decimal _unitCost;
@@ -241,6 +274,7 @@
             _description = product.Description;
             _barcode = product.Barcode ?? string.Empty;
             _productType = product.ProductType;
+            _inventoryCategory = product.InventoryCategory;
             _unitOfMeasure = product.UnitOfMeasure;
             _unitPrice = product.UnitPrice;
             _unitCost = product.UnitCost;
@@ -317,7 +351,8 @@
                     _familyId,
                     _subfamilyId,
                     _brandId,
-                    _unitCost))
+                    _unitCost,
+                    _inventoryCategory))
                 : await Catalog.UpdateProductAsync(Id!.Value, new UpdateProductRequest(
                     _description.Trim(),
                     _unitPrice,
@@ -331,7 +366,8 @@
                     _subfamilyId,
                     _brandId,
                     _isActive,
-                    _unitCost));
+                    _unitCost,
+                    _inventoryCategory));
 
             if (error is not null)
             {

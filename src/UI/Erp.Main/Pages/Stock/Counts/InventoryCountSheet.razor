@@ -1,0 +1,344 @@
+@page "/inventory-counts/{Id:guid}"
+@attribute [Authorize]
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.AspNetCore.Components.Web
+@using MudBlazor
+@using Erp.Main.Models
+@using Erp.Main.Services
+@inject StockApiClient StockApi
+@inject NavigationManager Navigation
+@inject ISnackbar Snackbar
+
+<PageTitle>@(_count?.Reference ?? "Contagem")</PageTitle>
+
+<MudStack Spacing="4">
+    <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center">
+        <MudStack Spacing="0">
+            <MudText Typo="Typo.h4">@(_count?.Reference ?? "Contagem")</MudText>
+            @if (_count is not null)
+            {
+                <MudText Typo="Typo.body2" Color="Color.Secondary">
+                    @_count.CountDate.ToString("yyyy-MM-dd") · @ScopeLabel(_count.Scope) ·
+                    @(_count.IsOpen ? "aberta" : $"fechada em {_count.ClosedAtUtc:yyyy-MM-dd HH:mm}")
+                </MudText>
+            }
+        </MudStack>
+
+        <MudButton Variant="Variant.Text" StartIcon="@Icons.Material.Filled.ArrowBack"
+                   OnClick="@(() => Navigation.NavigateTo("inventory-counts"))">
+            Voltar
+        </MudButton>
+    </MudStack>
+
+    @if (!string.IsNullOrWhiteSpace(_error))
+    {
+        <MudAlert Severity="Severity.Error" Dense="true">@_error</MudAlert>
+    }
+
+    @if (_loading)
+    {
+        <MudProgressLinear Indeterminate="true" Color="Color.Primary" />
+    }
+    else if (_count is null)
+    {
+        <MudAlert Severity="Severity.Warning">Contagem não encontrada.</MudAlert>
+    }
+    else
+    {
+        <MudPaper Elevation="1" Class="pa-4">
+            <MudGrid>
+                <MudItem xs="6" md="3">
+                    <MudText Typo="Typo.caption" Color="Color.Secondary">Artigos</MudText>
+                    <MudText Typo="Typo.h5">@_lines.Count</MudText>
+                </MudItem>
+                <MudItem xs="6" md="3">
+                    <MudText Typo="Typo.caption" Color="Color.Secondary">Com diferença</MudText>
+                    <MudText Typo="Typo.h5" Color="@(DifferenceCount == 0 ? Color.Default : Color.Warning)">
+                        @DifferenceCount
+                    </MudText>
+                </MudItem>
+                <MudItem xs="6" md="3">
+                    <MudText Typo="Typo.caption" Color="Color.Secondary">Acerto total</MudText>
+                    <MudText Typo="Typo.h5">@TotalDifference.ToString("N3")</MudText>
+                </MudItem>
+                <MudItem xs="6" md="3" Class="d-flex align-center justify-end">
+                    @if (_count.IsOpen)
+                    {
+                        <MudStack Row="true" Spacing="2">
+                            <MudButton Variant="Variant.Outlined" Color="Color.Primary"
+                                       StartIcon="@Icons.Material.Filled.Save"
+                                       Disabled="@(_saving || !HasUnsavedChanges)"
+                                       OnClick="SaveAsync">
+                                @(_saving ? "A guardar..." : "Guardar")
+                            </MudButton>
+                        </MudStack>
+                    }
+                </MudItem>
+            </MudGrid>
+        </MudPaper>
+
+        @if (_count.IsOpen && HasUnsavedChanges)
+        {
+            <MudAlert Severity="Severity.Info" Dense="true">
+                Há quantidades por guardar. Fechar a contagem usa o que estiver guardado, por isso
+                guarde antes de fechar.
+            </MudAlert>
+        }
+
+        <MudPaper Elevation="1" Class="pa-2">
+            <MudTable Items="Visible" Hover="true" Striped="true" Dense="true" Breakpoint="Breakpoint.Sm">
+                <ToolBarContent>
+                    <MudTextField @bind-Value="_filter" @bind-Value:after="StateHasChanged" Immediate="true"
+                                  Placeholder="Procurar artigo" Adornment="Adornment.Start"
+                                  AdornmentIcon="@Icons.Material.Filled.Search" Margin="Margin.Dense"
+                                  Class="mt-0" Style="max-width: 320px;" />
+                    <MudSpacer />
+                    <MudSwitch @bind-Value="_onlyDifferences" @bind-Value:after="StateHasChanged"
+                               Color="Color.Primary" Label="Só diferenças" />
+                </ToolBarContent>
+                <HeaderContent>
+                    <MudTh>Artigo</MudTh>
+                    <MudTh>Descrição</MudTh>
+                    <MudTh>Armazém</MudTh>
+                    <MudTh Style="text-align: right;">Sistema</MudTh>
+                    <MudTh Style="text-align: right;">Contado</MudTh>
+                    <MudTh Style="text-align: right;">Diferença</MudTh>
+                </HeaderContent>
+                <RowTemplate>
+                    <MudTd DataLabel="Artigo">
+                        <MudText Typo="Typo.body2" Style="font-family: monospace;">@context.ProductCode</MudText>
+                    </MudTd>
+                    <MudTd DataLabel="Descrição">@context.ProductDescription</MudTd>
+                    <MudTd DataLabel="Armazém">@WarehouseName(context.WarehouseId)</MudTd>
+                    <MudTd DataLabel="Sistema" Style="text-align: right;">
+                        @context.SystemQuantity.ToString("N3")
+                    </MudTd>
+                    <MudTd DataLabel="Contado" Style="text-align: right;">
+                        @if (_count.IsOpen)
+                        {
+                            <MudNumericField T="decimal" Value="context.CountedQuantity"
+                                             ValueChanged="@(value => SetCounted(context, value))"
+                                             Variant="Variant.Text" Margin="Margin.Dense"
+                                             HideSpinButtons="true" Style="max-width: 120px;"
+                                             Class="ml-auto" Format="N3" />
+                        }
+                        else
+                        {
+                            @context.CountedQuantity.ToString("N3")
+                        }
+                    </MudTd>
+                    <MudTd DataLabel="Diferença" Style="text-align: right;">
+                        <MudText Typo="Typo.body2" Color="@DifferenceColor(context.Difference)">
+                            <strong>@Signed(context.Difference)</strong>
+                        </MudText>
+                    </MudTd>
+                </RowTemplate>
+                <NoRecordsContent>
+                    <MudText Typo="Typo.body2" Color="Color.Secondary">Nada a mostrar.</MudText>
+                </NoRecordsContent>
+            </MudTable>
+        </MudPaper>
+
+        @if (_count.IsOpen)
+        {
+            <MudExpansionPanels>
+                <MudExpansionPanel Text="Fechar contagem">
+                    <MudText Typo="Typo.body2" Color="Color.Secondary" Class="mb-3">
+                        Fechar escreve um movimento de acerto por cada linha com diferença. A diferença é
+                        medida contra o saldo no momento do fecho, não contra a fotografia da abertura —
+                        movimentos feitos durante a contagem não são desfeitos. Depois de fechada, a
+                        contagem não volta a abrir.
+                    </MudText>
+
+                    @if (HasUnsavedChanges)
+                    {
+                        <MudAlert Severity="Severity.Warning" Dense="true" Class="mb-3">
+                            Guarde as quantidades antes de fechar, ou as alterações por guardar perdem-se.
+                        </MudAlert>
+                    }
+
+                    <MudButton Variant="Variant.Filled" Color="Color.Error"
+                               StartIcon="@Icons.Material.Filled.Lock"
+                               Disabled="@(_closing || HasUnsavedChanges)"
+                               OnClick="CloseAsync">
+                        @(_closing ? "A fechar..." : $"Fechar e acertar {DifferenceCount} artigos")
+                    </MudButton>
+                </MudExpansionPanel>
+            </MudExpansionPanels>
+        }
+        else
+        {
+            <MudAlert Severity="Severity.Success">
+                Contagem fechada. Os acertos estão nos movimentos de stock, com a referência
+                <strong>Inventário @_count.Reference</strong>.
+                <MudLink Href="stock" Class="ml-2">Ver existências</MudLink>
+            </MudAlert>
+        }
+    }
+</MudStack>
+
+@code {
+    [Parameter]
+    public Guid Id { get; set; }
+
+    private bool _loading = true;
+    private bool _saving;
+    private bool _closing;
+    private bool _onlyDifferences;
+    private string? _error;
+    private string _filter = string.Empty;
+
+    private InventoryCount? _count;
+    private List<InventoryCountLine> _lines = [];
+    private List<Warehouse> _warehouses = [];
+
+    /// <summary>
+    /// What was typed but not yet sent. Only these lines travel on save, which keeps a count of a
+    /// few thousand articles from resending everything on every keystroke.
+    /// </summary>
+    private readonly Dictionary<Guid, decimal> _pending = [];
+
+    private bool HasUnsavedChanges => _pending.Count > 0;
+
+    private int DifferenceCount => _lines.Count(line => line.Difference != 0);
+
+    private decimal TotalDifference => _lines.Sum(line => line.Difference);
+
+    private IEnumerable<InventoryCountLine> Visible => _lines
+        .Where(line => !_onlyDifferences || line.Difference != 0)
+        .Where(line => string.IsNullOrWhiteSpace(_filter)
+                       || line.ProductCode.Contains(_filter, StringComparison.OrdinalIgnoreCase)
+                       || line.ProductDescription.Contains(_filter, StringComparison.OrdinalIgnoreCase));
+
+    protected override async Task OnParametersSetAsync() => await LoadAsync();
+
+    private async Task LoadAsync()
+    {
+        _loading = true;
+        _error = null;
+
+        try
+        {
+            _count = await StockApi.GetInventoryCountAsync(Id);
+            _lines = _count is null ? [] : [.. _count.Lines];
+            _pending.Clear();
+
+            if (_count is not null)
+            {
+                var (warehouses, error) = await StockApi.GetWarehousesAsync(_count.CompanyId);
+                _warehouses = [.. warehouses];
+                _error = error;
+            }
+        }
+        catch (Exception ex)
+        {
+            _error = $"Não foi possível carregar a contagem: {ex.Message}";
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private void SetCounted(InventoryCountLine line, decimal counted)
+    {
+        var index = _lines.FindIndex(x => x.Id == line.Id);
+        if (index < 0)
+            return;
+
+        _lines[index] = line with { CountedQuantity = counted };
+        _pending[line.Id] = counted;
+    }
+
+    private async Task SaveAsync()
+    {
+        _saving = true;
+        _error = null;
+
+        try
+        {
+            var changes = _pending
+                .Select(entry => new CountedLineRequest(entry.Key, entry.Value))
+                .ToList();
+
+            var (count, error) = await StockApi.SetCountedAsync(Id, changes);
+
+            if (count is null)
+            {
+                _error = error ?? "Não foi possível guardar as quantidades.";
+                return;
+            }
+
+            _count = count;
+            _lines = [.. count.Lines];
+            _pending.Clear();
+
+            Snackbar.Add($"{changes.Count} {(changes.Count == 1 ? "linha guardada" : "linhas guardadas")}.", Severity.Success);
+        }
+        catch (Exception ex)
+        {
+            _error = $"Não foi possível guardar as quantidades: {ex.Message}";
+        }
+        finally
+        {
+            _saving = false;
+        }
+    }
+
+    private async Task CloseAsync()
+    {
+        _closing = true;
+        _error = null;
+
+        try
+        {
+            var (count, error) = await StockApi.CloseInventoryCountAsync(Id);
+
+            if (count is null)
+            {
+                _error = error ?? "Não foi possível fechar a contagem.";
+                return;
+            }
+
+            _count = count;
+            _lines = [.. count.Lines];
+            _pending.Clear();
+
+            var applied = count.Lines.Count(line => line.AppliedDifference is not null and not 0);
+            Snackbar.Add(
+                applied == 0
+                    ? "Contagem fechada sem acertos: o stock já batia certo."
+                    : $"Contagem fechada com {applied} {(applied == 1 ? "acerto" : "acertos")}.",
+                Severity.Success);
+        }
+        catch (Exception ex)
+        {
+            _error = $"Não foi possível fechar a contagem: {ex.Message}";
+        }
+        finally
+        {
+            _closing = false;
+        }
+    }
+
+    private string WarehouseName(Guid warehouseId) =>
+        _warehouses.FirstOrDefault(x => x.Id == warehouseId)?.Code ?? "—";
+
+    private static Color DifferenceColor(decimal difference) => difference switch
+    {
+        0 => Color.Default,
+        < 0 => Color.Error,
+        _ => Color.Success
+    };
+
+    private static string Signed(decimal difference) =>
+        difference > 0 ? $"+{difference:N3}" : difference.ToString("N3");
+
+    private static string ScopeLabel(string scope) => scope switch
+    {
+        "Total" => "empresa inteira",
+        "Warehouse" => "um armazém",
+        "Products" => "artigos escolhidos",
+        _ => scope
+    };
+}

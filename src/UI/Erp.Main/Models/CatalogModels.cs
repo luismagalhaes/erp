@@ -45,7 +45,8 @@ public sealed record ProductListItem(
     Guid? BrandId,
     string? BrandName,
     bool IsActive,
-    decimal UnitCost = 0m);
+    decimal UnitCost = 0m,
+    string InventoryCategory = "M");
 
 public sealed record CreateProductRequest(
     Guid CompanyId,
@@ -61,7 +62,8 @@ public sealed record CreateProductRequest(
     Guid? FamilyId = null,
     Guid? SubfamilyId = null,
     Guid? BrandId = null,
-    decimal UnitCost = 0m);
+    decimal UnitCost = 0m,
+    string InventoryCategory = "M");
 
 public sealed record UpdateProductRequest(
     string Description,
@@ -76,7 +78,28 @@ public sealed record UpdateProductRequest(
     Guid? SubfamilyId,
     Guid? BrandId,
     bool IsActive,
-    decimal UnitCost = 0m);
+    decimal UnitCost = 0m,
+    string InventoryCategory = "M");
+
+/// <summary>
+/// ProductCategory of the inventory communication, for the product editor. A different vocabulary
+/// from the SAF-T ProductType, which is why they are two fields and not one.
+/// </summary>
+public static class InventoryCategories
+{
+    public static readonly (string Code, string Label)[] All =
+    [
+        ("M", "Mercadorias"),
+        ("P", "Produtos acabados e intermédios"),
+        ("A", "Matérias-primas, subsidiárias e de consumo"),
+        ("S", "Subprodutos, desperdícios e refugos"),
+        ("T", "Produtos e trabalhos em curso"),
+        ("B", "Ativos biológicos")
+    ];
+
+    public static string Describe(string code) =>
+        All.FirstOrDefault(category => category.Code == code).Label ?? code;
+}
 
 // --- Customers and suppliers ---
 

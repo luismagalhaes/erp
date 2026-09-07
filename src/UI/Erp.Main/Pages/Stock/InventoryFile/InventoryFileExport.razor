@@ -18,8 +18,9 @@
     <MudStack Spacing="0">
         <MudText Typo="Typo.h4">Comunicação de inventários</MudText>
         <MudText Typo="Typo.body2" Color="Color.Secondary">
-            Ficheiro das existências à data de referência, para comunicar à AT. Desde a Portaria
-            126/2019 leva também a valorização, e não só as quantidades.
+            Ficheiro das existências à data de referência, para comunicar à AT. Para períodos de 2021
+            em diante o formato é o valorizado (2_01); o anterior, só com quantidades (1_02), fica
+            disponível para períodos mais antigos.
         </MudText>
     </MudStack>
 
@@ -46,12 +47,29 @@
                                    DateFormat="yyyy-MM-dd"
                                    HelperText="Último dia do período; as existências são as desse dia" />
                 </MudItem>
-                <MudItem xs="12" md="5" Class="d-flex align-center">
+                <MudItem xs="12" md="4">
+                    <MudSelect T="bool" Value="_valued" ValueChanged="OnValuedChangedAsync"
+                               Label="Tipo de comunicação" Variant="Variant.Outlined">
+                        <MudSelectItem T="bool" Value="true">Valorizado (2_01)</MudSelectItem>
+                        <MudSelectItem T="bool" Value="false">Só quantidades (1_02)</MudSelectItem>
+                    </MudSelect>
+                </MudItem>
+                <MudItem xs="12" md="1" Class="d-flex align-center">
                     @if (_loading)
                     {
                         <MudProgressCircular Size="Size.Small" Indeterminate="true" Color="Color.Primary" />
                     }
                 </MudItem>
+
+                @if (!_valued && _fiscalYear >= 2021)
+                {
+                    <MudItem xs="12">
+                        <MudAlert Severity="Severity.Warning" Dense="true">
+                            O formato só com quantidades é anterior a 2021. Para o período @_fiscalYear a AT
+                            exige a comunicação valorizada.
+                        </MudAlert>
+                    </MudItem>
+                }
             </MudGrid>
         </MudPaper>
 
@@ -74,8 +92,12 @@
                         <MudText Typo="Typo.h5">@_summary.TotalQuantity.ToString("N3")</MudText>
                     </MudItem>
                     <MudItem xs="6" md="3">
-                        <MudText Typo="Typo.caption" Color="Color.Secondary">Valor total</MudText>
-                        <MudText Typo="Typo.h5" Color="Color.Primary">@_summary.TotalValue.ToString("N2")</MudText>
+                        <MudText Typo="Typo.caption" Color="Color.Secondary">
+                            Valor total@(_valued ? string.Empty : " (não vai no ficheiro)")
+                        </MudText>
+                        <MudText Typo="Typo.h5" Color="@(_valued ? Color.Primary : Color.Secondary)">
+                            @_summary.TotalValue.ToString("N2")
+                        </MudText>
                     </MudItem>
                     <MudItem xs="6" md="3" Class="d-flex align-center justify-end">
                         <MudButton Variant="Variant.Filled" Color="Color.Primary" Size="Size.Large"
@@ -94,24 +116,48 @@
                         é feita como "sem existências" no Portal das Finanças, não por este ficheiro.
                     </MudAlert>
                 }
-                else if (_summary.ProductsWithoutCost > 0)
+                else
                 {
-                    <MudAlert Severity="Severity.Warning" Class="mt-3">
-                        @_summary.ProductsWithoutCost de @_summary.LineCount
-                        @(_summary.ProductsWithoutCost == 1 ? "artigo vai" : "artigos vão") com valor zero,
-                        porque não têm custo na ficha. A comunicação exige a valorização: preencha o custo
-                        unitário dos artigos antes de submeter.
-                        <MudLink Href="products" Class="ml-2">Ir aos artigos</MudLink>
-                    </MudAlert>
+                    @if (_summary.ValidationErrors > 0)
+                    {
+                        <MudAlert Severity="Severity.Error" Class="mt-3">
+                            O ficheiro não cumpre o esquema oficial em @_summary.ValidationErrors
+                            @(_summary.ValidationErrors == 1 ? "ponto" : "pontos"). Os detalhes ficam no
+                            log do servidor — não submeta assim.
+                        </MudAlert>
+                    }
+
+                    @if (_summary.ProductsWithNegativeStock > 0)
+                    {
+                        <MudAlert Severity="Severity.Warning" Class="mt-3">
+                            @_summary.ProductsWithNegativeStock
+                            @(_summary.ProductsWithNegativeStock == 1 ? "artigo tem" : "artigos têm")
+                            existências negativas nesta data. O esquema não aceita quantidades abaixo de
+                            zero, por isso o ficheiro não passa enquanto isso não for corrigido — há
+                            saídas registadas sem a entrada correspondente.
+                            <MudLink Href="stock/check" Class="mr-2">Correr o teste de stocks</MudLink>
+                            <MudLink Href="inventory-counts">Fazer uma contagem</MudLink>
+                        </MudAlert>
+                    }
+
+                    @if (_valued && _summary.ProductsWithoutCost > 0)
+                    {
+                        <MudAlert Severity="Severity.Warning" Class="mt-3">
+                            @_summary.ProductsWithoutCost de @_summary.LineCount
+                            @(_summary.ProductsWithoutCost == 1 ? "artigo vai" : "artigos vão") com valor zero,
+                            porque não têm custo na ficha. A comunicação valorizada exige a valorização:
+                            preencha o custo unitário dos artigos antes de submeter.
+                            <MudLink Href="products" Class="ml-2">Ir aos artigos</MudLink>
+                        </MudAlert>
+                    }
                 }
             }
         </MudPaper>
 
-        <MudAlert Severity="Severity.Warning">
-            <strong>Este ficheiro ainda não é validado contra o esquema oficial.</strong>
-            Ao contrário do SAF-T, o XSD da comunicação de inventários não está publicado num endereço
-            público — fica na área autenticada do Portal das Finanças. A estrutura segue os campos que a
-            Portaria define, mas confirme o ficheiro no validador da AT antes de submeter.
+        <MudAlert Severity="Severity.Info">
+            O ficheiro é validado contra o XSD oficial da versão escolhida antes de ser entregue. Passar
+            na validação diz que a estrutura está certa, não que os valores estão — a conferência das
+            existências continua a ser sua.
         </MudAlert>
     }
 </MudStack>
@@ -123,6 +169,9 @@
 
     private int _fiscalYear = DateTime.Today.Year - 1;
     private DateTime? _endDate = new DateTime(DateTime.Today.Year - 1, 12, 31);
+
+    /// <summary>The valued file is what the tax authority takes from 2021, so it is the default.</summary>
+    private bool _valued = true;
 
     private InventoryFileSummary? _summary;
 
@@ -152,7 +201,7 @@
         try
         {
             var (summary, error) = await StockApi.GetInventoryFileSummaryAsync(
-                Company.SelectedCompanyId, _fiscalYear, DateOnly.FromDateTime(_endDate!.Value));
+                Company.SelectedCompanyId, _fiscalYear, DateOnly.FromDateTime(_endDate!.Value), _valued);
 
             _summary = summary;
             _error = error;
@@ -186,6 +235,12 @@
         await LoadAsync();
     }
 
+    private async Task OnValuedChangedAsync(bool valued)
+    {
+        _valued = valued;
+        await LoadAsync();
+    }
+
     private async Task DownloadAsync()
     {
         _downloading = true;
@@ -194,7 +249,7 @@
         try
         {
             var (file, error) = await StockApi.DownloadInventoryFileAsync(
-                Company.SelectedCompanyId, _fiscalYear, DateOnly.FromDateTime(_endDate!.Value));
+                Company.SelectedCompanyId, _fiscalYear, DateOnly.FromDateTime(_endDate!.Value), _valued);
 
             if (file is null)
             {
@@ -205,7 +260,15 @@
             await JS.InvokeVoidAsync(
                 "erpDownloadFile", file.FileName, "application/xml", Convert.ToBase64String(file.Content));
 
-            if (file.ProductsWithoutCost > 0)
+            // The file is still handed over when it fails the schema — a broken file in hand beats a
+            // silent refusal — but the message has to say so.
+            if (file.ValidationErrors > 0)
+            {
+                Snackbar.Add(
+                    $"{file.FileName} gerado, mas com {file.ValidationErrors} erros face ao esquema oficial. Não submeta assim.",
+                    Severity.Error);
+            }
+            else if (_valued && file.ProductsWithoutCost > 0)
             {
                 Snackbar.Add(
                     $"{file.FileName} gerado, mas com {file.ProductsWithoutCost} artigos sem custo.",

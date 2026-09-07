@@ -2,7 +2,7 @@
 
 ERP modular em .NET 10, com autenticação centralizada (Duende IdentityServer), interface web em Blazor com MudBlazor e um modelo multi-empresa (cada utilizador pode pertencer a várias empresas com papéis distintos).
 
-**Monólito modular, não microserviços.** Os módulos de negócio — Core, Sales, Notification e os que vierem — mantêm projetos, camadas e schema de base de dados próprios, mas correm **num único host** (`Erp.Api`). Separam-se em processos quando houver uma razão concreta para isso: escala independente, equipa dedicada ou cadência de deploy diferente. Até lá, a fronteira é o projeto, não o processo.
+**Monólito modular, não microserviços.** Os módulos de negócio — Core, Sales, Inventory, Notification e os que vierem — mantêm projetos, camadas e schema de base de dados próprios, mas correm **num único host** (`Erp.Api`). Separam-se em processos quando houver uma razão concreta para isso: escala independente, equipa dedicada ou cadência de deploy diferente. Até lá, a fronteira é o projeto, não o processo.
 
 Correm em processo separado apenas os que têm razão para isso:
 
@@ -51,7 +51,7 @@ Erp.Main (Blazor Server)  ──OIDC──►  Erp.Identity (Duende IdentityServ
         │                                      │  + API de utilizadores
         │ access token (Bearer)                │
         ▼                                      ▼
-Erp.Api  ─── Core · Sales · Notification ──►  SQL Server
+Erp.Api  ─── Core · Sales · Inventory · Notification ──►  SQL Server
    (JWT Bearer, um audience, scopes globais de leitura e escrita)
 ```
 
@@ -84,31 +84,36 @@ Erp.Api  ─── Core · Sales · Notification ──►  SQL Server
 ```
 Controllers/Core/           Access, Companies, UserCompanies,
                             Products, ProductFamilies, ProductSubfamilies, Brands,
-                            Customers, Suppliers
-Controllers/Sales/          Invoices, Series
+                            Customers, Suppliers, Warehouses
+Controllers/Sales/          Invoices, StockMovements, Payments, Saft, Series
+Controllers/Inventory/      Stock, InventoryCounts, InventoryFile
 Controllers/Notification/   Notifications
 Controllers/HealthController.cs
 ```
 
 Um único audience (`erp-api`) e **dois scopes globais** (`erp.read` e `erp.write`), aplicados pelas políticas em [Policies](src/Erp.Api/Authorization/Policies.cs). Os módulos partilham o host e a base de dados; o que os separa são os projetos de camadas e o seu próprio `DbContext`.
 
-Módulos ainda por implementar: Inventory (obrigação de comunicação de inventários), Purchasing, Accounting e Reporting. Entram como mais uma pasta de controllers e o seu conjunto de camadas.
+Módulos ainda por implementar: Purchasing, Accounting e Reporting. Entram como mais uma pasta de controllers e o seu conjunto de camadas.
 
 Cada módulo segue a mesma divisão em camadas:
 
 | Módulo | Domain | Infrastructure | Application | Storage |
 |---|---|---|---|---|
 | Core | [Erp.Core.Domain](src/Services/Erp.Core.Domain/) | [Erp.Core.Infrastructure](src/Services/Erp.Core.Infrastructure/) | [Erp.Core.Application](src/Services/Erp.Core.Application/) | [Erp.Core.Storage](src/Services/Erp.Core.Storage/) |
-| | Empresas, acessos e **dados mestre**: artigos com família, subfamília e marca, clientes e fornecedores | | | |
+| | Empresas, acessos e **dados mestre**: artigos com família, subfamília e marca, clientes, fornecedores e armazéns | | | |
 | Sales | [Erp.Sales.Domain](src/Services/Erp.Sales.Domain/) | [Erp.Sales.Infrastructure](src/Services/Erp.Sales.Infrastructure/) | [Erp.Sales.Application](src/Services/Erp.Sales.Application/) | [Erp.Sales.Storage](src/Services/Erp.Sales.Storage/) |
+| Inventory | [Erp.Inventory.Domain](src/Services/Erp.Inventory.Domain/) | [Erp.Inventory.Infrastructure](src/Services/Erp.Inventory.Infrastructure/) | [Erp.Inventory.Application](src/Services/Erp.Inventory.Application/) | [Erp.Inventory.Storage](src/Services/Erp.Inventory.Storage/) |
+| | Existências por armazém, razão de movimentos, contagens e o ficheiro de inventário para a AT | | | |
 | Notification | [Erp.Notification.Domain](src/Notification/Erp.Notification.Domain/) | [Erp.Notification.Infrastructure](src/Notification/Erp.Notification.Infrastructure/) | [Erp.Notification.Application](src/Notification/Erp.Notification.Application/) | [Erp.Notification.Storage](src/Notification/Erp.Notification.Storage/) |
+
+O `Erp.Sales.Application` referencia o `Erp.Inventory.Infrastructure` — **só as interfaces**, para que emitir um documento e movimentar o stock caibam na mesma transação. A implementação fica atrás do módulo de inventário.
 
 ### Shared
 
 | Projeto | Descrição |
 |---|---|
-| [Erp.Common](src/Shared/Erp.Common/) | Constantes que descrevem o contrato do access token — roles, claims, scopes e api resources — partilhadas pela `Erp.Api` e pelo `Erp.Main`, para não dependerem de um projeto do Identity. |
-| [Erp.FiscalPT](src/Shared/Erp.FiscalPT/) | Primitivas de fiscalidade portuguesa sem dependências de infraestrutura: string e assinatura RSA dos documentos, ATCUD, número de documento, mensagem do código QR e arredondamento fiscal. |
+| [Erp.Common](src/Shared/Erp.Common/) | Constantes que descrevem o contrato do access token — roles, claims, scopes e api resources — partilhadas pela `Erp.Api` e pelo `Erp.Main`, para não dependerem de um projeto do Identity. Contém também a ligação e a transação partilhadas entre módulos (`SharedDbConnection`, `IAmbientDbTransaction`). |
+| [Erp.FiscalPT](src/Shared/Erp.FiscalPT/) | Primitivas de fiscalidade portuguesa sem dependências de infraestrutura: string e assinatura RSA dos documentos, ATCUD, número de documento, mensagem e imagem do código QR, arredondamento fiscal, e os geradores e validadores do **SAF-T (PT)** e do **ficheiro de inventário**, com os XSD oficiais embebidos. |
 
 ### Notification
 
@@ -124,9 +129,10 @@ Cada módulo segue a mesma divisão em camadas:
 
 | Projeto | Descrição |
 |---|---|
-| [Erp.FiscalPT.Tests](tests/Erp.FiscalPT.Tests/) | Assinatura, ATCUD, código QR e arredondamento fiscal |
-| [Erp.Sales.Tests](tests/Erp.Sales.Tests/) | Emissão, numeração de séries e anulação |
-| [Erp.Core.Tests](tests/Erp.Core.Tests/) | Empresas, acessos, catálogo de artigos, clientes e fornecedores, e o tratamento das claims JWT |
+| [Erp.FiscalPT.Tests](tests/Erp.FiscalPT.Tests/) | Assinatura, ATCUD, código QR, arredondamento fiscal, e os ficheiros SAF-T e de inventário validados contra os XSD oficiais |
+| [Erp.Sales.Tests](tests/Erp.Sales.Tests/) | Emissão, numeração de séries, documentos retificativos, faturação a partir de guias e anulação |
+| [Erp.Core.Tests](tests/Erp.Core.Tests/) | Empresas, acessos, catálogo de artigos, clientes, fornecedores e armazéns, e o tratamento das claims JWT |
+| [Erp.Inventory.Tests](tests/Erp.Inventory.Tests/) | Razão de stock, movimentação por documento, reversão na anulação, contagens e o ficheiro de inventário |
 | [Erp.Identity.Tests](tests/Erp.Identity.Tests/) | Invariantes do seed (clients, scopes, resources), serviços e o cliente de email |
 | [Erp.Notification.Tests](tests/Erp.Notification.Tests/) | Fila de emails, processamento e histórico |
 
@@ -229,6 +235,10 @@ dotnet ef database update --context SalesDbContext `
   --project .\src\Services\Erp.Sales.Storage\Erp.Sales.Storage.csproj `
   --startup-project .\src\Erp.Api\Erp.Api.csproj
 
+dotnet ef database update --context InventoryDbContext `
+  --project .\src\Services\Erp.Inventory.Storage\Erp.Inventory.Storage.csproj `
+  --startup-project .\src\Erp.Api\Erp.Api.csproj
+
 dotnet ef database update --context NotificationDbContext `
   --project .\src\Notification\Erp.Notification.Storage\Erp.Notification.Storage.csproj `
   --startup-project .\src\Erp.Api\Erp.Api.csproj
@@ -261,7 +271,9 @@ Em Visual Studio existem os perfis de arranque múltiplo **"All"** e **"All + Wo
 
 **Uma base de dados para o ERP**, com todas as tabelas em `dbo`. É o que permite que emitir uma fatura, dar saída de stock e gerar o lançamento contabilístico caibam numa transação — sem transações distribuídas nem sagas dentro de um único processo — e o que devolve as chaves estrangeiras entre módulos que a separação anterior impedia.
 
-Cada módulo mantém a **sua própria tabela de histórico de migrations** (`__EFMigrationsHistory_Core`, `_Sales`, `_Notification`), pelo que as migrations continuam independentes.
+Cada módulo mantém a **sua própria tabela de histórico de migrations** (`__EFMigrationsHistory_Core`, `_Sales`, `_Inventory`, `_Notification`), pelo que as migrations continuam independentes.
+
+Que os módulos partilhem a base é o que permite ao Sales e ao Inventory escreverem na mesma transação: uma ligação por pedido (`SharedDbConnection`) servida a todos os `DbContext`, e o `StockStorage` a juntar-se à transação que o `SalesUnitOfWork` abriu. A consequência a conhecer é que um pedido não pode correr consultas em dois contextos ao mesmo tempo — uma ligação não serve dois leitores.
 
 A base do **Identity** fica separada: é outro processo, com ciclo de vida próprio e os stores do Duende.
 
@@ -292,7 +304,9 @@ Contextos disponíveis no Identity: `ApplicationDbContext`, `ConfigurationDbCont
 dotnet test Erp.slnx
 ```
 
-185 testes em cinco projetos, sem dependência de base de dados: as camadas Application são testadas com storages substituídos (NSubstitute), a biblioteca fiscal é testada diretamente, e o cliente de email e a obtenção de tokens do Identity com um `HttpMessageHandler` e um `TimeProvider` de teste.
+550 testes em seis projetos, sem dependência de base de dados: as camadas Application são testadas com storages substituídos (NSubstitute), a biblioteca fiscal é testada diretamente — incluindo a validação dos ficheiros SAF-T e de inventário contra os XSD oficiais — e o cliente de email e a obtenção de tokens do Identity com um `HttpMessageHandler` e um `TimeProvider` de teste.
+
+O reverso disto é que **nada exercita o SQL Server a sério**: os bloqueios `WITH (UPDLOCK, ROWLOCK)` que impedem duas notas de crédito simultâneas sobre a mesma fatura, a transação partilhada entre Sales e Inventory e a reversão de stock na anulação só são verificados contra storages substituídos.
 
 ---
 
@@ -316,6 +330,7 @@ dotnet test Erp.slnx
 | `GET` `POST` `PUT` | `/api/brands` | `Read` / `Write` |
 | `GET` `POST` `PUT` | `/api/customers` | `Read` / `Write` |
 | `GET` `POST` `PUT` | `/api/suppliers` | `Read` / `Write` |
+| `GET` `POST` `PUT` | `/api/warehouses?companyId=` | `Read` / `Write` |
 | `GET` | `/api/access/me/companies` | Autenticado |
 | `GET` | `/api/access/me/companies/{companyId}/role` | Autenticado |
 | `POST` | `/api/access/check-role` | Autenticado |
@@ -365,6 +380,33 @@ O acesso é por **scope** do token (políticas em [Policies.cs](src/Erp.Api/Auth
 
 ---
 
+## Endpoints do módulo Inventory
+
+O stock é gerido **ao nível do armazém** — uma empresa pode ter vários — e o registo é um **razão só de acrescentos**: nada se apaga nem se reescreve, e o saldo é uma projeção que se pode sempre reconstruir a partir dos movimentos. É isso que o teste de stock faz, comparando o saldo guardado com a soma do razão; uma diferença significa que alguém escreveu fora do caminho normal.
+
+Quem movimenta são os **documentos**: cada série declara o que faz ao stock (entrada, saída ou nada), e o movimento é gravado na mesma transação que o documento. Nos **documentos integradores** a regra é que ninguém movimenta duas vezes: se a guia de remessa já deu saída, a fatura que a consome não volta a dar. Anular um documento devolve o stock — por lançamento oposto, nunca por remoção, e uma segunda anulação não faz nada.
+
+As **contagens** são totais ou parciais, e a zeragem não é um mecanismo à parte: é uma contagem aberta com todas as linhas a zero, cujo fecho esvazia o stock em âmbito. Só pode haver uma contagem aberta por empresa. O fecho mede contra o saldo do momento e não contra a fotografia da abertura, para que movimentos feitos durante a contagem não sejam desfeitos.
+
+O **ficheiro de inventário** gera-se nas duas versões oficiais — `Stock_1_2.xsd` (`urn:StockFile:PT_1_02`, só quantidades) e `Inventario_2_01.xsd` (`urn:StockFile:PT_2_01`, valorizado, obrigatório desde 2021) — porque o inventário tanto pode ser comunicado valorizado como não. Ambos os XSD estão embebidos e **cada ficheiro é validado antes de ser entregue**. As quantidades vêm do razão **à data de referência**, somando os movimentos até esse dia, e não dos saldos de hoje, que dariam a posição errada para qualquer período já fechado. A valorização vem do custo unitário do artigo e a `ProductCategory` do campo `InventoryCategory` da ficha — que não é o `ProductType` do SAF-T: as letras coincidem mas os vocabulários não.
+
+| Método | Rota | Autorização |
+|---|---|---|
+| `GET` | `/api/stock?companyId=&warehouseId=&productCode=` | `Read` |
+| `GET` | `/api/stock/ledger?companyId=&warehouseId=&productCode=` | `Read` |
+| `GET` | `/api/stock/check?companyId=&productCode=` | `Read` |
+| `POST` | `/api/stock/adjustments` | `Write` |
+| `GET` | `/api/inventory-counts?companyId=` · `/api/inventory-counts/{id}` | `Read` |
+| `POST` | `/api/inventory-counts` | `Write` |
+| `PUT` | `/api/inventory-counts/{id}/lines` | `Write` |
+| `POST` | `/api/inventory-counts/{id}/close` | `Write` |
+| `GET` | `/api/inventory-file/summary?companyId=&fiscalYear=&endDate=&valued=` | `Read` |
+| `GET` | `/api/inventory-file?companyId=&fiscalYear=&endDate=&valued=` | `Read` |
+
+Os armazéns são dados mestre e vivem no Core (`/api/warehouses`), ao lado dos artigos e dos clientes: são usados por mais do que um módulo.
+
+---
+
 ## API do Identity
 
 | Método | Rota | Autorização |
@@ -405,7 +447,10 @@ A empresa ativa escolhe-se no cabeçalho e é partilhada por todas as páginas (
 |---|---|
 | `/invoices` | Lista de faturas |
 | `/invoices/new` | Emissão de fatura |
+| `/invoices/from-movements` | Fatura a partir de guias por faturar, com quantidades ajustáveis |
 | `/invoices/{id}` | Documento emitido, com hash, QR e anulação |
+| `/credit-notes` | Notas de crédito emitidas |
+| `/credit-notes/new` | Nota de crédito partindo da fatura, com o já creditado descontado |
 | `/stock-movements` | Guias de movimentação de mercadorias |
 | `/stock-movements/new` | Emissão de guia, com locais de carga e descarga e início de transporte |
 | `/stock-movements/{id}` | Guia emitida, com comunicação à AT, QR e anulação |
@@ -418,6 +463,13 @@ A empresa ativa escolhe-se no cabeçalho e é partilhada por todas as páginas (
 | `/payments/{id}/print` | Recibo impresso, com faturas liquidadas e meios de pagamento |
 | `/series` | Séries de faturação |
 | `/series/new`, `/series/{id}` | Criar série e registar o código de validação da AT |
+| `/stock` | Existências por armazém, com razão de movimentos e acerto manual |
+| `/stock/check` | Teste de stock: saldo guardado contra soma dos movimentos |
+| `/warehouses`, `/warehouses/new`, `/warehouses/{id}` | Armazéns |
+| `/inventory-counts` | Contagens de inventário |
+| `/inventory-counts/new` | Abrir contagem, total ou parcial, com a opção de começar a zero |
+| `/inventory-counts/{id}` | Folha de contagem e fecho com acerto |
+| `/inventory-file` | Ficheiro de inventário para a AT, valorizado ou só com quantidades |
 | `/products` | Ficheiro de artigos, com filtros por família, marca e texto |
 | `/products/new`, `/products/{id}` | Criar e editar artigo |
 | `/product-families`, `/product-families/new`, `/product-families/{id}` | Famílias |
@@ -437,6 +489,7 @@ As rotas são sempre em **inglês**, mesmo com a interface em português, e as p
 ## Documentação
 
 - [Certificação AT do Erp.Sales](docs/certificacao-at-sales.md) — plano de implementação da emissão de documentos de venda certificada em Portugal: cadeia de assinatura, séries e ATCUD, código QR, SAF-T (PT) e o esquema do `SalesDb`.
+- [Gestão de stocks e inventário](docs/inventario-stocks.md) — desenho do módulo Inventory: armazéns, razão de movimentos, documentos integradores, contagens e o ficheiro de inventário. As decisões marcadas **[decisão]** são as caras de mudar depois.
 
 ---
 
@@ -460,12 +513,16 @@ Em resumo:
 
 Registo honesto do que ainda não está feito, para evitar surpresas:
 
-- **Dados mestre no Core** — o catálogo de artigos (com família, subfamília e marca), os clientes e os fornecedores vivem no módulo Core, porque são partilhados: Sales fatura-os, Purchasing vai comprá-los e Inventory vai reportá-los. Cada documento emitido guarda a sua própria cópia, pelo que editá-los nunca altera o que já foi faturado.
-- **Módulos por implementar** — Inventory, Purchasing, Accounting e Reporting ainda não existem: os hosts vazios foram removidos na fusão e entram como pasta de controllers e camadas próprias quando forem escritos. Core, Sales e Notification estão implementados.
-- **Sales em construção** — a emissão certificada funciona (numeração por série, assinatura encadeada, ATCUD, QR), mas falta a comunicação automática de séries à AT, a impressão do documento e o SAF-T. Ver [o plano](docs/certificacao-at-sales.md#estado-da-implementação).
+- **Dados mestre no Core** — o catálogo de artigos (com família, subfamília e marca), os clientes, os fornecedores e os armazéns vivem no módulo Core, porque são partilhados: Sales fatura-os, Purchasing vai comprá-los e Inventory reporta-os. Cada documento emitido guarda a sua própria cópia, pelo que editá-los nunca altera o que já foi faturado.
+- **Módulos por implementar** — Purchasing, Accounting e Reporting ainda não existem: entram como pasta de controllers e camadas próprias quando forem escritos. Core, Sales, Inventory e Notification estão implementados.
+- **Menu com links por escrever** — o menu lateral já tem as entradas de Compras, Contabilidade e Relatórios, mas as páginas correspondentes ainda não existem: clicá-las leva a `/not-found`.
+- **Comunicação à AT é manual** — as séries, as guias de transporte e os ficheiros são preparados e validados pelo ERP, mas quem os submete é o utilizador: os *webservices* SOAP da AT não estão integrados. O código de validação da série e o código de circulação da guia registam-se à mão.
+- **Sem custeio** — a valorização do stock usa o custo unitário guardado na ficha do artigo. Média ponderada ou FIFO, movidos por cada compra, são trabalho à parte e não existem.
+- **Sem testes de integração** — não há nada a correr contra um SQL Server real. Os bloqueios `UPDLOCK`, a transação partilhada entre Sales e Inventory e a reversão de stock na anulação são o tipo de coisa que só falha em concorrência, e é exatamente o que os testes com storages substituídos não conseguem apanhar.
+- **DTOs copiados à mão** — o `Erp.Main` mantém a sua própria cópia dos contratos da API em vez de os partilhar. Um campo renomeado de um lado compila do outro e chega em silêncio como `null` ou `Guid.Empty`; já aconteceu mais do que uma vez.
 - **SMTP por configurar** — sem `Smtp:Host` e `Smtp:FromEmail`, o worker marca os emails como `Failed` com essa mensagem. É visível no backoffice de notificações e resolve-se com configuração, não com código.
 - **Constantes duplicadas** — os scopes, roles e claims vivem em [Erp.Common](src/Shared/Erp.Common/Constants.cs), usado pela `Erp.Api` e pelo `Erp.Main`, mas o Identity mantém a sua cópia em `Erp.Identity.Common`. Os valores coincidem, mas alterar só um dos lados põe o seed e a API em desacordo sem erro de compilação.
-- **Cobertura de testes desigual** — a lógica fiscal, a emissão e os serviços do Core estão cobertos; as camadas Storage (EF Core) e as páginas Blazor não têm testes.
+- **Cobertura de testes desigual** — a lógica fiscal, a emissão, o stock e os serviços do Core estão cobertos; as camadas Storage (EF Core) e as páginas Blazor não têm testes.
 
 
 ### Segurança

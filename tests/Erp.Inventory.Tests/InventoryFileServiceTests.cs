@@ -1,19 +1,18 @@
 using System.Text;
 using System.Xml.Linq;
 using Erp.FiscalPT.Inventory;
-using Erp.Inventory.Application.Configuration;
 using Erp.Inventory.Application.Services;
 using Erp.Inventory.Infrastructure.Contracts;
 using Erp.Inventory.Infrastructure.Storage;
 using FluentAssertions;
-using Microsoft.Extensions.Options;
 using NSubstitute;
 
 namespace Erp.Inventory.Tests;
 
 public class InventoryFileServiceTests
 {
-    private static readonly XNamespace Ns = InventoryConstants.Namespace;
+    private static XNamespace Ns(bool valued) => InventoryConstants.Namespace(
+        valued ? InventoryFileVersion.Valued : InventoryFileVersion.QuantitiesOnly);
 
     private readonly IStockStorage _storage = Substitute.For<IStockStorage>();
     private readonly Guid _companyId = Guid.NewGuid();
@@ -25,12 +24,7 @@ public class InventoryFileServiceTests
             .Returns(_ => (IReadOnlyDictionary<string, (decimal, string)>)_stock);
     }
 
-    private InventoryFileService CreateService() =>
-        new(_storage, Options.Create(new InventoryFiscalOptions
-        {
-            IssuerTaxId = "123456789",
-            CertificateNumber = "9999"
-        }));
+    private InventoryFileService CreateService() => new(_storage);
 
     private InventoryFileRequest Request(params InventoryFileProductDto[] products) =>
         new(_companyId,
@@ -41,8 +35,9 @@ public class InventoryFileServiceTests
 
     private static InventoryFileProductDto Product(
         string productCode = "ART001",
-        decimal unitCost = 25m) =>
-        new(productCode, "Artigo de teste", "UN", unitCost, "5601234567890");
+        decimal unitCost = 25m,
+        string category = "M") =>
+        new(productCode, "Artigo de teste", "UN", unitCost, "5601234567890", category);
 
     private static XElement Parse(InventoryFileResultDto result) =>
         XDocument.Parse(Encoding.UTF8.GetString(result.Content)).Root!;
@@ -80,13 +75,12 @@ public class InventoryFileServiceTests
 
         var result = await CreateService().BuildAsync(Request(Product(unitCost: 12.5m)));
 
-        Parse(result).Element(Ns + "Inventory")!
-            .Element(Ns + "Line")!
-            .Element(Ns + "ClosingStockValue")!.Value.Should().Be("37.50");
+        Parse(result).Element(Ns(true) + "Stock")!
+            .Element(Ns(true) + "ClosingStockValue")!.Value.Should().Be("37.50");
     }
 
     /// <summary>
-    /// The communication requires the valuation, so products with no cost have to be visible
+    /// The valued communication requires the valuation, so products with no cost have to be visible
     /// rather than quietly reported as worth nothing.
     /// </summary>
     [Fact]
@@ -112,7 +106,10 @@ public class InventoryFileServiceTests
         result.LineCount.Should().Be(1);
     }
 
-    /// <summary>Stock that went out without coming in is still stock the file has to declare.</summary>
+    /// <summary>
+    /// Stock that went out without coming in is still stock the file has to declare, so it is
+    /// reported — but the schema refuses a negative quantity, and the caller is told both things.
+    /// </summary>
     [Fact]
     public async Task BuildAsync_reports_a_negative_quantity_rather_than_hiding_it()
     {
@@ -122,6 +119,8 @@ public class InventoryFileServiceTests
 
         result.LineCount.Should().Be(1);
         result.TotalQuantity.Should().Be(-2m);
+        result.ProductsWithNegativeStock.Should().Be(1);
+        result.ValidationErrors.Should().NotBeEmpty();
     }
 
     /// <summary>
@@ -134,9 +133,8 @@ public class InventoryFileServiceTests
 
         var result = await CreateService().BuildAsync(Request(Product()));
 
-        Parse(result).Element(Ns + "Inventory")!
-            .Element(Ns + "Line")!
-            .Element(Ns + "ProductDescription")!.Value.Should().Be("Artigo descontinuado");
+        Parse(result).Element(Ns(true) + "Stock")!
+            .Element(Ns(true) + "ProductDescription")!.Value.Should().Be("Artigo descontinuado");
     }
 
     [Fact]
@@ -161,8 +159,8 @@ public class InventoryFileServiceTests
 
         var result = await CreateService().BuildAsync(request);
 
-        Parse(result).Element(Ns + "Header")!
-            .Element(Ns + "TaxRegistrationNumber")!.Value.Should().Be("500123456");
+        Parse(result).Element(Ns(true) + "StockHeader")!
+            .Element(Ns(true) + "TaxRegistrationNumber")!.Value.Should().Be("500123456");
     }
 
     [Fact]
@@ -183,5 +181,85 @@ public class InventoryFileServiceTests
 
         result.LineCount.Should().Be(0);
         result.Content.Should().NotBeEmpty();
+        result.ValidationErrors.Should().BeEmpty();
+    }
+
+    // --- The two file versions ---
+
+    [Theory]
+    [InlineData(true, "2_01")]
+    [InlineData(false, "1_02")]
+    public async Task BuildAsync_writes_the_version_the_caller_asked_for(bool valued, string fileVersion)
+    {
+        _stock["ART001"] = (10m, "Artigo");
+
+        var result = await CreateService().BuildAsync(Request(Product()) with { Valued = valued });
+
+        var root = Parse(result);
+        root.Name.Namespace.Should().Be(Ns(valued));
+        root.Element(Ns(valued) + "StockHeader")!
+            .Element(Ns(valued) + "FileVersion")!.Value.Should().Be(fileVersion);
+        result.ValidationErrors.Should().BeEmpty();
+    }
+
+    /// <summary>The older schema has no ClosingStockValue and would reject one.</summary>
+    [Fact]
+    public async Task BuildAsync_leaves_the_value_out_of_the_quantities_only_file()
+    {
+        _stock["ART001"] = (10m, "Artigo");
+
+        var result = await CreateService().BuildAsync(Request(Product()) with { Valued = false });
+
+        Parse(result).Element(Ns(false) + "Stock")!
+            .Element(Ns(false) + "ClosingStockValue").Should().BeNull();
+    }
+
+    /// <summary>
+    /// The value is still computed for the quantities-only file, so the figure can be shown even
+    /// though it is not communicated.
+    /// </summary>
+    [Fact]
+    public async Task BuildAsync_still_totals_the_value_on_the_quantities_only_file()
+    {
+        _stock["ART001"] = (4m, "Artigo");
+
+        var result = await CreateService().BuildAsync(
+            Request(Product(unitCost: 10m)) with { Valued = false });
+
+        result.TotalValue.Should().Be(40m);
+    }
+
+    /// <summary>
+    /// Nothing has to carry a value on the quantities-only file, so a missing cost is not a problem
+    /// worth reporting there.
+    /// </summary>
+    [Fact]
+    public async Task BuildAsync_does_not_count_missing_costs_on_the_quantities_only_file()
+    {
+        _stock["ART001"] = (10m, "Artigo");
+
+        var result = await CreateService().BuildAsync(
+            Request(Product(unitCost: 0m)) with { Valued = false });
+
+        result.ProductsWithoutCost.Should().Be(0);
+    }
+
+    /// <summary>
+    /// Biological assets only exist in the valued schema, so on the older one the category falls
+    /// back to merchandise rather than producing a file the tax authority would reject.
+    /// </summary>
+    [Fact]
+    public async Task BuildAsync_falls_back_to_merchandise_for_a_category_the_schema_does_not_know()
+    {
+        _stock["ART001"] = (10m, "Artigo");
+
+        var valued = await CreateService().BuildAsync(Request(Product(category: "B")));
+        var quantitiesOnly = await CreateService().BuildAsync(
+            Request(Product(category: "B")) with { Valued = false });
+
+        Parse(valued).Element(Ns(true) + "Stock")!
+            .Element(Ns(true) + "ProductCategory")!.Value.Should().Be("B");
+        Parse(quantitiesOnly).Element(Ns(false) + "Stock")!
+            .Element(Ns(false) + "ProductCategory")!.Value.Should().Be("M");
     }
 }

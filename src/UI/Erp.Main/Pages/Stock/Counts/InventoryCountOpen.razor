@@ -1,0 +1,208 @@
+@page "/inventory-counts/new"
+@attribute [Authorize]
+@implements IDisposable
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.AspNetCore.Components.Web
+@using MudBlazor
+@using Erp.Main.Models
+@using Erp.Main.Services
+@inject StockApiClient StockApi
+@inject CompanyState Company
+@inject NavigationManager Navigation
+@inject ISnackbar Snackbar
+
+<PageTitle>Abrir contagem</PageTitle>
+
+<MudStack Spacing="4">
+    <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center">
+        <MudStack Spacing="0">
+            <MudText Typo="Typo.h4">Abrir contagem</MudText>
+            <MudText Typo="Typo.body2" Color="Color.Secondary">
+                Ao abrir, o sistema tira uma fotografia às existências em âmbito. A partir daí regista-se
+                o que foi encontrado.
+            </MudText>
+        </MudStack>
+
+        <MudButton Variant="Variant.Text" StartIcon="@Icons.Material.Filled.ArrowBack"
+                   OnClick="@(() => Navigation.NavigateTo("inventory-counts"))">
+            Voltar
+        </MudButton>
+    </MudStack>
+
+    @if (!string.IsNullOrWhiteSpace(_error))
+    {
+        <MudAlert Severity="Severity.Error" Dense="true">@_error</MudAlert>
+    }
+
+    @if (!Company.HasCompany)
+    {
+        <MudAlert Severity="Severity.Info">Escolha uma empresa no cabeçalho.</MudAlert>
+    }
+    else
+    {
+        <MudPaper Elevation="1" Class="pa-4">
+            <MudGrid>
+                <MudItem xs="12" md="4">
+                    <MudTextField @bind-Value="_reference" @bind-Value:after="StateHasChanged" Immediate="true"
+                                  Label="Referência" Variant="Variant.Outlined" Required="true"
+                                  HelperText="Como esta contagem fica conhecida, ex. INV2026-01" />
+                </MudItem>
+                <MudItem xs="12" md="4">
+                    <MudDatePicker @bind-Date="_countDate" Label="Data da contagem"
+                                   Variant="Variant.Outlined" DateFormat="yyyy-MM-dd"
+                                   HelperText="Data dos movimentos de acerto" />
+                </MudItem>
+                <MudItem xs="12" md="4">
+                    <MudSelect T="Guid?" @bind-Value="_warehouseId" Label="Armazém"
+                               Variant="Variant.Outlined" Clearable="true"
+                               HelperText="Vazio conta todos os armazéns">
+                        @foreach (var warehouse in _warehouses)
+                        {
+                            <MudSelectItem T="Guid?" Value="@warehouse.Id">
+                                @warehouse.Code — @warehouse.Name
+                            </MudSelectItem>
+                        }
+                    </MudSelect>
+                </MudItem>
+
+                <MudItem xs="12">
+                    <MudTextField @bind-Value="_productCodes" Label="Artigos"
+                                  Variant="Variant.Outlined" Lines="2"
+                                  HelperText="Códigos separados por vírgula ou por linha. Vazio conta tudo o que houver em âmbito." />
+                </MudItem>
+
+                <MudItem xs="12">
+                    <MudSwitch @bind-Value="_startAtZero" @bind-Value:after="StateHasChanged"
+                               Color="Color.Warning" Label="Abrir com tudo a zero" />
+                    <MudText Typo="Typo.caption" Color="Color.Secondary">
+                        Para o inventário feito de raiz: as linhas começam a zero e vão sendo preenchidas
+                        à medida que se conta.
+                    </MudText>
+                </MudItem>
+
+                @if (_startAtZero)
+                {
+                    <MudItem xs="12">
+                        <MudAlert Severity="Severity.Warning" Dense="true">
+                            Se fechar a contagem sem preencher nada, o stock em âmbito fica a zero — é
+                            essa a forma de zerar as existências antes de recontar.
+                        </MudAlert>
+                    </MudItem>
+                }
+            </MudGrid>
+        </MudPaper>
+
+        <MudStack Row="true" Justify="Justify.FlexEnd" Spacing="2">
+            <MudButton Variant="Variant.Text"
+                       OnClick="@(() => Navigation.NavigateTo("inventory-counts"))">
+                Cancelar
+            </MudButton>
+            <MudButton Variant="Variant.Filled" Color="Color.Primary"
+                       StartIcon="@Icons.Material.Filled.PlaylistAddCheck"
+                       Disabled="@(_saving || string.IsNullOrWhiteSpace(_reference))"
+                       OnClick="OpenAsync">
+                @(_saving ? "A abrir..." : "Abrir contagem")
+            </MudButton>
+        </MudStack>
+    }
+</MudStack>
+
+@code {
+    private bool _saving;
+    private string? _error;
+
+    private string _reference = $"INV{DateTime.Today:yyyyMMdd}";
+    private DateTime? _countDate = DateTime.Today;
+    private Guid? _warehouseId;
+    private string _productCodes = string.Empty;
+    private bool _startAtZero;
+
+    private List<Warehouse> _warehouses = [];
+
+    protected override async Task OnInitializedAsync()
+    {
+        Company.Changed += OnCompanyChanged;
+        await Company.EnsureLoadedAsync();
+        await LoadWarehousesAsync();
+    }
+
+    private async void OnCompanyChanged() => await InvokeAsync(LoadWarehousesAsync);
+
+    private async Task LoadWarehousesAsync()
+    {
+        if (!Company.HasCompany)
+        {
+            _warehouses = [];
+            _error = Company.LoadError;
+            StateHasChanged();
+            return;
+        }
+
+        try
+        {
+            var (warehouses, error) = await StockApi.GetWarehousesAsync(Company.SelectedCompanyId);
+            _warehouses = [.. warehouses.Where(warehouse => warehouse.IsActive)];
+            _error = error;
+        }
+        catch (Exception ex)
+        {
+            _error = $"Não foi possível carregar os armazéns: {ex.Message}";
+        }
+        finally
+        {
+            StateHasChanged();
+        }
+    }
+
+    private async Task OpenAsync()
+    {
+        _saving = true;
+        _error = null;
+
+        try
+        {
+            var request = new OpenInventoryCountRequest(
+                Company.SelectedCompanyId,
+                _reference.Trim(),
+                DateOnly.FromDateTime(_countDate ?? DateTime.Today),
+                _warehouseId,
+                ParseProductCodes(),
+                _startAtZero);
+
+            var (count, error) = await StockApi.OpenInventoryCountAsync(request);
+
+            if (count is null)
+            {
+                _error = error ?? "Não foi possível abrir a contagem.";
+                return;
+            }
+
+            Snackbar.Add($"Contagem {count.Reference} aberta com {count.LineCount} artigos.", Severity.Success);
+            Navigation.NavigateTo($"inventory-counts/{count.Id}");
+        }
+        catch (Exception ex)
+        {
+            _error = $"Não foi possível abrir a contagem: {ex.Message}";
+        }
+        finally
+        {
+            _saving = false;
+        }
+    }
+
+    /// <summary>
+    /// The codes are typed by hand, so both a comma-separated line and one code per line have to
+    /// work. An empty list means the whole scope, which the API reads as null.
+    /// </summary>
+    private IReadOnlyList<string>? ParseProductCodes()
+    {
+        var codes = _productCodes
+            .Split([',', ';', '\n', '\r'], StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+            .Distinct(StringComparer.Ordinal)
+            .ToList();
+
+        return codes.Count == 0 ? null : codes;
+    }
+
+    public void Dispose() => Company.Changed -= OnCompanyChanged;
+}

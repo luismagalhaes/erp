@@ -106,6 +106,7 @@ public sealed class CoreDbContext(DbContextOptions<CoreDbContext> options) : DbC
             entity.Property(x => x.ProductCode).HasMaxLength(60).IsRequired();
             entity.Property(x => x.Description).HasMaxLength(200).IsRequired();
             entity.Property(x => x.ProductType).HasMaxLength(1).IsFixedLength().IsRequired();
+            entity.Property(x => x.InventoryCategory).HasMaxLength(1).IsFixedLength().IsRequired();
             entity.Property(x => x.UnitOfMeasure).HasMaxLength(20).IsRequired();
             entity.Property(x => x.DefaultTaxCountryRegion).HasMaxLength(5).IsRequired();
             entity.Property(x => x.DefaultTaxCode).HasMaxLength(10).IsRequired();

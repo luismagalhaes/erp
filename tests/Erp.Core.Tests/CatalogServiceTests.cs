@@ -25,9 +25,10 @@ public class ProductServiceTests
         decimal unitPrice = 100m,
         Guid? familyId = null,
         Guid? subfamilyId = null,
-        Guid? brandId = null) =>
+        Guid? brandId = null,
+        string inventoryCategory = "M") =>
         new(_companyId, code, "Cadeira", unitPrice, productType, "UN", region, taxCode, 23m,
-            null, familyId, subfamilyId, brandId);
+            null, familyId, subfamilyId, brandId, 0m, inventoryCategory);
 
     private (ProductFamily Family, ProductSubfamily Subfamily) GivenClassification()
     {
@@ -76,6 +77,47 @@ public class ProductServiceTests
         var act = () => CreateService().CreateAsync(Request(productType: productType, taxCode: taxCode, region: region));
 
         await act.Should().ThrowAsync<ArgumentException>();
+    }
+
+    /// <summary>
+    /// The inventory category is a different vocabulary from the SAF-T product type: the letters
+    /// overlap but mean different things, so a value from one is not valid in the other.
+    /// </summary>
+    [Theory]
+    [InlineData("M")]
+    [InlineData("P")]
+    [InlineData("A")]
+    [InlineData("S")]
+    [InlineData("T")]
+    [InlineData("B")]
+    public async Task CreateAsync_accepts_every_inventory_category_of_the_valued_schema(string category)
+    {
+        var created = await CreateService().CreateAsync(Request(inventoryCategory: category));
+
+        created.InventoryCategory.Should().Be(category);
+    }
+
+    [Theory]
+    [InlineData("O")]
+    [InlineData("I")]
+    [InlineData("")]
+    [InlineData("X")]
+    public async Task CreateAsync_rejects_a_category_the_inventory_schema_does_not_know(string category)
+    {
+        var act = () => CreateService().CreateAsync(Request(inventoryCategory: category));
+
+        await act.Should().ThrowAsync<ArgumentException>().WithMessage("*inventory category*");
+    }
+
+    /// <summary>Merchandise is what a product is until someone says otherwise.</summary>
+    [Fact]
+    public async Task CreateAsync_defaults_the_category_to_merchandise()
+    {
+        var request = new CreateProductRequest(_companyId, "ART001", "Cadeira", 100m);
+
+        var created = await CreateService().CreateAsync(request);
+
+        created.InventoryCategory.Should().Be("M");
     }
 
     [Fact]
@@ -142,6 +184,33 @@ public class ProductServiceTests
         updated!.ProductCode.Should().Be("ART001");
         updated.Description.Should().Be("Novo");
         updated.IsActive.Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task UpdateAsync_changes_the_inventory_category()
+    {
+        var product = new Product { CompanyId = _companyId, ProductCode = "ART001", Description = "Cadeira" };
+        _products.GetByIdAsync(product.Id, Arg.Any<CancellationToken>()).Returns(product);
+
+        var updated = await CreateService().UpdateAsync(
+            product.Id,
+            new UpdateProductRequest("Cadeira", 25m, "P", "UN", "PT", "NOR", 23m, null, null, null, null, true, 0m, "A"));
+
+        updated!.InventoryCategory.Should().Be("A");
+        product.InventoryCategory.Should().Be("A");
+    }
+
+    [Fact]
+    public async Task UpdateAsync_rejects_a_category_the_inventory_schema_does_not_know()
+    {
+        var product = new Product { CompanyId = _companyId, ProductCode = "ART001", Description = "Cadeira" };
+        _products.GetByIdAsync(product.Id, Arg.Any<CancellationToken>()).Returns(product);
+
+        var act = () => CreateService().UpdateAsync(
+            product.Id,
+            new UpdateProductRequest("Cadeira", 25m, "P", "UN", "PT", "NOR", 23m, null, null, null, null, true, 0m, "X"));
+
+        await act.Should().ThrowAsync<ArgumentException>().WithMessage("*inventory category*");
     }
 
     [Fact]

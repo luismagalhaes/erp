@@ -45,7 +45,8 @@ public sealed record ProductListItemDto(
     Guid? BrandId,
     string? BrandName,
     bool IsActive,
-    decimal UnitCost = 0m);
+    decimal UnitCost = 0m,
+    string InventoryCategory = "M");
 
 public sealed record CreateProductRequest(
     Guid CompanyId,
@@ -61,7 +62,8 @@ public sealed record CreateProductRequest(
     Guid? FamilyId = null,
     Guid? SubfamilyId = null,
     Guid? BrandId = null,
-    decimal UnitCost = 0m);
+    decimal UnitCost = 0m,
+    string InventoryCategory = "M");
 
 public sealed record UpdateProductRequest(
     string Description,
@@ -76,7 +78,8 @@ public sealed record UpdateProductRequest(
     Guid? SubfamilyId,
     Guid? BrandId,
     bool IsActive,
-    decimal UnitCost = 0m);
+    decimal UnitCost = 0m,
+    string InventoryCategory = "M");
 
 // --- Business partners ---
 

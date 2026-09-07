@@ -160,8 +160,8 @@ InventoryCountLine
 | 1 | Armazéns no Core, razão de stock, saldos, acertos manuais e teste de stock | **Feito** |
 | 2 | `StockEffect` nas séries, movimentação na emissão, regra do documento integrador e reversão na anulação | **Feito** |
 | 2b | Ecrãs: armazéns, existências com razão e acerto, e teste de stock | **Feito** |
-| 3 | Contagens de inventário, parciais e totais, com zeragem | Por fazer |
-| 4 | Ficheiro de inventário para a AT (Portaria 126/2019) | **Parcial** — ficheiro gerado e ecrã em `/inventory-file`; falta validar contra o XSD oficial |
+| 3 | Contagens de inventário, parciais e totais, com zeragem | **Feito** |
+| 4 | Ficheiro de inventário para a AT, nas duas versões | **Feito** |
 
 ### Como ficou resolvida a transação partilhada
 
@@ -184,25 +184,66 @@ começar a seguinte, o que é o que torna isto seguro.
 O `Erp.Sales.Application` referencia o `Erp.Inventory.Infrastructure` — **só as interfaces**. A
 implementação fica atrás do módulo de inventário.
 
-### Como ficou a fase 4, e o que lhe falta
+### Como ficou a fase 3
+
+As contagens vivem no `Erp.Inventory` e reaproveitam o razão em vez de lhe fugirem: fechar uma
+contagem escreve um `StockLedgerEntry` de acerto por cada linha que se mexe, com a referência da
+contagem no motivo. Nada é apagado nem reescrito.
+
+Duas decisões que valem a pena reter:
+
+- **A zeragem não é um mecanismo à parte.** É uma contagem aberta com todas as linhas a zero; fechá-la
+  esvazia o stock em âmbito. Um caminho só, auditável da mesma maneira, em vez de dois que divergem.
+- **O fecho mede contra o saldo do momento, não contra a fotografia da abertura.** Se algo mexeu no
+  stock enquanto a contagem decorria, o acerto leva isso em conta em vez de o desfazer. Os saldos são
+  relidos com `UPDLOCK` dentro da transação do fecho.
+
+Só pode haver **uma contagem aberta por empresa** — duas fechariam cada uma contra saldos que a outra
+mexeu. A regra está no serviço e no índice único filtrado `IX_InventoryCount_CompanyId_Open`.
+
+Ecrãs em `/inventory-counts`: lista, abertura (com âmbito, artigos e a opção de começar a zero) e a
+folha de contagem, que guarda só as linhas alteradas.
+
+### Como ficou a fase 4
 
 O gerador vive em [`Erp.FiscalPT/Inventory`](../src/Shared/Erp.FiscalPT/Inventory/), ao lado do
 SAF-T, e o `InventoryFileService` preenche-o a partir do razão **à data de referência** — somando os
 movimentos até esse dia, e não lendo os saldos de hoje, que dariam a posição errada para qualquer
 período já fechado.
 
-> [!WARNING]
-> **O ficheiro não é validado contra o esquema oficial.** Ao contrário do SAF-T, cujo XSD está
-> publicado num endereço público e vive no repositório, o esquema da comunicação de inventários fica
-> na área autenticada do Portal das Finanças e não foi possível obtê-lo. A estrutura segue os campos
-> que a Portaria enumera — `ProductCategory`, `ProductCode`, `ProductDescription`,
-> `ProductNumberCode`, `ClosingStockQuantity`, `UnitOfMeasure`, `ClosingStockValue` — mas o
-> *namespace* declarado em `InventoryConstants.Namespace` **está por confirmar**.
->
-> Assim que o XSD estiver em `src/Shared/Erp.FiscalPT/Inventory/Schemas/`, aplica-se o mesmo padrão
-> do SAF-T: embebido no *assembly*, e cada ficheiro validado antes de ser entregue.
+**Há duas versões do ficheiro, e o ERP gera as duas**, porque o inventário tanto pode ser comunicado
+valorizado como não valorizado:
+
+| Versão | *Namespace* | `FileVersion` | Diferenças |
+|---|---|---|---|
+| `Stock_1_2.xsd` | `urn:StockFile:PT_1_02` | `1_02` | Só quantidades. Categorias `M P A S T` |
+| `Inventario_2_01.xsd` | `urn:StockFile:PT_2_01` | `2_01` | Acresce `ClosingStockValue` obrigatório e a categoria `B`, ativos biológicos |
+
+A versão 2_01 é a obrigatória para exercícios de 2021 ou superior, e é o predefinido no ecrã; o ecrã
+avisa quando se escolhe a antiga para um período recente. A escolha é `InventoryFileVersion`, e o
+`InventoryXmlWriter` só escreve `ClosingStockValue` quando `InventoryConstants.CarriesValue` o
+permite — o esquema antigo não conhece o elemento e rejeitaria-o.
+
+Ambos os XSD estão embebidos no *assembly*, e **cada ficheiro é validado antes de ser entregue** —
+no serviço, não só nos testes. Ao contrário do SAF-T, são XSD 1.0 sem asserções, portanto nada tem de
+ser removido para os carregar: o que passa aqui passa por inteiro. O validador confirma também a raiz
+à cabeça, porque um documento numa *namespace* que o esquema desconhece passaria em silêncio — era
+assim que um ficheiro gerado para uma versão e validado contra a outra escapava.
+
+Uma consequência prática: `SAFdecimalType` tem `minInclusive 0.00`, por isso **existências negativas
+não passam a validação**. O ecrã conta-as e encaminha para o teste de stocks ou para uma contagem.
+
+**A `ProductCategory` é um campo próprio da ficha de artigo**, `Product.InventoryCategory`, e não se
+deduz do `ProductType`: este é o vocabulário do SAF-T (`P S O I`) e aquele o do inventário
+(`M P A S T`, mais `B` na 2_01). As letras coincidem mas não querem dizer o mesmo, por isso são dois
+campos. O predefinido é `M`, mercadorias, e é o que ficou nos artigos que já existiam.
+
+O `ProductService` valida contra `InventoryConstants.ProductCategories(Valued)` — o conjunto maior,
+para que `B` possa ser escolhido; é o gerador que o baixa para `M` quando escreve a versão antiga,
+porque essa decisão depende do ficheiro a produzir e não do artigo.
 
 **A valorização vem do custo unitário do artigo**, um campo novo no ficheiro de artigos. É custo
 padrão: o custeio a sério — média ponderada ou FIFO, movido por cada compra — é trabalho à parte e
 não existe. Enquanto não existir, é isto que valoriza o stock, e o ecrã avisa quantos artigos vão
-com valor zero por não terem custo preenchido.
+com valor zero por não terem custo preenchido — aviso que só faz sentido na versão valorizada, e só
+lá aparece.

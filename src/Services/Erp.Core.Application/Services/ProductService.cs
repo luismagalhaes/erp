@@ -2,6 +2,7 @@ using Erp.Core.Domain;
 using Erp.Core.Infrastructure.Application;
 using Erp.Core.Infrastructure.Contracts;
 using Erp.Core.Infrastructure.Storage;
+using Erp.FiscalPT.Inventory;
 
 namespace Erp.Core.Application.Services;
 
@@ -12,6 +13,15 @@ public sealed class ProductService(
     IBrandStorage brandStorage) : IProductService
 {
     private static readonly string[] ProductTypes = ["P", "S", "O", "I"];
+
+    /// <summary>
+    /// The inventory categories, taken from the valued schema so the full set is available. A
+    /// product classified B on the older schema falls back to M when the file is written, which is
+    /// the generator's business rather than the product file's.
+    /// </summary>
+    private static readonly string[] InventoryCategories =
+        InventoryConstants.ProductCategories(InventoryFileVersion.Valued);
+
     private static readonly string[] TaxCodes = ["RED", "INT", "NOR", "ISE"];
     private static readonly string[] TaxCountryRegions = ["PT", "PT-AC", "PT-MA"];
 
@@ -33,7 +43,13 @@ public sealed class ProductService(
         ArgumentException.ThrowIfNullOrWhiteSpace(request.ProductCode);
         ArgumentException.ThrowIfNullOrWhiteSpace(request.Description);
 
-        Validate(request.ProductType, request.DefaultTaxCode, request.DefaultTaxCountryRegion, request.UnitPrice);
+        Validate(
+            request.ProductType,
+            request.InventoryCategory,
+            request.DefaultTaxCode,
+            request.DefaultTaxCountryRegion,
+            request.UnitPrice);
+
         await ValidateClassificationAsync(request.FamilyId, request.SubfamilyId, request.BrandId, cancellationToken);
 
         var productCode = request.ProductCode.Trim();
@@ -47,6 +63,7 @@ public sealed class ProductService(
             ProductCode = productCode,
             Description = request.Description.Trim(),
             ProductType = request.ProductType,
+            InventoryCategory = request.InventoryCategory,
             UnitOfMeasure = request.UnitOfMeasure,
             UnitPrice = request.UnitPrice,
             UnitCost = request.UnitCost,
@@ -70,7 +87,13 @@ public sealed class ProductService(
         ArgumentNullException.ThrowIfNull(request);
         ArgumentException.ThrowIfNullOrWhiteSpace(request.Description);
 
-        Validate(request.ProductType, request.DefaultTaxCode, request.DefaultTaxCountryRegion, request.UnitPrice);
+        Validate(
+            request.ProductType,
+            request.InventoryCategory,
+            request.DefaultTaxCode,
+            request.DefaultTaxCountryRegion,
+            request.UnitPrice);
+
         await ValidateClassificationAsync(request.FamilyId, request.SubfamilyId, request.BrandId, cancellationToken);
 
         var product = await storage.GetByIdAsync(id, cancellationToken);
@@ -81,6 +104,7 @@ public sealed class ProductService(
         product.UnitPrice = request.UnitPrice;
         product.UnitCost = request.UnitCost;
         product.ProductType = request.ProductType;
+        product.InventoryCategory = request.InventoryCategory;
         product.UnitOfMeasure = request.UnitOfMeasure;
         product.DefaultTaxCountryRegion = request.DefaultTaxCountryRegion;
         product.DefaultTaxCode = request.DefaultTaxCode;
@@ -97,10 +121,21 @@ public sealed class ProductService(
         return Map(await storage.GetByIdAsync(id, cancellationToken) ?? product);
     }
 
-    private static void Validate(string productType, string taxCode, string taxCountryRegion, decimal unitPrice)
+    private static void Validate(
+        string productType,
+        string inventoryCategory,
+        string taxCode,
+        string taxCountryRegion,
+        decimal unitPrice)
     {
         if (!ProductTypes.Contains(productType, StringComparer.Ordinal))
             throw new ArgumentException($"Unknown product type '{productType}'.", nameof(productType));
+
+        if (!InventoryCategories.Contains(inventoryCategory, StringComparer.Ordinal))
+        {
+            throw new ArgumentException(
+                $"Unknown inventory category '{inventoryCategory}'.", nameof(inventoryCategory));
+        }
 
         if (!TaxCodes.Contains(taxCode, StringComparer.Ordinal))
             throw new ArgumentException($"Unknown tax code '{taxCode}'.", nameof(taxCode));
@@ -161,5 +196,6 @@ public sealed class ProductService(
             product.BrandId,
             product.Brand?.Name,
             product.IsActive,
-            product.UnitCost);
+            product.UnitCost,
+            product.InventoryCategory);
 }

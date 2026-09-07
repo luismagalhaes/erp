@@ -15,6 +15,7 @@
   <ItemGroup>
 	<ProjectReference Include="..\Erp.Core.Domain\Erp.Core.Domain.csproj" />
 	<ProjectReference Include="..\Erp.Core.Infrastructure\Erp.Core.Infrastructure.csproj" />
+	<ProjectReference Include="..\..\Shared\Erp.FiscalPT\Erp.FiscalPT.csproj" />
   </ItemGroup>
 
 </Project>

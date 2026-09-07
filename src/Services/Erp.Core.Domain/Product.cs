@@ -18,6 +18,17 @@ public sealed class Product
     /// <summary>SAF-T ProductType: P product, S service, O other, I taxes and fees.</summary>
     public string ProductType { get; set; } = "P";
 
+    /// <summary>
+    /// ProductCategory of the inventory communication: M merchandise, P finished product, A raw
+    /// material, S by-product, T work in progress, B biological asset.
+    /// </summary>
+    /// <remarks>
+    /// A different vocabulary from <see cref="ProductType"/>, which is the SAF-T one — the letters
+    /// overlap but mean different things, so neither converts into the other. B exists only in the
+    /// valued schema (2_01); the generator falls back to M when writing the older one.
+    /// </remarks>
+    public string InventoryCategory { get; set; } = "M";
+
     public string UnitOfMeasure { get; set; } = "UN";
 
     /// <summary>Selling price.</summary>

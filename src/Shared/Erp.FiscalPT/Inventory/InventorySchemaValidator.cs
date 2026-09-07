@@ -32,6 +32,20 @@ public static class InventorySchemaValidator
 
         var errors = new List<string>();
 
+        // A root the schema has no declaration for is validated laxly, which means silently: a file
+        // built for one version and checked against the other would come back clean. The root is
+        // the one thing worth asserting outright.
+        var expected = XNamespace.Get(InventoryConstants.Namespace(version)) + "StockFile";
+
+        if (document.Root?.Name != expected)
+        {
+            errors.Add(
+                $"Error at line 0: the root element is '{document.Root?.Name.ToString() ?? "(none)"}' " +
+                $"but version {InventoryConstants.FileVersion(version)} requires '{expected}'.");
+
+            return errors;
+        }
+
         document.Validate(SchemasFor(version), (_, args) =>
             errors.Add($"{args.Severity} at line {args.Exception?.LineNumber ?? 0}: {args.Message}"));
 

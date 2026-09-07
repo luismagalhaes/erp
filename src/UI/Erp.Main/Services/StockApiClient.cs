@@ -115,6 +115,71 @@ public sealed class StockApiClient(HttpClient http)
         return response.IsSuccessStatusCode ? null : await ApiResponse.ReadErrorAsync(response, cancellationToken);
     }
 
+    // --- Inventory counts ---
+
+    public async Task<(IReadOnlyList<InventoryCount> Items, string? Error)> GetInventoryCountsAsync(
+        Guid companyId,
+        CancellationToken cancellationToken = default)
+    {
+        var response = await http.GetAsync($"api/inventory-counts?companyId={companyId}", cancellationToken);
+
+        if (!response.IsSuccessStatusCode)
+            return ([], await ApiResponse.ReadErrorAsync(response, cancellationToken));
+
+        var items = await response.Content.ReadFromJsonAsync<List<InventoryCount>>(cancellationToken);
+        return (items ?? [], null);
+    }
+
+    public async Task<InventoryCount?> GetInventoryCountAsync(
+        Guid id,
+        CancellationToken cancellationToken = default)
+    {
+        var response = await http.GetAsync($"api/inventory-counts/{id}", cancellationToken);
+        return response.IsSuccessStatusCode
+            ? await response.Content.ReadFromJsonAsync<InventoryCount>(cancellationToken)
+            : null;
+    }
+
+    public async Task<(InventoryCount? Count, string? Error)> OpenInventoryCountAsync(
+        OpenInventoryCountRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        var response = await http.PostAsJsonAsync("api/inventory-counts", request, cancellationToken);
+
+        if (!response.IsSuccessStatusCode)
+            return (null, await ApiResponse.ReadErrorAsync(response, cancellationToken));
+
+        return (await response.Content.ReadFromJsonAsync<InventoryCount>(cancellationToken), null);
+    }
+
+    /// <summary>Records what was found. Only the lines that changed need to travel.</summary>
+    public async Task<(InventoryCount? Count, string? Error)> SetCountedAsync(
+        Guid countId,
+        IReadOnlyList<CountedLineRequest> lines,
+        CancellationToken cancellationToken = default)
+    {
+        var response = await http.PutAsJsonAsync(
+            $"api/inventory-counts/{countId}/lines", lines, cancellationToken);
+
+        if (!response.IsSuccessStatusCode)
+            return (null, await ApiResponse.ReadErrorAsync(response, cancellationToken));
+
+        return (await response.Content.ReadFromJsonAsync<InventoryCount>(cancellationToken), null);
+    }
+
+    public async Task<(InventoryCount? Count, string? Error)> CloseInventoryCountAsync(
+        Guid countId,
+        CancellationToken cancellationToken = default)
+    {
+        var response = await http.PostAsync(
+            $"api/inventory-counts/{countId}/close", content: null, cancellationToken);
+
+        if (!response.IsSuccessStatusCode)
+            return (null, await ApiResponse.ReadErrorAsync(response, cancellationToken));
+
+        return (await response.Content.ReadFromJsonAsync<InventoryCount>(cancellationToken), null);
+    }
+
     // --- Inventory communication file ---
 
     /// <param name="valued">

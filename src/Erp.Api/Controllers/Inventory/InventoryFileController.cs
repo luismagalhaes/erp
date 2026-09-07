@@ -70,7 +70,8 @@ public sealed class InventoryFileController(
                 product.Description,
                 product.UnitOfMeasure,
                 product.UnitCost,
-                product.Barcode))],
+                product.Barcode,
+                product.InventoryCategory))],
             valued);
 
         try
@@ -126,7 +127,8 @@ public sealed class InventoryFileController(
                 product.Description,
                 product.UnitOfMeasure,
                 product.UnitCost,
-                product.Barcode))],
+                product.Barcode,
+                product.InventoryCategory))],
             valued);
 
         try

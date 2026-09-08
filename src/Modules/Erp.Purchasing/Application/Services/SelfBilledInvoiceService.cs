@@ -40,6 +40,8 @@ public sealed class SelfBilledInvoiceService(
         return [.. invoices.Select(MapListItem)];
     }
 
+    public IQueryable<SelfBilledInvoiceListItemDto> Query(Guid companyId) => invoiceStorage.Query(companyId);
+
     public async Task<SelfBilledInvoiceDto?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
     {
         var invoice = await invoiceStorage.GetByIdAsync(id, cancellationToken);
@@ -391,18 +393,21 @@ public sealed class SelfBilledInvoiceService(
         new(value.Year, value.Month, value.Day, value.Hour, value.Minute, value.Second, DateTimeKind.Utc);
 
     private static SelfBilledInvoiceListItemDto MapListItem(SelfBilledInvoice invoice) =>
-        new(invoice.Id,
-            invoice.DocumentNumber,
-            invoice.DocumentType,
-            invoice.Atcud,
-            invoice.IssueDate,
-            invoice.Supplier.Name,
-            invoice.Supplier.TaxId,
-            invoice.NetTotal,
-            invoice.TaxPayable,
-            invoice.GrossTotal,
-            invoice.EffectiveStatus,
-            invoice.IsAccepted);
+        new()
+        {
+            Id = invoice.Id,
+            DocumentNumber = invoice.DocumentNumber,
+            DocumentType = invoice.DocumentType,
+            Atcud = invoice.Atcud,
+            IssueDate = invoice.IssueDate,
+            SupplierName = invoice.Supplier.Name,
+            SupplierTaxId = invoice.Supplier.TaxId,
+            NetTotal = invoice.NetTotal,
+            TaxPayable = invoice.TaxPayable,
+            GrossTotal = invoice.GrossTotal,
+            Status = invoice.EffectiveStatus,
+            IsAccepted = invoice.IsAccepted
+        };
 
     private static SelfBilledInvoiceDto Map(SelfBilledInvoice invoice) =>
         new(invoice.Id,

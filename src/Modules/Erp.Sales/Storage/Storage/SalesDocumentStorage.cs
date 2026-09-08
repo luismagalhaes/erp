@@ -1,5 +1,6 @@
 using Erp.FiscalPT.Documents;
 using Erp.Sales.Domain;
+using Erp.Sales.Infrastructure.Contracts;
 using Erp.Sales.Infrastructure.Storage;
 using Erp.Sales.Storage.Data;
 using Microsoft.EntityFrameworkCore;
@@ -18,6 +19,35 @@ public sealed class SalesDocumentStorage(AppDbContext dbContext) : ISalesDocumen
             .OrderByDescending(x => x.DocumentDate)
             .ThenByDescending(x => x.SystemEntryDateUtc)
             .ToListAsync(cancellationToken);
+    }
+
+    /// <summary>
+    /// The status is derived from the append-only status changes, which the entity resolves in
+    /// memory. Here the same rule is written as a subquery so the database can filter and sort by
+    /// it without loading the documents.
+    /// </summary>
+    public IQueryable<InvoiceListItemDto> Query(Guid companyId)
+    {
+        return dbContext.Set<SalesDocument>()
+            .AsNoTracking()
+            .Where(x => x.CompanyId == companyId)
+            .Select(x => new InvoiceListItemDto
+            {
+                Id = x.Id,
+                DocumentNumber = x.DocumentNumber,
+                DocumentType = x.DocumentType,
+                Atcud = x.Atcud,
+                DocumentDate = x.DocumentDate,
+                CustomerName = x.CustomerName,
+                CustomerTaxId = x.CustomerTaxId,
+                NetTotal = x.NetTotal,
+                TaxPayable = x.TaxPayable,
+                GrossTotal = x.GrossTotal,
+                Status = x.StatusChanges
+                    .OrderByDescending(change => change.OccurredAtUtc)
+                    .Select(change => change.NewStatus)
+                    .FirstOrDefault() ?? x.Status
+            });
     }
 
     public async Task<SalesDocument?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)

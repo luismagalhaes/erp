@@ -1,0 +1,105 @@
+@page "/series"
+@attribute [Authorize]
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.AspNetCore.Components.Web
+@using MudBlazor
+@using Erp.Main.Components.Common
+@using Erp.Main.Models
+@using Erp.Main.Services
+@inject SeriesApiClient SalesApi
+@inject CompanyState Company
+@inject NavigationManager Navigation
+
+<PageTitle>Séries de faturação</PageTitle>
+
+<MudStack Spacing="4">
+    <PageHeader Title="Séries de faturação">
+        <Actions>
+            <MudButton Variant="Variant.Filled" Color="Color.Primary"
+                       StartIcon="@Icons.Material.Filled.Add"
+                       Disabled="@(!Company.HasCompany)"
+                       OnClick="@(() => Navigation.NavigateTo("series/new"))">
+                Nova série
+            </MudButton>
+        </Actions>
+    </PageHeader>
+
+    <DataGrid T="SalesSeries"
+              LoadAsync="@((companyId, query, ct) => SalesApi.QuerySeriesAsync(companyId, query, ct))"
+              SearchFields="SearchFields" DefaultOrderBy="DocumentType,SeriesCode"
+              SearchPlaceholder="Procurar por tipo ou série"
+              EmptyIcon="@Icons.Material.Filled.Numbers"
+              EmptyTitle="Sem séries para mostrar"
+              EmptyDescription="Ajuste os filtros ou crie a primeira série."
+              ItemsLabel="séries"
+              LoadErrorMessage="Não foi possível carregar as séries">
+        <Columns>
+            <PropertyColumn Property="x => x.DocumentType" Title="Tipo">
+                <CellTemplate>
+                    <MudChip T="string" Size="Size.Small" Variant="Variant.Text">@context.Item.DocumentType</MudChip>
+                </CellTemplate>
+            </PropertyColumn>
+            <PropertyColumn Property="x => x.SeriesCode" Title="Série" CellClass="erp-mono" />
+            <PropertyColumn Property="x => x.SelfBilling" Title="Autofaturação">
+                <CellTemplate>
+                    @if (context.Item.SelfBilling)
+                    {
+                        <MudTooltip Text="Numera faturas emitidas em nome do fornecedor">
+                            <MudChip T="string" Size="Size.Small" Color="Color.Warning" Variant="Variant.Text">
+                                Autofaturação
+                            </MudChip>
+                        </MudTooltip>
+                    }
+                </CellTemplate>
+            </PropertyColumn>
+            <PropertyColumn Property="x => x.ValidationCode" Title="Código de validação">
+                <CellTemplate>
+                    @if (string.IsNullOrWhiteSpace(context.Item.ValidationCode))
+                    {
+                        <MudText Typo="Typo.caption" Color="Color.Secondary">Por comunicar</MudText>
+                    }
+                    else
+                    {
+                        <MudText Typo="Typo.body2" Class="erp-mono">@context.Item.ValidationCode</MudText>
+                    }
+                </CellTemplate>
+            </PropertyColumn>
+            <PropertyColumn Property="x => x.CurrentSequence" Title="Último n.º"
+                            CellClass="erp-numeric" HeaderClass="erp-numeric" />
+            <PropertyColumn Property="x => x.Status" Title="Estado">
+                <CellTemplate>
+                    <MudChip T="string" Size="Size.Small" Variant="Variant.Text"
+                             Color="@(context.Item.CanIssue ? Color.Success : Color.Warning)">
+                        @DescribeStatus(context.Item.Status)
+                    </MudChip>
+                </CellTemplate>
+            </PropertyColumn>
+            <TemplateColumn Title="" Sortable="false" Filterable="false" Hideable="false"
+                            StickyRight="true"
+                            CellClass="erp-numeric" HeaderClass="erp-numeric">
+                <CellTemplate>
+                    <MudMenu Icon="@Icons.Material.Filled.MoreVert" Size="Size.Small"
+                             AnchorOrigin="Origin.BottomRight" TransformOrigin="Origin.TopRight">
+                        <MudMenuItem Icon="@Icons.Material.Filled.Edit"
+                                     OnClick="@(() => Navigation.NavigateTo($"series/{context.Item.Id}"))">
+                            Abrir série
+                        </MudMenuItem>
+                    </MudMenu>
+                </CellTemplate>
+            </TemplateColumn>
+        </Columns>
+    </DataGrid>
+</MudStack>
+
+@code {
+    private static readonly string[] SearchFields = ["DocumentType", "SeriesCode"];
+
+    private static string DescribeStatus(string status) => status switch
+    {
+        "Created" => "Criada",
+        "Communicated" => "Comunicada",
+        "Active" => "Ativa",
+        "Finalized" => "Finalizada",
+        _ => status
+    };
+}

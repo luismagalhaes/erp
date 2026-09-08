@@ -5,6 +5,7 @@ using Erp.Purchasing.Infrastructure.Application;
 using Erp.Purchasing.Infrastructure.Contracts;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.OData.Query;
 
 namespace Erp.Api.Controllers.Purchasing;
 
@@ -38,6 +39,25 @@ public sealed class GoodsReceiptsController(
             return BadRequest(new { error = "companyId is required." });
 
         return Ok(await receiptService.GetAllAsync(companyId, supplierId, cancellationToken));
+    }
+
+    /// <summary>
+    /// The listing the data grid calls. Filtering, sorting and paging travel as OData options and
+    /// are applied by the database; the company stays outside the query, as a tenancy boundary the
+    /// caller cannot widen.
+    /// </summary>
+    [HttpGet("odata")]
+    [Authorize(Policy = Policies.Read)]
+    [ProducesResponseType<ODataCollection<GoodsReceiptListItemDto>>(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public ActionResult<ODataCollection<GoodsReceiptListItemDto>> Query(
+        [FromQuery] Guid companyId,
+        ODataQueryOptions<GoodsReceiptListItemDto> options)
+    {
+        if (companyId == Guid.Empty)
+            return BadRequest(new { error = "companyId is required." });
+
+        return Ok(ODataQueryExecutor.Execute(receiptService.Query(companyId), options));
     }
 
     [HttpGet("{id:guid}")]

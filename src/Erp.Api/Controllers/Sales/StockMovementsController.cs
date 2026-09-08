@@ -5,6 +5,8 @@ using Erp.Sales.Infrastructure.Application;
 using Erp.Sales.Infrastructure.Contracts;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.OData.Query;
+using Microsoft.AspNetCore.OData.Query;
 
 namespace Erp.Api.Controllers.Sales;
 
@@ -50,6 +52,25 @@ public sealed class StockMovementsController(
             return BadRequest(new { error = "companyId is required." });
 
         return Ok(await stockMovementService.GetAllAsync(companyId, cancellationToken));
+    }
+
+    /// <summary>
+    /// The listing the data grid calls. Filtering, sorting and paging travel as OData options and
+    /// are applied by the database; the company stays outside the query, as a tenancy boundary the
+    /// caller cannot widen.
+    /// </summary>
+    [HttpGet("odata")]
+    [Authorize(Policy = Policies.Read)]
+    [ProducesResponseType<ODataCollection<StockMovementListItemDto>>(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public ActionResult<ODataCollection<StockMovementListItemDto>> Query(
+        [FromQuery] Guid companyId,
+        ODataQueryOptions<StockMovementListItemDto> options)
+    {
+        if (companyId == Guid.Empty)
+            return BadRequest(new { error = "companyId is required." });
+
+        return Ok(ODataQueryExecutor.Execute(stockMovementService.Query(companyId), options));
     }
 
     /// <summary>Gets a movement with its lines, transport data, signature and QR code message.</summary>

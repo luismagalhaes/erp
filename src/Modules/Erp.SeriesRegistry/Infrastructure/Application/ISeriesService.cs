@@ -6,6 +6,12 @@ public interface ISeriesService
 {
     Task<IReadOnlyList<SeriesListItemDto>> GetAllAsync(Guid companyId, CancellationToken cancellationToken = default);
 
+    /// <summary>
+    /// The listing as a query, so filtering, sorting and paging can be applied by the database on
+    /// behalf of the data grid.
+    /// </summary>
+    IQueryable<SeriesListItemDto> Query(Guid companyId);
+
     Task<SeriesListItemDto?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default);
 
     Task<SeriesListItemDto> CreateAsync(CreateSeriesRequest request, string? userId, CancellationToken cancellationToken = default);

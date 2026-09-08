@@ -1,5 +1,6 @@
 using Erp.FiscalPT.Documents;
 using Erp.Sales.Domain;
+using Erp.Sales.Infrastructure.Contracts;
 using Erp.Sales.Infrastructure.Storage;
 using Erp.Sales.Storage.Data;
 using Microsoft.EntityFrameworkCore;
@@ -19,6 +20,34 @@ public sealed class PaymentStorage(AppDbContext dbContext) : IPaymentStorage
             .OrderByDescending(x => x.TransactionDate)
             .ThenByDescending(x => x.SystemEntryDateUtc)
             .ToListAsync(cancellationToken);
+    }
+
+    /// <summary>
+    /// The status is derived from the append-only status changes, which the entity resolves in
+    /// memory. Here the same rule is written as a subquery so the database can filter and sort by
+    /// it without loading the receipts.
+    /// </summary>
+    public IQueryable<PaymentListItemDto> Query(Guid companyId)
+    {
+        return dbContext.Set<Payment>()
+            .AsNoTracking()
+            .Where(x => x.CompanyId == companyId)
+            .Select(x => new PaymentListItemDto
+            {
+                Id = x.Id,
+                PaymentRefNo = x.PaymentRefNo,
+                PaymentType = x.PaymentType,
+                Atcud = x.Atcud,
+                TransactionDate = x.TransactionDate,
+                PartyName = x.PartyName,
+                PartyTaxId = x.PartyTaxId,
+                GrossTotal = x.GrossTotal,
+                SettledInvoiceCount = x.Lines.Count,
+                Status = x.StatusChanges
+                    .OrderByDescending(change => change.OccurredAtUtc)
+                    .Select(change => change.NewStatus)
+                    .FirstOrDefault() ?? x.Status
+            });
     }
 
     public async Task<Payment?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)

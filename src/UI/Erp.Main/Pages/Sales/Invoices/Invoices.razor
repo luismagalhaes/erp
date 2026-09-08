@@ -1,9 +1,9 @@
 @page "/invoices"
 @attribute [Authorize]
-@implements IDisposable
 @using Microsoft.AspNetCore.Authorization
 @using Microsoft.AspNetCore.Components.Web
 @using MudBlazor
+@using Erp.Main.Components.Common
 @using Erp.Main.Models
 @using Erp.Main.Services
 @inject SalesApiClient SalesApi
@@ -13,131 +13,80 @@
 <PageTitle>Faturas</PageTitle>
 
 <MudStack Spacing="4">
-    <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center">
-        <MudStack Spacing="0">
-            <MudText Typo="Typo.h4">Faturas</MudText>
-            <MudText Typo="Typo.body2" Color="Color.Secondary">Documentos de venda emitidos</MudText>
-        </MudStack>
+    <PageHeader Title="Faturas">
+        <Actions>
+            <MudButton Variant="Variant.Outlined" Color="Color.Primary"
+                       StartIcon="@Icons.Material.Filled.LocalShipping"
+                       Disabled="@(!Company.HasCompany)"
+                       OnClick="@(() => Navigation.NavigateTo("invoices/from-movements"))">
+                Faturar guias
+            </MudButton>
+            <MudButton Variant="Variant.Filled" Color="Color.Primary"
+                       StartIcon="@Icons.Material.Filled.Add"
+                       Disabled="@(!Company.HasCompany)"
+                       OnClick="@(() => Navigation.NavigateTo("invoices/new"))">
+                Nova fatura
+            </MudButton>
+        </Actions>
+    </PageHeader>
 
-        <MudStack Row="true" Spacing="2">
-        <MudButton Variant="Variant.Outlined" Color="Color.Primary"
-                   StartIcon="@Icons.Material.Filled.LocalShipping"
-                   Disabled="@(!Company.HasCompany)"
-                   OnClick="@(() => Navigation.NavigateTo("invoices/from-movements"))">
-            Faturar guias
-        </MudButton>
-
-        <MudButton Variant="Variant.Filled" Color="Color.Primary"
-                   StartIcon="@Icons.Material.Filled.Add"
-                   Disabled="@(!Company.HasCompany)"
-                   OnClick="@(() => Navigation.NavigateTo("invoices/new"))">
-            Nova fatura
-        </MudButton>
-        </MudStack>
-    </MudStack>
-
-    @if (!string.IsNullOrWhiteSpace(_error))
-    {
-        <MudAlert Severity="Severity.Error" Dense="true">@_error</MudAlert>
-    }
-
-    <MudPaper Elevation="1" Class="pa-2">
-        <MudTable Items="_invoices" Hover="true" Striped="true" Dense="true" Loading="_loading"
-                  Breakpoint="Breakpoint.Sm">
-            <HeaderContent>
-                <MudTh>Documento</MudTh>
-                <MudTh>Tipo</MudTh>
-                <MudTh>ATCUD</MudTh>
-                <MudTh>Data</MudTh>
-                <MudTh>Cliente</MudTh>
-                <MudTh>NIF</MudTh>
-                <MudTh Style="text-align: right;">Base</MudTh>
-                <MudTh Style="text-align: right;">IVA</MudTh>
-                <MudTh Style="text-align: right;">Total</MudTh>
-                <MudTh>Estado</MudTh>
-                <MudTh Style="text-align: right;">Ações</MudTh>
-            </HeaderContent>
-            <RowTemplate>
-                <MudTd DataLabel="Documento">
-                    <MudText Typo="Typo.body2" Style="font-family: monospace;">@context.DocumentNumber</MudText>
-                </MudTd>
-                <MudTd DataLabel="Tipo">
-                    <MudChip T="string" Size="Size.Small" Variant="Variant.Outlined">@context.DocumentType</MudChip>
-                </MudTd>
-                <MudTd DataLabel="ATCUD">
-                    <MudText Typo="Typo.caption" Style="font-family: monospace;">@context.Atcud</MudText>
-                </MudTd>
-                <MudTd DataLabel="Data">@context.DocumentDate.ToString("yyyy-MM-dd")</MudTd>
-                <MudTd DataLabel="Cliente">@context.CustomerName</MudTd>
-                <MudTd DataLabel="NIF">@context.CustomerTaxId</MudTd>
-                <MudTd DataLabel="Base" Style="text-align: right;">@context.NetTotal.ToString("N2")</MudTd>
-                <MudTd DataLabel="IVA" Style="text-align: right;">@context.TaxPayable.ToString("N2")</MudTd>
-                <MudTd DataLabel="Total" Style="text-align: right;">
-                    <strong>@context.GrossTotal.ToString("N2")</strong>
-                </MudTd>
-                <MudTd DataLabel="Estado">
-                    <MudChip T="string" Size="Size.Small" Variant="Variant.Outlined"
-                             Color="@(context.Status == "A" ? Color.Error : Color.Success)">
-                        @DescribeStatus(context.Status)
+    <DataGrid T="InvoiceListItem"
+              LoadAsync="@((companyId, query, ct) => SalesApi.QueryInvoicesAsync(companyId, query, ct))"
+              SearchFields="SearchFields" DefaultOrderBy="DocumentDate desc,DocumentNumber desc"
+              SearchPlaceholder="Procurar por documento, cliente ou NIF"
+              EmptyIcon="@Icons.Material.Filled.ReceiptLong"
+              EmptyTitle="Sem faturas para mostrar"
+              EmptyDescription="Ajuste os filtros ou emita a primeira fatura."
+              ItemsLabel="faturas"
+              LoadErrorMessage="Não foi possível carregar as faturas">
+        <Columns>
+            <PropertyColumn Property="x => x.DocumentNumber" Title="Documento" CellClass="erp-mono" />
+            <PropertyColumn Property="x => x.DocumentType" Title="Tipo">
+                <CellTemplate>
+                    <MudChip T="string" Size="Size.Small" Variant="Variant.Text">@context.Item.DocumentType</MudChip>
+                </CellTemplate>
+            </PropertyColumn>
+            <PropertyColumn Property="x => x.Atcud" Title="ATCUD" CellClass="erp-mono" />
+            <PropertyColumn Property="x => x.DocumentDate" Title="Data" Format="yyyy-MM-dd" />
+            <PropertyColumn Property="x => x.CustomerName" Title="Cliente" />
+            <PropertyColumn Property="x => x.CustomerTaxId" Title="NIF" />
+            <PropertyColumn Property="x => x.NetTotal" Title="Base" Format="N2"
+                            CellClass="erp-numeric" HeaderClass="erp-numeric" />
+            <PropertyColumn Property="x => x.TaxPayable" Title="IVA" Format="N2"
+                            CellClass="erp-numeric" HeaderClass="erp-numeric" />
+            <PropertyColumn Property="x => x.GrossTotal" Title="Total" Format="N2"
+                            CellClass="erp-numeric" HeaderClass="erp-numeric" />
+            <PropertyColumn Property="x => x.Status" Title="Estado">
+                <CellTemplate>
+                    <MudChip T="string" Size="Size.Small" Variant="Variant.Text"
+                             Color="@(context.Item.Status == "A" ? Color.Error : Color.Success)">
+                        @DescribeStatus(context.Item.Status)
                     </MudChip>
-                </MudTd>
-                <MudTd DataLabel="Ações" Style="text-align: right;">
-                    <MudIconButton Icon="@Icons.Material.Filled.Visibility" Size="Size.Small"
-                                   title="Ver documento"
-                                   OnClick="@(() => Navigation.NavigateTo($"invoices/{context.Id}"))" />
-                </MudTd>
-            </RowTemplate>
-            <NoRecordsContent>
-                <MudText Typo="Typo.body2" Color="Color.Secondary">Ainda não há faturas emitidas.</MudText>
-            </NoRecordsContent>
-        </MudTable>
-    </MudPaper>
+                </CellTemplate>
+            </PropertyColumn>
+            <TemplateColumn Title="" Sortable="false" Filterable="false" Hideable="false"
+                            StickyRight="true"
+                            CellClass="erp-numeric" HeaderClass="erp-numeric">
+                <CellTemplate>
+                    <MudMenu Icon="@Icons.Material.Filled.MoreVert" Size="Size.Small"
+                             AnchorOrigin="Origin.BottomRight" TransformOrigin="Origin.TopRight">
+                        <MudMenuItem Icon="@Icons.Material.Filled.Visibility"
+                                     OnClick="@(() => Navigation.NavigateTo($"invoices/{context.Item.Id}"))">
+                            Ver documento
+                        </MudMenuItem>
+                    </MudMenu>
+                </CellTemplate>
+            </TemplateColumn>
+        </Columns>
+    </DataGrid>
 </MudStack>
 
 @code {
-    private bool _loading = true;
-    private string? _error;
-    private List<InvoiceListItem> _invoices = [];
-
-    protected override async Task OnInitializedAsync()
-    {
-        Company.Changed += OnCompanyChanged;
-        await Company.EnsureLoadedAsync();
-        await LoadAsync();
-    }
-
-    private async void OnCompanyChanged()
-    {
-        await InvokeAsync(LoadAsync);
-    }
-
-    private async Task LoadAsync()
-    {
-        _loading = true;
-        _error = Company.LoadError;
-
-        if (!Company.HasCompany)
-        {
-            _invoices = [];
-            _loading = false;
-            StateHasChanged();
-            return;
-        }
-
-        try
-        {
-            _invoices = [.. await SalesApi.GetInvoicesAsync(Company.SelectedCompanyId)];
-        }
-        catch (Exception ex)
-        {
-            _error = $"Não foi possível carregar as faturas: {ex.Message}";
-        }
-        finally
-        {
-            _loading = false;
-            StateHasChanged();
-        }
-    }
+    /// <summary>
+    /// Maps the toolbar search to the DTO members the API exposes, so a renamed column never
+    /// produces an invalid $filter.
+    /// </summary>
+    private static readonly string[] SearchFields = ["DocumentNumber", "CustomerName", "CustomerTaxId"];
 
     private static string DescribeStatus(string status) => status switch
     {
@@ -146,6 +95,4 @@
         "S" => "Autofaturado",
         _ => "Normal"
     };
-
-    public void Dispose() => Company.Changed -= OnCompanyChanged;
 }

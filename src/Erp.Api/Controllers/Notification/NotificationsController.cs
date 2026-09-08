@@ -2,8 +2,10 @@ using Erp.Api.Services;
 using Erp.Api.Contracts;
 using Erp.Notification.Domain.Models;
 using Erp.Notification.Infrastructure.Application;
+using Erp.Notification.Infrastructure.Contracts;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.OData.Query;
 
 namespace Erp.Api.Controllers.Notification;
 
@@ -37,11 +39,22 @@ public sealed class NotificationsController(
     [HttpGet]
     [Authorize(Policy = Policies.Read)]
     [ProducesResponseType<IReadOnlyList<EmailNotificationListItemDto>>(StatusCodes.Status200OK)]
-    public async Task<ActionResult<IReadOnlyList<EmailNotificationListItemDto>>> GetAll(CancellationToken cancellationToken)
-    {
-        var history = await emailHistoryService.GetHistoryAsync(cancellationToken);
-        return Ok(history.Select(x => x.ToListItem()).ToList());
-    }
+    public ActionResult<IReadOnlyList<EmailNotificationListItemDto>> GetAll() =>
+        Ok(emailHistoryService.QueryHistory()
+            .OrderByDescending(x => x.CreatedAtUtc)
+            .ToList());
+
+    /// <summary>
+    /// The listing the backoffice data grid calls. Filtering, sorting and paging travel as OData
+    /// options and are applied by the database. The email queue is global, so there is no tenancy
+    /// filter to keep outside the query here.
+    /// </summary>
+    [HttpGet("odata")]
+    [Authorize(Policy = Policies.Read)]
+    [ProducesResponseType<ODataCollection<EmailNotificationListItemDto>>(StatusCodes.Status200OK)]
+    public ActionResult<ODataCollection<EmailNotificationListItemDto>> Query(
+        ODataQueryOptions<EmailNotificationListItemDto> options) =>
+        Ok(ODataQueryExecutor.Execute(emailHistoryService.QueryHistory(), options));
 
     /// <summary>Gets one email, including the body that was sent.</summary>
     [HttpGet("{id:guid}")]

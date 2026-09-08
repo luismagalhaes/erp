@@ -5,6 +5,7 @@ using Erp.Sales.Infrastructure.Application;
 using Erp.Sales.Infrastructure.Contracts;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.OData.Query;
 
 namespace Erp.Api.Controllers.Sales;
 
@@ -48,6 +49,25 @@ public sealed class InvoicesController(
 
         var result = await salesDocumentService.GetAllAsync(companyId, cancellationToken);
         return Ok(result);
+    }
+
+    /// <summary>
+    /// The listing the data grid calls. Filtering, sorting and paging travel as OData options and
+    /// are applied by the database; the company stays outside the query, as a tenancy boundary the
+    /// caller cannot widen.
+    /// </summary>
+    [HttpGet("odata")]
+    [Authorize(Policy = Policies.Read)]
+    [ProducesResponseType<ODataCollection<InvoiceListItemDto>>(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public ActionResult<ODataCollection<InvoiceListItemDto>> Query(
+        [FromQuery] Guid companyId,
+        ODataQueryOptions<InvoiceListItemDto> options)
+    {
+        if (companyId == Guid.Empty)
+            return BadRequest(new { error = "companyId is required." });
+
+        return Ok(ODataQueryExecutor.Execute(salesDocumentService.Query(companyId), options));
     }
 
     /// <summary>

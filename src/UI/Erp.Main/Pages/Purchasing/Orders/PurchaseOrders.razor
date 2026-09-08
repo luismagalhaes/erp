@@ -1,9 +1,9 @@
 @page "/purchase-orders"
 @attribute [Authorize]
-@implements IDisposable
 @using Microsoft.AspNetCore.Authorization
 @using Microsoft.AspNetCore.Components.Web
 @using MudBlazor
+@using Erp.Main.Components.Common
 @using Erp.Main.Models
 @using Erp.Main.Services
 @inject PurchasingApiClient Purchasing
@@ -13,175 +13,108 @@
 <PageTitle>Encomendas a fornecedores</PageTitle>
 
 <MudStack Spacing="4">
-    <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center">
-        <MudStack Spacing="0">
-            <MudText Typo="Typo.h4">Encomendas</MudText>
-            <MudText Typo="Typo.body2" Color="Color.Secondary">
-                O que foi encomendado a fornecedores e o que está por receber. Não são documentos
-                fiscais: podem ser corrigidos enquanto não chegar mercadoria.
-            </MudText>
-        </MudStack>
+    <PageHeader Title="Encomendas">
+        <Actions>
+            <MudSwitch T="bool" Value="_openOnly" ValueChanged="OnOpenOnlyChangedAsync"
+                       Color="Color.Primary" Label="Só por receber" />
+            <MudButton Variant="Variant.Filled" Color="Color.Primary"
+                       StartIcon="@Icons.Material.Filled.Add"
+                       Disabled="@(!Company.HasCompany)"
+                       OnClick="@(() => Navigation.NavigateTo("purchase-orders/new"))">
+                Nova encomenda
+            </MudButton>
+        </Actions>
+    </PageHeader>
 
-        <MudButton Variant="Variant.Filled" Color="Color.Primary"
-                   StartIcon="@Icons.Material.Filled.Add"
-                   Disabled="@(!Company.HasCompany)"
-                   OnClick="@(() => Navigation.NavigateTo("purchase-orders/new"))">
-            Nova encomenda
-        </MudButton>
-    </MudStack>
-
-    @if (!string.IsNullOrWhiteSpace(_error))
-    {
-        <MudAlert Severity="Severity.Error" Dense="true">@_error</MudAlert>
-    }
-
-    @if (!Company.HasCompany)
-    {
-        <MudAlert Severity="Severity.Info">Escolha uma empresa no cabeçalho.</MudAlert>
-    }
-    else
-    {
-        <MudPaper Elevation="1" Class="pa-2">
-            <MudTable Items="Visible" Hover="true" Striped="true" Dense="true" Loading="_loading"
-                      Breakpoint="Breakpoint.Sm">
-                <ToolBarContent>
-                    <MudTextField @bind-Value="_filter" @bind-Value:after="StateHasChanged" Immediate="true"
-                                  Placeholder="Procurar número ou fornecedor" Adornment="Adornment.Start"
-                                  AdornmentIcon="@Icons.Material.Filled.Search" Margin="Margin.Dense"
-                                  Class="mt-0" Style="max-width: 360px;" />
-                    <MudSpacer />
-                    <MudSwitch T="bool" Value="_openOnly" ValueChanged="OnOpenOnlyChangedAsync"
-                               Color="Color.Primary" Label="Só por receber" />
-                </ToolBarContent>
-                <HeaderContent>
-                    <MudTh>Número</MudTh>
-                    <MudTh>Data</MudTh>
-                    <MudTh>Prevista</MudTh>
-                    <MudTh>Fornecedor</MudTh>
-                    <MudTh>Estado</MudTh>
-                    <MudTh Style="text-align: right;">Linhas</MudTh>
-                    <MudTh Style="text-align: right;">Total</MudTh>
-                    <MudTh Style="text-align: right;">Ações</MudTh>
-                </HeaderContent>
-                <RowTemplate>
-                    <MudTd DataLabel="Número">
-                        <MudText Typo="Typo.body2" Style="font-family: monospace;">
-                            <strong>@context.Number</strong>
-                        </MudText>
-                    </MudTd>
-                    <MudTd DataLabel="Data">@context.OrderDate.ToString("yyyy-MM-dd")</MudTd>
-                    <MudTd DataLabel="Prevista">
-                        <MudText Typo="Typo.body2" Color="@ExpectedColor(context)">
-                            @(context.ExpectedDate?.ToString("yyyy-MM-dd") ?? "—")
-                        </MudText>
-                    </MudTd>
-                    <MudTd DataLabel="Fornecedor">
-                        <MudStack Spacing="0">
-                            <MudText Typo="Typo.body2">@context.SupplierName</MudText>
-                            <MudText Typo="Typo.caption" Color="Color.Secondary">@context.SupplierTaxId</MudText>
-                        </MudStack>
-                    </MudTd>
-                    <MudTd DataLabel="Estado">
-                        <MudChip T="string" Size="Size.Small" Variant="Variant.Text"
-                                 Color="@StatusColor(context.Status)">
-                            @PurchaseOrderStatuses.Describe(context.Status)
-                        </MudChip>
-                    </MudTd>
-                    <MudTd DataLabel="Linhas" Style="text-align: right;">@context.LineCount</MudTd>
-                    <MudTd DataLabel="Total" Style="text-align: right;">
-                        @context.GrossTotal.ToString("N2")
-                    </MudTd>
-                    <MudTd DataLabel="Ações" Style="text-align: right;">
-                        <MudTooltip Text="Abrir">
-                            <MudIconButton Size="Size.Small" Icon="@Icons.Material.Filled.Visibility"
-                                           OnClick="@(() => Navigation.NavigateTo($"purchase-orders/{context.Id}"))" />
-                        </MudTooltip>
-                    </MudTd>
-                </RowTemplate>
-                <NoRecordsContent>
-                    <MudText Typo="Typo.body2" Color="Color.Secondary">
-                        @(_openOnly ? "Não há nada por receber." : "Ainda não há encomendas.")
+    <DataGrid @ref="_grid" T="PurchaseOrderListItem"
+              LoadAsync="LoadAsync"
+              SearchFields="SearchFields" DefaultOrderBy="OrderDate desc,Number desc"
+              SearchPlaceholder="Procurar número ou fornecedor"
+              EmptyIcon="@Icons.Material.Filled.ShoppingCart"
+              EmptyTitle="Sem encomendas para mostrar"
+              EmptyDescription="Ajuste os filtros ou crie a primeira encomenda."
+              ItemsLabel="encomendas"
+              LoadErrorMessage="Não foi possível carregar as encomendas">
+        <Columns>
+            <PropertyColumn Property="x => x.Number" Title="Número" CellClass="erp-mono" />
+            <PropertyColumn Property="x => x.OrderDate" Title="Data" Format="yyyy-MM-dd" />
+            <PropertyColumn Property="x => x.ExpectedDate" Title="Prevista">
+                <CellTemplate>
+                    <MudText Typo="Typo.body2" Color="@ExpectedColor(context.Item)">
+                        @(context.Item.ExpectedDate?.ToString("yyyy-MM-dd") ?? "—")
                     </MudText>
-                </NoRecordsContent>
-            </MudTable>
-        </MudPaper>
-    }
+                </CellTemplate>
+            </PropertyColumn>
+            <PropertyColumn Property="x => x.SupplierName" Title="Fornecedor" />
+            <PropertyColumn Property="x => x.SupplierTaxId" Title="NIF" />
+            <PropertyColumn Property="x => x.Status" Title="Estado">
+                <CellTemplate>
+                    <MudChip T="string" Size="Size.Small" Variant="Variant.Text"
+                             Color="@StatusColor(context.Item.Status)">
+                        @PurchaseOrderStatuses.Describe(context.Item.Status)
+                    </MudChip>
+                </CellTemplate>
+            </PropertyColumn>
+            <PropertyColumn Property="x => x.LineCount" Title="Linhas"
+                            CellClass="erp-numeric" HeaderClass="erp-numeric" />
+            <PropertyColumn Property="x => x.GrossTotal" Title="Total" Format="N2"
+                            CellClass="erp-numeric" HeaderClass="erp-numeric" />
+            <TemplateColumn Title="" Sortable="false" Filterable="false" Hideable="false"
+                            StickyRight="true"
+                            CellClass="erp-numeric" HeaderClass="erp-numeric">
+                <CellTemplate>
+                    <MudMenu Icon="@Icons.Material.Filled.MoreVert" Size="Size.Small"
+                             AnchorOrigin="Origin.BottomRight" TransformOrigin="Origin.TopRight">
+                        <MudMenuItem Icon="@Icons.Material.Filled.Visibility"
+                                     OnClick="@(() => Navigation.NavigateTo($"purchase-orders/{context.Item.Id}"))">
+                            Abrir encomenda
+                        </MudMenuItem>
+                    </MudMenu>
+                </CellTemplate>
+            </TemplateColumn>
+        </Columns>
+    </DataGrid>
 </MudStack>
 
 @code {
-    private bool _loading;
+    private static readonly string[] SearchFields = ["Number", "SupplierName", "SupplierTaxId"];
+
+    private DataGrid<PurchaseOrderListItem>? _grid;
     private bool _openOnly;
-    private string? _error;
-    private string _filter = string.Empty;
 
-    private List<PurchaseOrderListItem> _orders = [];
-
-    private IEnumerable<PurchaseOrderListItem> Visible => _orders
-        .Where(order => string.IsNullOrWhiteSpace(_filter)
-                        || order.Number.Contains(_filter, StringComparison.OrdinalIgnoreCase)
-                        || order.SupplierName.Contains(_filter, StringComparison.OrdinalIgnoreCase));
-
-    protected override async Task OnInitializedAsync()
+    /// <summary>
+    /// The "still owed" switch is added to the query rather than applied to the page, so the count
+    /// and the paging the grid receives are already the ones of the orders being shown.
+    /// </summary>
+    private Task<(IReadOnlyList<PurchaseOrderListItem> Items, int Count, string? Error)> LoadAsync(
+        Guid companyId, ODataQuery query, CancellationToken cancellationToken)
     {
-        Company.Changed += OnCompanyChanged;
-        await Company.EnsureLoadedAsync();
-        await LoadAsync();
-    }
+        if (_openOnly)
+            query.Filter("IsOpen eq true");
 
-    private async void OnCompanyChanged() => await InvokeAsync(LoadAsync);
+        return Purchasing.QueryOrdersAsync(companyId, query, cancellationToken);
+    }
 
     private async Task OnOpenOnlyChangedAsync(bool openOnly)
     {
         _openOnly = openOnly;
-        await LoadAsync();
-    }
 
-    private async Task LoadAsync()
-    {
-        if (!Company.HasCompany)
-        {
-            _orders = [];
-            _error = Company.LoadError;
-            StateHasChanged();
-            return;
-        }
-
-        _loading = true;
-        _error = null;
-        StateHasChanged();
-
-        try
-        {
-            var (items, error) = await Purchasing.GetOrdersAsync(Company.SelectedCompanyId, openOnly: _openOnly);
-            _orders = [.. items];
-            _error = error;
-        }
-        catch (Exception ex)
-        {
-            _error = $"Não foi possível carregar as encomendas: {ex.Message}";
-        }
-        finally
-        {
-            _loading = false;
-            StateHasChanged();
-        }
+        if (_grid is not null)
+            await _grid.ReloadAsync();
     }
 
     private static Color StatusColor(string status) => status switch
     {
-        "Draft" => Color.Default,
-        "Placed" => Color.Info,
-        "PartiallyReceived" => Color.Warning,
         "Received" => Color.Success,
+        "PartiallyReceived" => Color.Info,
         "Cancelled" => Color.Error,
+        "Closed" => Color.Secondary,
         _ => Color.Default
     };
 
-    /// <summary>An expected date already past on an order still owed is worth seeing.</summary>
+    /// <summary>An order that is still owed and past its date is worth pointing out.</summary>
     private static Color ExpectedColor(PurchaseOrderListItem order) =>
         order.IsOpen && order.ExpectedDate is { } expected && expected < DateOnly.FromDateTime(DateTime.Today)
-            ? Color.Error
+            ? Color.Warning
             : Color.Default;
-
-    public void Dispose() => Company.Changed -= OnCompanyChanged;
 }

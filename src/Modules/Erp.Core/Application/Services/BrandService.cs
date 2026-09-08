@@ -13,6 +13,8 @@ public sealed class BrandService(IBrandStorage storage) : IBrandService
         return brands.Select(Map).ToList();
     }
 
+    public IQueryable<BrandDto> Query(Guid companyId) => storage.Query(companyId);
+
     public async Task<BrandDto?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
     {
         var brand = await storage.GetByIdAsync(id, cancellationToken);
@@ -71,6 +73,8 @@ public sealed class ProductFamilyService(IProductFamilyStorage storage) : IProdu
         var families = await storage.GetAllAsync(companyId, cancellationToken);
         return families.Select(Map).ToList();
     }
+
+    public IQueryable<ProductFamilyDto> Query(Guid companyId) => storage.Query(companyId);
 
     public async Task<ProductFamilyDto?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
     {
@@ -136,6 +140,8 @@ public sealed class ProductSubfamilyService(
         var subfamilies = await storage.GetAllAsync(companyId, familyId, cancellationToken);
         return subfamilies.Select(Map).ToList();
     }
+
+    public IQueryable<ProductSubfamilyDto> Query(Guid companyId) => storage.Query(companyId);
 
     public async Task<ProductSubfamilyDto?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
     {

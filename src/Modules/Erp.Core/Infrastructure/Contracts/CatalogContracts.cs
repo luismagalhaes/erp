@@ -2,25 +2,100 @@ namespace Erp.Core.Infrastructure.Contracts;
 
 // --- Classification: brands, families and subfamilies ---
 
-public sealed record BrandDto(Guid Id, string Code, string Name, bool IsActive);
+/// <summary>
+/// The brand as the listings see it. Written with init properties instead of a positional record
+/// because EF Core cannot bind members over a constructor projection, which breaks any $orderby or
+/// $filter the OData grids apply on top of the query. The constructor is kept for the in memory
+/// mapping done after the writes.
+/// </summary>
+public sealed record BrandDto
+{
+    public BrandDto()
+    {
+    }
+
+    public BrandDto(Guid id, string code, string name, bool isActive)
+    {
+        Id = id;
+        Code = code;
+        Name = name;
+        IsActive = isActive;
+    }
+
+    public Guid Id { get; init; }
+    public string Code { get; init; } = string.Empty;
+    public string Name { get; init; } = string.Empty;
+    public bool IsActive { get; init; }
+}
 
 public sealed record CreateBrandRequest(Guid CompanyId, string Code, string Name);
 
 public sealed record UpdateBrandRequest(string Name, bool IsActive);
 
-public sealed record ProductFamilyDto(Guid Id, string Code, string Name, bool IsActive, int SubfamilyCount);
+/// <summary>
+/// The family as the listings see it. Init properties for the same reason as <see cref="BrandDto"/>:
+/// EF Core only maps members over an object initializer, which is what keeps the OData options
+/// translatable to SQL.
+/// </summary>
+public sealed record ProductFamilyDto
+{
+    public ProductFamilyDto()
+    {
+    }
+
+    public ProductFamilyDto(Guid id, string code, string name, bool isActive, int subfamilyCount)
+    {
+        Id = id;
+        Code = code;
+        Name = name;
+        IsActive = isActive;
+        SubfamilyCount = subfamilyCount;
+    }
+
+    public Guid Id { get; init; }
+    public string Code { get; init; } = string.Empty;
+    public string Name { get; init; } = string.Empty;
+    public bool IsActive { get; init; }
+    public int SubfamilyCount { get; init; }
+}
 
 public sealed record CreateProductFamilyRequest(Guid CompanyId, string Code, string Name);
 
 public sealed record UpdateProductFamilyRequest(string Name, bool IsActive);
 
-public sealed record ProductSubfamilyDto(
-    Guid Id,
-    Guid FamilyId,
-    string FamilyName,
-    string Code,
-    string Name,
-    bool IsActive);
+/// <summary>
+/// The subfamily as the listings see it, carrying the family name so the grid does not need a
+/// second round trip. Init properties keep the projection translatable by EF Core and OData.
+/// </summary>
+public sealed record ProductSubfamilyDto
+{
+    public ProductSubfamilyDto()
+    {
+    }
+
+    public ProductSubfamilyDto(
+        Guid id,
+        Guid familyId,
+        string familyName,
+        string code,
+        string name,
+        bool isActive)
+    {
+        Id = id;
+        FamilyId = familyId;
+        FamilyName = familyName;
+        Code = code;
+        Name = name;
+        IsActive = isActive;
+    }
+
+    public Guid Id { get; init; }
+    public Guid FamilyId { get; init; }
+    public string FamilyName { get; init; } = string.Empty;
+    public string Code { get; init; } = string.Empty;
+    public string Name { get; init; } = string.Empty;
+    public bool IsActive { get; init; }
+}
 
 public sealed record CreateProductSubfamilyRequest(Guid CompanyId, Guid FamilyId, string Code, string Name);
 
@@ -152,18 +227,55 @@ public sealed record UpdateProductRequest(
 
 // --- Business partners ---
 
-public sealed record PartnerDto(
-    Guid Id,
-    string Code,
-    string Name,
-    string TaxId,
-    string? Address,
-    string? PostalCode,
-    string? City,
-    string Country,
-    string? Email,
-    string? Phone,
-    bool IsActive);
+/// <summary>
+/// Customers and suppliers share the same shape, so they share the same listing DTO. Init
+/// properties for the same reason as <see cref="BrandDto"/>: EF Core only maps members over an
+/// object initializer, which is what keeps the OData options translatable to SQL.
+/// </summary>
+public sealed record PartnerDto
+{
+    public PartnerDto()
+    {
+    }
+
+    public PartnerDto(
+        Guid id,
+        string code,
+        string name,
+        string taxId,
+        string? address,
+        string? postalCode,
+        string? city,
+        string country,
+        string? email,
+        string? phone,
+        bool isActive)
+    {
+        Id = id;
+        Code = code;
+        Name = name;
+        TaxId = taxId;
+        Address = address;
+        PostalCode = postalCode;
+        City = city;
+        Country = country;
+        Email = email;
+        Phone = phone;
+        IsActive = isActive;
+    }
+
+    public Guid Id { get; init; }
+    public string Code { get; init; } = string.Empty;
+    public string Name { get; init; } = string.Empty;
+    public string TaxId { get; init; } = string.Empty;
+    public string? Address { get; init; }
+    public string? PostalCode { get; init; }
+    public string? City { get; init; }
+    public string Country { get; init; } = string.Empty;
+    public string? Email { get; init; }
+    public string? Phone { get; init; }
+    public bool IsActive { get; init; }
+}
 
 public sealed record CreatePartnerRequest(
     Guid CompanyId,

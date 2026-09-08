@@ -6,6 +6,9 @@ public interface ICompanyAdminService
 {
     Task<IReadOnlyList<CompanyListItemDto>> GetAllAsync(CancellationToken cancellationToken = default);
 
+    /// <summary>The listing as a queryable, so the grid endpoint can push its OData options down.</summary>
+    IQueryable<CompanyListItemDto> Query();
+
     Task<CompanyDetailDto?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default);
 
     Task<CompanyDetailDto> CreateAsync(CreateCompanyRequest request, CancellationToken cancellationToken = default);

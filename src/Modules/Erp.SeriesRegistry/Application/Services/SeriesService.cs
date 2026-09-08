@@ -15,6 +15,8 @@ public sealed class SeriesService(ISeriesStorage storage, IUnitOfWork unitOfWork
         return series.Select(Map).ToList();
     }
 
+    public IQueryable<SeriesListItemDto> Query(Guid companyId) => storage.Query(companyId);
+
     public async Task<SeriesListItemDto?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
     {
         var series = await storage.GetByIdAsync(id, cancellationToken);
@@ -167,14 +169,17 @@ public sealed class SeriesService(ISeriesStorage storage, IUnitOfWork unitOfWork
     }
 
     private static SeriesListItemDto Map(Domain.Series series) =>
-        new(series.Id,
-            series.CompanyId,
-            series.DocumentType,
-            series.SeriesCode,
-            series.CurrentSequence,
-            series.ValidationCode,
-            series.Status.ToString(),
-            series.CanIssue,
-            series.StockEffect.ToString(),
-            series.SelfBilling);
+        new()
+        {
+            Id = series.Id,
+            CompanyId = series.CompanyId,
+            DocumentType = series.DocumentType,
+            SeriesCode = series.SeriesCode,
+            CurrentSequence = series.CurrentSequence,
+            ValidationCode = series.ValidationCode,
+            Status = series.Status.ToString(),
+            CanIssue = series.CanIssue,
+            StockEffect = series.StockEffect.ToString(),
+            SelfBilling = series.SelfBilling
+        };
 }

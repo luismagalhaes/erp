@@ -1,6 +1,31 @@
 namespace Erp.Core.Infrastructure.Contracts;
 
-public sealed record CompanyListItemDto(Guid Id, string Name, string? LegalName, string TaxId, bool IsActive);
+/// <summary>
+/// The company as the backoffice listing sees it. Init properties instead of a positional record
+/// because EF Core cannot bind members over a constructor projection, which breaks any $orderby or
+/// $filter the OData grid applies on top of the query.
+/// </summary>
+public sealed record CompanyListItemDto
+{
+    public CompanyListItemDto()
+    {
+    }
+
+    public CompanyListItemDto(Guid id, string name, string? legalName, string taxId, bool isActive)
+    {
+        Id = id;
+        Name = name;
+        LegalName = legalName;
+        TaxId = taxId;
+        IsActive = isActive;
+    }
+
+    public Guid Id { get; init; }
+    public string Name { get; init; } = string.Empty;
+    public string? LegalName { get; init; }
+    public string TaxId { get; init; } = string.Empty;
+    public bool IsActive { get; init; }
+}
 
 public sealed record CompanyDetailDto(
     Guid Id,

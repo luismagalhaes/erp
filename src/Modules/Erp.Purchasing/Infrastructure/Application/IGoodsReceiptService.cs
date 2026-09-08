@@ -9,6 +9,12 @@ public interface IGoodsReceiptService
         Guid? supplierId = null,
         CancellationToken cancellationToken = default);
 
+    /// <summary>
+    /// The listing as a query, so filtering, sorting and paging can be applied by the database on
+    /// behalf of the data grid.
+    /// </summary>
+    IQueryable<GoodsReceiptListItemDto> Query(Guid companyId);
+
     Task<GoodsReceiptDto?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default);
 
     /// <summary>

@@ -1,4 +1,5 @@
 using Erp.Purchasing.Domain;
+using Erp.Purchasing.Infrastructure.Contracts;
 using Erp.Purchasing.Infrastructure.Storage;
 using Erp.Purchasing.Storage.Data;
 using Microsoft.EntityFrameworkCore;
@@ -8,6 +9,28 @@ namespace Erp.Purchasing.Storage.Storage;
 
 public sealed class PurchaseInvoiceStorage(AppDbContext dbContext) : IPurchaseInvoiceStorage
 {
+    public IQueryable<PurchaseInvoiceListItemDto> Query(Guid companyId) =>
+        dbContext.Set<PurchaseInvoice>()
+            .AsNoTracking()
+            .Where(x => x.CompanyId == companyId)
+            .Select(x => new PurchaseInvoiceListItemDto
+            {
+                Id = x.Id,
+                DocumentType = x.DocumentType,
+                SupplierDocumentNumber = x.SupplierDocumentNumber,
+                SupplierDocumentDate = x.SupplierDocumentDate,
+                ReceivedDate = x.ReceivedDate,
+                DueDate = x.DueDate,
+                SupplierName = x.Supplier.Name,
+                SupplierTaxId = x.Supplier.TaxId,
+                NetTotal = x.NetTotal,
+                TaxTotal = x.TaxTotal,
+                GrossTotal = x.GrossTotal,
+                ReverseCharge = x.ReverseCharge,
+                Status = x.Status == PurchaseInvoiceStatus.Voided ? "Voided" : "Recorded",
+                IsVoided = x.Status == PurchaseInvoiceStatus.Voided
+            });
+
     public async Task<IReadOnlyList<PurchaseInvoice>> GetAllAsync(
         Guid companyId,
         Guid? supplierId = null,

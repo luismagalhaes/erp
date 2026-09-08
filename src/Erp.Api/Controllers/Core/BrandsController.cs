@@ -3,6 +3,7 @@ using Erp.Core.Infrastructure.Application;
 using Erp.Core.Infrastructure.Contracts;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.OData.Query;
 
 namespace Erp.Api.Controllers.Core;
 
@@ -23,6 +24,23 @@ public sealed class BrandsController(IBrandService brandService) : ControllerBas
             return BadRequest(new { error = "companyId is required." });
 
         return Ok(await brandService.GetAllAsync(companyId, cancellationToken));
+    }
+
+    /// <summary>
+    /// The listing the data grid calls. Filtering, sorting and paging travel as OData options and
+    /// are applied by the database; the company stays outside the query, as a tenancy boundary the
+    /// caller cannot widen.
+    /// </summary>
+    [HttpGet("odata")]
+    [ProducesResponseType<ODataCollection<BrandDto>>(StatusCodes.Status200OK)]
+    public ActionResult<ODataCollection<BrandDto>> Query(
+        [FromQuery] Guid companyId,
+        ODataQueryOptions<BrandDto> options)
+    {
+        if (companyId == Guid.Empty)
+            return BadRequest(new { error = "companyId is required." });
+
+        return Ok(ODataQueryExecutor.Execute(brandService.Query(companyId), options));
     }
 
     [HttpGet("{id:guid}")]

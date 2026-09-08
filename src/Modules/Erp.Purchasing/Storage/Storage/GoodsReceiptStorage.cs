@@ -1,4 +1,5 @@
 using Erp.Purchasing.Domain;
+using Erp.Purchasing.Infrastructure.Contracts;
 using Erp.Purchasing.Infrastructure.Storage;
 using Erp.Purchasing.Storage.Data;
 using Microsoft.EntityFrameworkCore;
@@ -21,6 +22,29 @@ public sealed class GoodsReceiptStorage(AppDbContext dbContext) : IGoodsReceiptS
             .OrderByDescending(x => x.ReceiptDate)
             .ThenByDescending(x => x.CreatedAtUtc)
             .ToListAsync(cancellationToken);
+    }
+
+    /// <remarks>
+    /// The status is spelled out as an expression rather than read off the domain object, because
+    /// the grid filters and sorts on it and only what the database can evaluate may take part.
+    /// </remarks>
+    public IQueryable<GoodsReceiptListItemDto> Query(Guid companyId)
+    {
+        return dbContext.Set<GoodsReceipt>()
+            .AsNoTracking()
+            .Where(x => x.CompanyId == companyId)
+            .Select(x => new GoodsReceiptListItemDto
+            {
+                Id = x.Id,
+                Number = x.Number,
+                Status = x.Status == GoodsReceiptStatus.Voided ? "Voided" : "Received",
+                ReceiptDate = x.ReceiptDate,
+                SupplierName = x.Supplier.Name,
+                SupplierDocumentNumber = x.SupplierDocumentNumber,
+                LineCount = x.Lines.Count,
+                TotalCost = x.TotalCost,
+                IsVoided = x.Status == GoodsReceiptStatus.Voided
+            });
     }
 
     public Task<GoodsReceipt?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default) =>

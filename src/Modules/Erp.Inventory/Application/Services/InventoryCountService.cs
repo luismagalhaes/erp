@@ -11,6 +11,8 @@ public sealed class InventoryCountService(
     IStockStorage stockStorage,
     IUnitOfWork unitOfWork) : IInventoryCountService
 {
+    public IQueryable<InventoryCountListItemDto> Query(Guid companyId) => countStorage.Query(companyId);
+
     public async Task<IReadOnlyList<InventoryCountDto>> GetAllAsync(
         Guid companyId,
         CancellationToken cancellationToken = default)

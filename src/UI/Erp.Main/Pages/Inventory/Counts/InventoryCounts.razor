@@ -1,0 +1,142 @@
+@page "/inventory-counts"
+@attribute [Authorize]
+@implements IDisposable
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.AspNetCore.Components.Web
+@using MudBlazor
+@using Erp.Main.Components.Common
+@using Erp.Main.Models
+@using Erp.Main.Services
+@inject StockApiClient StockApi
+@inject CompanyState Company
+@inject NavigationManager Navigation
+
+<PageTitle>Inventários</PageTitle>
+
+<MudStack Spacing="4">
+    <PageHeader Title="Inventários">
+        <Actions>
+            <MudButton Variant="Variant.Filled" Color="Color.Primary"
+                       StartIcon="@Icons.Material.Filled.Add"
+                       Disabled="@(!Company.HasCompany || _openCount is not null)"
+                       OnClick="@(() => Navigation.NavigateTo("inventory-counts/new"))">
+                Abrir contagem
+            </MudButton>
+        </Actions>
+    </PageHeader>
+
+    @if (_openCount is not null)
+    {
+        <MudAlert Severity="Severity.Info">
+            <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center" Class="width-full">
+                <div>
+                    A contagem <strong>@_openCount.Reference</strong> está aberta, com
+                    @_openCount.LineCount @(_openCount.LineCount == 1 ? "artigo" : "artigos").
+                    Enquanto estiver aberta não é possível abrir outra.
+                </div>
+                <MudButton Variant="Variant.Filled" Color="Color.Primary" Size="Size.Small"
+                           OnClick="@(() => Open(_openCount.Id))">
+                    Continuar
+                </MudButton>
+            </MudStack>
+        </MudAlert>
+    }
+
+    <DataGrid T="InventoryCountListItem"
+              LoadAsync="@((companyId, query, ct) => StockApi.QueryInventoryCountsAsync(companyId, query, ct))"
+              SearchFields="SearchFields" DefaultOrderBy="CreatedAtUtc desc"
+              SearchPlaceholder="Procurar referência"
+              EmptyIcon="@Icons.Material.Filled.Inventory"
+              EmptyTitle="Sem contagens para mostrar"
+              EmptyDescription="Ajuste os filtros ou abra a primeira contagem."
+              ItemsLabel="contagens"
+              LoadErrorMessage="Não foi possível carregar as contagens">
+        <Columns>
+            <PropertyColumn Property="x => x.Reference" Title="Referência" CellClass="erp-mono" />
+            <PropertyColumn Property="x => x.CountDate" Title="Data" Format="yyyy-MM-dd" />
+            <PropertyColumn Property="x => x.Scope" Title="Âmbito">
+                <CellTemplate>
+                    @ScopeLabel(context.Item.Scope)
+                </CellTemplate>
+            </PropertyColumn>
+            <PropertyColumn Property="x => x.Status" Title="Estado">
+                <CellTemplate>
+                    <MudChip T="string" Size="Size.Small" Variant="Variant.Text"
+                             Color="@(context.Item.IsOpen ? Color.Warning : Color.Success)">
+                        @(context.Item.IsOpen ? "Aberta" : "Fechada")
+                    </MudChip>
+                </CellTemplate>
+            </PropertyColumn>
+            <PropertyColumn Property="x => x.LineCount" Title="Artigos"
+                            CellClass="erp-numeric" HeaderClass="erp-numeric" />
+            <PropertyColumn Property="x => x.LinesWithDifference" Title="Com diferença"
+                            CellClass="erp-numeric" HeaderClass="erp-numeric">
+                <CellTemplate>
+                    <MudText Typo="Typo.body2"
+                             Color="@(context.Item.LinesWithDifference == 0 ? Color.Default : Color.Warning)">
+                        @context.Item.LinesWithDifference
+                    </MudText>
+                </CellTemplate>
+            </PropertyColumn>
+            <PropertyColumn Property="x => x.ClosedAtUtc" Title="Fechada em" Format="yyyy-MM-dd HH:mm" />
+            <TemplateColumn Title="" Sortable="false" Filterable="false" Hideable="false"
+                            StickyRight="true"
+                            CellClass="erp-numeric" HeaderClass="erp-numeric">
+                <CellTemplate>
+                    <MudMenu Icon="@Icons.Material.Filled.MoreVert" Size="Size.Small"
+                             AnchorOrigin="Origin.BottomRight" TransformOrigin="Origin.TopRight">
+                        <MudMenuItem Icon="@(context.Item.IsOpen ? Icons.Material.Filled.Edit : Icons.Material.Filled.Visibility)"
+                                     OnClick="@(() => Open(context.Item.Id))">
+                            @(context.Item.IsOpen ? "Continuar a contagem" : "Ver a contagem")
+                        </MudMenuItem>
+                    </MudMenu>
+                </CellTemplate>
+            </TemplateColumn>
+        </Columns>
+    </DataGrid>
+</MudStack>
+
+@code {
+    private static readonly string[] SearchFields = ["Reference"];
+
+    private InventoryCountListItem? _openCount;
+
+    protected override async Task OnInitializedAsync()
+    {
+        Company.Changed += OnCompanyChanged;
+        await Company.EnsureLoadedAsync();
+        await LoadOpenCountAsync();
+    }
+
+    private async void OnCompanyChanged() => await InvokeAsync(LoadOpenCountAsync);
+
+    /// <summary>Only one count may be open at a time, so it is worth asking for it on its own.</summary>
+    private async Task LoadOpenCountAsync()
+    {
+        if (!Company.HasCompany)
+        {
+            _openCount = null;
+            StateHasChanged();
+            return;
+        }
+
+        var query = new ODataQuery { Top = 1, Count = false };
+        query.Filter("IsOpen eq true");
+
+        var (items, _, _) = await StockApi.QueryInventoryCountsAsync(Company.SelectedCompanyId, query);
+        _openCount = items.FirstOrDefault();
+        StateHasChanged();
+    }
+
+    private void Open(Guid id) => Navigation.NavigateTo($"inventory-counts/{id}");
+
+    private static string ScopeLabel(string scope) => scope switch
+    {
+        "Total" => "Empresa inteira",
+        "Warehouse" => "Um armazém",
+        "Products" => "Artigos escolhidos",
+        _ => scope
+    };
+
+    public void Dispose() => Company.Changed -= OnCompanyChanged;
+}

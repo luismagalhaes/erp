@@ -30,6 +30,8 @@ public sealed class PurchaseOrderService(
         return [.. orders.Select(MapListItem)];
     }
 
+    public IQueryable<PurchaseOrderListItemDto> Query(Guid companyId) => storage.Query(companyId);
+
     public async Task<PurchaseOrderDto?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
     {
         var order = await storage.GetByIdAsync(id, cancellationToken);
@@ -209,16 +211,19 @@ public sealed class PurchaseOrderService(
             supplier.Country);
 
     private static PurchaseOrderListItemDto MapListItem(PurchaseOrder order) =>
-        new(order.Id,
-            order.Number,
-            order.Status.ToString(),
-            order.OrderDate,
-            order.ExpectedDate,
-            order.Supplier.Name,
-            order.Supplier.TaxId,
-            order.Lines.Count,
-            order.GrossTotal,
-            order.IsOpen);
+        new()
+        {
+            Id = order.Id,
+            Number = order.Number,
+            Status = order.Status.ToString(),
+            OrderDate = order.OrderDate,
+            ExpectedDate = order.ExpectedDate,
+            SupplierName = order.Supplier.Name,
+            SupplierTaxId = order.Supplier.TaxId,
+            LineCount = order.Lines.Count,
+            GrossTotal = order.GrossTotal,
+            IsOpen = order.IsOpen
+        };
 
     private static PurchaseOrderDto Map(PurchaseOrder order) =>
         new(order.Id,

@@ -6,6 +6,7 @@ using Erp.Core.Infrastructure.Contracts;
 using Erp.SeriesRegistry.Infrastructure.Application;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.OData.Query;
 
 namespace Erp.Api.Controllers.Core;
 
@@ -26,6 +27,16 @@ public sealed class CompaniesController(
         var result = await companyAdminService.GetAllAsync(cancellationToken);
         return Ok(result);
     }
+
+    /// <summary>
+    /// The listing the backoffice data grid calls. Filtering, sorting and paging travel as OData
+    /// options and are applied by the database. Companies are a global listing, so there is no
+    /// tenancy filter to keep outside the query here.
+    /// </summary>
+    [HttpGet("odata")]
+    [ProducesResponseType<ODataCollection<CompanyListItemDto>>(StatusCodes.Status200OK)]
+    public ActionResult<ODataCollection<CompanyListItemDto>> Query(ODataQueryOptions<CompanyListItemDto> options) =>
+        Ok(ODataQueryExecutor.Execute(companyAdminService.Query(), options));
 
     /// <summary>Gets a single company.</summary>
     [HttpGet("{id:guid}")]

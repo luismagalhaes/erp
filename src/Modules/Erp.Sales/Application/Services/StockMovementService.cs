@@ -36,21 +36,25 @@ public sealed class StockMovementService(
         var movements = await movementStorage.GetAllAsync(companyId, cancellationToken);
 
         return movements
-            .Select(x => new StockMovementListItemDto(
-                x.Id,
-                x.DocumentNumber,
-                x.MovementType,
-                x.Atcud,
-                x.MovementDate,
-                x.PartyName,
-                x.PartyTaxId,
-                x.MovementStartAtUtc,
-                x.TotalQuantity,
-                x.GrossTotal,
-                x.EffectiveStatus,
-                x.AtDocCodeId))
+            .Select(x => new StockMovementListItemDto
+            {
+                Id = x.Id,
+                DocumentNumber = x.DocumentNumber,
+                MovementType = x.MovementType,
+                Atcud = x.Atcud,
+                MovementDate = x.MovementDate,
+                PartyName = x.PartyName,
+                PartyTaxId = x.PartyTaxId,
+                MovementStartAtUtc = x.MovementStartAtUtc,
+                TotalQuantity = x.TotalQuantity,
+                GrossTotal = x.GrossTotal,
+                Status = x.EffectiveStatus,
+                AtDocCodeId = x.AtDocCodeId
+            })
             .ToList();
     }
+
+    public IQueryable<StockMovementListItemDto> Query(Guid companyId) => movementStorage.Query(companyId);
 
     public async Task<StockMovementDetailDto?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
     {

@@ -1,4 +1,5 @@
 using Erp.Purchasing.Domain;
+using Erp.Purchasing.Infrastructure.Contracts;
 
 namespace Erp.Purchasing.Infrastructure.Storage;
 
@@ -8,6 +9,12 @@ public interface IGoodsReceiptStorage
         Guid companyId,
         Guid? supplierId = null,
         CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// The listing projection of a company's receipts, left as a query so the database applies the
+    /// grid's filtering, sorting and paging.
+    /// </summary>
+    IQueryable<GoodsReceiptListItemDto> Query(Guid companyId);
 
     Task<GoodsReceipt?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default);
 

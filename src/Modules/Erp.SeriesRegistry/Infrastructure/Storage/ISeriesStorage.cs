@@ -1,10 +1,17 @@
 using Erp.SeriesRegistry.Domain;
+using Erp.SeriesRegistry.Infrastructure.Contracts;
 
 namespace Erp.SeriesRegistry.Infrastructure.Storage;
 
 public interface ISeriesStorage
 {
     Task<IReadOnlyList<Domain.Series>> GetAllAsync(Guid companyId, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// The listing projection of a company's series, left as a query so the database applies the
+    /// grid's filtering, sorting and paging.
+    /// </summary>
+    IQueryable<SeriesListItemDto> Query(Guid companyId);
 
     Task<Domain.Series?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default);
 

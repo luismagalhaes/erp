@@ -1,0 +1,463 @@
+@page "/saft"
+@attribute [Authorize]
+@implements IDisposable
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.AspNetCore.Components.Web
+@using Microsoft.JSInterop
+@using MudBlazor
+@using Erp.Main.Models
+@using Erp.Main.Services
+@inject SaftApiClient SaftApi
+@inject CatalogApiClient Catalog
+@inject CompanyState Company
+@inject IJSRuntime JS
+@inject ISnackbar Snackbar
+
+<PageTitle>Exportação SAF-T</PageTitle>
+
+<MudStack Spacing="4">
+    <MudStack Spacing="0">
+        <MudText Typo="Typo.h4">Exportação SAF-T (PT)</MudText>
+        <MudText Typo="Typo.body2" Color="Color.Secondary">
+            Ficheiro de faturação na versão @SaftVersion, com faturas, guias de movimentação e recibos do período.
+        </MudText>
+    </MudStack>
+
+    @if (!string.IsNullOrWhiteSpace(_error))
+    {
+        <MudAlert Severity="Severity.Error" Dense="true">@_error</MudAlert>
+    }
+
+    @if (!Company.HasCompany)
+    {
+        <MudAlert Severity="Severity.Info">Escolha uma empresa no cabeçalho para exportar o SAF-T.</MudAlert>
+    }
+    else
+    {
+        <MudPaper Elevation="1" Class="pa-4">
+            <MudText Typo="Typo.h6" Class="mb-3">Período</MudText>
+
+            <MudGrid>
+                <MudItem xs="12" md="3">
+                    <MudSelect T="SaftPeriodKind" Value="_periodKind" ValueChanged="OnPeriodKindChanged"
+                               Label="Tipo de período" Variant="Variant.Outlined">
+                        <MudSelectItem T="SaftPeriodKind" Value="SaftPeriodKind.Month">Mês</MudSelectItem>
+                        <MudSelectItem T="SaftPeriodKind" Value="SaftPeriodKind.Quarter">Trimestre</MudSelectItem>
+                        <MudSelectItem T="SaftPeriodKind" Value="SaftPeriodKind.Year">Ano</MudSelectItem>
+                        <MudSelectItem T="SaftPeriodKind" Value="SaftPeriodKind.Custom">Intervalo livre</MudSelectItem>
+                    </MudSelect>
+                </MudItem>
+
+                <MudItem xs="12" md="2">
+                    <MudNumericField T="int" Value="_year" ValueChanged="OnYearChanged"
+                                     Label="Ano" Variant="Variant.Outlined" Min="2000" Max="2100"
+                                     Disabled="@(_periodKind == SaftPeriodKind.Custom)" />
+                </MudItem>
+
+                @if (_periodKind == SaftPeriodKind.Month)
+                {
+                    <MudItem xs="12" md="3">
+                        <MudSelect T="int" Value="_month" ValueChanged="OnMonthChanged"
+                                   Label="Mês" Variant="Variant.Outlined">
+                            @for (var month = 1; month <= 12; month++)
+                            {
+                                var value = month;
+                                <MudSelectItem T="int" Value="@value">@MonthName(value)</MudSelectItem>
+                            }
+                        </MudSelect>
+                    </MudItem>
+                }
+                else if (_periodKind == SaftPeriodKind.Quarter)
+                {
+                    <MudItem xs="12" md="3">
+                        <MudSelect T="int" Value="_quarter" ValueChanged="OnQuarterChanged"
+                                   Label="Trimestre" Variant="Variant.Outlined">
+                            @for (var quarter = 1; quarter <= 4; quarter++)
+                            {
+                                var value = quarter;
+                                <MudSelectItem T="int" Value="@value">@($"{value}.º trimestre")</MudSelectItem>
+                            }
+                        </MudSelect>
+                    </MudItem>
+                }
+                else if (_periodKind == SaftPeriodKind.Custom)
+                {
+                    <MudItem xs="12" md="3">
+                        <MudDatePicker Date="_startDate" DateChanged="OnStartDateChanged" Label="Data inicial"
+                                       Variant="Variant.Outlined" DateFormat="yyyy-MM-dd" />
+                    </MudItem>
+                    <MudItem xs="12" md="3">
+                        <MudDatePicker Date="_endDate" DateChanged="OnEndDateChanged" Label="Data final"
+                                       Variant="Variant.Outlined" DateFormat="yyyy-MM-dd" />
+                    </MudItem>
+                }
+
+                <MudItem xs="12" md="4" Class="d-flex align-center">
+                    <MudText Typo="Typo.body2" Color="Color.Secondary">
+                        @PeriodDescription
+                    </MudText>
+                </MudItem>
+            </MudGrid>
+        </MudPaper>
+
+        <MudPaper Elevation="1" Class="pa-4">
+            <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center" Class="mb-3">
+                <MudText Typo="Typo.h6">Conteúdo do período</MudText>
+                @if (_loadingSummary)
+                {
+                    <MudProgressCircular Size="Size.Small" Indeterminate="true" Color="Color.Primary" />
+                }
+            </MudStack>
+
+            @if (_summary is null)
+            {
+                <MudText Typo="Typo.body2" Color="Color.Secondary">Sem dados para o período escolhido.</MudText>
+            }
+            else
+            {
+                <MudGrid>
+                    <MudItem xs="6" md="3">
+                        <MudText Typo="Typo.caption" Color="Color.Secondary">Faturas</MudText>
+                        <MudText Typo="Typo.h5">@_summary.InvoiceCount</MudText>
+                        <MudText Typo="Typo.body2" Color="Color.Secondary">
+                            @_summary.InvoiceGrossTotal.ToString("C2")
+                        </MudText>
+                    </MudItem>
+                    <MudItem xs="6" md="3">
+                        <MudText Typo="Typo.caption" Color="Color.Secondary">Guias de movimentação</MudText>
+                        <MudText Typo="Typo.h5">@_summary.StockMovementCount</MudText>
+                    </MudItem>
+                    <MudItem xs="6" md="3">
+                        <MudText Typo="Typo.caption" Color="Color.Secondary">Recibos</MudText>
+                        <MudText Typo="Typo.h5">@_summary.PaymentCount</MudText>
+                        <MudText Typo="Typo.body2" Color="Color.Secondary">
+                            @_summary.PaymentGrossTotal.ToString("C2")
+                        </MudText>
+                    </MudItem>
+                    <MudItem xs="6" md="3" Class="d-flex align-center justify-end">
+                        <MudButton Variant="Variant.Filled" Color="Color.Primary" Size="Size.Large"
+                                   StartIcon="@Icons.Material.Filled.Download"
+                                   Disabled="@(_exporting || TotalDocuments == 0)"
+                                   OnClick="ExportAsync">
+                            @(_exporting ? "A gerar..." : "Gerar ficheiro")
+                        </MudButton>
+                    </MudItem>
+                </MudGrid>
+
+                @if (TotalDocuments == 0)
+                {
+                    <MudAlert Severity="Severity.Info" Dense="true" Class="mt-3">
+                        Não há documentos neste período, por isso não há ficheiro para gerar.
+                    </MudAlert>
+                }
+            }
+        </MudPaper>
+
+        @if (_validationErrors == 0)
+        {
+            <MudAlert Severity="Severity.Success" Dense="true">
+                O ficheiro foi validado contra o esquema oficial da AT (@SaftVersion) sem erros.
+            </MudAlert>
+        }
+        else if (_validationErrors > 0)
+        {
+            <MudAlert Severity="Severity.Warning">
+                O ficheiro foi gerado, mas tem @_validationErrors @(_validationErrors == 1 ? "erro" : "erros")
+                face ao esquema oficial. Os detalhes ficam no log do servidor — não submeta assim.
+            </MudAlert>
+        }
+
+        <MudAlert Severity="Severity.Normal" Dense="true">
+            Os documentos anulados vão no ficheiro com o estado "A": o SAF-T tem de dar conta de todos os
+            números emitidos. Os totais de controlo contam apenas os que não estão anulados.
+        </MudAlert>
+
+        <MudPaper Elevation="1" Class="pa-4">
+            <MudStack Spacing="0" Class="mb-3">
+                <MudText Typo="Typo.h6">Autofaturação</MudText>
+                <MudText Typo="Typo.body2" Color="Color.Secondary">
+                    Ficheiro à parte, do tipo <strong>S</strong>, e <strong>um por fornecedor</strong>: os
+                    documentos são vendas dele, e é o NIF dele que vai no cabeçalho. Nenhum destes
+                    documentos entra no ficheiro de faturação acima.
+                </MudText>
+            </MudStack>
+
+            <MudGrid>
+                <MudItem xs="12" md="6">
+                    <MudSelect T="Guid?" @bind-Value="_selfBillingSupplierId" @bind-Value:after="StateHasChanged"
+                               Label="Fornecedor autofaturado" Variant="Variant.Outlined">
+                        @foreach (var supplier in _suppliers)
+                        {
+                            <MudSelectItem T="Guid?" Value="@supplier.Id">
+                                @supplier.Code — @supplier.Name
+                            </MudSelectItem>
+                        }
+                    </MudSelect>
+                </MudItem>
+                <MudItem xs="12" md="6" Class="d-flex align-center">
+                    <MudButton Variant="Variant.Filled" Color="Color.Primary"
+                               StartIcon="@Icons.Material.Filled.Download"
+                               Disabled="@(_exportingSelfBilling || _selfBillingSupplierId is null)"
+                               OnClick="ExportSelfBillingAsync">
+                        @(_exportingSelfBilling ? "A gerar..." : "Gerar ficheiro S")
+                    </MudButton>
+                </MudItem>
+            </MudGrid>
+
+            @if (_suppliers.Count == 0)
+            {
+                <MudAlert Severity="Severity.Info" Dense="true" Class="mt-3">
+                    Não há fornecedores ativos nesta empresa.
+                </MudAlert>
+            }
+        </MudPaper>
+    }
+</MudStack>
+
+@code {
+    private const string SaftVersion = "1.04_01";
+
+    private enum SaftPeriodKind { Month, Quarter, Year, Custom }
+
+    private bool _loadingSummary;
+    private bool _exporting;
+    private string? _error;
+
+    private SaftPeriodKind _periodKind = SaftPeriodKind.Month;
+    private int _year = DateTime.Today.Year;
+    private int _month = DateTime.Today.Month;
+    private int _quarter = (DateTime.Today.Month - 1) / 3 + 1;
+
+    private DateTime? _startDate = new DateTime(DateTime.Today.Year, DateTime.Today.Month, 1);
+    private DateTime? _endDate = DateTime.Today;
+
+    private SaftPeriodSummary? _summary;
+    private int? _validationErrors;
+
+    private bool _exportingSelfBilling;
+    private Guid? _selfBillingSupplierId;
+    private List<Partner> _suppliers = [];
+
+    private int TotalDocuments =>
+        _summary is null ? 0 : _summary.InvoiceCount + _summary.StockMovementCount + _summary.PaymentCount;
+
+    private DateOnly StartDate => DateOnly.FromDateTime(_startDate ?? DateTime.Today);
+
+    private DateOnly EndDate => DateOnly.FromDateTime(_endDate ?? DateTime.Today);
+
+    private string PeriodDescription => $"{StartDate:yyyy-MM-dd} a {EndDate:yyyy-MM-dd}";
+
+    protected override async Task OnInitializedAsync()
+    {
+        Company.Changed += OnCompanyChanged;
+        await Company.EnsureLoadedAsync();
+        ApplyPeriod();
+        await LoadSummaryAsync();
+        await LoadSuppliersAsync();
+    }
+
+    private async void OnCompanyChanged() => await InvokeAsync(async () =>
+    {
+        _selfBillingSupplierId = null;
+        await LoadSummaryAsync();
+        await LoadSuppliersAsync();
+    });
+
+    private async Task LoadSuppliersAsync()
+    {
+        if (!Company.HasCompany)
+        {
+            _suppliers = [];
+            return;
+        }
+
+        try
+        {
+            var (suppliers, _) = await Catalog.GetSuppliersAsync(Company.SelectedCompanyId);
+            _suppliers = [.. suppliers.Where(supplier => supplier.IsActive)];
+        }
+        catch (Exception ex)
+        {
+            _error = $"Não foi possível carregar os fornecedores: {ex.Message}";
+        }
+        finally
+        {
+            StateHasChanged();
+        }
+    }
+
+    /// <summary>Turns the chosen kind of period into the actual dates. Custom ranges are left alone.</summary>
+    private void ApplyPeriod()
+    {
+        switch (_periodKind)
+        {
+            case SaftPeriodKind.Month:
+                _startDate = new DateTime(_year, _month, 1);
+                _endDate = _startDate.Value.AddMonths(1).AddDays(-1);
+                break;
+
+            case SaftPeriodKind.Quarter:
+                _startDate = new DateTime(_year, (_quarter - 1) * 3 + 1, 1);
+                _endDate = _startDate.Value.AddMonths(3).AddDays(-1);
+                break;
+
+            case SaftPeriodKind.Year:
+                _startDate = new DateTime(_year, 1, 1);
+                _endDate = new DateTime(_year, 12, 31);
+                break;
+        }
+    }
+
+    private async Task OnPeriodKindChanged(SaftPeriodKind kind)
+    {
+        _periodKind = kind;
+        ApplyPeriod();
+        await LoadSummaryAsync();
+    }
+
+    private async Task OnYearChanged(int year)
+    {
+        _year = year;
+        ApplyPeriod();
+        await LoadSummaryAsync();
+    }
+
+    private async Task OnMonthChanged(int month)
+    {
+        _month = month;
+        ApplyPeriod();
+        await LoadSummaryAsync();
+    }
+
+    private async Task OnQuarterChanged(int quarter)
+    {
+        _quarter = quarter;
+        ApplyPeriod();
+        await LoadSummaryAsync();
+    }
+
+    private async Task OnStartDateChanged(DateTime? date)
+    {
+        _startDate = date;
+        await LoadSummaryAsync();
+    }
+
+    private async Task OnEndDateChanged(DateTime? date)
+    {
+        _endDate = date;
+        await LoadSummaryAsync();
+    }
+
+    private async Task LoadSummaryAsync()
+    {
+        if (!Company.HasCompany)
+        {
+            _summary = null;
+            _error = Company.LoadError;
+            StateHasChanged();
+            return;
+        }
+
+        _loadingSummary = true;
+        _error = null;
+        StateHasChanged();
+
+        try
+        {
+            var (summary, error) = await SaftApi.GetSaftSummaryAsync(Company.SelectedCompanyId, StartDate, EndDate);
+            _summary = summary;
+            _error = error;
+        }
+        catch (Exception ex)
+        {
+            _error = $"Não foi possível ler o período: {ex.Message}";
+        }
+        finally
+        {
+            _loadingSummary = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task ExportAsync()
+    {
+        _exporting = true;
+        _error = null;
+
+        try
+        {
+            var (file, error) = await SaftApi.DownloadSaftAsync(Company.SelectedCompanyId, StartDate, EndDate);
+
+            if (file is null)
+            {
+                _error = error ?? "Não foi possível gerar o ficheiro.";
+                return;
+            }
+
+            await JS.InvokeVoidAsync(
+                "erpDownloadFile", file.FileName, "application/xml", Convert.ToBase64String(file.Content));
+
+            _validationErrors = file.ValidationErrors;
+
+            if (_validationErrors == 0)
+            {
+                Snackbar.Add($"{file.FileName} gerado e validado no esquema oficial.", Severity.Success);
+            }
+            else
+            {
+                Snackbar.Add($"{file.FileName} gerado, mas não passa no esquema oficial.", Severity.Warning);
+            }
+        }
+        catch (Exception ex)
+        {
+            _error = $"Não foi possível gerar o ficheiro: {ex.Message}";
+        }
+        finally
+        {
+            _exporting = false;
+        }
+    }
+
+    private async Task ExportSelfBillingAsync()
+    {
+        _exportingSelfBilling = true;
+        _error = null;
+
+        try
+        {
+            var (file, error) = await SaftApi.DownloadSelfBillingSaftAsync(
+                Company.SelectedCompanyId, _selfBillingSupplierId!.Value, StartDate, EndDate);
+
+            if (file is null)
+            {
+                _error = error ?? "Não foi possível gerar o ficheiro de autofaturação.";
+                return;
+            }
+
+            await JS.InvokeVoidAsync(
+                "erpDownloadFile", file.FileName, "application/xml", Convert.ToBase64String(file.Content));
+
+            if (file.ValidationErrors == 0)
+            {
+                Snackbar.Add($"{file.FileName} gerado e validado no esquema oficial.", Severity.Success);
+            }
+            else
+            {
+                Snackbar.Add($"{file.FileName} gerado, mas não passa no esquema oficial.", Severity.Warning);
+            }
+        }
+        catch (Exception ex)
+        {
+            _error = $"Não foi possível gerar o ficheiro de autofaturação: {ex.Message}";
+        }
+        finally
+        {
+            _exportingSelfBilling = false;
+        }
+    }
+
+    private static string MonthName(int month) =>
+        System.Globalization.CultureInfo.CurrentCulture.DateTimeFormat.GetMonthName(month);
+
+    public void Dispose() => Company.Changed -= OnCompanyChanged;
+}

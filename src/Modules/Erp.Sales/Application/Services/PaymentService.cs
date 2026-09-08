@@ -31,19 +31,23 @@ public sealed class PaymentService(
         var payments = await paymentStorage.GetAllAsync(companyId, cancellationToken);
 
         return payments
-            .Select(x => new PaymentListItemDto(
-                x.Id,
-                x.PaymentRefNo,
-                x.PaymentType,
-                x.Atcud,
-                x.TransactionDate,
-                x.PartyName,
-                x.PartyTaxId,
-                x.GrossTotal,
-                x.Lines.Count,
-                x.EffectiveStatus))
+            .Select(x => new PaymentListItemDto
+            {
+                Id = x.Id,
+                PaymentRefNo = x.PaymentRefNo,
+                PaymentType = x.PaymentType,
+                Atcud = x.Atcud,
+                TransactionDate = x.TransactionDate,
+                PartyName = x.PartyName,
+                PartyTaxId = x.PartyTaxId,
+                GrossTotal = x.GrossTotal,
+                SettledInvoiceCount = x.Lines.Count,
+                Status = x.EffectiveStatus
+            })
             .ToList();
     }
+
+    public IQueryable<PaymentListItemDto> Query(Guid companyId) => paymentStorage.Query(companyId);
 
     public async Task<PaymentDetailDto?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
     {

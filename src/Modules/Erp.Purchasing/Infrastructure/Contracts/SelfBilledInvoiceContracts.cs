@@ -36,19 +36,36 @@ public sealed record SelfBilledInvoiceLineRequest(
     string? TaxExemptionCode = null,
     string? TaxExemptionReason = null);
 
-public sealed record SelfBilledInvoiceListItemDto(
-    Guid Id,
-    string DocumentNumber,
-    string DocumentType,
-    string Atcud,
-    DateOnly IssueDate,
-    string SupplierName,
-    string SupplierTaxId,
-    decimal NetTotal,
-    decimal TaxPayable,
-    decimal GrossTotal,
-    string Status,
-    bool IsAccepted);
+/// <summary>
+/// A row of the self-billed invoice list. Written with init members so it can be produced by an EF
+/// projection, which is what the OData listing runs.
+/// </summary>
+public sealed record SelfBilledInvoiceListItemDto
+{
+    public Guid Id { get; init; }
+
+    public string DocumentNumber { get; init; } = string.Empty;
+
+    public string DocumentType { get; init; } = string.Empty;
+
+    public string Atcud { get; init; } = string.Empty;
+
+    public DateOnly IssueDate { get; init; }
+
+    public string SupplierName { get; init; } = string.Empty;
+
+    public string SupplierTaxId { get; init; } = string.Empty;
+
+    public decimal NetTotal { get; init; }
+
+    public decimal TaxPayable { get; init; }
+
+    public decimal GrossTotal { get; init; }
+
+    public string Status { get; init; } = string.Empty;
+
+    public bool IsAccepted { get; init; }
+}
 
 public sealed record SelfBilledInvoiceDto(
     Guid Id,

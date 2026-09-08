@@ -41,6 +41,8 @@ public sealed class GoodsReceiptService(
         return [.. receipts.Select(MapListItem)];
     }
 
+    public IQueryable<GoodsReceiptListItemDto> Query(Guid companyId) => receiptStorage.Query(companyId);
+
     public async Task<GoodsReceiptDto?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
     {
         var receipt = await receiptStorage.GetByIdAsync(id, cancellationToken);
@@ -240,15 +242,18 @@ public sealed class GoodsReceiptService(
             supplier.Country);
 
     private static GoodsReceiptListItemDto MapListItem(GoodsReceipt receipt) =>
-        new(receipt.Id,
-            receipt.Number,
-            receipt.Status.ToString(),
-            receipt.ReceiptDate,
-            receipt.Supplier.Name,
-            receipt.SupplierDocumentNumber,
-            receipt.Lines.Count,
-            receipt.TotalCost,
-            receipt.IsVoided);
+        new()
+        {
+            Id = receipt.Id,
+            Number = receipt.Number,
+            Status = receipt.Status.ToString(),
+            ReceiptDate = receipt.ReceiptDate,
+            SupplierName = receipt.Supplier.Name,
+            SupplierDocumentNumber = receipt.SupplierDocumentNumber,
+            LineCount = receipt.Lines.Count,
+            TotalCost = receipt.TotalCost,
+            IsVoided = receipt.IsVoided
+        };
 
     private static GoodsReceiptDto Map(GoodsReceipt receipt) =>
         new(receipt.Id,

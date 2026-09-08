@@ -13,6 +13,9 @@ public interface ISelfBilledInvoiceService
         Guid? supplierId = null,
         CancellationToken cancellationToken = default);
 
+    /// <summary>The listing shape, left open so the grid can filter, sort and page in the database.</summary>
+    IQueryable<SelfBilledInvoiceListItemDto> Query(Guid companyId);
+
     Task<SelfBilledInvoiceDto?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default);
 
     /// <summary>What has been received but not yet self-billed. Issuing normally starts here.</summary>

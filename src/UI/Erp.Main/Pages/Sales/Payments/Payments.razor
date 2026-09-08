@@ -1,9 +1,9 @@
 @page "/payments"
 @attribute [Authorize]
-@implements IDisposable
 @using Microsoft.AspNetCore.Authorization
 @using Microsoft.AspNetCore.Components.Web
 @using MudBlazor
+@using Erp.Main.Components.Common
 @using Erp.Main.Models
 @using Erp.Main.Services
 @inject SalesApiClient SalesApi
@@ -13,115 +13,66 @@
 <PageTitle>Recibos</PageTitle>
 
 <MudStack Spacing="4">
-    <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center">
-        <MudStack Spacing="0">
-            <MudText Typo="Typo.h4">Recibos</MudText>
-            <MudText Typo="Typo.body2" Color="Color.Secondary">
-                Recebimentos de clientes, exportados no SAF-T como Payments.
-            </MudText>
-        </MudStack>
+    <PageHeader Title="Recibos">
+        <Actions>
+            <MudButton Variant="Variant.Filled" Color="Color.Primary"
+                       StartIcon="@Icons.Material.Filled.Add"
+                       Disabled="@(!Company.HasCompany)"
+                       OnClick="@(() => Navigation.NavigateTo("payments/new"))">
+                Novo recibo
+            </MudButton>
+        </Actions>
+    </PageHeader>
 
-        <MudButton Variant="Variant.Filled" Color="Color.Primary"
-                   StartIcon="@Icons.Material.Filled.Add"
-                   Disabled="@(!Company.HasCompany)"
-                   OnClick="@(() => Navigation.NavigateTo("payments/new"))">
-            Novo recibo
-        </MudButton>
-    </MudStack>
-
-    @if (!string.IsNullOrWhiteSpace(_error))
-    {
-        <MudAlert Severity="Severity.Error" Dense="true">@_error</MudAlert>
-    }
-
-    <MudPaper Elevation="1" Class="pa-2">
-        <MudTable Items="_payments" Hover="true" Striped="true" Dense="true" Loading="_loading"
-                  Breakpoint="Breakpoint.Sm">
-            <HeaderContent>
-                <MudTh>Documento</MudTh>
-                <MudTh>Tipo</MudTh>
-                <MudTh>Data</MudTh>
-                <MudTh>Cliente</MudTh>
-                <MudTh>NIF</MudTh>
-                <MudTh Style="text-align: right;">Faturas</MudTh>
-                <MudTh Style="text-align: right;">Total</MudTh>
-                <MudTh>Estado</MudTh>
-                <MudTh Style="text-align: right;">Ações</MudTh>
-            </HeaderContent>
-            <RowTemplate>
-                <MudTd DataLabel="Documento">
-                    <MudText Typo="Typo.body2" Style="font-family: monospace;">@context.PaymentRefNo</MudText>
-                </MudTd>
-                <MudTd DataLabel="Tipo">
-                    <MudChip T="string" Size="Size.Small" Variant="Variant.Outlined">@context.PaymentType</MudChip>
-                </MudTd>
-                <MudTd DataLabel="Data">@context.TransactionDate.ToString("yyyy-MM-dd")</MudTd>
-                <MudTd DataLabel="Cliente">@context.PartyName</MudTd>
-                <MudTd DataLabel="NIF">@context.PartyTaxId</MudTd>
-                <MudTd DataLabel="Faturas" Style="text-align: right;">@context.SettledInvoiceCount</MudTd>
-                <MudTd DataLabel="Total" Style="text-align: right;">@context.GrossTotal.ToString("C2")</MudTd>
-                <MudTd DataLabel="Estado">
-                    <MudChip T="string" Size="Size.Small" Variant="Variant.Outlined"
-                             Color="@(context.Status == "A" ? Color.Error : Color.Success)">
-                        @(context.Status == "A" ? "Anulado" : "Normal")
+    <DataGrid T="PaymentListItem"
+              LoadAsync="@((companyId, query, ct) => SalesApi.QueryPaymentsAsync(companyId, query, ct))"
+              SearchFields="SearchFields" DefaultOrderBy="TransactionDate desc,PaymentRefNo desc"
+              SearchPlaceholder="Procurar por documento, cliente ou NIF"
+              EmptyIcon="@Icons.Material.Filled.Payments"
+              EmptyTitle="Sem recibos para mostrar"
+              EmptyDescription="Ajuste os filtros ou emita o primeiro recibo."
+              ItemsLabel="recibos"
+              LoadErrorMessage="Não foi possível carregar os recibos">
+        <Columns>
+            <PropertyColumn Property="x => x.PaymentRefNo" Title="Documento" CellClass="erp-mono" />
+            <PropertyColumn Property="x => x.PaymentType" Title="Tipo">
+                <CellTemplate>
+                    <MudChip T="string" Size="Size.Small" Variant="Variant.Text">@context.Item.PaymentType</MudChip>
+                </CellTemplate>
+            </PropertyColumn>
+            <PropertyColumn Property="x => x.Atcud" Title="ATCUD" CellClass="erp-mono" />
+            <PropertyColumn Property="x => x.TransactionDate" Title="Data" Format="yyyy-MM-dd" />
+            <PropertyColumn Property="x => x.PartyName" Title="Cliente" />
+            <PropertyColumn Property="x => x.PartyTaxId" Title="NIF" />
+            <PropertyColumn Property="x => x.SettledInvoiceCount" Title="Faturas"
+                            CellClass="erp-numeric" HeaderClass="erp-numeric" />
+            <PropertyColumn Property="x => x.GrossTotal" Title="Total" Format="N2"
+                            CellClass="erp-numeric" HeaderClass="erp-numeric" />
+            <PropertyColumn Property="x => x.Status" Title="Estado">
+                <CellTemplate>
+                    <MudChip T="string" Size="Size.Small" Variant="Variant.Text"
+                             Color="@(context.Item.Status == "A" ? Color.Error : Color.Success)">
+                        @(context.Item.Status == "A" ? "Anulado" : "Normal")
                     </MudChip>
-                </MudTd>
-                <MudTd DataLabel="Ações" Style="text-align: right;">
-                    <MudIconButton Icon="@Icons.Material.Filled.Visibility" Size="Size.Small"
-                                   title="Ver recibo"
-                                   OnClick="@(() => Navigation.NavigateTo($"payments/{context.Id}"))" />
-                </MudTd>
-            </RowTemplate>
-            <NoRecordsContent>
-                <MudText Typo="Typo.body2" Color="Color.Secondary">Ainda não há recibos emitidos.</MudText>
-            </NoRecordsContent>
-        </MudTable>
-    </MudPaper>
+                </CellTemplate>
+            </PropertyColumn>
+            <TemplateColumn Title="" Sortable="false" Filterable="false" Hideable="false"
+                            StickyRight="true"
+                            CellClass="erp-numeric" HeaderClass="erp-numeric">
+                <CellTemplate>
+                    <MudMenu Icon="@Icons.Material.Filled.MoreVert" Size="Size.Small"
+                             AnchorOrigin="Origin.BottomRight" TransformOrigin="Origin.TopRight">
+                        <MudMenuItem Icon="@Icons.Material.Filled.Visibility"
+                                     OnClick="@(() => Navigation.NavigateTo($"payments/{context.Item.Id}"))">
+                            Ver recibo
+                        </MudMenuItem>
+                    </MudMenu>
+                </CellTemplate>
+            </TemplateColumn>
+        </Columns>
+    </DataGrid>
 </MudStack>
 
 @code {
-    private bool _loading = true;
-    private string? _error;
-    private List<PaymentListItem> _payments = [];
-
-    protected override async Task OnInitializedAsync()
-    {
-        Company.Changed += OnCompanyChanged;
-        await Company.EnsureLoadedAsync();
-        await LoadAsync();
-    }
-
-    private async void OnCompanyChanged() => await InvokeAsync(LoadAsync);
-
-    private async Task LoadAsync()
-    {
-        _loading = true;
-        _error = Company.LoadError;
-
-        if (!Company.HasCompany)
-        {
-            _payments = [];
-            _loading = false;
-            StateHasChanged();
-            return;
-        }
-
-        try
-        {
-            var (payments, error) = await SalesApi.GetPaymentsAsync(Company.SelectedCompanyId);
-            _payments = [.. payments];
-            _error = error;
-        }
-        catch (Exception ex)
-        {
-            _error = $"Não foi possível carregar os recibos: {ex.Message}";
-        }
-        finally
-        {
-            _loading = false;
-            StateHasChanged();
-        }
-    }
-
-    public void Dispose() => Company.Changed -= OnCompanyChanged;
+    private static readonly string[] SearchFields = ["PaymentRefNo", "PartyName", "PartyTaxId"];
 }

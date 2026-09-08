@@ -1,5 +1,6 @@
 using Erp.FiscalPT.Documents;
 using Erp.Purchasing.Domain;
+using Erp.Purchasing.Infrastructure.Contracts;
 using Erp.Purchasing.Infrastructure.Storage;
 using Erp.Storage;
 using Microsoft.EntityFrameworkCore;
@@ -8,6 +9,29 @@ namespace Erp.Purchasing.Storage.Storage;
 
 public sealed class SelfBilledInvoiceStorage(AppDbContext dbContext) : ISelfBilledInvoiceStorage
 {
+    public IQueryable<SelfBilledInvoiceListItemDto> Query(Guid companyId) =>
+        dbContext.Set<SelfBilledInvoice>()
+            .AsNoTracking()
+            .Where(x => x.CompanyId == companyId)
+            .Select(x => new SelfBilledInvoiceListItemDto
+            {
+                Id = x.Id,
+                DocumentNumber = x.DocumentNumber,
+                DocumentType = x.DocumentType,
+                Atcud = x.Atcud,
+                IssueDate = x.IssueDate,
+                SupplierName = x.Supplier.Name,
+                SupplierTaxId = x.Supplier.TaxId,
+                NetTotal = x.NetTotal,
+                TaxPayable = x.TaxPayable,
+                GrossTotal = x.GrossTotal,
+                Status = x.StatusChanges
+                    .OrderByDescending(change => change.OccurredAtUtc)
+                    .Select(change => change.NewStatus)
+                    .FirstOrDefault() ?? x.Status,
+                IsAccepted = x.AcceptedBySupplierAtUtc != null
+            });
+
     public async Task<IReadOnlyList<SelfBilledInvoice>> GetAllAsync(
         Guid companyId,
         Guid? supplierId = null,

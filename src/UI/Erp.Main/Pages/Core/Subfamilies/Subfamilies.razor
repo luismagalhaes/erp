@@ -1,0 +1,75 @@
+@page "/product-subfamilies"
+@attribute [Authorize]
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.AspNetCore.Components.Web
+@using MudBlazor
+@using Erp.Main.Components.Common
+@using Erp.Main.Models
+@using Erp.Main.Services
+@inject CatalogApiClient Catalog
+@inject CompanyState Company
+@inject NavigationManager Navigation
+
+<PageTitle>Subfamílias</PageTitle>
+
+<MudStack Spacing="4">
+    <PageHeader Title="Subfamílias">
+        <Actions>
+            <MudButton Variant="Variant.Text" StartIcon="@Icons.Material.Filled.Category"
+                       OnClick="@(() => Navigation.NavigateTo("product-families"))">
+                Famílias
+            </MudButton>
+            <MudButton Variant="Variant.Filled" Color="Color.Primary"
+                       StartIcon="@Icons.Material.Filled.Add"
+                       Disabled="@(!Company.HasCompany)"
+                       OnClick="@(() => Navigation.NavigateTo("product-subfamilies/new"))">
+                Nova subfamília
+            </MudButton>
+        </Actions>
+    </PageHeader>
+
+    <DataGrid T="ProductSubfamily"
+              LoadAsync="@((companyId, query, ct) => Catalog.QuerySubfamiliesAsync(companyId, query, ct))"
+              SearchFields="SearchFields" DefaultOrderBy="Code"
+              SearchPlaceholder="Procurar por código, nome ou família"
+              EmptyIcon="@Icons.Material.Filled.AccountTree"
+              EmptyTitle="Sem subfamílias para mostrar"
+              EmptyDescription="Ajuste os filtros ou crie a primeira subfamília."
+              ItemsLabel="subfamílias"
+              LoadErrorMessage="Não foi possível carregar as subfamílias">
+        <Columns>
+            <PropertyColumn Property="x => x.Code" Title="Código" />
+            <PropertyColumn Property="x => x.Name" Title="Nome" />
+            <PropertyColumn Property="x => x.FamilyName" Title="Família" />
+            <PropertyColumn Property="x => x.IsActive" Title="Estado">
+                <CellTemplate>
+                    <MudChip T="string" Size="Size.Small" Variant="Variant.Text"
+                             Color="@(context.Item.IsActive ? Color.Success : Color.Default)">
+                        @(context.Item.IsActive ? "Ativa" : "Inativa")
+                    </MudChip>
+                </CellTemplate>
+            </PropertyColumn>
+            <TemplateColumn Title="" Sortable="false" Filterable="false" Hideable="false"
+                            StickyRight="true"
+                            CellClass="erp-numeric" HeaderClass="erp-numeric">
+                <CellTemplate>
+                    <MudMenu Icon="@Icons.Material.Filled.MoreVert" Size="Size.Small"
+                             AnchorOrigin="Origin.BottomRight" TransformOrigin="Origin.TopRight">
+                        <MudMenuItem Icon="@Icons.Material.Filled.Edit"
+                                     OnClick="@(() => Navigation.NavigateTo($"product-subfamilies/{context.Item.Id}"))">
+                            Editar
+                        </MudMenuItem>
+                    </MudMenu>
+                </CellTemplate>
+            </TemplateColumn>
+        </Columns>
+    </DataGrid>
+</MudStack>
+
+@code {
+    /// <summary>
+    /// Maps the toolbar search to the DTO members the API exposes, so a renamed column never
+    /// produces an invalid $filter.
+    /// </summary>
+    private static readonly string[] SearchFields = ["Code", "Name", "FamilyName"];
+}

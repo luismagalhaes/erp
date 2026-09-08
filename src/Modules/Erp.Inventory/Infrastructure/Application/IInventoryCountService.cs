@@ -6,6 +6,9 @@ public interface IInventoryCountService
 {
     Task<IReadOnlyList<InventoryCountDto>> GetAllAsync(Guid companyId, CancellationToken cancellationToken = default);
 
+    /// <summary>The listing shape, left open so the grid can filter, sort and page in the database.</summary>
+    IQueryable<InventoryCountListItemDto> Query(Guid companyId);
+
     Task<InventoryCountDto?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default);
 
     /// <summary>

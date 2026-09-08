@@ -7,6 +7,7 @@
 @using Erp.Main.Models
 @using Erp.Main.Services
 @inject SalesApiClient SalesApi
+@inject SeriesApiClient SeriesApi
 @inject CatalogApiClient Catalog
 @inject CompanyState Company
 @inject NavigationManager Navigation
@@ -254,7 +255,7 @@
 
         try
         {
-            var series = await SalesApi.GetSeriesAsync(Company.SelectedCompanyId);
+            var series = await SeriesApi.GetSeriesAsync(Company.SelectedCompanyId);
 
             // Only series that create a sale. Notas de crédito e de débito têm ecrã próprio, onde
             // partem da fatura em vez de se escreverem outra vez, e as guias e recibos também.

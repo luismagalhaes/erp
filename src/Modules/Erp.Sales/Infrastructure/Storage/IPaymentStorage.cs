@@ -1,10 +1,17 @@
 using Erp.Sales.Domain;
+using Erp.Sales.Infrastructure.Contracts;
 
 namespace Erp.Sales.Infrastructure.Storage;
 
 public interface IPaymentStorage
 {
     Task<IReadOnlyList<Payment>> GetAllAsync(Guid companyId, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// The listing projection of a company's receipts, left as a query so the database applies the
+    /// grid's filtering, sorting and paging.
+    /// </summary>
+    IQueryable<PaymentListItemDto> Query(Guid companyId);
 
     Task<Payment?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default);
 

@@ -97,6 +97,12 @@ builder.Services.AddHttpClient<CoreApiClient>(client => client.BaseAddress = api
 builder.Services.AddHttpClient<SalesApiClient>(client => client.BaseAddress = apiBaseAddress)
     .AddHttpMessageHandler<UserAccessTokenHandler>();
 
+builder.Services.AddHttpClient<SeriesApiClient>(client => client.BaseAddress = apiBaseAddress)
+    .AddHttpMessageHandler<UserAccessTokenHandler>();
+
+builder.Services.AddHttpClient<SaftApiClient>(client => client.BaseAddress = apiBaseAddress)
+    .AddHttpMessageHandler<UserAccessTokenHandler>();
+
 builder.Services.AddHttpClient<CatalogApiClient>(client => client.BaseAddress = apiBaseAddress)
     .AddHttpMessageHandler<UserAccessTokenHandler>();
 

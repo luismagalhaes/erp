@@ -10,6 +10,12 @@ public interface IPurchaseOrderService
         bool openOnly = false,
         CancellationToken cancellationToken = default);
 
+    /// <summary>
+    /// The listing as a query, so filtering, sorting and paging can be applied by the database on
+    /// behalf of the data grid.
+    /// </summary>
+    IQueryable<PurchaseOrderListItemDto> Query(Guid companyId);
+
     Task<PurchaseOrderDto?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default);
 
     /// <summary>What suppliers still owe, line by line. Feeds the goods receipt in phase 2.</summary>

@@ -16,6 +16,21 @@ public sealed class BrandStorage(AppDbContext dbContext) : IBrandStorage
             .OrderBy(x => x.Name)
             .ToListAsync(cancellationToken);
 
+    public IQueryable<BrandDto> Query(Guid companyId) =>
+        dbContext.Set<Brand>()
+            .AsNoTracking()
+            .Where(x => x.CompanyId == companyId)
+            // Member initialization, not a constructor call: EF Core only keeps the mapping between
+            // the DTO members and the columns this way, which is what lets the OData $filter and
+            // $orderby applied afterwards be translated to SQL.
+            .Select(x => new BrandDto
+            {
+                Id = x.Id,
+                Code = x.Code,
+                Name = x.Name,
+                IsActive = x.IsActive
+            });
+
     public Task<Brand?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default) =>
         dbContext.Set<Brand>().FirstOrDefaultAsync(x => x.Id == id, cancellationToken);
 
@@ -38,6 +53,22 @@ public sealed class ProductFamilyStorage(AppDbContext dbContext) : IProductFamil
             .Where(x => x.CompanyId == companyId)
             .OrderBy(x => x.Name)
             .ToListAsync(cancellationToken);
+
+    public IQueryable<ProductFamilyDto> Query(Guid companyId) =>
+        dbContext.Set<ProductFamily>()
+            .AsNoTracking()
+            .Where(x => x.CompanyId == companyId)
+            // Member initialization, not a constructor call: EF Core only keeps the mapping between
+            // the DTO members and the columns this way, which is what lets the OData $filter and
+            // $orderby applied afterwards be translated to SQL.
+            .Select(x => new ProductFamilyDto
+            {
+                Id = x.Id,
+                Code = x.Code,
+                Name = x.Name,
+                IsActive = x.IsActive,
+                SubfamilyCount = x.Subfamilies.Count
+            });
 
     public Task<ProductFamily?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default) =>
         dbContext.Set<ProductFamily>()
@@ -67,6 +98,23 @@ public sealed class ProductSubfamilyStorage(AppDbContext dbContext) : IProductSu
             .OrderBy(x => x.Family.Name)
             .ThenBy(x => x.Name)
             .ToListAsync(cancellationToken);
+
+    public IQueryable<ProductSubfamilyDto> Query(Guid companyId) =>
+        dbContext.Set<ProductSubfamily>()
+            .AsNoTracking()
+            .Where(x => x.CompanyId == companyId)
+            // Member initialization, not a constructor call: EF Core only keeps the mapping between
+            // the DTO members and the columns this way, which is what lets the OData $filter and
+            // $orderby applied afterwards be translated to SQL.
+            .Select(x => new ProductSubfamilyDto
+            {
+                Id = x.Id,
+                FamilyId = x.FamilyId,
+                FamilyName = x.Family.Name,
+                Code = x.Code,
+                Name = x.Name,
+                IsActive = x.IsActive
+            });
 
     public Task<ProductSubfamily?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default) =>
         dbContext.Set<ProductSubfamily>()
@@ -150,6 +198,28 @@ public sealed class CustomerStorage(AppDbContext dbContext) : ICustomerStorage
             .OrderBy(x => x.Name)
             .ToListAsync(cancellationToken);
 
+    public IQueryable<PartnerDto> Query(Guid companyId) =>
+        dbContext.Set<Customer>()
+            .AsNoTracking()
+            .Where(x => x.CompanyId == companyId)
+            // Member initialization, not a constructor call: EF Core only keeps the mapping between
+            // the DTO members and the columns this way, which is what lets the OData $filter and
+            // $orderby applied afterwards be translated to SQL.
+            .Select(x => new PartnerDto
+            {
+                Id = x.Id,
+                Code = x.Code,
+                Name = x.Name,
+                TaxId = x.TaxId,
+                Address = x.Address,
+                PostalCode = x.PostalCode,
+                City = x.City,
+                Country = x.Country,
+                Email = x.Email,
+                Phone = x.Phone,
+                IsActive = x.IsActive
+            });
+
     public Task<Customer?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default) =>
         dbContext.Set<Customer>().FirstOrDefaultAsync(x => x.Id == id, cancellationToken);
 
@@ -171,6 +241,28 @@ public sealed class SupplierStorage(AppDbContext dbContext) : ISupplierStorage
             .Where(x => x.CompanyId == companyId)
             .OrderBy(x => x.Name)
             .ToListAsync(cancellationToken);
+
+    public IQueryable<PartnerDto> Query(Guid companyId) =>
+        dbContext.Set<Supplier>()
+            .AsNoTracking()
+            .Where(x => x.CompanyId == companyId)
+            // Member initialization, not a constructor call: EF Core only keeps the mapping between
+            // the DTO members and the columns this way, which is what lets the OData $filter and
+            // $orderby applied afterwards be translated to SQL.
+            .Select(x => new PartnerDto
+            {
+                Id = x.Id,
+                Code = x.Code,
+                Name = x.Name,
+                TaxId = x.TaxId,
+                Address = x.Address,
+                PostalCode = x.PostalCode,
+                City = x.City,
+                Country = x.Country,
+                Email = x.Email,
+                Phone = x.Phone,
+                IsActive = x.IsActive
+            });
 
     public Task<Supplier?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default) =>
         dbContext.Set<Supplier>().FirstOrDefaultAsync(x => x.Id == id, cancellationToken);

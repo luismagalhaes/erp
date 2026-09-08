@@ -1,9 +1,9 @@
 @page "/self-billed-invoices"
 @attribute [Authorize]
-@implements IDisposable
 @using Microsoft.AspNetCore.Authorization
 @using Microsoft.AspNetCore.Components.Web
 @using MudBlazor
+@using Erp.Main.Components.Common
 @using Erp.Main.Models
 @using Erp.Main.Services
 @inject PurchasingApiClient Purchasing
@@ -13,218 +13,89 @@
 <PageTitle>Autofaturação</PageTitle>
 
 <MudStack Spacing="4">
-    <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center">
-        <MudStack Spacing="0">
-            <MudText Typo="Typo.h4">Autofaturação</MudText>
-            <MudText Typo="Typo.body2" Color="Color.Secondary">
-                Faturas que <strong>nós</strong> emitimos em nome do fornecedor, ao abrigo do artigo
-                36.º n.º 11 do CIVA — numeradas, assinadas e imutáveis, com SAF-T próprio.
-            </MudText>
-        </MudStack>
+    <PageHeader Title="Autofaturação">
+        <Actions>
+            <MudButton Variant="Variant.Filled" Color="Color.Primary"
+                       StartIcon="@Icons.Material.Filled.Add"
+                       Disabled="@(!Company.HasCompany)"
+                       OnClick="@(() => Navigation.NavigateTo("self-billed-invoices/new"))">
+                Emitir autofatura
+            </MudButton>
+        </Actions>
+    </PageHeader>
 
-        <MudButton Variant="Variant.Filled" Color="Color.Primary"
-                   StartIcon="@Icons.Material.Filled.Add"
-                   Disabled="@(!Company.HasCompany)"
-                   OnClick="@(() => Navigation.NavigateTo("self-billed-invoices/new"))">
-            Emitir autofatura
-        </MudButton>
-    </MudStack>
-
-    @if (!string.IsNullOrWhiteSpace(_error))
-    {
-        <MudAlert Severity="Severity.Error" Dense="true">@_error</MudAlert>
-    }
-
-    @if (!Company.HasCompany)
-    {
-        <MudAlert Severity="Severity.Info">Escolha uma empresa no cabeçalho.</MudAlert>
-    }
-    else
-    {
-        @if (PendingAcceptance > 0)
-        {
-            <MudAlert Severity="Severity.Warning" Dense="true">
-                @PendingAcceptance documento(s) por aceitar pelo fornecedor. Sem a aceitação de cada
-                documento o regime não está cumprido.
-            </MudAlert>
-        }
-
-        <MudGrid>
-            <MudItem xs="6" md="3">
-                <MudPaper Elevation="1" Class="pa-3">
-                    <MudText Typo="Typo.caption" Color="Color.Secondary">Base tributável</MudText>
-                    <MudText Typo="Typo.h6">@Live.Sum(x => x.NetTotal).ToString("N2")</MudText>
-                </MudPaper>
-            </MudItem>
-            <MudItem xs="6" md="3">
-                <MudPaper Elevation="1" Class="pa-3">
-                    <MudText Typo="Typo.caption" Color="Color.Secondary">IVA</MudText>
-                    <MudText Typo="Typo.h6" Color="Color.Primary">
-                        @Live.Sum(x => x.TaxPayable).ToString("N2")
-                    </MudText>
-                </MudPaper>
-            </MudItem>
-            <MudItem xs="6" md="3">
-                <MudPaper Elevation="1" Class="pa-3">
-                    <MudText Typo="Typo.caption" Color="Color.Secondary">Total</MudText>
-                    <MudText Typo="Typo.h6">@Live.Sum(x => x.GrossTotal).ToString("N2")</MudText>
-                </MudPaper>
-            </MudItem>
-            <MudItem xs="6" md="3">
-                <MudPaper Elevation="1" Class="pa-3">
-                    <MudText Typo="Typo.caption" Color="Color.Secondary">Documentos</MudText>
-                    <MudText Typo="Typo.h6">@Live.Count()</MudText>
-                </MudPaper>
-            </MudItem>
-        </MudGrid>
-
-        <MudPaper Elevation="1" Class="pa-2">
-            <MudTable Items="Visible" Hover="true" Striped="true" Dense="true" Loading="_loading"
-                      Breakpoint="Breakpoint.Sm">
-                <ToolBarContent>
-                    <MudTextField @bind-Value="_filter" @bind-Value:after="StateHasChanged" Immediate="true"
-                                  Placeholder="Procurar número ou fornecedor" Adornment="Adornment.Start"
-                                  AdornmentIcon="@Icons.Material.Filled.Search" Margin="Margin.Dense"
-                                  Class="mt-0" Style="max-width: 360px;" />
-                </ToolBarContent>
-                <HeaderContent>
-                    <MudTh>Número</MudTh>
-                    <MudTh>ATCUD</MudTh>
-                    <MudTh>Data</MudTh>
-                    <MudTh>Fornecedor</MudTh>
-                    <MudTh>Aceitação</MudTh>
-                    <MudTh Style="text-align: right;">Base</MudTh>
-                    <MudTh Style="text-align: right;">IVA</MudTh>
-                    <MudTh Style="text-align: right;">Total</MudTh>
-                    <MudTh Style="text-align: right;">Ações</MudTh>
-                </HeaderContent>
-                <RowTemplate>
-                    <MudTd DataLabel="Número">
-                        <MudStack Row="true" Spacing="1" AlignItems="AlignItems.Center">
-                            <MudText Typo="Typo.body2" Style="font-family: monospace;">
-                                <strong>@context.DocumentNumber</strong>
-                            </MudText>
-                            @if (context.IsVoided)
-                            {
-                                <MudChip T="string" Size="Size.Small" Color="Color.Error" Variant="Variant.Text">
-                                    Anulada
-                                </MudChip>
-                            }
-                        </MudStack>
-                    </MudTd>
-                    <MudTd DataLabel="ATCUD">
-                        <MudText Typo="Typo.caption" Style="font-family: monospace;">@context.Atcud</MudText>
-                    </MudTd>
-                    <MudTd DataLabel="Data">@context.IssueDate.ToString("yyyy-MM-dd")</MudTd>
-                    <MudTd DataLabel="Fornecedor">
-                        <MudStack Spacing="0">
-                            <MudText Typo="Typo.body2">@context.SupplierName</MudText>
-                            <MudText Typo="Typo.caption" Color="Color.Secondary">@context.SupplierTaxId</MudText>
-                        </MudStack>
-                    </MudTd>
-                    <MudTd DataLabel="Aceitação">
-                        @if (context.IsAccepted)
-                        {
-                            <MudChip T="string" Size="Size.Small" Color="Color.Success" Variant="Variant.Text">
-                                Aceite
+    <DataGrid T="SelfBilledInvoiceListItem"
+              LoadAsync="@((companyId, query, ct) => Purchasing.QuerySelfBilledInvoicesAsync(companyId, query, ct))"
+              SearchFields="SearchFields" DefaultOrderBy="IssueDate desc,DocumentNumber desc"
+              SearchPlaceholder="Procurar número, fornecedor ou NIF"
+              EmptyIcon="@Icons.Material.Filled.ReceiptLong"
+              EmptyTitle="Sem autofaturas para mostrar"
+              EmptyDescription="Ajuste os filtros ou emita a primeira autofatura."
+              ItemsLabel="autofaturas"
+              LoadErrorMessage="Não foi possível carregar as autofaturas">
+        <Columns>
+            <PropertyColumn Property="x => x.DocumentNumber" Title="Número" CellClass="erp-mono" />
+            <PropertyColumn Property="x => x.Atcud" Title="ATCUD" CellClass="erp-mono" />
+            <PropertyColumn Property="x => x.IssueDate" Title="Data" Format="yyyy-MM-dd" />
+            <PropertyColumn Property="x => x.SupplierName" Title="Fornecedor" />
+            <PropertyColumn Property="x => x.SupplierTaxId" Title="NIF" CellClass="erp-mono" />
+            <PropertyColumn Property="x => x.IsAccepted" Title="Aceitação">
+                <CellTemplate>
+                    @if (context.Item.IsVoided)
+                    {
+                        <MudText Typo="Typo.body2" Color="Color.Secondary">—</MudText>
+                    }
+                    else if (context.Item.IsAccepted)
+                    {
+                        <MudChip T="string" Size="Size.Small" Color="Color.Success" Variant="Variant.Text">
+                            Aceite
+                        </MudChip>
+                    }
+                    else
+                    {
+                        <MudTooltip Text="O artigo 36.º n.º 11 exige a aceitação de cada documento">
+                            <MudChip T="string" Size="Size.Small" Color="Color.Warning" Variant="Variant.Text">
+                                Por aceitar
                             </MudChip>
-                        }
-                        else if (!context.IsVoided)
-                        {
-                            <MudTooltip Text="O artigo 36.º n.º 11 exige a aceitação de cada documento">
-                                <MudChip T="string" Size="Size.Small" Color="Color.Warning" Variant="Variant.Text">
-                                    Por aceitar
-                                </MudChip>
-                            </MudTooltip>
-                        }
-                        else
-                        {
-                            <MudText Typo="Typo.body2" Color="Color.Secondary">—</MudText>
-                        }
-                    </MudTd>
-                    <MudTd DataLabel="Base" Style="text-align: right;">@context.NetTotal.ToString("N2")</MudTd>
-                    <MudTd DataLabel="IVA" Style="text-align: right;">@context.TaxPayable.ToString("N2")</MudTd>
-                    <MudTd DataLabel="Total" Style="text-align: right;">
-                        <strong>@context.GrossTotal.ToString("N2")</strong>
-                    </MudTd>
-                    <MudTd DataLabel="Ações" Style="text-align: right;">
-                        <MudTooltip Text="Abrir">
-                            <MudIconButton Size="Size.Small" Icon="@Icons.Material.Filled.Visibility"
-                                           OnClick="@(() => Navigation.NavigateTo($"self-billed-invoices/{context.Id}"))" />
                         </MudTooltip>
-                        <MudTooltip Text="Imprimir">
-                            <MudIconButton Size="Size.Small" Icon="@Icons.Material.Filled.Print"
-                                           OnClick="@(() => Navigation.NavigateTo($"self-billed-invoices/{context.Id}/print"))" />
-                        </MudTooltip>
-                    </MudTd>
-                </RowTemplate>
-                <NoRecordsContent>
-                    <MudText Typo="Typo.body2" Color="Color.Secondary">
-                        Ainda não foram emitidas autofaturas.
-                    </MudText>
-                </NoRecordsContent>
-            </MudTable>
-        </MudPaper>
-    }
+                    }
+                </CellTemplate>
+            </PropertyColumn>
+            <PropertyColumn Property="x => x.NetTotal" Title="Base" Format="N2"
+                            CellClass="erp-numeric" HeaderClass="erp-numeric" />
+            <PropertyColumn Property="x => x.TaxPayable" Title="IVA" Format="N2"
+                            CellClass="erp-numeric" HeaderClass="erp-numeric" />
+            <PropertyColumn Property="x => x.GrossTotal" Title="Total" Format="N2"
+                            CellClass="erp-numeric" HeaderClass="erp-numeric" />
+            <PropertyColumn Property="x => x.Status" Title="Estado">
+                <CellTemplate>
+                    <MudChip T="string" Size="Size.Small" Variant="Variant.Text"
+                             Color="@(context.Item.IsVoided ? Color.Error : Color.Success)">
+                        @(context.Item.IsVoided ? "Anulada" : "Emitida")
+                    </MudChip>
+                </CellTemplate>
+            </PropertyColumn>
+            <TemplateColumn Title="" Sortable="false" Filterable="false" Hideable="false"
+                            StickyRight="true"
+                            CellClass="erp-numeric" HeaderClass="erp-numeric">
+                <CellTemplate>
+                    <MudMenu Icon="@Icons.Material.Filled.MoreVert" Size="Size.Small"
+                             AnchorOrigin="Origin.BottomRight" TransformOrigin="Origin.TopRight">
+                        <MudMenuItem Icon="@Icons.Material.Filled.Visibility"
+                                     OnClick="@(() => Navigation.NavigateTo($"self-billed-invoices/{context.Item.Id}"))">
+                            Abrir autofatura
+                        </MudMenuItem>
+                        <MudMenuItem Icon="@Icons.Material.Filled.Print"
+                                     OnClick="@(() => Navigation.NavigateTo($"self-billed-invoices/{context.Item.Id}/print"))">
+                            Imprimir
+                        </MudMenuItem>
+                    </MudMenu>
+                </CellTemplate>
+            </TemplateColumn>
+        </Columns>
+    </DataGrid>
 </MudStack>
 
 @code {
-    private bool _loading;
-    private string? _error;
-    private string _filter = string.Empty;
-
-    private List<SelfBilledInvoiceListItem> _invoices = [];
-
-    /// <summary>A voided document is worth nothing, so it stays out of the totals.</summary>
-    private IEnumerable<SelfBilledInvoiceListItem> Live => _invoices.Where(x => !x.IsVoided);
-
-    /// <summary>Without acceptance the document exists but the regime is not satisfied.</summary>
-    private int PendingAcceptance => Live.Count(x => !x.IsAccepted);
-
-    private IEnumerable<SelfBilledInvoiceListItem> Visible => _invoices
-        .Where(invoice => string.IsNullOrWhiteSpace(_filter)
-                          || invoice.DocumentNumber.Contains(_filter, StringComparison.OrdinalIgnoreCase)
-                          || invoice.SupplierName.Contains(_filter, StringComparison.OrdinalIgnoreCase));
-
-    protected override async Task OnInitializedAsync()
-    {
-        Company.Changed += OnCompanyChanged;
-        await Company.EnsureLoadedAsync();
-        await LoadAsync();
-    }
-
-    private async void OnCompanyChanged() => await InvokeAsync(LoadAsync);
-
-    private async Task LoadAsync()
-    {
-        if (!Company.HasCompany)
-        {
-            _invoices = [];
-            _error = Company.LoadError;
-            StateHasChanged();
-            return;
-        }
-
-        _loading = true;
-        _error = null;
-        StateHasChanged();
-
-        try
-        {
-            var (items, error) = await Purchasing.GetSelfBilledInvoicesAsync(Company.SelectedCompanyId);
-            _invoices = [.. items];
-            _error = error;
-        }
-        catch (Exception ex)
-        {
-            _error = $"Não foi possível carregar as autofaturas: {ex.Message}";
-        }
-        finally
-        {
-            _loading = false;
-            StateHasChanged();
-        }
-    }
-
-    public void Dispose() => Company.Changed -= OnCompanyChanged;
+    private static readonly string[] SearchFields = ["DocumentNumber", "SupplierName", "SupplierTaxId"];
 }

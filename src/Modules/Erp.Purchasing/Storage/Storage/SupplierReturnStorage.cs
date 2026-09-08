@@ -1,4 +1,5 @@
 using Erp.Purchasing.Domain;
+using Erp.Purchasing.Infrastructure.Contracts;
 using Erp.Purchasing.Infrastructure.Storage;
 using Erp.Purchasing.Storage.Data;
 using Microsoft.EntityFrameworkCore;
@@ -8,6 +9,23 @@ namespace Erp.Purchasing.Storage.Storage;
 
 public sealed class SupplierReturnStorage(AppDbContext dbContext) : ISupplierReturnStorage
 {
+    public IQueryable<SupplierReturnListItemDto> Query(Guid companyId) =>
+        dbContext.Set<SupplierReturn>()
+            .AsNoTracking()
+            .Where(x => x.CompanyId == companyId)
+            .Select(x => new SupplierReturnListItemDto
+            {
+                Id = x.Id,
+                Number = x.Number,
+                Status = x.Status == SupplierReturnStatus.Voided ? "Voided" : "Returned",
+                ReturnDate = x.ReturnDate,
+                SupplierName = x.Supplier.Name,
+                Reason = x.Reason,
+                LineCount = x.Lines.Count,
+                TotalCost = x.TotalCost,
+                IsVoided = x.Status == SupplierReturnStatus.Voided
+            });
+
     public async Task<IReadOnlyList<SupplierReturn>> GetAllAsync(
         Guid companyId,
         Guid? supplierId = null,

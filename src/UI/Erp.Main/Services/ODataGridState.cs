@@ -42,7 +42,14 @@ public static class ODataGridState
             query.OrderBy(sort.SortBy, sort.Descending);
 
         if (state.SortDefinitions.Count == 0)
-            query.OrderBy(defaultOrderBy, descending: false);
+        {
+            // A page that needs its rows newest first passes the direction along with the member,
+            // so the default order is taken as written instead of being forced ascending.
+            if (defaultOrderBy.Contains(' ', StringComparison.Ordinal))
+                query.OrderBy(defaultOrderBy);
+            else
+                query.OrderBy(defaultOrderBy, descending: false);
+        }
 
         return query;
     }

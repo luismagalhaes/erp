@@ -9,6 +9,7 @@
 @inject PurchasingApiClient Purchasing
 @inject CatalogApiClient Catalog
 @inject SalesApiClient Sales
+@inject SeriesApiClient SeriesApi
 @inject CompanyState Company
 @inject NavigationManager Navigation
 @inject ISnackbar Snackbar
@@ -359,7 +360,7 @@
 
             // Only series marked for self-billing, and only those the tax authority has validated:
             // anything else would put these documents in the wrong chain and the wrong file.
-            var series = await Sales.GetSeriesAsync(Company.SelectedCompanyId);
+            var series = await SeriesApi.GetSeriesAsync(Company.SelectedCompanyId);
             _series = [.. series.Where(x => x.SelfBilling && x.CanIssue)];
             _seriesId ??= _series.FirstOrDefault()?.Id;
 

@@ -1,9 +1,9 @@
 @page "/supplier-invoices"
 @attribute [Authorize]
-@implements IDisposable
 @using Microsoft.AspNetCore.Authorization
 @using Microsoft.AspNetCore.Components.Web
 @using MudBlazor
+@using Erp.Main.Components.Common
 @using Erp.Main.Models
 @using Erp.Main.Services
 @inject PurchasingApiClient Purchasing
@@ -13,210 +13,90 @@
 <PageTitle>Faturas de fornecedor</PageTitle>
 
 <MudStack Spacing="4">
-    <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center">
-        <MudStack Spacing="0">
-            <MudText Typo="Typo.h4">Faturas de fornecedor</MudText>
-            <MudText Typo="Typo.body2" Color="Color.Secondary">
-                Documentos que <strong>eles</strong> emitiram e nós escrituramos. O número, a data e o
-                ATCUD são deles — daqui sai o IVA dedutível.
-            </MudText>
-        </MudStack>
+    <PageHeader Title="Faturas de fornecedor">
+        <Actions>
+            <MudButton Variant="Variant.Filled" Color="Color.Primary"
+                       StartIcon="@Icons.Material.Filled.Add"
+                       Disabled="@(!Company.HasCompany)"
+                       OnClick="@(() => Navigation.NavigateTo("supplier-invoices/new"))">
+                Registar fatura
+            </MudButton>
+        </Actions>
+    </PageHeader>
 
-        <MudButton Variant="Variant.Filled" Color="Color.Primary"
-                   StartIcon="@Icons.Material.Filled.Add"
-                   Disabled="@(!Company.HasCompany)"
-                   OnClick="@(() => Navigation.NavigateTo("supplier-invoices/new"))">
-            Registar fatura
-        </MudButton>
-    </MudStack>
-
-    @if (!string.IsNullOrWhiteSpace(_error))
-    {
-        <MudAlert Severity="Severity.Error" Dense="true">@_error</MudAlert>
-    }
-
-    @if (!Company.HasCompany)
-    {
-        <MudAlert Severity="Severity.Info">Escolha uma empresa no cabeçalho.</MudAlert>
-    }
-    else
-    {
-        <MudGrid>
-            <MudItem xs="6" md="3">
-                <MudPaper Elevation="1" Class="pa-3">
-                    <MudText Typo="Typo.caption" Color="Color.Secondary">Base tributável</MudText>
-                    <MudText Typo="Typo.h6">@Signed(x => x.NetTotal).ToString("N2")</MudText>
-                </MudPaper>
-            </MudItem>
-            <MudItem xs="6" md="3">
-                <MudPaper Elevation="1" Class="pa-3">
-                    <MudText Typo="Typo.caption" Color="Color.Secondary">IVA dedutível</MudText>
-                    <MudText Typo="Typo.h6" Color="Color.Primary">
-                        @Signed(x => x.TaxTotal).ToString("N2")
+    <DataGrid T="PurchaseInvoiceListItem"
+              LoadAsync="@((companyId, query, ct) => Purchasing.QueryInvoicesAsync(companyId, query, ct))"
+              SearchFields="SearchFields" DefaultOrderBy="SupplierDocumentDate desc,SupplierDocumentNumber desc"
+              SearchPlaceholder="Procurar número, fornecedor ou NIF"
+              EmptyIcon="@Icons.Material.Filled.ReceiptLong"
+              EmptyTitle="Sem faturas para mostrar"
+              EmptyDescription="Ajuste os filtros ou registe a primeira fatura de fornecedor."
+              ItemsLabel="faturas"
+              LoadErrorMessage="Não foi possível carregar as faturas">
+        <Columns>
+            <PropertyColumn Property="x => x.DocumentType" Title="Tipo" />
+            <PropertyColumn Property="x => x.SupplierDocumentNumber" Title="Número" CellClass="erp-mono" />
+            <PropertyColumn Property="x => x.SupplierDocumentDate" Title="Data" Format="yyyy-MM-dd" />
+            <PropertyColumn Property="x => x.DueDate" Title="Vencimento">
+                <CellTemplate>
+                    <MudText Typo="Typo.body2" Color="@DueColor(context.Item)">
+                        @(context.Item.DueDate?.ToString("yyyy-MM-dd") ?? "—")
                     </MudText>
-                </MudPaper>
-            </MudItem>
-            <MudItem xs="6" md="3">
-                <MudPaper Elevation="1" Class="pa-3">
-                    <MudText Typo="Typo.caption" Color="Color.Secondary">Total</MudText>
-                    <MudText Typo="Typo.h6">@Signed(x => x.GrossTotal).ToString("N2")</MudText>
-                </MudPaper>
-            </MudItem>
-            <MudItem xs="6" md="3">
-                <MudPaper Elevation="1" Class="pa-3">
-                    <MudText Typo="Typo.caption" Color="Color.Secondary">Documentos</MudText>
-                    <MudText Typo="Typo.h6">@LiveInvoices.Count()</MudText>
-                </MudPaper>
-            </MudItem>
-        </MudGrid>
-
-        <MudPaper Elevation="1" Class="pa-2">
-            <MudTable Items="Visible" Hover="true" Striped="true" Dense="true" Loading="_loading"
-                      Breakpoint="Breakpoint.Sm">
-                <ToolBarContent>
-                    <MudTextField @bind-Value="_filter" @bind-Value:after="StateHasChanged" Immediate="true"
-                                  Placeholder="Procurar número ou fornecedor" Adornment="Adornment.Start"
-                                  AdornmentIcon="@Icons.Material.Filled.Search" Margin="Margin.Dense"
-                                  Class="mt-0" Style="max-width: 360px;" />
-                </ToolBarContent>
-                <HeaderContent>
-                    <MudTh>Tipo</MudTh>
-                    <MudTh>Número</MudTh>
-                    <MudTh>Data</MudTh>
-                    <MudTh>Vencimento</MudTh>
-                    <MudTh>Fornecedor</MudTh>
-                    <MudTh Style="text-align: right;">Base</MudTh>
-                    <MudTh Style="text-align: right;">IVA</MudTh>
-                    <MudTh Style="text-align: right;">Total</MudTh>
-                    <MudTh Style="text-align: right;">Ações</MudTh>
-                </HeaderContent>
-                <RowTemplate>
-                    <MudTd DataLabel="Tipo">
-                        <MudChip T="string" Size="Size.Small" Variant="Variant.Text">
-                            @context.DocumentType
+                </CellTemplate>
+            </PropertyColumn>
+            <PropertyColumn Property="x => x.SupplierName" Title="Fornecedor" />
+            <PropertyColumn Property="x => x.SupplierTaxId" Title="NIF" CellClass="erp-mono" />
+            <PropertyColumn Property="x => x.NetTotal" Title="Base" Format="N2"
+                            CellClass="erp-numeric" HeaderClass="erp-numeric" />
+            <PropertyColumn Property="x => x.TaxTotal" Title="IVA" Format="N2"
+                            CellClass="erp-numeric" HeaderClass="erp-numeric" />
+            <PropertyColumn Property="x => x.GrossTotal" Title="Total" Format="N2"
+                            CellClass="erp-numeric" HeaderClass="erp-numeric" />
+            <PropertyColumn Property="x => x.ReverseCharge" Title="Autoliquidação">
+                <CellTemplate>
+                    @if (context.Item.ReverseCharge)
+                    {
+                        <MudChip T="string" Size="Size.Small" Color="Color.Warning" Variant="Variant.Text">
+                            Autoliq.
                         </MudChip>
-                    </MudTd>
-                    <MudTd DataLabel="Número">
-                        <MudStack Row="true" Spacing="1" AlignItems="AlignItems.Center">
-                            <MudText Typo="Typo.body2" Style="font-family: monospace;">
-                                <strong>@context.SupplierDocumentNumber</strong>
-                            </MudText>
-                            @if (context.IsVoided)
-                            {
-                                <MudChip T="string" Size="Size.Small" Color="Color.Error" Variant="Variant.Text">
-                                    Anulada
-                                </MudChip>
-                            }
-                            @if (context.ReverseCharge)
-                            {
-                                <MudTooltip Text="IVA autoliquidado por nós">
-                                    <MudChip T="string" Size="Size.Small" Color="Color.Warning" Variant="Variant.Text">
-                                        Autoliq.
-                                    </MudChip>
-                                </MudTooltip>
-                            }
-                        </MudStack>
-                    </MudTd>
-                    <MudTd DataLabel="Data">@context.SupplierDocumentDate.ToString("yyyy-MM-dd")</MudTd>
-                    <MudTd DataLabel="Vencimento">
-                        <MudText Typo="Typo.body2" Color="@DueColor(context)">
-                            @(context.DueDate?.ToString("yyyy-MM-dd") ?? "—")
-                        </MudText>
-                    </MudTd>
-                    <MudTd DataLabel="Fornecedor">
-                        <MudStack Spacing="0">
-                            <MudText Typo="Typo.body2">@context.SupplierName</MudText>
-                            <MudText Typo="Typo.caption" Color="Color.Secondary">@context.SupplierTaxId</MudText>
-                        </MudStack>
-                    </MudTd>
-                    <MudTd DataLabel="Base" Style="text-align: right;">@context.NetTotal.ToString("N2")</MudTd>
-                    <MudTd DataLabel="IVA" Style="text-align: right;">@context.TaxTotal.ToString("N2")</MudTd>
-                    <MudTd DataLabel="Total" Style="text-align: right;">
-                        <strong>@context.GrossTotal.ToString("N2")</strong>
-                    </MudTd>
-                    <MudTd DataLabel="Ações" Style="text-align: right;">
-                        <MudTooltip Text="Abrir">
-                            <MudIconButton Size="Size.Small" Icon="@Icons.Material.Filled.Visibility"
-                                           OnClick="@(() => Navigation.NavigateTo($"supplier-invoices/{context.Id}"))" />
-                        </MudTooltip>
-                    </MudTd>
-                </RowTemplate>
-                <NoRecordsContent>
-                    <MudText Typo="Typo.body2" Color="Color.Secondary">
-                        Ainda não há faturas de fornecedor registadas.
-                    </MudText>
-                </NoRecordsContent>
-            </MudTable>
-        </MudPaper>
-    }
+                    }
+                    else
+                    {
+                        <MudText Typo="Typo.body2">—</MudText>
+                    }
+                </CellTemplate>
+            </PropertyColumn>
+            <PropertyColumn Property="x => x.Status" Title="Estado">
+                <CellTemplate>
+                    <MudChip T="string" Size="Size.Small" Variant="Variant.Text"
+                             Color="@(context.Item.IsVoided ? Color.Error : Color.Success)">
+                        @(context.Item.IsVoided ? "Anulada" : "Escriturada")
+                    </MudChip>
+                </CellTemplate>
+            </PropertyColumn>
+            <TemplateColumn Title="" Sortable="false" Filterable="false" Hideable="false"
+                            StickyRight="true"
+                            CellClass="erp-numeric" HeaderClass="erp-numeric">
+                <CellTemplate>
+                    <MudMenu Icon="@Icons.Material.Filled.MoreVert" Size="Size.Small"
+                             AnchorOrigin="Origin.BottomRight" TransformOrigin="Origin.TopRight">
+                        <MudMenuItem Icon="@Icons.Material.Filled.Visibility"
+                                     OnClick="@(() => Navigation.NavigateTo($"supplier-invoices/{context.Item.Id}"))">
+                            Abrir fatura
+                        </MudMenuItem>
+                    </MudMenu>
+                </CellTemplate>
+            </TemplateColumn>
+        </Columns>
+    </DataGrid>
 </MudStack>
 
 @code {
-    private bool _loading;
-    private string? _error;
-    private string _filter = string.Empty;
+    private static readonly string[] SearchFields = ["SupplierDocumentNumber", "SupplierName", "SupplierTaxId"];
 
-    private List<PurchaseInvoiceListItem> _invoices = [];
-
-    /// <summary>Voided records deduct nothing, so they stay out of the totals.</summary>
-    private IEnumerable<PurchaseInvoiceListItem> LiveInvoices => _invoices.Where(x => !x.IsVoided);
-
-    /// <summary>
-    /// Adds up with the sign of each document type. A credit note gives value back, so it counts
-    /// the other way — its own amounts stay positive, as they appear on the supplier's paper.
-    /// </summary>
-    private decimal Signed(Func<PurchaseInvoiceListItem, decimal> amount) =>
-        LiveInvoices.Sum(invoice => PurchaseDocumentTypes.Signed(invoice.DocumentType, amount(invoice)));
-
-    private IEnumerable<PurchaseInvoiceListItem> Visible => _invoices
-        .Where(invoice => string.IsNullOrWhiteSpace(_filter)
-                          || invoice.SupplierDocumentNumber.Contains(_filter, StringComparison.OrdinalIgnoreCase)
-                          || invoice.SupplierName.Contains(_filter, StringComparison.OrdinalIgnoreCase));
-
-    protected override async Task OnInitializedAsync()
-    {
-        Company.Changed += OnCompanyChanged;
-        await Company.EnsureLoadedAsync();
-        await LoadAsync();
-    }
-
-    private async void OnCompanyChanged() => await InvokeAsync(LoadAsync);
-
-    private async Task LoadAsync()
-    {
-        if (!Company.HasCompany)
-        {
-            _invoices = [];
-            _error = Company.LoadError;
-            StateHasChanged();
-            return;
-        }
-
-        _loading = true;
-        _error = null;
-        StateHasChanged();
-
-        try
-        {
-            var (items, error) = await Purchasing.GetInvoicesAsync(Company.SelectedCompanyId);
-            _invoices = [.. items];
-            _error = error;
-        }
-        catch (Exception ex)
-        {
-            _error = $"Não foi possível carregar as faturas: {ex.Message}";
-        }
-        finally
-        {
-            _loading = false;
-            StateHasChanged();
-        }
-    }
-
+    /// <summary>An unpaid invoice past its date is worth pointing at; a voided one is owed nothing.</summary>
     private static Color DueColor(PurchaseInvoiceListItem invoice) =>
         !invoice.IsVoided && invoice.DueDate is { } due && due < DateOnly.FromDateTime(DateTime.Today)
             ? Color.Error
             : Color.Default;
-
-    public void Dispose() => Company.Changed -= OnCompanyChanged;
 }

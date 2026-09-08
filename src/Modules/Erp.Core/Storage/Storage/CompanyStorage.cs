@@ -1,4 +1,5 @@
 using Erp.Core.Domain;
+using Erp.Core.Infrastructure.Contracts;
 using Erp.Core.Infrastructure.Storage;
 using Erp.Core.Storage.Data;
 using Microsoft.EntityFrameworkCore;
@@ -15,6 +16,21 @@ public sealed class CompanyStorage(AppDbContext dbContext) : ICompanyStorage
             .OrderBy(x => x.Name)
             .ToListAsync(cancellationToken);
     }
+
+    public IQueryable<CompanyListItemDto> Query() =>
+        dbContext.Set<Company>()
+            .AsNoTracking()
+            // Member initialization, not a constructor call: EF Core only keeps the mapping between
+            // the DTO members and the columns this way, which is what lets the OData $filter and
+            // $orderby applied afterwards be translated to SQL.
+            .Select(x => new CompanyListItemDto
+            {
+                Id = x.Id,
+                Name = x.Name,
+                LegalName = x.LegalName,
+                TaxId = x.TaxId,
+                IsActive = x.IsActive
+            });
 
     public async Task<Company?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
     {

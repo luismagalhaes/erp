@@ -1,9 +1,9 @@
 @page "/goods-receipts"
 @attribute [Authorize]
-@implements IDisposable
 @using Microsoft.AspNetCore.Authorization
 @using Microsoft.AspNetCore.Components.Web
 @using MudBlazor
+@using Erp.Main.Components.Common
 @using Erp.Main.Models
 @using Erp.Main.Services
 @inject PurchasingApiClient Purchasing
@@ -13,140 +13,66 @@
 <PageTitle>Receções de mercadoria</PageTitle>
 
 <MudStack Spacing="4">
-    <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center">
-        <MudStack Spacing="0">
-            <MudText Typo="Typo.h4">Receções</MudText>
-            <MudText Typo="Typo.body2" Color="Color.Secondary">
-                Mercadoria que chegou de fornecedores. É aqui que a compra dá entrada em stock — a guia
-                que veio com a mercadoria é do fornecedor e fica registada como referência.
-            </MudText>
-        </MudStack>
+    <PageHeader Title="Receções">
+        <Actions>
+            <MudButton Variant="Variant.Filled" Color="Color.Primary"
+                       StartIcon="@Icons.Material.Filled.MoveToInbox"
+                       Disabled="@(!Company.HasCompany)"
+                       OnClick="@(() => Navigation.NavigateTo("goods-receipts/new"))">
+                Receber mercadoria
+            </MudButton>
+        </Actions>
+    </PageHeader>
 
-        <MudButton Variant="Variant.Filled" Color="Color.Primary"
-                   StartIcon="@Icons.Material.Filled.MoveToInbox"
-                   Disabled="@(!Company.HasCompany)"
-                   OnClick="@(() => Navigation.NavigateTo("goods-receipts/new"))">
-            Receber mercadoria
-        </MudButton>
-    </MudStack>
-
-    @if (!string.IsNullOrWhiteSpace(_error))
-    {
-        <MudAlert Severity="Severity.Error" Dense="true">@_error</MudAlert>
-    }
-
-    @if (!Company.HasCompany)
-    {
-        <MudAlert Severity="Severity.Info">Escolha uma empresa no cabeçalho.</MudAlert>
-    }
-    else
-    {
-        <MudPaper Elevation="1" Class="pa-2">
-            <MudTable Items="Visible" Hover="true" Striped="true" Dense="true" Loading="_loading"
-                      Breakpoint="Breakpoint.Sm">
-                <ToolBarContent>
-                    <MudTextField @bind-Value="_filter" @bind-Value:after="StateHasChanged" Immediate="true"
-                                  Placeholder="Procurar número, fornecedor ou guia" Adornment="Adornment.Start"
-                                  AdornmentIcon="@Icons.Material.Filled.Search" Margin="Margin.Dense"
-                                  Class="mt-0" Style="max-width: 400px;" />
-                </ToolBarContent>
-                <HeaderContent>
-                    <MudTh>Número</MudTh>
-                    <MudTh>Data</MudTh>
-                    <MudTh>Fornecedor</MudTh>
-                    <MudTh>Documento do fornecedor</MudTh>
-                    <MudTh Style="text-align: right;">Linhas</MudTh>
-                    <MudTh Style="text-align: right;">Custo</MudTh>
-                    <MudTh>Estado</MudTh>
-                    <MudTh Style="text-align: right;">Ações</MudTh>
-                </HeaderContent>
-                <RowTemplate>
-                    <MudTd DataLabel="Número">
-                        <MudText Typo="Typo.body2" Style="font-family: monospace;">
-                            <strong>@context.Number</strong>
-                        </MudText>
-                    </MudTd>
-                    <MudTd DataLabel="Data">@context.ReceiptDate.ToString("yyyy-MM-dd")</MudTd>
-                    <MudTd DataLabel="Fornecedor">@context.SupplierName</MudTd>
-                    <MudTd DataLabel="Documento do fornecedor">
-                        @(string.IsNullOrWhiteSpace(context.SupplierDocumentNumber) ? "—" : context.SupplierDocumentNumber)
-                    </MudTd>
-                    <MudTd DataLabel="Linhas" Style="text-align: right;">@context.LineCount</MudTd>
-                    <MudTd DataLabel="Custo" Style="text-align: right;">@context.TotalCost.ToString("N2")</MudTd>
-                    <MudTd DataLabel="Estado">
-                        <MudChip T="string" Size="Size.Small" Variant="Variant.Text"
-                                 Color="@(context.IsVoided ? Color.Error : Color.Success)">
-                            @(context.IsVoided ? "Anulada" : "Recebida")
-                        </MudChip>
-                    </MudTd>
-                    <MudTd DataLabel="Ações" Style="text-align: right;">
-                        <MudTooltip Text="Abrir">
-                            <MudIconButton Size="Size.Small" Icon="@Icons.Material.Filled.Visibility"
-                                           OnClick="@(() => Navigation.NavigateTo($"goods-receipts/{context.Id}"))" />
-                        </MudTooltip>
-                    </MudTd>
-                </RowTemplate>
-                <NoRecordsContent>
-                    <MudText Typo="Typo.body2" Color="Color.Secondary">Ainda não há receções.</MudText>
-                </NoRecordsContent>
-            </MudTable>
-        </MudPaper>
-    }
+    <DataGrid T="GoodsReceiptListItem"
+              LoadAsync="@((companyId, query, ct) => Purchasing.QueryReceiptsAsync(companyId, query, ct))"
+              SearchFields="SearchFields" DefaultOrderBy="ReceiptDate desc,Number desc"
+              SearchPlaceholder="Procurar número, fornecedor ou guia"
+              EmptyIcon="@Icons.Material.Filled.MoveToInbox"
+              EmptyTitle="Sem receções para mostrar"
+              EmptyDescription="Ajuste os filtros ou registe a primeira receção."
+              ItemsLabel="receções"
+              LoadErrorMessage="Não foi possível carregar as receções">
+        <Columns>
+            <PropertyColumn Property="x => x.Number" Title="Número" CellClass="erp-mono" />
+            <PropertyColumn Property="x => x.ReceiptDate" Title="Data" Format="yyyy-MM-dd" />
+            <PropertyColumn Property="x => x.SupplierName" Title="Fornecedor" />
+            <PropertyColumn Property="x => x.SupplierDocumentNumber" Title="Documento do fornecedor">
+                <CellTemplate>
+                    @(string.IsNullOrWhiteSpace(context.Item.SupplierDocumentNumber)
+                        ? "—"
+                        : context.Item.SupplierDocumentNumber)
+                </CellTemplate>
+            </PropertyColumn>
+            <PropertyColumn Property="x => x.LineCount" Title="Linhas"
+                            CellClass="erp-numeric" HeaderClass="erp-numeric" />
+            <PropertyColumn Property="x => x.TotalCost" Title="Custo" Format="N2"
+                            CellClass="erp-numeric" HeaderClass="erp-numeric" />
+            <PropertyColumn Property="x => x.Status" Title="Estado">
+                <CellTemplate>
+                    <MudChip T="string" Size="Size.Small" Variant="Variant.Text"
+                             Color="@(context.Item.IsVoided ? Color.Error : Color.Success)">
+                        @(context.Item.IsVoided ? "Anulada" : "Recebida")
+                    </MudChip>
+                </CellTemplate>
+            </PropertyColumn>
+            <TemplateColumn Title="" Sortable="false" Filterable="false" Hideable="false"
+                            StickyRight="true"
+                            CellClass="erp-numeric" HeaderClass="erp-numeric">
+                <CellTemplate>
+                    <MudMenu Icon="@Icons.Material.Filled.MoreVert" Size="Size.Small"
+                             AnchorOrigin="Origin.BottomRight" TransformOrigin="Origin.TopRight">
+                        <MudMenuItem Icon="@Icons.Material.Filled.Visibility"
+                                     OnClick="@(() => Navigation.NavigateTo($"goods-receipts/{context.Item.Id}"))">
+                            Abrir receção
+                        </MudMenuItem>
+                    </MudMenu>
+                </CellTemplate>
+            </TemplateColumn>
+        </Columns>
+    </DataGrid>
 </MudStack>
 
 @code {
-    private bool _loading;
-    private string? _error;
-    private string _filter = string.Empty;
-
-    private List<GoodsReceiptListItem> _receipts = [];
-
-    private IEnumerable<GoodsReceiptListItem> Visible => _receipts
-        .Where(receipt => string.IsNullOrWhiteSpace(_filter)
-                          || receipt.Number.Contains(_filter, StringComparison.OrdinalIgnoreCase)
-                          || receipt.SupplierName.Contains(_filter, StringComparison.OrdinalIgnoreCase)
-                          || (receipt.SupplierDocumentNumber ?? string.Empty)
-                              .Contains(_filter, StringComparison.OrdinalIgnoreCase));
-
-    protected override async Task OnInitializedAsync()
-    {
-        Company.Changed += OnCompanyChanged;
-        await Company.EnsureLoadedAsync();
-        await LoadAsync();
-    }
-
-    private async void OnCompanyChanged() => await InvokeAsync(LoadAsync);
-
-    private async Task LoadAsync()
-    {
-        if (!Company.HasCompany)
-        {
-            _receipts = [];
-            _error = Company.LoadError;
-            StateHasChanged();
-            return;
-        }
-
-        _loading = true;
-        _error = null;
-        StateHasChanged();
-
-        try
-        {
-            var (items, error) = await Purchasing.GetReceiptsAsync(Company.SelectedCompanyId);
-            _receipts = [.. items];
-            _error = error;
-        }
-        catch (Exception ex)
-        {
-            _error = $"Não foi possível carregar as receções: {ex.Message}";
-        }
-        finally
-        {
-            _loading = false;
-            StateHasChanged();
-        }
-    }
-
-    public void Dispose() => Company.Changed -= OnCompanyChanged;
+    private static readonly string[] SearchFields = ["Number", "SupplierName", "SupplierDocumentNumber"];
 }

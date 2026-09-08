@@ -1,10 +1,14 @@
 using Erp.Inventory.Domain;
+using Erp.Inventory.Infrastructure.Contracts;
 
 namespace Erp.Inventory.Infrastructure.Storage;
 
 public interface IInventoryCountStorage
 {
     Task<IReadOnlyList<InventoryCount>> GetAllAsync(Guid companyId, CancellationToken cancellationToken = default);
+
+    /// <summary>The listing shape, left open so the grid can filter, sort and page in the database.</summary>
+    IQueryable<InventoryCountListItemDto> Query(Guid companyId);
 
     Task<InventoryCount?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default);
 

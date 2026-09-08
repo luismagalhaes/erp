@@ -1,4 +1,5 @@
 using Erp.Inventory.Domain;
+using Erp.Inventory.Infrastructure.Contracts;
 using Erp.Inventory.Infrastructure.Storage;
 using Erp.Inventory.Storage.Data;
 using Microsoft.EntityFrameworkCore;
@@ -8,6 +9,27 @@ namespace Erp.Inventory.Storage.Storage;
 
 public sealed class InventoryCountStorage(AppDbContext dbContext) : IInventoryCountStorage
 {
+    public IQueryable<InventoryCountListItemDto> Query(Guid companyId) =>
+        dbContext.Set<InventoryCount>()
+            .AsNoTracking()
+            .Where(x => x.CompanyId == companyId)
+            .Select(x => new InventoryCountListItemDto
+            {
+                Id = x.Id,
+                WarehouseId = x.WarehouseId,
+                Reference = x.Reference,
+                Scope = x.Scope == InventoryCountScope.Total
+                    ? "Total"
+                    : x.Scope == InventoryCountScope.Warehouse ? "Warehouse" : "Products",
+                Status = x.Status == InventoryCountStatus.Open ? "Open" : "Closed",
+                CountDate = x.CountDate,
+                CreatedAtUtc = x.CreatedAtUtc,
+                ClosedAtUtc = x.ClosedAtUtc,
+                LineCount = x.Lines.Count,
+                LinesWithDifference = x.Lines.Count(line => line.CountedQuantity != line.SystemQuantity),
+                IsOpen = x.Status == InventoryCountStatus.Open
+            });
+
     public async Task<IReadOnlyList<InventoryCount>> GetAllAsync(
         Guid companyId,
         CancellationToken cancellationToken = default)

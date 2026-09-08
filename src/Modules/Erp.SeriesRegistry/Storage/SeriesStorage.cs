@@ -1,3 +1,6 @@
+using Erp.FiscalPT.Documents;
+using Erp.SeriesRegistry.Domain;
+using Erp.SeriesRegistry.Infrastructure.Contracts;
 using Erp.SeriesRegistry.Infrastructure.Storage;
 using Erp.Storage;
 using Microsoft.EntityFrameworkCore;
@@ -14,6 +17,38 @@ public sealed class SeriesStorage(AppDbContext dbContext) : ISeriesStorage
             .OrderBy(x => x.DocumentType)
             .ThenBy(x => x.SeriesCode)
             .ToListAsync(cancellationToken);
+    }
+
+    /// <remarks>
+    /// The status, the stock effect and the right to issue are spelled out as expressions rather
+    /// than read off the domain object, because the grid filters and sorts on them and only what
+    /// the database can evaluate may take part in that.
+    /// </remarks>
+    public IQueryable<SeriesListItemDto> Query(Guid companyId)
+    {
+        return dbContext.Set<Domain.Series>()
+            .AsNoTracking()
+            .Where(x => x.CompanyId == companyId)
+            .Select(x => new SeriesListItemDto
+            {
+                Id = x.Id,
+                CompanyId = x.CompanyId,
+                DocumentType = x.DocumentType,
+                SeriesCode = x.SeriesCode,
+                CurrentSequence = x.CurrentSequence,
+                ValidationCode = x.ValidationCode,
+                Status = x.Status == SeriesStatus.Created ? "Created"
+                    : x.Status == SeriesStatus.Communicated ? "Communicated"
+                    : x.Status == SeriesStatus.Active ? "Active"
+                    : "Finalized",
+                CanIssue = (x.Status == SeriesStatus.Communicated || x.Status == SeriesStatus.Active)
+                    && x.ValidationCode != null
+                    && x.ValidationCode != "",
+                StockEffect = x.StockEffect == StockEffect.In ? "In"
+                    : x.StockEffect == StockEffect.Out ? "Out"
+                    : "None",
+                SelfBilling = x.SelfBilling
+            });
     }
 
     public async Task<Domain.Series?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)

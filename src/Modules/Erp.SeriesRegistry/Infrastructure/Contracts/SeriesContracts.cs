@@ -35,15 +35,30 @@ public sealed record CommunicateSeriesRequest(string ValidationCode);
 /// <param name="StockEffect">None, In or Out.</param>
 public sealed record UpdateSeriesRequest(string StockEffect);
 
-/// <param name="StockEffect">None, In or Out.</param>
-public sealed record SeriesListItemDto(
-    Guid Id,
-    Guid CompanyId,
-    string DocumentType,
-    string SeriesCode,
-    int CurrentSequence,
-    string? ValidationCode,
-    string Status,
-    bool CanIssue,
-    string StockEffect,
-    bool SelfBilling = false);
+/// <summary>
+/// The listing shape of a series. Written with init members rather than as a positional record so
+/// it can be produced by an EF projection, which is what the OData listing runs.
+/// </summary>
+public sealed record SeriesListItemDto
+{
+    public Guid Id { get; init; }
+
+    public Guid CompanyId { get; init; }
+
+    public string DocumentType { get; init; } = string.Empty;
+
+    public string SeriesCode { get; init; } = string.Empty;
+
+    public int CurrentSequence { get; init; }
+
+    public string? ValidationCode { get; init; }
+
+    public string Status { get; init; } = string.Empty;
+
+    public bool CanIssue { get; init; }
+
+    /// <summary>None, In or Out.</summary>
+    public string StockEffect { get; init; } = string.Empty;
+
+    public bool SelfBilling { get; init; }
+}

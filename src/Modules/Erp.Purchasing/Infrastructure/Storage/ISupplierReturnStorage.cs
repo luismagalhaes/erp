@@ -1,4 +1,5 @@
 using Erp.Purchasing.Domain;
+using Erp.Purchasing.Infrastructure.Contracts;
 
 namespace Erp.Purchasing.Infrastructure.Storage;
 
@@ -8,6 +9,9 @@ public interface ISupplierReturnStorage
         Guid companyId,
         Guid? supplierId = null,
         CancellationToken cancellationToken = default);
+
+    /// <summary>The listing shape, left open so the grid can filter, sort and page in the database.</summary>
+    IQueryable<SupplierReturnListItemDto> Query(Guid companyId);
 
     Task<SupplierReturn?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default);
 

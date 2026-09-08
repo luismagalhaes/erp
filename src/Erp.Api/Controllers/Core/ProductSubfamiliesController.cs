@@ -3,6 +3,7 @@ using Erp.Core.Infrastructure.Application;
 using Erp.Core.Infrastructure.Contracts;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.OData.Query;
 
 namespace Erp.Api.Controllers.Core;
 
@@ -27,6 +28,24 @@ public sealed class ProductSubfamiliesController(IProductSubfamilyService subfam
             return BadRequest(new { error = "companyId is required." });
 
         return Ok(await subfamilyService.GetAllAsync(companyId, familyId, cancellationToken));
+    }
+
+    /// <summary>
+    /// The listing the data grid calls. Filtering, sorting and paging travel as OData options and
+    /// are applied by the database; the company stays outside the query, as a tenancy boundary the
+    /// caller cannot widen. Narrowing by family is just another $filter here.
+    /// </summary>
+    [HttpGet("odata")]
+    [ProducesResponseType<ODataCollection<ProductSubfamilyDto>>(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public ActionResult<ODataCollection<ProductSubfamilyDto>> Query(
+        [FromQuery] Guid companyId,
+        ODataQueryOptions<ProductSubfamilyDto> options)
+    {
+        if (companyId == Guid.Empty)
+            return BadRequest(new { error = "companyId is required." });
+
+        return Ok(ODataQueryExecutor.Execute(subfamilyService.Query(companyId), options));
     }
 
     [HttpGet("{id:guid}")]

@@ -85,20 +85,24 @@ public sealed class SalesDocumentService(
         var documents = await documentStorage.GetAllAsync(companyId, cancellationToken);
 
         return documents
-            .Select(x => new InvoiceListItemDto(
-                x.Id,
-                x.DocumentNumber,
-                x.DocumentType,
-                x.Atcud,
-                x.DocumentDate,
-                x.CustomerName,
-                x.CustomerTaxId,
-                x.NetTotal,
-                x.TaxPayable,
-                x.GrossTotal,
-                x.EffectiveStatus))
+            .Select(x => new InvoiceListItemDto
+            {
+                Id = x.Id,
+                DocumentNumber = x.DocumentNumber,
+                DocumentType = x.DocumentType,
+                Atcud = x.Atcud,
+                DocumentDate = x.DocumentDate,
+                CustomerName = x.CustomerName,
+                CustomerTaxId = x.CustomerTaxId,
+                NetTotal = x.NetTotal,
+                TaxPayable = x.TaxPayable,
+                GrossTotal = x.GrossTotal,
+                Status = x.EffectiveStatus
+            })
             .ToList();
     }
+
+    public IQueryable<InvoiceListItemDto> Query(Guid companyId) => documentStorage.Query(companyId);
 
     public async Task<InvoiceDetailDto?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
     {

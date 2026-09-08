@@ -1,0 +1,70 @@
+﻿@page "/brands"
+@attribute [Authorize]
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.AspNetCore.Components.Web
+@using MudBlazor
+@using Erp.Main.Components.Common
+@using Erp.Main.Models
+@using Erp.Main.Services
+@inject CatalogApiClient Catalog
+@inject CompanyState Company
+@inject NavigationManager Navigation
+
+<PageTitle>Marcas</PageTitle>
+
+<MudStack Spacing="4">
+    <PageHeader Title="Marcas">
+        <Actions>
+            <MudButton Variant="Variant.Filled" Color="Color.Primary"
+                       StartIcon="@Icons.Material.Filled.Add"
+                       Disabled="@(!Company.HasCompany)"
+                       OnClick="@(() => Navigation.NavigateTo("brands/new"))">
+                Nova marca
+            </MudButton>
+        </Actions>
+    </PageHeader>
+
+    <DataGrid T="Brand"
+              LoadAsync="@((companyId, query, ct) => Catalog.QueryBrandsAsync(companyId, query, ct))"
+              SearchFields="SearchFields" DefaultOrderBy="Code"
+              SearchPlaceholder="Procurar por cÃ³digo ou nome"
+              EmptyIcon="@Icons.Material.Filled.Loyalty"
+              EmptyTitle="Sem marcas para mostrar"
+              EmptyDescription="Ajuste os filtros ou crie a primeira marca."
+              ItemsLabel="marcas"
+              LoadErrorMessage="NÃ£o foi possÃ­vel carregar as marcas">
+        <Columns>
+            <PropertyColumn Property="x => x.Code" Title="CÃ³digo" />
+            <PropertyColumn Property="x => x.Name" Title="Nome" />
+            <PropertyColumn Property="x => x.IsActive" Title="Estado">
+                <CellTemplate>
+                    <MudChip T="string" Size="Size.Small" Variant="Variant.Text"
+                             Color="@(context.Item.IsActive ? Color.Success : Color.Default)">
+                        @(context.Item.IsActive ? "Ativa" : "Inativa")
+                    </MudChip>
+                </CellTemplate>
+            </PropertyColumn>
+            <TemplateColumn Title="" Sortable="false" Filterable="false" Hideable="false"
+                            StickyRight="true"
+                            CellClass="erp-numeric" HeaderClass="erp-numeric">
+                <CellTemplate>
+                    <MudMenu Icon="@Icons.Material.Filled.MoreVert" Size="Size.Small"
+                             AnchorOrigin="Origin.BottomRight" TransformOrigin="Origin.TopRight">
+                        <MudMenuItem Icon="@Icons.Material.Filled.Edit"
+                                     OnClick="@(() => Navigation.NavigateTo($"brands/{context.Item.Id}"))">
+                            Editar
+                        </MudMenuItem>
+                    </MudMenu>
+                </CellTemplate>
+            </TemplateColumn>
+        </Columns>
+    </DataGrid>
+</MudStack>
+
+@code {
+    /// <summary>
+    /// Maps the toolbar search to the DTO members the API exposes, so a renamed column never
+    /// produces an invalid $filter.
+    /// </summary>
+    private static readonly string[] SearchFields = ["Code", "Name"];
+}

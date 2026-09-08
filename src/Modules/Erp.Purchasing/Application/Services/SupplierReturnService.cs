@@ -40,6 +40,8 @@ public sealed class SupplierReturnService(
         return [.. returns.Select(MapListItem)];
     }
 
+    public IQueryable<SupplierReturnListItemDto> Query(Guid companyId) => returnStorage.Query(companyId);
+
     public async Task<SupplierReturnDto?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
     {
         var supplierReturn = await returnStorage.GetByIdAsync(id, cancellationToken);
@@ -273,15 +275,18 @@ public sealed class SupplierReturnService(
             supplier.Country);
 
     private static SupplierReturnListItemDto MapListItem(SupplierReturn supplierReturn) =>
-        new(supplierReturn.Id,
-            supplierReturn.Number,
-            supplierReturn.Status.ToString(),
-            supplierReturn.ReturnDate,
-            supplierReturn.Supplier.Name,
-            supplierReturn.Reason,
-            supplierReturn.Lines.Count,
-            supplierReturn.TotalCost,
-            supplierReturn.IsVoided);
+        new()
+        {
+            Id = supplierReturn.Id,
+            Number = supplierReturn.Number,
+            Status = supplierReturn.Status.ToString(),
+            ReturnDate = supplierReturn.ReturnDate,
+            SupplierName = supplierReturn.Supplier.Name,
+            Reason = supplierReturn.Reason,
+            LineCount = supplierReturn.Lines.Count,
+            TotalCost = supplierReturn.TotalCost,
+            IsVoided = supplierReturn.IsVoided
+        };
 
     private static SupplierReturnDto Map(SupplierReturn supplierReturn) =>
         new(supplierReturn.Id,

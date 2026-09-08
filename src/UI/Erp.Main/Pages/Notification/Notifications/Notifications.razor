@@ -1,0 +1,116 @@
+@page "/notifications"
+@attribute [Authorize]
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.AspNetCore.Components.Web
+@using MudBlazor
+@using Erp.Main.Components.Common
+@using Erp.Main.Models
+@using Erp.Main.Services
+@inject NotificationApiClient NotificationApi
+@inject NavigationManager Navigation
+@inject ISnackbar Snackbar
+
+<PageTitle>Notificações</PageTitle>
+
+<MudStack Spacing="4">
+    <PageHeader Title="Notificações">
+        <Actions>
+            <MudButton Variant="Variant.Outlined" Color="Color.Primary"
+                       StartIcon="@Icons.Material.Filled.Refresh"
+                       OnClick="ReloadAsync">
+                Atualizar
+            </MudButton>
+        </Actions>
+    </PageHeader>
+
+    @* The email queue is shared by every company, so this listing is not scoped to one of them. *@
+    <DataGrid @ref="_grid" T="NotificationListItem" CompanyScoped="false"
+              LoadAsync="@((_, query, ct) => NotificationApi.QueryNotificationsAsync(query, ct))"
+              SearchFields="SearchFields" DefaultOrderBy="CreatedAtUtc desc"
+              SearchPlaceholder="Procurar por destinatário ou assunto"
+              EmptyIcon="@Icons.Material.Filled.MarkEmailRead"
+              EmptyTitle="Sem notificações para mostrar"
+              EmptyDescription="Ajuste os filtros: ainda não foi enviada nenhuma notificação."
+              ItemsLabel="notificações"
+              LoadErrorMessage="Não foi possível carregar as notificações">
+        <Columns>
+            <PropertyColumn Property="x => x.ToEmail" Title="Destinatário" />
+            <PropertyColumn Property="x => x.Subject" Title="Assunto" />
+            <PropertyColumn Property="x => x.Status" Title="Estado">
+                <CellTemplate>
+                    <MudChip T="string" Size="Size.Small" Variant="Variant.Text"
+                             Color="@StatusColor(context.Item.Status)">
+                        @DescribeStatus(context.Item.Status)
+                    </MudChip>
+                </CellTemplate>
+            </PropertyColumn>
+            <PropertyColumn Property="x => x.RetryCount" Title="Tentativas"
+                            CellClass="erp-numeric" HeaderClass="erp-numeric" />
+            <PropertyColumn Property="x => x.CreatedAtUtc" Title="Criado" Format="yyyy-MM-dd HH:mm" />
+            <PropertyColumn Property="x => x.ProcessedAtUtc" Title="Processado" Format="yyyy-MM-dd HH:mm" />
+            <PropertyColumn Property="x => x.LastError" Title="Último erro" Hidden="true" />
+            <TemplateColumn Title="" Sortable="false" Filterable="false" Hideable="false"
+                            StickyRight="true"
+                            CellClass="erp-numeric" HeaderClass="erp-numeric">
+                <CellTemplate>
+                    <MudMenu Icon="@Icons.Material.Filled.MoreVert" Size="Size.Small"
+                             AnchorOrigin="Origin.BottomRight" TransformOrigin="Origin.TopRight">
+                        <MudMenuItem Icon="@Icons.Material.Filled.Visibility"
+                                     OnClick="@(() => Navigation.NavigateTo($"notifications/{context.Item.Id}"))">
+                            Ver
+                        </MudMenuItem>
+                        @if (context.Item.Status == "Failed")
+                        {
+                            <MudMenuItem Icon="@Icons.Material.Filled.Replay"
+                                         OnClick="@(() => RequeueAsync(context.Item.Id))">
+                                Voltar a enfileirar
+                            </MudMenuItem>
+                        }
+                    </MudMenu>
+                </CellTemplate>
+            </TemplateColumn>
+        </Columns>
+    </DataGrid>
+</MudStack>
+
+@code {
+    /// <summary>
+    /// Maps the toolbar search to the DTO members the API exposes, so a renamed column never
+    /// produces an invalid $filter.
+    /// </summary>
+    private static readonly string[] SearchFields = ["ToEmail", "Subject"];
+
+    private DataGrid<NotificationListItem>? _grid;
+
+    private Task ReloadAsync() => _grid?.ReloadAsync() ?? Task.CompletedTask;
+
+    private async Task RequeueAsync(Guid id)
+    {
+        var error = await NotificationApi.RequeueAsync(id);
+
+        if (error is not null)
+        {
+            Snackbar.Add(error, Severity.Error);
+            return;
+        }
+
+        Snackbar.Add("Notificação novamente na fila.", Severity.Success);
+        await ReloadAsync();
+    }
+
+    private static string DescribeStatus(string status) => status switch
+    {
+        "Pending" => "Pendente",
+        "Sent" => "Enviada",
+        "Failed" => "Falhou",
+        _ => status
+    };
+
+    private static Color StatusColor(string status) => status switch
+    {
+        "Sent" => Color.Success,
+        "Failed" => Color.Error,
+        "Pending" => Color.Warning,
+        _ => Color.Default
+    };
+}

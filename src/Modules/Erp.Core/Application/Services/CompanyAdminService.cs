@@ -21,6 +21,8 @@ public sealed class CompanyAdminService(ICompanyStorage storage) : ICompanyAdmin
             .ToList();
     }
 
+    public IQueryable<CompanyListItemDto> Query() => storage.Query();
+
     public async Task<CompanyDetailDto?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
     {
         var company = await storage.GetByIdAsync(id, cancellationToken);

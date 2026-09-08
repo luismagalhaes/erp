@@ -7,6 +7,7 @@
 @using Erp.Main.Models
 @using Erp.Main.Services
 @inject SalesApiClient SalesApi
+@inject SeriesApiClient SeriesApi
 @inject CompanyState Company
 @inject NavigationManager Navigation
 @inject ISnackbar Snackbar
@@ -286,7 +287,7 @@
 
         try
         {
-            var series = await SalesApi.GetSeriesAsync(Company.SelectedCompanyId);
+            var series = await SeriesApi.GetSeriesAsync(Company.SelectedCompanyId);
             _series = [.. series.Where(x => x.CanIssue && InvoiceTypes.IsRectifying(x.DocumentType))];
             _seriesId = _series.FirstOrDefault()?.Id ?? Guid.Empty;
 

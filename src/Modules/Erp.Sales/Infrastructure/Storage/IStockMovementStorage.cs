@@ -1,10 +1,17 @@
 using Erp.Sales.Domain;
+using Erp.Sales.Infrastructure.Contracts;
 
 namespace Erp.Sales.Infrastructure.Storage;
 
 public interface IStockMovementStorage
 {
     Task<IReadOnlyList<StockMovement>> GetAllAsync(Guid companyId, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// The listing projection of a company's movements, left as a query so the database applies
+    /// the grid's filtering, sorting and paging.
+    /// </summary>
+    IQueryable<StockMovementListItemDto> Query(Guid companyId);
 
     Task<StockMovement?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default);
 

@@ -1,4 +1,5 @@
 using Erp.Purchasing.Domain;
+using Erp.Purchasing.Infrastructure.Contracts;
 using Erp.Purchasing.Infrastructure.Storage;
 using Erp.Purchasing.Storage.Data;
 using Microsoft.EntityFrameworkCore;
@@ -27,6 +28,37 @@ public sealed class PurchaseOrderStorage(AppDbContext dbContext) : IPurchaseOrde
             .OrderByDescending(x => x.OrderDate)
             .ThenByDescending(x => x.CreatedAtUtc)
             .ToListAsync(cancellationToken);
+    }
+
+    /// <remarks>
+    /// The status and whether the order is still open are spelled out as expressions rather than
+    /// read off the domain object, because the grid filters and sorts on them and only what the
+    /// database can evaluate may take part in that.
+    /// </remarks>
+    public IQueryable<PurchaseOrderListItemDto> Query(Guid companyId)
+    {
+        return dbContext.Set<PurchaseOrder>()
+            .AsNoTracking()
+            .Where(x => x.CompanyId == companyId)
+            .Select(x => new PurchaseOrderListItemDto
+            {
+                Id = x.Id,
+                Number = x.Number,
+                Status = x.Status == PurchaseOrderStatus.Draft ? "Draft"
+                    : x.Status == PurchaseOrderStatus.Placed ? "Placed"
+                    : x.Status == PurchaseOrderStatus.PartiallyReceived ? "PartiallyReceived"
+                    : x.Status == PurchaseOrderStatus.Received ? "Received"
+                    : x.Status == PurchaseOrderStatus.Closed ? "Closed"
+                    : "Cancelled",
+                OrderDate = x.OrderDate,
+                ExpectedDate = x.ExpectedDate,
+                SupplierName = x.Supplier.Name,
+                SupplierTaxId = x.Supplier.TaxId,
+                LineCount = x.Lines.Count,
+                GrossTotal = x.GrossTotal,
+                IsOpen = x.Status == PurchaseOrderStatus.Placed
+                    || x.Status == PurchaseOrderStatus.PartiallyReceived
+            });
     }
 
     public Task<PurchaseOrder?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default) =>

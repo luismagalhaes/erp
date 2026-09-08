@@ -1,9 +1,9 @@
 @page "/supplier-returns"
 @attribute [Authorize]
-@implements IDisposable
 @using Microsoft.AspNetCore.Authorization
 @using Microsoft.AspNetCore.Components.Web
 @using MudBlazor
+@using Erp.Main.Components.Common
 @using Erp.Main.Models
 @using Erp.Main.Services
 @inject PurchasingApiClient Purchasing
@@ -13,21 +13,16 @@
 <PageTitle>Devoluções a fornecedores</PageTitle>
 
 <MudStack Spacing="4">
-    <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center">
-        <MudStack Spacing="0">
-            <MudText Typo="Typo.h4">Devoluções a fornecedores</MudText>
-            <MudText Typo="Typo.body2" Color="Color.Secondary">
-                Mercadoria que volta para trás. O stock sai ao custo a que entrou.
-            </MudText>
-        </MudStack>
-
-        <MudButton Variant="Variant.Filled" Color="Color.Primary"
-                   StartIcon="@Icons.Material.Filled.Undo"
-                   Disabled="@(!Company.HasCompany)"
-                   OnClick="@(() => Navigation.NavigateTo("supplier-returns/new"))">
-            Devolver mercadoria
-        </MudButton>
-    </MudStack>
+    <PageHeader Title="Devoluções a fornecedores">
+        <Actions>
+            <MudButton Variant="Variant.Filled" Color="Color.Primary"
+                       StartIcon="@Icons.Material.Filled.Undo"
+                       Disabled="@(!Company.HasCompany)"
+                       OnClick="@(() => Navigation.NavigateTo("supplier-returns/new"))">
+                Devolver mercadoria
+            </MudButton>
+        </Actions>
+    </PageHeader>
 
     <MudAlert Severity="Severity.Info" Dense="true">
         Isto regista o <strong>movimento</strong>. Se a mercadoria viaja, o documento de transporte é
@@ -35,119 +30,49 @@
         <MudLink Href="stock-movements/new">Guias de transporte</MudLink>.
     </MudAlert>
 
-    @if (!string.IsNullOrWhiteSpace(_error))
-    {
-        <MudAlert Severity="Severity.Error" Dense="true">@_error</MudAlert>
-    }
-
-    @if (!Company.HasCompany)
-    {
-        <MudAlert Severity="Severity.Info">Escolha uma empresa no cabeçalho.</MudAlert>
-    }
-    else
-    {
-        <MudPaper Elevation="1" Class="pa-2">
-            <MudTable Items="Visible" Hover="true" Striped="true" Dense="true" Loading="_loading"
-                      Breakpoint="Breakpoint.Sm">
-                <ToolBarContent>
-                    <MudTextField @bind-Value="_filter" @bind-Value:after="StateHasChanged" Immediate="true"
-                                  Placeholder="Procurar número ou fornecedor" Adornment="Adornment.Start"
-                                  AdornmentIcon="@Icons.Material.Filled.Search" Margin="Margin.Dense"
-                                  Class="mt-0" Style="max-width: 360px;" />
-                </ToolBarContent>
-                <HeaderContent>
-                    <MudTh>Número</MudTh>
-                    <MudTh>Data</MudTh>
-                    <MudTh>Fornecedor</MudTh>
-                    <MudTh>Motivo</MudTh>
-                    <MudTh Style="text-align: right;">Linhas</MudTh>
-                    <MudTh Style="text-align: right;">Custo</MudTh>
-                    <MudTh>Estado</MudTh>
-                    <MudTh Style="text-align: right;">Ações</MudTh>
-                </HeaderContent>
-                <RowTemplate>
-                    <MudTd DataLabel="Número">
-                        <MudText Typo="Typo.body2" Style="font-family: monospace;">
-                            <strong>@context.Number</strong>
-                        </MudText>
-                    </MudTd>
-                    <MudTd DataLabel="Data">@context.ReturnDate.ToString("yyyy-MM-dd")</MudTd>
-                    <MudTd DataLabel="Fornecedor">@context.SupplierName</MudTd>
-                    <MudTd DataLabel="Motivo">@context.Reason</MudTd>
-                    <MudTd DataLabel="Linhas" Style="text-align: right;">@context.LineCount</MudTd>
-                    <MudTd DataLabel="Custo" Style="text-align: right;">@context.TotalCost.ToString("N2")</MudTd>
-                    <MudTd DataLabel="Estado">
-                        <MudChip T="string" Size="Size.Small" Variant="Variant.Text"
-                                 Color="@(context.IsVoided ? Color.Error : Color.Success)">
-                            @(context.IsVoided ? "Anulada" : "Devolvida")
-                        </MudChip>
-                    </MudTd>
-                    <MudTd DataLabel="Ações" Style="text-align: right;">
-                        <MudTooltip Text="Abrir">
-                            <MudIconButton Size="Size.Small" Icon="@Icons.Material.Filled.Visibility"
-                                           OnClick="@(() => Navigation.NavigateTo($"supplier-returns/{context.Id}"))" />
-                        </MudTooltip>
-                    </MudTd>
-                </RowTemplate>
-                <NoRecordsContent>
-                    <MudText Typo="Typo.body2" Color="Color.Secondary">Ainda não há devoluções.</MudText>
-                </NoRecordsContent>
-            </MudTable>
-        </MudPaper>
-    }
+    <DataGrid T="SupplierReturnListItem"
+              LoadAsync="@((companyId, query, ct) => Purchasing.QueryReturnsAsync(companyId, query, ct))"
+              SearchFields="SearchFields" DefaultOrderBy="ReturnDate desc,Number desc"
+              SearchPlaceholder="Procurar número, fornecedor ou motivo"
+              EmptyIcon="@Icons.Material.Filled.Undo"
+              EmptyTitle="Sem devoluções para mostrar"
+              EmptyDescription="Ajuste os filtros ou registe a primeira devolução."
+              ItemsLabel="devoluções"
+              LoadErrorMessage="Não foi possível carregar as devoluções">
+        <Columns>
+            <PropertyColumn Property="x => x.Number" Title="Número" CellClass="erp-mono" />
+            <PropertyColumn Property="x => x.ReturnDate" Title="Data" Format="yyyy-MM-dd" />
+            <PropertyColumn Property="x => x.SupplierName" Title="Fornecedor" />
+            <PropertyColumn Property="x => x.Reason" Title="Motivo" />
+            <PropertyColumn Property="x => x.LineCount" Title="Linhas"
+                            CellClass="erp-numeric" HeaderClass="erp-numeric" />
+            <PropertyColumn Property="x => x.TotalCost" Title="Custo" Format="N2"
+                            CellClass="erp-numeric" HeaderClass="erp-numeric" />
+            <PropertyColumn Property="x => x.Status" Title="Estado">
+                <CellTemplate>
+                    <MudChip T="string" Size="Size.Small" Variant="Variant.Text"
+                             Color="@(context.Item.IsVoided ? Color.Error : Color.Success)">
+                        @(context.Item.IsVoided ? "Anulada" : "Devolvida")
+                    </MudChip>
+                </CellTemplate>
+            </PropertyColumn>
+            <TemplateColumn Title="" Sortable="false" Filterable="false" Hideable="false"
+                            StickyRight="true"
+                            CellClass="erp-numeric" HeaderClass="erp-numeric">
+                <CellTemplate>
+                    <MudMenu Icon="@Icons.Material.Filled.MoreVert" Size="Size.Small"
+                             AnchorOrigin="Origin.BottomRight" TransformOrigin="Origin.TopRight">
+                        <MudMenuItem Icon="@Icons.Material.Filled.Visibility"
+                                     OnClick="@(() => Navigation.NavigateTo($"supplier-returns/{context.Item.Id}"))">
+                            Abrir devolução
+                        </MudMenuItem>
+                    </MudMenu>
+                </CellTemplate>
+            </TemplateColumn>
+        </Columns>
+    </DataGrid>
 </MudStack>
 
 @code {
-    private bool _loading;
-    private string? _error;
-    private string _filter = string.Empty;
-
-    private List<SupplierReturnListItem> _returns = [];
-
-    private IEnumerable<SupplierReturnListItem> Visible => _returns
-        .Where(item => string.IsNullOrWhiteSpace(_filter)
-                       || item.Number.Contains(_filter, StringComparison.OrdinalIgnoreCase)
-                       || item.SupplierName.Contains(_filter, StringComparison.OrdinalIgnoreCase));
-
-    protected override async Task OnInitializedAsync()
-    {
-        Company.Changed += OnCompanyChanged;
-        await Company.EnsureLoadedAsync();
-        await LoadAsync();
-    }
-
-    private async void OnCompanyChanged() => await InvokeAsync(LoadAsync);
-
-    private async Task LoadAsync()
-    {
-        if (!Company.HasCompany)
-        {
-            _returns = [];
-            _error = Company.LoadError;
-            StateHasChanged();
-            return;
-        }
-
-        _loading = true;
-        _error = null;
-        StateHasChanged();
-
-        try
-        {
-            var (items, error) = await Purchasing.GetReturnsAsync(Company.SelectedCompanyId);
-            _returns = [.. items];
-            _error = error;
-        }
-        catch (Exception ex)
-        {
-            _error = $"Não foi possível carregar as devoluções: {ex.Message}";
-        }
-        finally
-        {
-            _loading = false;
-            StateHasChanged();
-        }
-    }
-
-    public void Dispose() => Company.Changed -= OnCompanyChanged;
+    private static readonly string[] SearchFields = ["Number", "SupplierName", "Reason"];
 }

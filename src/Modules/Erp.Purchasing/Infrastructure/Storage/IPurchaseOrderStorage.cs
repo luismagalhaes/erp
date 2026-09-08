@@ -1,4 +1,5 @@
 using Erp.Purchasing.Domain;
+using Erp.Purchasing.Infrastructure.Contracts;
 
 namespace Erp.Purchasing.Infrastructure.Storage;
 
@@ -9,6 +10,12 @@ public interface IPurchaseOrderStorage
         Guid? supplierId = null,
         bool openOnly = false,
         CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// The listing projection of a company's orders, left as a query so the database applies the
+    /// grid's filtering, sorting and paging.
+    /// </summary>
+    IQueryable<PurchaseOrderListItemDto> Query(Guid companyId);
 
     Task<PurchaseOrder?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default);
 

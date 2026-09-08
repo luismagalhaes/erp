@@ -13,6 +13,8 @@ public sealed class CustomerService(ICustomerStorage storage) : ICustomerService
         return customers.Select(Map).ToList();
     }
 
+    public IQueryable<PartnerDto> Query(Guid companyId) => storage.Query(companyId);
+
     public async Task<PartnerDto?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
     {
         var customer = await storage.GetByIdAsync(id, cancellationToken);
@@ -93,6 +95,8 @@ public sealed class SupplierService(ISupplierStorage storage) : ISupplierService
         var suppliers = await storage.GetAllAsync(companyId, cancellationToken);
         return suppliers.Select(Map).ToList();
     }
+
+    public IQueryable<PartnerDto> Query(Guid companyId) => storage.Query(companyId);
 
     public async Task<PartnerDto?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
     {

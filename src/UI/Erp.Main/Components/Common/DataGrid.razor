@@ -103,6 +103,13 @@
     /// <summary>The message shown when the load fails. The record noun is appended by the page.</summary>
     [Parameter] public string LoadErrorMessage { get; set; } = "Não foi possível carregar os registos";
 
+    /// <summary>
+    /// Whether the listing belongs to a company. Backoffice listings such as companies or the email
+    /// queue are global, so they must not be blanked out while no company is selected and must not
+    /// wait for the company state to load.
+    /// </summary>
+    [Parameter] public bool CompanyScoped { get; set; } = true;
+
     private MudDataGrid<T>? _grid;
     private bool _loading = true;
     private string? _error;
@@ -111,6 +118,9 @@
 
     protected override async Task OnInitializedAsync()
     {
+        if (!CompanyScoped)
+            return;
+
         Company.Changed += OnCompanyChanged;
         await Company.EnsureLoadedAsync();
         _error = Company.LoadError;
@@ -142,9 +152,9 @@
     private async Task<GridData<T>> LoadServerDataAsync(
         GridStateVirtualize<T> state, CancellationToken cancellationToken)
     {
-        _error = Company.LoadError;
+        _error = CompanyScoped ? Company.LoadError : null;
 
-        if (!Company.HasCompany)
+        if (CompanyScoped && !Company.HasCompany)
         {
             _totalItems = 0;
             return new GridData<T> { Items = [], TotalItems = 0 };
@@ -156,7 +166,9 @@
         {
             var query = ODataGridState.Build(state, _search, SearchFields, DefaultOrderBy);
 
-            var (items, count, error) = await LoadAsync(Company.SelectedCompanyId, query, cancellationToken);
+            var companyId = CompanyScoped ? Company.SelectedCompanyId : Guid.Empty;
+
+            var (items, count, error) = await LoadAsync(companyId, query, cancellationToken);
 
             _error = error;
             _totalItems = count;
@@ -183,5 +195,9 @@
         }
     }
 
-    public void Dispose() => Company.Changed -= OnCompanyChanged;
+    public void Dispose()
+    {
+        if (CompanyScoped)
+            Company.Changed -= OnCompanyChanged;
+    }
 }

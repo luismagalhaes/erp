@@ -1,0 +1,70 @@
+@page "/companies"
+@attribute [Authorize]
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.AspNetCore.Components.Web
+@using MudBlazor
+@using Erp.Main.Components.Common
+@using Erp.Main.Models
+@using Erp.Main.Services
+@inject CoreApiClient CoreApi
+@inject NavigationManager Navigation
+
+<PageTitle>Empresas</PageTitle>
+
+<MudStack Spacing="4">
+    <PageHeader Title="Empresas">
+        <Actions>
+            <MudButton Variant="Variant.Filled" Color="Color.Primary"
+                       StartIcon="@Icons.Material.Filled.Add"
+                       OnClick="@(() => Navigation.NavigateTo("companies/new"))">
+                Nova empresa
+            </MudButton>
+        </Actions>
+    </PageHeader>
+
+    @* Companies are the tenancy boundary itself, so this listing is not scoped to one of them. *@
+    <DataGrid T="CompanyListItem" CompanyScoped="false"
+              LoadAsync="@((_, query, ct) => CoreApi.QueryCompaniesAsync(query, ct))"
+              SearchFields="SearchFields" DefaultOrderBy="Name"
+              SearchPlaceholder="Procurar por nome ou NIF"
+              EmptyIcon="@Icons.Material.Filled.Business"
+              EmptyTitle="Sem empresas para mostrar"
+              EmptyDescription="Ajuste os filtros ou crie a primeira empresa."
+              ItemsLabel="empresas"
+              LoadErrorMessage="Não foi possível carregar as empresas">
+        <Columns>
+            <PropertyColumn Property="x => x.Name" Title="Nome" />
+            <PropertyColumn Property="x => x.LegalName" Title="Designação legal" />
+            <PropertyColumn Property="x => x.TaxId" Title="NIF" />
+            <PropertyColumn Property="x => x.IsActive" Title="Estado">
+                <CellTemplate>
+                    <MudChip T="string" Size="Size.Small" Variant="Variant.Text"
+                             Color="@(context.Item.IsActive ? Color.Success : Color.Default)">
+                        @(context.Item.IsActive ? "Ativa" : "Inativa")
+                    </MudChip>
+                </CellTemplate>
+            </PropertyColumn>
+            <TemplateColumn Title="" Sortable="false" Filterable="false" Hideable="false"
+                            StickyRight="true"
+                            CellClass="erp-numeric" HeaderClass="erp-numeric">
+                <CellTemplate>
+                    <MudMenu Icon="@Icons.Material.Filled.MoreVert" Size="Size.Small"
+                             AnchorOrigin="Origin.BottomRight" TransformOrigin="Origin.TopRight">
+                        <MudMenuItem Icon="@Icons.Material.Filled.Edit"
+                                     OnClick="@(() => Navigation.NavigateTo($"companies/{context.Item.Id}"))">
+                            Editar
+                        </MudMenuItem>
+                    </MudMenu>
+                </CellTemplate>
+            </TemplateColumn>
+        </Columns>
+    </DataGrid>
+</MudStack>
+
+@code {
+    /// <summary>
+    /// Maps the toolbar search to the DTO members the API exposes, so a renamed column never
+    /// produces an invalid $filter.
+    /// </summary>
+    private static readonly string[] SearchFields = ["Name", "LegalName", "TaxId"];
+}

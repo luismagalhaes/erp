@@ -9,6 +9,9 @@ public interface ISupplierReturnService
         Guid? supplierId = null,
         CancellationToken cancellationToken = default);
 
+    /// <summary>The listing shape, left open so the grid can filter, sort and page in the database.</summary>
+    IQueryable<SupplierReturnListItemDto> Query(Guid companyId);
+
     Task<SupplierReturnDto?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default);
 
     /// <summary>What is still in hand from each receipt, and so could go back.</summary>

@@ -1,4 +1,5 @@
 using Erp.Sales.Domain;
+using Erp.Sales.Infrastructure.Contracts;
 using Erp.Sales.Infrastructure.Storage;
 using Erp.Sales.Storage.Data;
 using Microsoft.EntityFrameworkCore;
@@ -17,6 +18,36 @@ public sealed class StockMovementStorage(AppDbContext dbContext) : IStockMovemen
             .OrderByDescending(x => x.MovementDate)
             .ThenByDescending(x => x.SystemEntryDateUtc)
             .ToListAsync(cancellationToken);
+    }
+
+    /// <summary>
+    /// The status is derived from the append-only status changes, which the entity resolves in
+    /// memory. Here the same rule is written as a subquery so the database can filter and sort by
+    /// it without loading the movements.
+    /// </summary>
+    public IQueryable<StockMovementListItemDto> Query(Guid companyId)
+    {
+        return dbContext.Set<StockMovement>()
+            .AsNoTracking()
+            .Where(x => x.CompanyId == companyId)
+            .Select(x => new StockMovementListItemDto
+            {
+                Id = x.Id,
+                DocumentNumber = x.DocumentNumber,
+                MovementType = x.MovementType,
+                Atcud = x.Atcud,
+                MovementDate = x.MovementDate,
+                PartyName = x.PartyName,
+                PartyTaxId = x.PartyTaxId,
+                MovementStartAtUtc = x.MovementStartAtUtc,
+                TotalQuantity = x.TotalQuantity,
+                GrossTotal = x.GrossTotal,
+                AtDocCodeId = x.AtDocCodeId,
+                Status = x.StatusChanges
+                    .OrderByDescending(change => change.OccurredAtUtc)
+                    .Select(change => change.NewStatus)
+                    .FirstOrDefault() ?? x.Status
+            });
     }
 
     public async Task<StockMovement?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)

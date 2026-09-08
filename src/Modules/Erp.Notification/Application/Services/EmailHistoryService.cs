@@ -1,5 +1,6 @@
 using Erp.Notification.Domain.Models;
 using Erp.Notification.Infrastructure.Application;
+using Erp.Notification.Infrastructure.Contracts;
 using Erp.Notification.Infrastructure.Storage;
 
 namespace Erp.Notification.Application.Services;
@@ -8,6 +9,8 @@ public sealed class EmailHistoryService(IEmailNotificationStorage storage) : IEm
 {
     public Task<IReadOnlyList<EmailNotification>> GetHistoryAsync(CancellationToken cancellationToken = default)
         => storage.GetHistoryAsync(cancellationToken);
+
+    public IQueryable<EmailNotificationListItemDto> QueryHistory() => storage.QueryHistory();
 
     public Task<EmailNotification?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
         => storage.GetByIdAsync(id, cancellationToken);

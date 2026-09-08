@@ -6,6 +6,12 @@ public interface IPaymentService
 {
     Task<IReadOnlyList<PaymentListItemDto>> GetAllAsync(Guid companyId, CancellationToken cancellationToken = default);
 
+    /// <summary>
+    /// The listing as a query, so filtering, sorting and paging can be applied by the database on
+    /// behalf of the data grid.
+    /// </summary>
+    IQueryable<PaymentListItemDto> Query(Guid companyId);
+
     Task<PaymentDetailDto?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default);
 
     /// <summary>

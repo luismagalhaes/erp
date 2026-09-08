@@ -37,6 +37,8 @@ public sealed class PurchaseInvoiceService(
         return [.. invoices.Select(MapListItem)];
     }
 
+    public IQueryable<PurchaseInvoiceListItemDto> Query(Guid companyId) => invoiceStorage.Query(companyId);
+
     public async Task<PurchaseInvoiceDto?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
     {
         var invoice = await invoiceStorage.GetByIdAsync(id, cancellationToken);
@@ -356,20 +358,23 @@ public sealed class PurchaseInvoiceService(
             supplier.Country);
 
     private static PurchaseInvoiceListItemDto MapListItem(PurchaseInvoice invoice) =>
-        new(invoice.Id,
-            invoice.DocumentType,
-            invoice.SupplierDocumentNumber,
-            invoice.SupplierDocumentDate,
-            invoice.ReceivedDate,
-            invoice.DueDate,
-            invoice.Supplier.Name,
-            invoice.Supplier.TaxId,
-            invoice.NetTotal,
-            invoice.TaxTotal,
-            invoice.GrossTotal,
-            invoice.ReverseCharge,
-            invoice.Status.ToString(),
-            invoice.IsVoided);
+        new()
+        {
+            Id = invoice.Id,
+            DocumentType = invoice.DocumentType,
+            SupplierDocumentNumber = invoice.SupplierDocumentNumber,
+            SupplierDocumentDate = invoice.SupplierDocumentDate,
+            ReceivedDate = invoice.ReceivedDate,
+            DueDate = invoice.DueDate,
+            SupplierName = invoice.Supplier.Name,
+            SupplierTaxId = invoice.Supplier.TaxId,
+            NetTotal = invoice.NetTotal,
+            TaxTotal = invoice.TaxTotal,
+            GrossTotal = invoice.GrossTotal,
+            ReverseCharge = invoice.ReverseCharge,
+            Status = invoice.Status.ToString(),
+            IsVoided = invoice.IsVoided
+        };
 
     private static PurchaseInvoiceDto Map(PurchaseInvoice invoice) =>
         new(invoice.Id,

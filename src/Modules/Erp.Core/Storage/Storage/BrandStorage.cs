@@ -1,4 +1,5 @@
 ﻿using Erp.Core.Domain;
+using Erp.Core.Infrastructure.Contracts;
 using Erp.Core.Infrastructure.Storage;
 using Erp.Core.Storage.Data;
 using Microsoft.EntityFrameworkCore;
@@ -93,6 +94,35 @@ public sealed class ProductStorage(ErpDbContext dbContext) : IProductStorage
             .Where(x => x.CompanyId == companyId)
             .OrderBy(x => x.ProductCode)
             .ToListAsync(cancellationToken);
+
+    public IQueryable<ProductListItemDto> Query(Guid companyId) =>
+        dbContext.Set<Product>()
+            .AsNoTracking()
+            .Where(x => x.CompanyId == companyId)
+            // Member initialization, not a constructor call: EF Core only keeps the mapping between
+            // the DTO members and the columns this way, which is what lets the OData $filter and
+            // $orderby applied afterwards be translated to SQL.
+            .Select(x => new ProductListItemDto
+            {
+                Id = x.Id,
+                ProductCode = x.ProductCode,
+                Description = x.Description,
+                ProductType = x.ProductType,
+                UnitOfMeasure = x.UnitOfMeasure,
+                UnitPrice = x.UnitPrice,
+                DefaultTaxCode = x.DefaultTaxCode,
+                DefaultTaxPercentage = x.DefaultTaxPercentage,
+                Barcode = x.Barcode,
+                FamilyId = x.FamilyId,
+                FamilyName = x.Family!.Name,
+                SubfamilyId = x.SubfamilyId,
+                SubfamilyName = x.Subfamily!.Name,
+                BrandId = x.BrandId,
+                BrandName = x.Brand!.Name,
+                IsActive = x.IsActive,
+                UnitCost = x.UnitCost,
+                InventoryCategory = x.InventoryCategory
+            });
 
     public Task<Product?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default) =>
         dbContext.Set<Product>()

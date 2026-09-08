@@ -67,6 +67,14 @@ public sealed class CatalogApiClient(HttpClient http)
     public Task<(IReadOnlyList<ProductListItem> Items, string? Error)> GetProductsAsync(Guid companyId, CancellationToken ct = default) =>
         GetListAsync<ProductListItem>($"api/products?companyId={companyId}", ct);
 
+    /// <summary>
+    /// Server side product listing: filtering, sorting and paging are applied by the database
+    /// through OData, so the grid never has to hold the whole product file.
+    /// </summary>
+    public Task<(IReadOnlyList<ProductListItem> Items, int Count, string? Error)> QueryProductsAsync(
+        Guid companyId, ODataQuery query, CancellationToken ct = default) =>
+        GetODataAsync<ProductListItem>($"api/products/odata?companyId={companyId}{query.ToQueryString()}", ct);
+
     public Task<ProductListItem?> GetProductAsync(Guid id, CancellationToken ct = default) =>
         GetSingleAsync<ProductListItem>($"api/products/{id}", ct);
 
@@ -103,6 +111,17 @@ public sealed class CatalogApiClient(HttpClient http)
         SendAsync(() => Http.PutAsJsonAsync($"api/suppliers/{id}", request, ct), ct);
 
     // --- Plumbing ---
+
+    private async Task<(IReadOnlyList<T> Items, int Count, string? Error)> GetODataAsync<T>(string route, CancellationToken ct)
+    {
+        var response = await Http.GetAsync(route, ct);
+
+        if (!response.IsSuccessStatusCode)
+            return ([], 0, await ApiResponse.ReadErrorAsync(response, ct));
+
+        var payload = await response.Content.ReadFromJsonAsync<ODataResponse<T>>(ct);
+        return (payload?.Value ?? [], payload?.Count ?? 0, null);
+    }
 
     private async Task<(IReadOnlyList<T> Items, string? Error)> GetListAsync<T>(string route, CancellationToken ct)
     {

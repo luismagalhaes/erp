@@ -1,4 +1,5 @@
 using Erp.Core.Domain;
+using Erp.Core.Infrastructure.Contracts;
 
 namespace Erp.Core.Infrastructure.Storage;
 
@@ -33,6 +34,13 @@ public interface IProductSubfamilyStorage
 public interface IProductStorage
 {
     Task<IReadOnlyList<Product>> GetAllAsync(Guid companyId, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Products of a company already projected to the list DTO and left unmaterialised, so OData
+    /// can translate the grid filtering, sorting and paging into a single SQL statement.
+    /// </summary>
+    IQueryable<ProductListItemDto> Query(Guid companyId);
+
     Task<Product?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default);
     Task<bool> CodeExistsAsync(Guid companyId, string productCode, CancellationToken cancellationToken = default);
     Task AddAsync(Product product, CancellationToken cancellationToken = default);

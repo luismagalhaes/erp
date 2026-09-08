@@ -2,6 +2,7 @@ using Erp.Api;
 using Erp.Api.Authorization;
 using Erp.Common;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.OData;
 using Scalar.AspNetCore;
 using Serilog;
 
@@ -23,7 +24,15 @@ try
         builder.Configuration,
         allowDevelopmentKeyGeneration: builder.Environment.IsDevelopment());
 
-    builder.Services.AddControllers();
+    // OData is used only as a query language over the existing REST routes: it lets the data grids
+    // push filtering, sorting and paging down to SQL instead of loading everything into the client.
+    builder.Services.AddControllers()
+        .AddOData(options => options
+            .Select()
+            .Filter()
+            .OrderBy()
+            .Count()
+            .SetMaxTop(500));
 
     builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
         .AddJwtBearer(options =>

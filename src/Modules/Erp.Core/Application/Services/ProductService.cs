@@ -31,6 +31,8 @@ public sealed class ProductService(
         return products.Select(Map).ToList();
     }
 
+    public IQueryable<ProductListItemDto> Query(Guid companyId) => storage.Query(companyId);
+
     public async Task<ProductListItemDto?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
     {
         var product = await storage.GetByIdAsync(id, cancellationToken);

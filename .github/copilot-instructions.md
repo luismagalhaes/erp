@@ -11,7 +11,7 @@
 - In client management, treat Client Secret as a list since a client can have multiple secrets.
 - In the Backoffice, ensure Index pages display only listings; creation should be on a separate Create page.
 - In the Backoffice of Identity, UserClaims (ApiScopes/IdentityResources) and Scopes/UserClaims (ApiResources) are optional and should not trigger required field validation when submitted empty.
-- Ensure that the Identity and Notification Portal projects are implemented as Blazor WebAssembly applications.
+- The Blazor front ends (Erp.Main and Erp.Identity) are Blazor Web Apps using the Interactive Server render mode (`AddInteractiveServerComponents` + `AddInteractiveServerRenderMode`), not Blazor WebAssembly. Never add WebAssembly-only settings such as `inspectUri` in launchSettings.
 - Organize the App.razor, Routes.razor, and _Imports.razor files within a dedicated folder in both projects (Erp.Main and Erp.Identity).
 - Migrate all pages in Erp.Identity to Blazor components, discontinuing the use of Razor Pages.
 - Standardize the visual layout across Erp.Main, Erp.Identity, and secondary projects by using MudBlazor with a consistent left-side menu and layout structure throughout the application.
@@ -29,6 +29,7 @@
 - Every host must expose a health endpoint through a `HealthController` and publish OpenAPI, with the Scalar reference available in development.
 - Blazor pages are organized one folder per feature under `Pages` (for example `Pages/Backoffice/Companies`, `Pages/Sales/Invoices`), keeping the listing and its create/edit pages together. Never leave pages loose at the root of an area.
 - In Erp.Main Blazor pages, PageHeaders must only display the title without description/subtitle. For detail/create/edit pages, use breadcrumbs in the format "<Listagem> / <Ação>" (e.g., "Artigos / Editar artigo", "Artigos / Novo artigo"), where the first level links to the listing and the last is disabled.
+- All ERP listing pages in Erp.Main must follow the same grid layout established in `Pages/Master/Products/Products.razor`: a MudDataGrid inside a MudPaper with Class="erp-card", the grid using Class="erp-grid", server-side data via VirtualizeServerData over the OData endpoint (Virtualize=true, ItemSize=36, OverscanCount=12), FixedHeader=true with Height="var(--erp-grid-height)", Dense/Hover/Striped enabled, SortMode.Multiple, FilterMode=DataGridFilterMode.ColumnFilterMenu with ShowFilterIcons=true and ShowColumnOptions=false, Hideable and ShowMenuIcon=true for the columns panel, DragDropColumnReordering and ColumnResizeMode.Column, a debounced search MudTextField in ToolBarContent, a NoRecordsContent empty state, a PagerContent footer showing the total record count plus a refresh button, and a final actions TemplateColumn with StickyRight=true that is not sortable/filterable/hideable. Foreign-key columns should use a FilterTemplate with a searchable multi-select (MudAutocomplete plus MudChipSet) instead of free text.
 
 ## UI Design Requirements
 - For Identity Razor Pages UI, use a shared layout with `@RenderBody` and a Mud-like visual style.

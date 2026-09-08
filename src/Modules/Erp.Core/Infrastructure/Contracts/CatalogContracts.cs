@@ -28,25 +28,94 @@ public sealed record UpdateProductSubfamilyRequest(Guid FamilyId, string Name, b
 
 // --- Products ---
 
-public sealed record ProductListItemDto(
-    Guid Id,
-    string ProductCode,
-    string Description,
-    string ProductType,
-    string UnitOfMeasure,
-    decimal UnitPrice,
-    string DefaultTaxCode,
-    decimal DefaultTaxPercentage,
-    string? Barcode,
-    Guid? FamilyId,
-    string? FamilyName,
-    Guid? SubfamilyId,
-    string? SubfamilyName,
-    Guid? BrandId,
-    string? BrandName,
-    bool IsActive,
-    decimal UnitCost = 0m,
-    string InventoryCategory = "M");
+/// <summary>
+/// The product as the listings see it. Written with init properties instead of a positional record
+/// because EF Core cannot bind members over a constructor projection, which breaks any $orderby or
+/// $filter the OData grids apply on top of the query. The constructor is kept for the in memory
+/// mapping done after the writes.
+/// </summary>
+public sealed record ProductListItemDto
+{
+    public ProductListItemDto()
+    {
+    }
+
+    public ProductListItemDto(
+        Guid id,
+        string productCode,
+        string description,
+        string productType,
+        string unitOfMeasure,
+        decimal unitPrice,
+        string defaultTaxCode,
+        decimal defaultTaxPercentage,
+        string? barcode,
+        Guid? familyId,
+        string? familyName,
+        Guid? subfamilyId,
+        string? subfamilyName,
+        Guid? brandId,
+        string? brandName,
+        bool isActive,
+        decimal unitCost = 0m,
+        string inventoryCategory = "M")
+    {
+        Id = id;
+        ProductCode = productCode;
+        Description = description;
+        ProductType = productType;
+        UnitOfMeasure = unitOfMeasure;
+        UnitPrice = unitPrice;
+        DefaultTaxCode = defaultTaxCode;
+        DefaultTaxPercentage = defaultTaxPercentage;
+        Barcode = barcode;
+        FamilyId = familyId;
+        FamilyName = familyName;
+        SubfamilyId = subfamilyId;
+        SubfamilyName = subfamilyName;
+        BrandId = brandId;
+        BrandName = brandName;
+        IsActive = isActive;
+        UnitCost = unitCost;
+        InventoryCategory = inventoryCategory;
+    }
+
+    public Guid Id { get; init; }
+
+    public string ProductCode { get; init; } = string.Empty;
+
+    public string Description { get; init; } = string.Empty;
+
+    public string ProductType { get; init; } = string.Empty;
+
+    public string UnitOfMeasure { get; init; } = string.Empty;
+
+    public decimal UnitPrice { get; init; }
+
+    public string DefaultTaxCode { get; init; } = string.Empty;
+
+    public decimal DefaultTaxPercentage { get; init; }
+
+    public string? Barcode { get; init; }
+
+    public Guid? FamilyId { get; init; }
+
+    public string? FamilyName { get; init; }
+
+    public Guid? SubfamilyId { get; init; }
+
+    public string? SubfamilyName { get; init; }
+
+    public Guid? BrandId { get; init; }
+
+    public string? BrandName { get; init; }
+
+    public bool IsActive { get; init; }
+
+    public decimal UnitCost { get; init; }
+
+    public string InventoryCategory { get; init; } = "M";
+}
 
 public sealed record CreateProductRequest(
     Guid CompanyId,

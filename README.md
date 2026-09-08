@@ -2,7 +2,7 @@
 
 ERP modular em .NET 10, com autenticação centralizada (Duende IdentityServer), interface web em Blazor com MudBlazor e um modelo multi-empresa (cada utilizador pode pertencer a várias empresas com papéis distintos).
 
-**Monólito modular, não microserviços.** Os módulos de negócio — Core, Sales, Inventory, Notification e os que vierem — mantêm projetos, camadas e schema de base de dados próprios, mas correm **num único host** (`Erp.Api`). Separam-se em processos quando houver uma razão concreta para isso: escala independente, equipa dedicada ou cadência de deploy diferente. Até lá, a fronteira é o projeto, não o processo.
+**Monólito modular, não microserviços.** Os módulos de negócio — Core, SeriesRegistry, Sales, Inventory, Purchasing, Notification e os que vierem — mantêm projeto e camadas próprios, mas correm **num único host** (`Erp.Api`) e partilham uma base de dados e um `DbContext`. Separam-se em processos quando houver uma razão concreta para isso: escala independente, equipa dedicada ou cadência de deploy diferente. Até lá, a fronteira é o projeto, não o processo.
 
 Correm em processo separado apenas os que têm razão para isso:
 
@@ -55,7 +55,7 @@ Erp.Main (Blazor Server)  ──OIDC──►  Erp.Identity (Duende IdentityServ
         │                                      │  + API de utilizadores
         │ access token (Bearer)                │
         ▼                                      ▼
-Erp.Api  ─── Core · Sales · Inventory · Notification ──►  SQL Server
+Erp.Api  ─── Core · SeriesRegistry · Sales · Inventory · Purchasing · Notification ──►  SQL Server
    (JWT Bearer, um audience, scopes globais de leitura e escrita)
 ```
 
@@ -137,7 +137,7 @@ O `Erp.Sales` e o `Erp.Purchasing` referenciam o `Erp.Inventory`, para que emiti
 | [Erp.Inventory.Tests](tests/Erp.Inventory.Tests/) | Razão de stock, movimentação por documento, reversão na anulação, contagens, o ficheiro de inventário e o custeio médio ponderado — incluindo a armadilha clássica de anular uma compra barata quando o médio já subiu |
 | [Erp.Purchasing.Tests](tests/Erp.Purchasing.Tests/) | Encomendas, receção, devoluções, faturas e notas de crédito de fornecedor: conferência a três, movimento de stock, anti-duplicação e anulação. E a autofaturação: numeração, cadeia de assinatura, aceitação, e o SAF-T `"S"` validado contra o esquema oficial |
 | [Erp.SeriesRegistry.Tests](tests/Erp.SeriesRegistry.Tests/) | Criação de séries, o conjunto padrão de uma empresa nova, comunicação do código de validação, numeração, e o que uma série deixa (e não deixa) alterar |
-| [Erp.IntegrationTests](tests/Erp.IntegrationTests/) | Contra um SQL Server a sério: numeração de séries e de documentos internos sob concorrência, saldos de stock, as regras de "não exceder o passo anterior", o índice anti-duplicação de faturas de fornecedor, atomicidade da transação que atravessa módulos, e o acordo entre o modelo e o esquema. Precisam de uma base de dados própria — ver o [README](tests/Erp.IntegrationTests/README.md) |
+| [Erp.IntegrationTests](tests/Erp.IntegrationTests/) | Contra um SQL Server a sério: numeração de séries e de documentos internos sob concorrência, saldos de stock, as regras de "não exceder o passo anterior", o índice anti-duplicação de faturas de fornecedor, atomicidade da transação que atravessa módulos, e o acordo entre o modelo e o esquema. Precisam de uma base de dados própria — ver [Testes](#testes) |
 | [Erp.Identity.Tests](tests/Erp.Identity.Tests/) | Invariantes do seed (clients, scopes, resources), serviços e o cliente de email |
 | [Erp.Notification.Tests](tests/Erp.Notification.Tests/) | Fila de emails, processamento e histórico |
 
@@ -302,9 +302,38 @@ Contextos disponíveis no Identity: `ApplicationDbContext`, `ConfigurationDbCont
 dotnet test Erp.slnx
 ```
 
-658 testes em sete projetos, sem dependência de base de dados: as camadas Application são testadas com storages substituídos (NSubstitute), a biblioteca fiscal é testada diretamente — incluindo a validação dos ficheiros SAF-T e de inventário contra os XSD oficiais — e o cliente de email e a obtenção de tokens do Identity com um `HttpMessageHandler` e um `TimeProvider` de teste.
+**799 testes em nove projetos**, em duas famílias com propósitos diferentes.
 
-O reverso disto é que **nada exercita o SQL Server a sério**: os bloqueios `WITH (UPDLOCK, ROWLOCK)` que impedem duas notas de crédito simultâneas sobre a mesma fatura, a transação partilhada entre Sales e Inventory e a reversão de stock na anulação só são verificados contra storages substituídos.
+### Testes de unidade — 778, sem base de dados
+
+As camadas Application são testadas com storages substituídos (NSubstitute), a biblioteca fiscal é testada diretamente — incluindo a validação dos ficheiros SAF-T e de inventário contra os XSD oficiais — e o cliente de email e a obtenção de tokens do Identity com um `HttpMessageHandler` e um `TimeProvider` de teste. Correm em segundos e não precisam de nada instalado.
+
+### Testes de integração — 21, contra SQL Server
+
+Existem para responder às duas perguntas que um storage substituído **não consegue** responder:
+
+- **O modelo concorda com o esquema?** Uma coluna que o modelo chama de uma maneira e a migração de outra compila, migra, e só falha na primeira consulta — com um erro que parece uma migração partida e não é.
+- **Os bloqueios de linha serializam mesmo alguma coisa?** A numeração das séries, os números internos e os saldos de stock assentam inteiramente em `WITH (UPDLOCK, HOLDLOCK, ROWLOCK)`. Um substituto devolve a mesma linha aos dois chamadores e ambos passam, exista o bloqueio ou não.
+
+Não é teoria: até hoje apanharam **quatro bugs reais** que os testes de unidade davam por bons — o primeiro movimento de um artigo a rebentar sob concorrência, o acerto de existências sem transação nenhuma, o `Invalid column name 'ShipFrom_Address'` ao faturar a partir de guias, e nove em cada dez receções simultâneas a falhar por colisão de número.
+
+**Preparação, uma vez:**
+
+```powershell
+sqlcmd -S "(localdb)\MSSQLLocalDB" -Q "CREATE DATABASE [ErpIntegrationTests]"
+```
+
+Os testes **migram-na sozinhos** e **nunca a apagam** — poder abri-la depois de uma falha vale mais do que deixar o servidor arrumado. É descartável: apague-a e volte a criá-la quando quiser. Limpam-na no arranque, por isso cada execução começa do zero. Para apontar para outro servidor, defina `ERP_TEST_SQL` com a *connection string* completa.
+
+**Correr só estes:**
+
+```powershell
+dotnet test Erp.slnx --filter "Category=Integration"
+```
+
+Cada teste cria **a sua própria empresa**. Quase tudo neste sistema tem âmbito de empresa, o que torna esse isolamento barato e verdadeiro, e evita esvaziar tabelas entre testes. O contentor de DI é construído com o mesmo `AddErpModules` que o `Program.cs` usa — um teste que montasse a sua própria versão estaria a testar a sua própria montagem, e continuaria a passar depois de a produção divergir.
+
+O CI ainda os exclui, com `--filter "Category!=Integration"`, porque o *runner* não tem SQL Server — ver [Estado atual e limitações conhecidas](#estado-atual-e-limitações-conhecidas).
 
 ---
 
@@ -443,11 +472,11 @@ O `pending` devolve o que os fornecedores ainda devem, linha a linha, e é o que
 
 ### Receção de mercadoria
 
-É aqui que **uma compra movimenta stock**. A receção entra no razão como qualquer documento — o `IStockRecorder` já era agnóstico do módulo — e a receção, as entradas no razão e as quantidades recebidas da encomenda são escritas **na mesma transação**, através do `SharedDbConnection` e do `IAmbientDbTransaction`. Sem isso o armazém e a encomenda ficariam a discordar sobre o que chegou, e ninguém daria por isso até um teste de stocks.
+É aqui que **uma compra movimenta stock**. A receção entra no razão como qualquer documento — o `IStockRecorder` já era agnóstico do módulo — e a receção, as entradas no razão e as quantidades recebidas da encomenda são escritas **na mesma transação** — hoje simplesmente porque partilham o `ErpDbContext`, e o serviço abre a transação pelo `IErpUnitOfWork`. Sem isso o armazém e a encomenda ficariam a discordar sobre o que chegou, e ninguém daria por isso até um teste de stocks.
 
 Não se recebe mais do que a encomenda ainda deve, e a encomenda é **bloqueada antes** de se ler o que falta — o mesmo problema e a mesma solução do "não faturar mais do que a guia moveu". Mercadoria que chega sem encomenda é aceite: acontece, e recusá-la não ajudaria ninguém.
 
-Ao contrário da encomenda, **a receção não se edita**, porque já moveu stock. Anular retira o stock por lançamento contrário e devolve a quantidade à encomenda, que volta a ficar a dever o que devia. E **é aqui que um custo real entra no sistema**: cada linha leva o seu custo unitário para o razão, que é o que a fase 6 vai usar para o custo médio ponderado.
+Ao contrário da encomenda, **a receção não se edita**, porque já moveu stock. Anular retira o stock por lançamento contrário e devolve a quantidade à encomenda, que volta a ficar a dever o que devia. E **é aqui que um custo real entra no sistema**: cada linha leva o seu custo unitário para o razão, e é dele que sai o custo médio ponderado.
 
 | Método | Rota | Autorização |
 |---|---|---|
@@ -611,7 +640,7 @@ As rotas são sempre em **inglês**, mesmo com a interface em português, e as p
 
 - [Certificação AT do Erp.Sales](docs/certificacao-at-sales.md) — plano de implementação da emissão de documentos de venda certificada em Portugal: cadeia de assinatura, séries e ATCUD, código QR, SAF-T (PT) e o esquema do `SalesDb`.
 - [Gestão de stocks e inventário](docs/inventario-stocks.md) — desenho do módulo Inventory: armazéns, razão de movimentos, documentos integradores, contagens e o ficheiro de inventário. As decisões marcadas **[decisão]** são as caras de mudar depois.
-- [Um `DbContext` para os módulos de negócio](docs/single-dbcontext.md) — plano para juntar os cinco contextos num só e apagar a maquinaria que existe só para os coser. Bloqueia a fase 5a das compras.
+- [Um `DbContext` para os módulos de negócio](docs/single-dbcontext.md) — o plano, já executado, de juntar os cinco contextos num só e apagar a maquinaria que existia só para os coser — a ligação partilhada, a transação ambiente e um *unit of work* por módulo.
 - [Gestão de compras](docs/purchasing.md) — desenho do módulo Purchasing: encomendas, receção, registo de faturas de fornecedor e autofaturação, com a análise de que documentos de compra são fiscalmente relevantes — e porque é que só um deles é.
 
 ---
@@ -637,7 +666,7 @@ Em resumo:
 Registo honesto do que ainda não está feito, para evitar surpresas:
 
 - **Dados mestre no Core** — o catálogo de artigos (com família, subfamília e marca), os clientes, os fornecedores e os armazéns vivem no módulo Core, porque são partilhados: Sales fatura-os, Purchasing vai comprá-los e Inventory reporta-os. Cada documento emitido guarda a sua própria cópia, pelo que editá-los nunca altera o que já foi faturado.
-- **Módulos por implementar** — Accounting e Reporting ainda não existem: entram como pasta de controllers e camadas próprias quando forem escritos. Core, Sales, Inventory, Notification e **Purchasing** estão completos: o [plano de compras](docs/purchasing.md#fases) está todo feito, das encomendas ao custeio.
+- **Módulos por implementar** — Accounting e Reporting ainda não existem: entram como pasta de controllers e camadas próprias quando forem escritos. Core, SeriesRegistry, Sales, Inventory, Notification e **Purchasing** estão completos: o [plano de compras](docs/purchasing.md#fases) está todo feito, das encomendas ao custeio.
 - **Menu com links por escrever** — Contabilidade e Relatórios ainda não têm páginas: clicá-las leva a `/not-found`.
 - **Comunicação à AT é manual** — as séries, as guias de transporte e os ficheiros são preparados e validados pelo ERP, mas quem os submete é o utilizador: os *webservices* SOAP da AT não estão integrados. O código de validação da série e o código de circulação da guia registam-se à mão.
 - **Custeio: médio ponderado, não FIFO** — o stock é valorizado ao custo médio ponderado das compras, calculado a partir do razão. O FIFO exigiria guardar camadas de custo e consumi-las por ordem, que é outra estrutura; o médio ponderado tira-se do razão sem nada de novo. O custo da ficha do artigo sobreviveu apenas como recurso último, para artigos que nenhuma compra chegou a custear, e o ficheiro de inventário diz quantas linhas precisaram dele.

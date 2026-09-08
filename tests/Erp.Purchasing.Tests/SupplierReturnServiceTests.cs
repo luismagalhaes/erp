@@ -39,12 +39,6 @@ public class SupplierReturnServiceTests
         _returns.GetByIdAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>())
             .Returns(call => _stored.FirstOrDefault(x => x.Id == call.ArgAt<Guid>(0)));
 
-        _returns.GetLastSequenceAsync(Arg.Any<Guid>(), Arg.Any<int>(), Arg.Any<CancellationToken>())
-            .Returns(_ => _stored.Count);
-
-        _returns.NumberExistsAsync(Arg.Any<Guid>(), Arg.Any<string>(), Arg.Any<CancellationToken>())
-            .Returns(call => _stored.Any(x => x.Number == call.ArgAt<string>(1)));
-
         // What has gone back already, derived from the stored returns the way the real one does.
         _returns.GetReturnedQuantitiesAsync(Arg.Any<IReadOnlyCollection<Guid>>(), Arg.Any<CancellationToken>())
             .Returns(call =>
@@ -67,7 +61,7 @@ public class SupplierReturnServiceTests
             .Returns(_ => (IReadOnlyList<GoodsReceipt>)[.. _storedReceipts]);
     }
 
-    private SupplierReturnService CreateService() => new(_returns, _receipts, _stock, _unitOfWork);
+    private SupplierReturnService CreateService() => new(_returns, _receipts, _stock, new FakeDocumentNumbers(), _unitOfWork);
 
     private static readonly PurchaseOrderSupplierDto Supplier =
         new("F001", "Fornecedor Teste, Lda", "501234567");

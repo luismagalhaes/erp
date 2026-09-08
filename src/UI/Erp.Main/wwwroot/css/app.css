@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+﻿@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
 
 html, body {
     font-family: 'Inter', 'Segoe UI', Helvetica, Arial, sans-serif;
@@ -24,6 +24,14 @@ html, body {
 /* Side menu */
 .erp-main {
     border-top: 6px solid var(--mud-palette-primary);
+}
+
+/* Height available for the data grid rows area, so the grid toolbar, its pager and the
+   page header all stay visible without producing a page level scrollbar.
+   64px app bar + 6px separator + 32px container top margin + 32px bottom margin
+   + 52px page header + 64px grid toolbar + 56px grid pager. */
+.erp-grid {
+    --erp-grid-height: calc(100vh - 306px);
 }
 
 .erp-drawer {
@@ -70,6 +78,20 @@ html, body {
 }
 
 /* Dense forms: an ERP screen must show as many fields as possible without scrolling. */
+/* Data grid columns panel: keep it compact and scrollable when there are many columns. */
+.mud-data-grid-columns-panel {
+    min-width: 260px;
+    max-height: 420px;
+    overflow-y: auto;
+}
+
+.erp-breadcrumbs .mud-breadcrumb-item,
+.erp-breadcrumbs .mud-breadcrumb-item a,
+.erp-breadcrumbs .mud-breadcrumb-separator {
+    font-size: 1.125rem;
+    font-weight: 500;
+}
+
 .erp-form .mud-grid {
     margin: -6px;
     width: calc(100% + 12px);

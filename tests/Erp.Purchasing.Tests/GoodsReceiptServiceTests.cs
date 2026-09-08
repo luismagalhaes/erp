@@ -39,12 +39,6 @@ public class GoodsReceiptServiceTests
         _receipts.GetByIdAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>())
             .Returns(call => _stored.FirstOrDefault(x => x.Id == call.ArgAt<Guid>(0)));
 
-        _receipts.GetLastSequenceAsync(Arg.Any<Guid>(), Arg.Any<int>(), Arg.Any<CancellationToken>())
-            .Returns(_ => _stored.Count);
-
-        _receipts.NumberExistsAsync(Arg.Any<Guid>(), Arg.Any<string>(), Arg.Any<CancellationToken>())
-            .Returns(call => _stored.Any(x => x.Number == call.ArgAt<string>(1)));
-
         _orders.GetForUpdateByLineAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>())
             .Returns(call => _placedOrders.FirstOrDefault(
                 order => order.Lines.Any(line => line.Id == call.ArgAt<Guid>(0))));
@@ -53,7 +47,7 @@ public class GoodsReceiptServiceTests
             .Returns(call => _placedOrders.FirstOrDefault(order => order.Id == call.ArgAt<Guid>(0)));
     }
 
-    private GoodsReceiptService CreateService() => new(_receipts, _orders, _stock, _unitOfWork);
+    private GoodsReceiptService CreateService() => new(_receipts, _orders, _stock, new FakeDocumentNumbers(), _unitOfWork);
 
     private static readonly PurchaseOrderSupplierDto Supplier =
         new("F001", "Fornecedor Teste, Lda", "501234567");

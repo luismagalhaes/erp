@@ -18,6 +18,15 @@ public interface IInventoryCountService
         string? userId,
         CancellationToken cancellationToken = default);
 
+    /// <summary>
+    /// Adds a product to an open sheet — something found that the system had never heard of, or the
+    /// opening stock of a warehouse it believes is empty.
+    /// </summary>
+    Task<InventoryCountDto?> AddLineAsync(
+        Guid countId,
+        AddCountLineRequest request,
+        CancellationToken cancellationToken = default);
+
     /// <summary>Records what was found. Only while the count is open.</summary>
     Task<InventoryCountDto?> SetCountedAsync(
         Guid countId,

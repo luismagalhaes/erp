@@ -81,17 +81,23 @@ public sealed class StockMovementStorage(ErpDbContext dbContext) : IStockMovemen
 
         foreach (var movementId in movementIds)
         {
-            // EF1002: only the table name is interpolated, and it comes from the model.
+            // Executed rather than queried, because all that is wanted here is the lock — the
+            // movement itself is loaded properly below.
+            //
+            // It also has to be executed. Composing LINQ over FromSqlRaw makes EF wrap the raw
+            // statement in a subquery and project the columns itself, and for a *complex property*
+            // it projects the default names — [ShipFrom_Address] rather than the [ShipFromAddress]
+            // the mapping and the table both use. The query then fails with "Invalid column name",
+            // and only on this entity, because it is the only one mapped with ComplexProperty.
+            //
+            // EF1002: only the table name is interpolated, and it comes from the model. The id is
+            // passed as parameter {0}.
 #pragma warning disable EF1002
-            var locked = await dbContext.Set<StockMovement>()
-                .FromSqlRaw(
-                    $"SELECT * FROM {QualifiedTableName.For<StockMovement>(dbContext)} WITH (UPDLOCK, ROWLOCK) WHERE [Id] = {{0}}",
-                    movementId)
-                .FirstOrDefaultAsync(cancellationToken);
+            await dbContext.Database.ExecuteSqlRawAsync(
+                $"SELECT 1 FROM {QualifiedTableName.For<StockMovement>(dbContext)} WITH (UPDLOCK, ROWLOCK) WHERE [Id] = {{0}}",
+                [movementId],
+                cancellationToken);
 #pragma warning restore EF1002
-
-            if (locked is null)
-                continue;
 
             // Loaded separately, because the locking statement alone brings neither the lines nor
             // the status changes that say whether the movement still stands.

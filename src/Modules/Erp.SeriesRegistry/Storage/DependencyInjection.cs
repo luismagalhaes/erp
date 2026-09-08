@@ -19,6 +19,11 @@ public static class DependencyInjection
         services.AddScoped<ISeriesStorage, Storage.SeriesStorage>();
         services.AddScoped<ISeriesService, SeriesService>();
 
+        // The counter behind the internal document numbers, which are not fiscal but still have to
+        // run in sequence.
+        services.AddScoped<IDocumentCounterStorage, Storage.DocumentCounterStorage>();
+        services.AddScoped<IDocumentNumbers, DocumentNumbers>();
+
         return services;
     }
 }

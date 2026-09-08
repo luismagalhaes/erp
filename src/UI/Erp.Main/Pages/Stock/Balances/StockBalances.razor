@@ -38,8 +38,8 @@
     @if (Company.HasCompany && _warehouses.Count == 0 && !_loading)
     {
         <MudAlert Severity="Severity.Warning">
-            Esta empresa ainda não tem armazéns, por isso não há onde guardar stock.
-            <MudLink Href="warehouses/new" Class="ml-2">Criar armazém</MudLink>
+            Esta empresa ainda não tem armazéns, por isso não há onde guardar stock. Criam-se na ficha
+            da empresa, no separador <strong>Armazéns</strong>.
         </MudAlert>
     }
 

@@ -32,5 +32,18 @@ public sealed class SeriesModelConfiguration : IModuleModelConfiguration
             entity.HasIndex(x => new { x.CompanyId, x.DocumentType, x.SeriesCode }).IsUnique();
             entity.HasIndex(x => x.CompanyId);
         });
+
+        modelBuilder.Entity<DocumentCounter>(entity =>
+        {
+            entity.ToTable("DocumentCounter");
+            entity.HasKey(x => x.Id);
+
+            entity.Property(x => x.Prefix).HasMaxLength(8).IsRequired();
+            entity.Property(x => x.RowVersion).IsRowVersion();
+
+            // One counter per company, prefix and year — and the index is what the range lock in
+            // DocumentCounterStorage holds on to when the row does not exist yet.
+            entity.HasIndex(x => new { x.CompanyId, x.Prefix, x.Year }).IsUnique();
+        });
     }
 }

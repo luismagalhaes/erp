@@ -22,6 +22,13 @@ public sealed class InventoryCountLine
     public decimal CountedQuantity { get; set; }
 
     /// <summary>
+    /// What the goods cost, when the count knows and the ledger does not. Only meaningful on a line
+    /// added to the sheet — opening stock, or something found that the system had never heard of —
+    /// because everything else is already worth the average of what came in.
+    /// </summary>
+    public decimal? UnitCost { get; set; }
+
+    /// <summary>
     /// What was actually written to the ledger when the count closed, measured against the balance
     /// at that moment. Null while the count is open.
     /// </summary>

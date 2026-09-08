@@ -1,3 +1,4 @@
+using Erp.Common;
 using Erp.Purchasing.Application.Services;
 using Erp.Purchasing.Domain;
 using Erp.Purchasing.Infrastructure.Contracts;
@@ -10,6 +11,7 @@ namespace Erp.Purchasing.Tests;
 public class PurchaseOrderServiceTests
 {
     private readonly IPurchaseOrderStorage _storage = Substitute.For<IPurchaseOrderStorage>();
+    private readonly IErpUnitOfWork _unitOfWork = Substitute.For<IErpUnitOfWork>();
     private readonly Guid _companyId = Guid.NewGuid();
     private readonly Guid _supplierId = Guid.NewGuid();
     private readonly Guid _warehouseId = Guid.NewGuid();
@@ -18,6 +20,9 @@ public class PurchaseOrderServiceTests
 
     public PurchaseOrderServiceTests()
     {
+        _unitOfWork.BeginTransactionAsync(Arg.Any<CancellationToken>())
+            .Returns(Substitute.For<IErpTransaction>());
+
         _storage.When(x => x.AddAsync(Arg.Any<PurchaseOrder>(), Arg.Any<CancellationToken>()))
             .Do(call => _orders.Add(call.Arg<PurchaseOrder>()));
 
@@ -29,15 +34,9 @@ public class PurchaseOrderServiceTests
 
         _storage.GetPendingAsync(Arg.Any<Guid>(), Arg.Any<Guid?>(), Arg.Any<CancellationToken>())
             .Returns(_ => (IReadOnlyList<PurchaseOrder>)[.. _orders.Where(order => order.IsOpen)]);
-
-        _storage.NumberExistsAsync(Arg.Any<Guid>(), Arg.Any<string>(), Arg.Any<CancellationToken>())
-            .Returns(call => _orders.Any(order => order.Number == call.ArgAt<string>(1)));
-
-        _storage.GetLastSequenceAsync(Arg.Any<Guid>(), Arg.Any<int>(), Arg.Any<CancellationToken>())
-            .Returns(_ => _orders.Count);
     }
 
-    private PurchaseOrderService CreateService() => new(_storage);
+    private PurchaseOrderService CreateService() => new(_storage, new FakeDocumentNumbers(), _unitOfWork);
 
     private static PurchaseOrderLineRequest Line(
         string productCode = "ART001",
@@ -88,18 +87,21 @@ public class PurchaseOrderServiceTests
     }
 
     /// <summary>
-    /// A number already taken is skipped rather than allowed to collide. A gap costs nothing here,
-    /// unlike a fiscal series where it would have to be explained.
+    /// The number comes from the counter, and the order is written inside the transaction that
+    /// holds it. Taking the number outside that transaction would release the lock before the order
+    /// carrying it existed, which is the whole reason the counter is read here and not earlier.
     /// </summary>
     [Fact]
-    public async Task CreateAsync_skips_a_number_that_is_already_taken()
+    public async Task CreateAsync_takes_its_number_inside_the_transaction_that_writes_the_order()
     {
-        _storage.GetLastSequenceAsync(Arg.Any<Guid>(), Arg.Any<int>(), Arg.Any<CancellationToken>()).Returns(0);
-        _storage.NumberExistsAsync(_companyId, "ENC2026/1", Arg.Any<CancellationToken>()).Returns(true);
+        await CreateService().CreateAsync(Request(), "user-1");
 
-        var created = await CreateService().CreateAsync(Request(), "user-1");
-
-        created.Number.Should().Be("ENC2026/2");
+        Received.InOrder(() =>
+        {
+            _unitOfWork.BeginTransactionAsync(Arg.Any<CancellationToken>());
+            _storage.AddAsync(Arg.Any<PurchaseOrder>(), Arg.Any<CancellationToken>());
+            _storage.SaveChangesAsync(Arg.Any<CancellationToken>());
+        });
     }
 
     [Fact]

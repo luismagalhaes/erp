@@ -40,12 +40,18 @@ public sealed class StockStorage(ErpDbContext dbContext) : IStockStorage
         CancellationToken cancellationToken = default)
     {
 
+        // HOLDLOCK, and not only UPDLOCK, because this row very often does not exist yet: the first
+        // movement of a product is what creates its balance. An update lock has nothing to hold on
+        // to when nothing matches, so without HOLDLOCK several first movements all read null, all
+        // create a balance, and all but one die on the unique index. HOLDLOCK takes a lock on the
+        // key *range* instead, which is what makes "read, and insert if it was not there" safe.
+        //
         // EF1002/EF1003: only the table name is interpolated, and it comes from the model. The
         // company, warehouse and product code are passed as parameters {0}, {1} and {2}.
 #pragma warning disable EF1002, EF1003
         var locked = await dbContext.Set<StockBalance>()
             .FromSqlRaw(
-                $"SELECT * FROM {QualifiedTableName.For<StockBalance>(dbContext)} WITH (UPDLOCK, ROWLOCK) " +
+                $"SELECT * FROM {QualifiedTableName.For<StockBalance>(dbContext)} WITH (UPDLOCK, HOLDLOCK, ROWLOCK) " +
                 "WHERE [CompanyId] = {0} AND [WarehouseId] = {1} AND [ProductCode] = {2}",
                 companyId, warehouseId, productCode)
             .FirstOrDefaultAsync(cancellationToken);

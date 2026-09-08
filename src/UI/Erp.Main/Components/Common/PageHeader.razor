@@ -5,9 +5,13 @@
     <MudStack Spacing="0">
         @if (Breadcrumbs is not null && Breadcrumbs.Count > 0)
         {
-            <MudBreadcrumbs Items="Breadcrumbs" Class="pa-0 mb-1" Separator="/" />
+            @* On detail pages the breadcrumb already states the page, so the title is redundant. *@
+            <MudBreadcrumbs Items="Breadcrumbs" Class="erp-breadcrumbs pa-0" Separator="/" />
         }
-        <MudText Typo="Typo.h4">@Title</MudText>
+        else
+        {
+            <MudText Typo="Typo.h4">@Title</MudText>
+        }
         @if (!string.IsNullOrWhiteSpace(Description))
         {
             <MudText Typo="Typo.body2" Class="mud-text-secondary">@Description</MudText>

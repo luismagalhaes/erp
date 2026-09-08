@@ -85,27 +85,6 @@ public sealed class PurchaseOrderStorage(ErpDbContext dbContext) : IPurchaseOrde
             .ToListAsync(cancellationToken);
     }
 
-    public Task<bool> NumberExistsAsync(Guid companyId, string number, CancellationToken cancellationToken = default) =>
-        dbContext.Set<PurchaseOrder>().AnyAsync(x => x.CompanyId == companyId && x.Number == number, cancellationToken);
-
-    public async Task<int> GetLastSequenceAsync(Guid companyId, int year, CancellationToken cancellationToken = default)
-    {
-        var prefix = $"ENC{year}/";
-
-        var numbers = await dbContext.Set<PurchaseOrder>()
-            .AsNoTracking()
-            .Where(x => x.CompanyId == companyId && x.Number.StartsWith(prefix))
-            .Select(x => x.Number)
-            .ToListAsync(cancellationToken);
-
-        // Parsed in memory: the sequence is the tail of a string, and asking SQL Server to split it
-        // would buy nothing on the handful of rows a company writes in a year.
-        return numbers
-            .Select(number => int.TryParse(number[prefix.Length..], out var sequence) ? sequence : 0)
-            .DefaultIfEmpty(0)
-            .Max();
-    }
-
     public async Task AddAsync(PurchaseOrder order, CancellationToken cancellationToken = default) =>
         await dbContext.Set<PurchaseOrder>().AddAsync(order, cancellationToken);
 

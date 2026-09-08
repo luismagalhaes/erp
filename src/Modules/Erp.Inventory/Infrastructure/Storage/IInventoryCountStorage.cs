@@ -12,4 +12,10 @@ public interface IInventoryCountStorage
     Task<bool> HasOpenCountAsync(Guid companyId, CancellationToken cancellationToken = default);
 
     Task AddAsync(InventoryCount count, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Adds a line to a sheet that is already open. Tracked separately because the count itself is
+    /// unchanged — only its lines grow.
+    /// </summary>
+    Task AddLineAsync(InventoryCountLine line, CancellationToken cancellationToken = default);
 }

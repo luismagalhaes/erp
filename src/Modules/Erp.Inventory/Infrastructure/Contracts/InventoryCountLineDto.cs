@@ -10,4 +10,5 @@ public sealed record InventoryCountLineDto(
     string ProductDescription,
     decimal SystemQuantity,
     decimal CountedQuantity,
-    decimal? AppliedDifference);
+    decimal? AppliedDifference,
+    decimal? UnitCost = null);

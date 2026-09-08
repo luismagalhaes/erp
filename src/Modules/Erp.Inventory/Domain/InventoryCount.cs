@@ -86,6 +86,63 @@ public sealed class InventoryCount
         return count;
     }
 
+    /// <summary>
+    /// Adds a product the sheet did not have — something found on the shelf that the system had
+    /// never heard of, or the opening stock of a warehouse the system believes is empty.
+    /// </summary>
+    /// <remarks>
+    /// Without this a count could only ever confirm or correct what was already known, which makes
+    /// it useless for the one case where counting matters most: a company that starts using the
+    /// system with a full warehouse. The line opens at a system quantity of zero, so whatever is
+    /// counted becomes the difference the ledger receives.
+    /// </remarks>
+    /// <param name="unitCost">
+    /// What the goods cost. The ledger has never seen these, so nothing else can say what they are
+    /// worth — left null they enter at whatever average the product already carries, which for
+    /// something genuinely new is nothing.
+    /// </param>
+    public InventoryCountLine AddLine(
+        Guid warehouseId,
+        string productCode,
+        string productDescription,
+        decimal? unitCost = null)
+    {
+        EnsureOpen();
+        ArgumentException.ThrowIfNullOrWhiteSpace(productCode);
+
+        if (warehouseId == Guid.Empty)
+            throw new ArgumentException("A counted line has to say which warehouse it is in.", nameof(warehouseId));
+
+        // A count of one warehouse that reached into another would close against balances outside
+        // its own scope.
+        if (WarehouseId is { } scoped && scoped != warehouseId)
+        {
+            throw new ArgumentException(
+                "This count is of one warehouse, so a line cannot be added for another.",
+                nameof(warehouseId));
+        }
+
+        var code = productCode.Trim();
+
+        if (Lines.Any(x => x.WarehouseId == warehouseId && string.Equals(x.ProductCode, code, StringComparison.Ordinal)))
+            throw new InvalidOperationException($"'{code}' is already on this count sheet.");
+
+        var line = new InventoryCountLine
+        {
+            CountId = Id,
+            WarehouseId = warehouseId,
+            ProductCode = code,
+            ProductDescription = productDescription,
+            SystemQuantity = 0m,
+            CountedQuantity = 0m,
+            UnitCost = unitCost
+        };
+
+        Lines.Add(line);
+
+        return line;
+    }
+
     /// <summary>Records what was found. Only possible while the count is open.</summary>
     public void SetCounted(Guid lineId, decimal countedQuantity)
     {

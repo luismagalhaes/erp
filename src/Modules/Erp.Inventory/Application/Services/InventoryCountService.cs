@@ -58,8 +58,28 @@ public sealed class InventoryCountService(
             })
             .ToList();
 
-        if (lines.Count == 0)
-            throw new ArgumentException("There is no stock in the chosen scope to count.", nameof(request));
+        // Asked for by name and not on the shelf as far as the system knows — but the caller named
+        // it, so it belongs on the sheet at zero rather than being quietly left out.
+        if (wanted is not null && request.WarehouseId is { } warehouse)
+        {
+            var present = lines.Select(line => line.ProductCode).ToHashSet(StringComparer.Ordinal);
+
+            lines.AddRange(wanted
+                .Where(code => !present.Contains(code))
+                .Select(code => new InventoryCountLine
+                {
+                    WarehouseId = warehouse,
+                    ProductCode = code,
+                    // Nothing to take a description from; the product file belongs to another
+                    // module, and the code is what the sheet is read by anyway.
+                    ProductDescription = code,
+                    SystemQuantity = 0m
+                }));
+        }
+
+        // An empty sheet is not refused. A company that starts with a full warehouse has no
+        // balances at all, and a count is how that stock gets in — refusing here would leave the
+        // only door locked from the inside. Products are added to the sheet as they are found.
 
         var scope = DetermineScope(request);
 
@@ -74,6 +94,26 @@ public sealed class InventoryCountService(
             userId);
 
         await countStorage.AddAsync(count, cancellationToken);
+        await unitOfWork.SaveChangesAsync(cancellationToken);
+
+        return Map(count);
+    }
+
+    public async Task<InventoryCountDto?> AddLineAsync(
+        Guid countId,
+        AddCountLineRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+
+        var count = await countStorage.GetByIdAsync(countId, cancellationToken);
+        if (count is null)
+            return null;
+
+        var line = count.AddLine(
+            request.WarehouseId, request.ProductCode, request.ProductDescription, request.UnitCost);
+
+        await countStorage.AddLineAsync(line, cancellationToken);
         await unitOfWork.SaveChangesAsync(cancellationToken);
 
         return Map(count);
@@ -136,7 +176,10 @@ public sealed class InventoryCountService(
                 count.CountDate,
                 $"Inventário {count.Reference}",
                 count.Id,
-                userId);
+                userId,
+                // Only a line added to the sheet carries one: what the ledger already knows about
+                // is worth the average it already has.
+                line.UnitCost);
 
             await ApplyAsync(entry, cancellationToken);
         }
@@ -193,5 +236,6 @@ public sealed class InventoryCountService(
                     line.ProductDescription,
                     line.SystemQuantity,
                     line.CountedQuantity,
-                    line.AppliedDifference))]);
+                    line.AppliedDifference,
+                    line.UnitCost))]);
 }

@@ -34,4 +34,7 @@ public sealed class InventoryCountStorage(ErpDbContext dbContext) : IInventoryCo
 
     public async Task AddAsync(InventoryCount count, CancellationToken cancellationToken = default) =>
         await dbContext.Set<InventoryCount>().AddAsync(count, cancellationToken);
+
+    public async Task AddLineAsync(InventoryCountLine line, CancellationToken cancellationToken = default) =>
+        await dbContext.Set<InventoryCountLine>().AddAsync(line, cancellationToken);
 }

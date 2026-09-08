@@ -6,6 +6,7 @@
 @using Erp.Main.Models
 @using Erp.Main.Services
 @inject StockApiClient StockApi
+@inject CatalogApiClient Catalog
 @inject NavigationManager Navigation
 @inject ISnackbar Snackbar
 
@@ -65,6 +66,10 @@
                     @if (_count.IsOpen)
                     {
                         <MudStack Row="true" Spacing="2">
+                            <MudButton Variant="Variant.Outlined" StartIcon="@Icons.Material.Filled.Add"
+                                       OnClick="OpenAddLine">
+                                Artigo
+                            </MudButton>
                             <MudButton Variant="Variant.Outlined" Color="Color.Primary"
                                        StartIcon="@Icons.Material.Filled.Save"
                                        Disabled="@(_saving || !HasUnsavedChanges)"
@@ -82,6 +87,15 @@
             <MudAlert Severity="Severity.Info" Dense="true">
                 Há quantidades por guardar. Fechar a contagem usa o que estiver guardado, por isso
                 guarde antes de fechar.
+            </MudAlert>
+        }
+
+        @if (_count.IsOpen && _lines.Count == 0)
+        {
+            <MudAlert Severity="Severity.Info">
+                A folha está vazia porque o sistema não tem existências neste âmbito. É assim que se
+                introduz o <strong>stock de abertura</strong>: acrescente os artigos com
+                <strong>Artigo</strong>, indique a quantidade e o custo, e feche a contagem.
             </MudAlert>
         }
 
@@ -177,6 +191,64 @@
     }
 </MudStack>
 
+@* --- Acrescentar artigo à folha --- *@
+<MudDialog @bind-Visible="_addOpen" Options="_dialogOptions">
+    <TitleContent>
+        <MudText Typo="Typo.h6">Acrescentar artigo à contagem</MudText>
+    </TitleContent>
+    <DialogContent>
+        <MudText Typo="Typo.body2" Color="Color.Secondary" Class="mb-3">
+            Para mercadoria que está na prateleira e o sistema desconhece. A linha entra a zero, por
+            isso o que contar é o que dá entrada.
+        </MudText>
+
+        <MudGrid>
+            <MudItem xs="12" md="7">
+                <MudSelect T="Guid?" Value="_addProductId" ValueChanged="OnAddProductChanged"
+                           Label="Artigo" Variant="Variant.Outlined" Required="true">
+                    @foreach (var product in _products)
+                    {
+                        <MudSelectItem T="Guid?" Value="@product.Id">
+                            @product.ProductCode — @product.Description
+                        </MudSelectItem>
+                    }
+                </MudSelect>
+            </MudItem>
+            <MudItem xs="12" md="5">
+                <MudSelect T="Guid?" @bind-Value="_addWarehouseId" @bind-Value:after="StateHasChanged"
+                           Label="Armazém" Variant="Variant.Outlined" Required="true"
+                           Disabled="@(_count?.WarehouseId is not null)"
+                           HelperText="@(_count?.WarehouseId is not null ? "A contagem é de um armazém só" : null)">
+                    @foreach (var warehouse in _warehouses)
+                    {
+                        <MudSelectItem T="Guid?" Value="@warehouse.Id">
+                            @warehouse.Code — @warehouse.Name
+                        </MudSelectItem>
+                    }
+                </MudSelect>
+            </MudItem>
+            <MudItem xs="12" md="5">
+                <MudNumericField T="decimal?" @bind-Value="_addUnitCost" Label="Custo unitário"
+                                 Variant="Variant.Outlined" Format="N4" Clearable="true" />
+            </MudItem>
+            <MudItem xs="12" md="7" Class="d-flex align-center">
+                <MudText Typo="Typo.caption" Color="Color.Secondary">
+                    O razão nunca viu esta mercadoria, por isso mais nada sabe quanto vale. Em branco,
+                    entra ao custo médio que o artigo já tiver — que para um artigo novo é zero.
+                </MudText>
+            </MudItem>
+        </MudGrid>
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="@(() => _addOpen = false)">Cancelar</MudButton>
+        <MudButton Variant="Variant.Filled" Color="Color.Primary"
+                   Disabled="@(_adding || _addProductId is null || _addWarehouseId is null)"
+                   OnClick="AddLineAsync">
+            Acrescentar
+        </MudButton>
+    </DialogActions>
+</MudDialog>
+
 @code {
     [Parameter]
     public Guid Id { get; set; }
@@ -191,6 +263,15 @@
     private InventoryCount? _count;
     private List<InventoryCountLine> _lines = [];
     private List<Warehouse> _warehouses = [];
+    private List<ProductListItem> _products = [];
+
+    private readonly DialogOptions _dialogOptions = new() { MaxWidth = MaxWidth.Medium, FullWidth = true };
+
+    private bool _addOpen;
+    private bool _adding;
+    private Guid? _addProductId;
+    private Guid? _addWarehouseId;
+    private decimal? _addUnitCost;
 
     /// <summary>
     /// What was typed but not yet sent. Only these lines travel on save, which keeps a count of a
@@ -226,8 +307,14 @@
             if (_count is not null)
             {
                 var (warehouses, error) = await StockApi.GetWarehousesAsync(_count.CompanyId);
-                _warehouses = [.. warehouses];
-                _error = error;
+                _warehouses = [.. warehouses.Where(warehouse => warehouse.IsActive)];
+
+                // The sheet can grow, so the product file has to be at hand.
+                var (products, productsError) = await Catalog.GetProductsAsync(_count.CompanyId);
+                _products = [.. products.Where(product => product.IsActive)
+                    .OrderBy(product => product.ProductCode, StringComparer.Ordinal)];
+
+                _error = error ?? productsError;
             }
         }
         catch (Exception ex)
@@ -237,6 +324,66 @@
         finally
         {
             _loading = false;
+        }
+    }
+
+    private void OpenAddLine()
+    {
+        _addProductId = null;
+        _addUnitCost = null;
+
+        // A count of one warehouse has only one answer, so it is fixed rather than asked for.
+        _addWarehouseId = _count?.WarehouseId ?? _warehouses.FirstOrDefault(x => x.IsDefault)?.Id
+            ?? _warehouses.FirstOrDefault()?.Id;
+
+        _addOpen = true;
+    }
+
+    /// <summary>Suggests the cost from the product file, which the user is free to overwrite.</summary>
+    private void OnAddProductChanged(Guid? productId)
+    {
+        _addProductId = productId;
+
+        if (_products.FirstOrDefault(x => x.Id == productId) is { } product && _addUnitCost is null)
+            _addUnitCost = product.UnitCost == 0 ? null : product.UnitCost;
+
+        StateHasChanged();
+    }
+
+    private async Task AddLineAsync()
+    {
+        if (_products.FirstOrDefault(x => x.Id == _addProductId) is not { } product)
+            return;
+
+        _adding = true;
+        _error = null;
+
+        try
+        {
+            var (count, error) = await StockApi.AddCountLineAsync(Id, new AddCountLineRequest(
+                _addWarehouseId!.Value, product.ProductCode, product.Description, _addUnitCost));
+
+            if (count is null)
+            {
+                _error = error ?? "Não foi possível acrescentar o artigo.";
+                return;
+            }
+
+            // Reloading keeps whatever was typed and not yet saved, which the new sheet would drop.
+            _count = count;
+            _lines = [.. count.Lines.Select(line =>
+                _pending.TryGetValue(line.Id, out var counted) ? line with { CountedQuantity = counted } : line)];
+
+            Snackbar.Add($"{product.ProductCode} acrescentado à contagem.", Severity.Success);
+            _addOpen = false;
+        }
+        catch (Exception ex)
+        {
+            _error = $"Não foi possível acrescentar o artigo: {ex.Message}";
+        }
+        finally
+        {
+            _adding = false;
         }
     }
 

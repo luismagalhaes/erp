@@ -39,6 +39,7 @@
     <Project Path="tests/Erp.Purchasing.Tests/Erp.Purchasing.Tests.csproj" />
     <Project Path="tests/Erp.SeriesRegistry.Tests/Erp.SeriesRegistry.Tests.csproj" />
     <Project Path="tests/Erp.Sales.Tests/Erp.Sales.Tests.csproj" />
+    <Project Path="tests/Erp.IntegrationTests/Erp.IntegrationTests.csproj" />
   </Folder>
   <Folder Name="/tests/Identity/">
     <Project Path="tests/Erp.Identity.Tests/Erp.Identity.Tests.csproj" />

@@ -1,3 +1,5 @@
+using Erp.Common;
+using Erp.SeriesRegistry.Infrastructure.Application;
 using Erp.Purchasing.Domain;
 using Erp.Purchasing.Infrastructure.Application;
 using Erp.Purchasing.Infrastructure.Contracts;
@@ -10,7 +12,10 @@ namespace Erp.Purchasing.Application.Services;
 /// order can be corrected in place, which is the opposite of how <c>Erp.Sales</c> works and worth
 /// keeping in mind when reading both.
 /// </summary>
-public sealed class PurchaseOrderService(IPurchaseOrderStorage storage) : IPurchaseOrderService
+public sealed class PurchaseOrderService(
+    IPurchaseOrderStorage storage,
+    IDocumentNumbers documentNumbers,
+    IErpUnitOfWork unitOfWork) : IPurchaseOrderService
 {
     /// <summary>Prefix of the order number. Ours, with no fiscal meaning.</summary>
     private const string NumberPrefix = "ENC";
@@ -78,7 +83,12 @@ public sealed class PurchaseOrderService(IPurchaseOrderStorage storage) : IPurch
 
         EnsureDeliverable(request.OrderDate, request.ExpectedDate);
 
-        var number = await NextNumberAsync(request.CompanyId, request.OrderDate.Year, cancellationToken);
+        // A transaction only for the numbering: the counter row has to stay locked from the moment
+        // the number is taken until the order carrying it is written, or two orders take the same.
+        await using var transaction = await unitOfWork.BeginTransactionAsync(cancellationToken);
+
+        var number = await documentNumbers.NextAsync(
+            request.CompanyId, NumberPrefix, request.OrderDate.Year, cancellationToken);
 
         var order = PurchaseOrder.Create(
             request.CompanyId,
@@ -97,6 +107,7 @@ public sealed class PurchaseOrderService(IPurchaseOrderStorage storage) : IPurch
 
         await storage.AddAsync(order, cancellationToken);
         await storage.SaveChangesAsync(cancellationToken);
+        await transaction.CommitAsync(cancellationToken);
 
         return Map(order);
     }
@@ -167,25 +178,6 @@ public sealed class PurchaseOrderService(IPurchaseOrderStorage storage) : IPurch
         await storage.SaveChangesAsync(cancellationToken);
 
         return Map(order);
-    }
-
-    /// <summary>
-    /// Next number for the company and year, as <c>ENC2026/7</c>. Unlike a fiscal series this needs
-    /// no row lock: a collision is caught by the unique index and a gap costs nothing, because the
-    /// number means nothing to anyone but us.
-    /// </summary>
-    private async Task<string> NextNumberAsync(Guid companyId, int year, CancellationToken cancellationToken)
-    {
-        var sequence = await storage.GetLastSequenceAsync(companyId, year, cancellationToken) + 1;
-        var number = $"{NumberPrefix}{year}/{sequence}";
-
-        while (await storage.NumberExistsAsync(companyId, number, cancellationToken))
-        {
-            sequence++;
-            number = $"{NumberPrefix}{year}/{sequence}";
-        }
-
-        return number;
     }
 
     /// <summary>Goods cannot be expected before they were ordered.</summary>

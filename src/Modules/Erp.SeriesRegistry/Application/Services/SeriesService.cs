@@ -69,6 +69,75 @@ public sealed class SeriesService(ISeriesStorage storage, IErpUnitOfWork unitOfW
         return Map(series);
     }
 
+    public async Task<IReadOnlyList<SeriesListItemDto>> CreateStandardSetAsync(
+        Guid companyId,
+        int year,
+        string? userId,
+        CancellationToken cancellationToken = default)
+    {
+        // One reading of what is already there, rather than one per document type.
+        var existing = await storage.GetAllAsync(companyId, cancellationToken);
+
+        var taken = existing
+            .Select(series => (series.DocumentType, series.SeriesCode))
+            .ToHashSet();
+
+        var created = new List<Domain.Series>();
+
+        foreach (var documentType in StandardSeries.DocumentTypes)
+        {
+            var seriesCode = StandardSeries.CodeFor(documentType, year);
+
+            // Already set up — by a previous run, or by hand. Leave it alone: the numbers issued
+            // from it are the whole reason it cannot simply be replaced.
+            if (!taken.Add((documentType, seriesCode)))
+                continue;
+
+            var series = new Domain.Series
+            {
+                CompanyId = companyId,
+                DocumentType = documentType,
+                SeriesCode = seriesCode,
+                InitialSequence = 1,
+                StockEffect = DefaultStockEffects.For(documentType),
+                CreatedByUserId = userId
+            };
+
+            await storage.AddAsync(series, cancellationToken);
+            created.Add(series);
+        }
+
+        if (created.Count > 0)
+            await unitOfWork.SaveChangesAsync(cancellationToken);
+
+        return [.. created.Select(Map)];
+    }
+
+    public async Task<SeriesListItemDto?> UpdateAsync(
+        Guid id,
+        UpdateSeriesRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+
+        // On a create, saying nothing means "use the default for the type". On an update it means
+        // the caller sent an empty field, and silently resetting the effect is not what they meant.
+        if (string.IsNullOrWhiteSpace(request.StockEffect))
+            throw new ArgumentException("A stock effect is required.", nameof(request));
+
+        var series = await storage.GetByIdAsync(id, cancellationToken);
+        if (series is null)
+            return null;
+
+        // Everything else about a series is either communicated to the tax authority or already
+        // written into documents, so the stock effect is all that is offered.
+        series.StockEffect = ParseStockEffect(request.StockEffect, series.DocumentType);
+
+        await unitOfWork.SaveChangesAsync(cancellationToken);
+
+        return Map(series);
+    }
+
     public async Task<SeriesListItemDto?> CommunicateAsync(Guid id, string validationCode, CancellationToken cancellationToken = default)
     {
         var series = await storage.GetByIdAsync(id, cancellationToken);

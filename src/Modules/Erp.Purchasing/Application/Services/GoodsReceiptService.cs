@@ -1,3 +1,4 @@
+using Erp.SeriesRegistry.Infrastructure.Application;
 using Erp.Inventory.Domain;
 using Erp.Inventory.Infrastructure.Application;
 using Erp.Inventory.Infrastructure.Contracts;
@@ -22,6 +23,7 @@ public sealed class GoodsReceiptService(
     IGoodsReceiptStorage receiptStorage,
     IPurchaseOrderStorage orderStorage,
     IStockRecorder stockRecorder,
+    IDocumentNumbers documentNumbers,
     IErpUnitOfWork unitOfWork) : IGoodsReceiptService
 {
     /// <summary>Prefix of the receipt number. Ours, with no fiscal meaning.</summary>
@@ -60,9 +62,13 @@ public sealed class GoodsReceiptService(
         if (request.Lines.Count == 0)
             throw new ArgumentException("A receipt with no lines received nothing.", nameof(request));
 
-        var number = await NextNumberAsync(request.CompanyId, request.ReceiptDate.Year, cancellationToken);
-
         await using var transaction = await unitOfWork.BeginTransactionAsync(cancellationToken);
+
+        // Inside the transaction, and not before it: the counter row is locked while the number is
+        // taken, and a receipt that fails afterwards gives its number back instead of leaving a
+        // hole in the sequence.
+        var number = await documentNumbers.NextAsync(
+            request.CompanyId, NumberPrefix, request.ReceiptDate.Year, cancellationToken);
 
         // Locked before anything is read from them: two receipts against the same order at the same
         // time would otherwise each credit a quantity the other had already taken.
@@ -202,25 +208,6 @@ public sealed class GoodsReceiptService(
                 UnitCost: line.UnitCost))]);
 
         await stockRecorder.RecordAsync(request, userId, cancellationToken);
-    }
-
-    /// <summary>
-    /// Next number for the company and year, as <c>REC2026/7</c>. Like the order number, this is
-    /// ours and needs no row lock: a collision is caught by the unique index and a gap costs
-    /// nothing, because the number means nothing to anyone but us.
-    /// </summary>
-    private async Task<string> NextNumberAsync(Guid companyId, int year, CancellationToken cancellationToken)
-    {
-        var sequence = await receiptStorage.GetLastSequenceAsync(companyId, year, cancellationToken) + 1;
-        var number = $"{NumberPrefix}{year}/{sequence}";
-
-        while (await receiptStorage.NumberExistsAsync(companyId, number, cancellationToken))
-        {
-            sequence++;
-            number = $"{NumberPrefix}{year}/{sequence}";
-        }
-
-        return number;
     }
 
     private static GoodsReceiptLine ToLine(

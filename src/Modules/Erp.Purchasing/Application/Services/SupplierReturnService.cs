@@ -1,3 +1,4 @@
+using Erp.SeriesRegistry.Infrastructure.Application;
 using Erp.Inventory.Domain;
 using Erp.Inventory.Infrastructure.Application;
 using Erp.Inventory.Infrastructure.Contracts;
@@ -22,6 +23,7 @@ public sealed class SupplierReturnService(
     ISupplierReturnStorage returnStorage,
     IGoodsReceiptStorage receiptStorage,
     IStockRecorder stockRecorder,
+    IDocumentNumbers documentNumbers,
     IErpUnitOfWork unitOfWork) : ISupplierReturnService
 {
     private const string NumberPrefix = "DEV";
@@ -101,9 +103,11 @@ public sealed class SupplierReturnService(
         if (request.Lines.Count == 0)
             throw new ArgumentException("A return with no lines sends nothing back.", nameof(request));
 
-        var number = await NextNumberAsync(request.CompanyId, request.ReturnDate.Year, cancellationToken);
-
         await using var transaction = await unitOfWork.BeginTransactionAsync(cancellationToken);
+
+        // Inside the transaction, so the counter row stays locked while the number is taken.
+        var number = await documentNumbers.NextAsync(
+            request.CompanyId, NumberPrefix, request.ReturnDate.Year, cancellationToken);
 
         var receipts = await ResolveReceiptsAsync(request, cancellationToken);
 
@@ -238,20 +242,6 @@ public sealed class SupplierReturnService(
                 UnitCost: line.UnitCost))]);
 
         await stockRecorder.RecordAsync(request, userId, cancellationToken);
-    }
-
-    private async Task<string> NextNumberAsync(Guid companyId, int year, CancellationToken cancellationToken)
-    {
-        var sequence = await returnStorage.GetLastSequenceAsync(companyId, year, cancellationToken) + 1;
-        var number = $"{NumberPrefix}{year}/{sequence}";
-
-        while (await returnStorage.NumberExistsAsync(companyId, number, cancellationToken))
-        {
-            sequence++;
-            number = $"{NumberPrefix}{year}/{sequence}";
-        }
-
-        return number;
     }
 
     private static SupplierReturnLine ToLine(

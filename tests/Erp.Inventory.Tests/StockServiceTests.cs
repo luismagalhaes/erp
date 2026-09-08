@@ -1,3 +1,4 @@
+using Erp.Common;
 using Erp.Inventory.Application.Services;
 using Erp.Inventory.Domain;
 using Erp.Inventory.Infrastructure.Contracts;
@@ -10,6 +11,8 @@ namespace Erp.Inventory.Tests;
 public class StockServiceTests
 {
     private readonly IStockStorage _storage = Substitute.For<IStockStorage>();
+    private readonly IErpUnitOfWork _unitOfWork = Substitute.For<IErpUnitOfWork>();
+    private readonly IErpTransaction _transaction = Substitute.For<IErpTransaction>();
     private readonly Guid _companyId = Guid.NewGuid();
     private readonly Guid _warehouseId = Guid.NewGuid();
 
@@ -18,6 +21,8 @@ public class StockServiceTests
 
     public StockServiceTests()
     {
+        _unitOfWork.BeginTransactionAsync(Arg.Any<CancellationToken>()).Returns(_transaction);
+
         _storage.GetBalancesAsync(
                 Arg.Any<Guid>(), Arg.Any<Guid?>(), Arg.Any<string?>(), Arg.Any<CancellationToken>())
             .Returns(call =>
@@ -84,7 +89,7 @@ public class StockServiceTests
             });
     }
 
-    private StockService CreateService() => new(_storage);
+    private StockService CreateService() => new(_storage, _unitOfWork);
 
     private AdjustStockRequest Adjustment(decimal difference, string productCode = "ART001") =>
         new(_companyId, _warehouseId, productCode, "Artigo de teste", difference,

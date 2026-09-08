@@ -152,6 +152,24 @@ public sealed class StockApiClient(HttpClient http)
         return (await response.Content.ReadFromJsonAsync<InventoryCount>(cancellationToken), null);
     }
 
+    /// <summary>
+    /// Adds a product to an open sheet — something found that the system had never heard of, or the
+    /// opening stock of a warehouse it believes is empty.
+    /// </summary>
+    public async Task<(InventoryCount? Count, string? Error)> AddCountLineAsync(
+        Guid countId,
+        AddCountLineRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        var response = await http.PostAsJsonAsync(
+            $"api/inventory-counts/{countId}/lines", request, cancellationToken);
+
+        if (!response.IsSuccessStatusCode)
+            return (null, await ApiResponse.ReadErrorAsync(response, cancellationToken));
+
+        return (await response.Content.ReadFromJsonAsync<InventoryCount>(cancellationToken), null);
+    }
+
     /// <summary>Records what was found. Only the lines that changed need to travel.</summary>
     public async Task<(InventoryCount? Count, string? Error)> SetCountedAsync(
         Guid countId,

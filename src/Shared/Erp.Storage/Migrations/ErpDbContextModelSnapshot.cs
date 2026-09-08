@@ -609,6 +609,10 @@ namespace Erp.Storage.Migrations
                         .HasPrecision(19, 6)
                         .HasColumnType("decimal(19,6)");
 
+                    b.Property<decimal?>("UnitCost")
+                        .HasPrecision(19, 6)
+                        .HasColumnType("decimal(19,6)");
+
                     b.Property<Guid>("WarehouseId")
                         .HasColumnType("uniqueidentifier");
 
@@ -2502,6 +2506,39 @@ namespace Erp.Storage.Migrations
                         .IsUnique();
 
                     b.ToTable("StockMovementLine", (string)null);
+                });
+
+            modelBuilder.Entity("Erp.SeriesRegistry.Domain.DocumentCounter", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("CompanyId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<int>("LastNumber")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Prefix")
+                        .IsRequired()
+                        .HasMaxLength(8)
+                        .HasColumnType("nvarchar(8)");
+
+                    b.Property<byte[]>("RowVersion")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("rowversion");
+
+                    b.Property<int>("Year")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CompanyId", "Prefix", "Year")
+                        .IsUnique();
+
+                    b.ToTable("DocumentCounter", (string)null);
                 });
 
             modelBuilder.Entity("Erp.SeriesRegistry.Domain.Series", b =>

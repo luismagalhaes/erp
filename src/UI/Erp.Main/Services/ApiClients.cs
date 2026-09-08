@@ -403,6 +403,23 @@ public class SalesApiClient(HttpClient http)
             : (null, await ApiResponse.ReadErrorAsync(response, cancellationToken));
     }
 
+    /// <summary>
+    /// Changes what documents of the series do to stock — the only thing a series still allows to
+    /// be changed once it exists.
+    /// </summary>
+    public async Task<(SalesSeries? Series, string? Error)> UpdateSeriesAsync(
+        Guid id,
+        string stockEffect,
+        CancellationToken cancellationToken = default)
+    {
+        var response = await Http.PutAsJsonAsync(
+            $"api/series/{id}", new UpdateSeriesRequest(stockEffect), cancellationToken);
+
+        return response.IsSuccessStatusCode
+            ? (await response.Content.ReadFromJsonAsync<SalesSeries>(cancellationToken), null)
+            : (null, await ApiResponse.ReadErrorAsync(response, cancellationToken));
+    }
+
     public async Task<string?> CommunicateSeriesAsync(Guid id, string validationCode, CancellationToken cancellationToken = default)
     {
         var response = await Http.PostAsJsonAsync(

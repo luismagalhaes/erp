@@ -66,6 +66,41 @@ public sealed class InventoryCountsController(IInventoryCountService countServic
         }
     }
 
+    /// <summary>
+    /// Adds a product to an open sheet — something found that the system had never heard of, or the
+    /// opening stock of a warehouse it believes is empty.
+    /// </summary>
+    [HttpPost("{id:guid}/lines")]
+    [Authorize(Policy = Policies.Write)]
+    [ProducesResponseType<InventoryCountDto>(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status409Conflict)]
+    public async Task<ActionResult<InventoryCountDto>> AddLine(
+        Guid id,
+        [FromBody] AddCountLineRequest request,
+        CancellationToken cancellationToken)
+    {
+        if (request is null)
+            return BadRequest(new { error = "A request body is required." });
+
+        try
+        {
+            var result = await countService.AddLineAsync(id, request, cancellationToken);
+            return result is null ? NotFound() : Ok(result);
+        }
+        catch (ArgumentException ex)
+        {
+            return BadRequest(new { error = ex.Message });
+        }
+        catch (InvalidOperationException ex)
+        {
+            // Already on the sheet, or the count is closed. Both are conflicts: the request was
+            // well formed, the sheet had moved on.
+            return Conflict(new { error = ex.Message });
+        }
+    }
+
     /// <summary>Records what was found, for one or more lines.</summary>
     [HttpPut("{id:guid}/lines")]
     [Authorize(Policy = Policies.Write)]

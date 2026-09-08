@@ -54,25 +54,6 @@ public sealed class GoodsReceiptStorage(ErpDbContext dbContext) : IGoodsReceiptS
         return await GetByIdAsync(receiptId.Value, cancellationToken);
     }
 
-    public async Task<int> GetLastSequenceAsync(Guid companyId, int year, CancellationToken cancellationToken = default)
-    {
-        var prefix = $"REC{year}/";
-
-        var numbers = await dbContext.Set<GoodsReceipt>()
-            .AsNoTracking()
-            .Where(x => x.CompanyId == companyId && x.Number.StartsWith(prefix))
-            .Select(x => x.Number)
-            .ToListAsync(cancellationToken);
-
-        return numbers
-            .Select(number => int.TryParse(number[prefix.Length..], out var sequence) ? sequence : 0)
-            .DefaultIfEmpty(0)
-            .Max();
-    }
-
-    public Task<bool> NumberExistsAsync(Guid companyId, string number, CancellationToken cancellationToken = default) =>
-        dbContext.Set<GoodsReceipt>().AnyAsync(x => x.CompanyId == companyId && x.Number == number, cancellationToken);
-
     public async Task AddAsync(GoodsReceipt receipt, CancellationToken cancellationToken = default) =>
         await dbContext.Set<GoodsReceipt>().AddAsync(receipt, cancellationToken);
 }

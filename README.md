@@ -104,7 +104,7 @@ Módulos ainda por implementar: Accounting e Reporting. Entram como mais uma pas
 | Módulo | Projeto | O que faz |
 |---|---|---|
 | Core | [Erp.Core](src/Modules/Erp.Core/) | Empresas, acessos e **dados mestre**: artigos com família, subfamília e marca, clientes, fornecedores e armazéns |
-| SeriesRegistry | [Erp.SeriesRegistry](src/Modules/Erp.SeriesRegistry/) | O registo de séries: numeração sequencial sob bloqueio de linha e o código de validação da AT. Serve quem emitir documentos certificados, de qualquer módulo |
+| SeriesRegistry | [Erp.SeriesRegistry](src/Modules/Erp.SeriesRegistry/) | O registo de séries: numeração sequencial sob bloqueio de linha e o código de validação da AT. Serve quem emitir documentos certificados, de qualquer módulo — e, ao lado, o contador dos números internos (`REC2026/7`), que não são fiscais mas também têm de correr em sequência |
 | Sales | [Erp.Sales](src/Modules/Erp.Sales/) | Faturação certificada, guias de movimentação, recibos, notas de crédito e SAF-T |
 | Inventory | [Erp.Inventory](src/Modules/Erp.Inventory/) | Existências por armazém, razão de movimentos, contagens e o ficheiro de inventário para a AT |
 | Purchasing | [Erp.Purchasing](src/Modules/Erp.Purchasing/) | Encomendas, receção, devoluções, registo de faturas de fornecedor e **autofaturação** — o único documento certificado que emite |
@@ -136,7 +136,8 @@ O `Erp.Sales` e o `Erp.Purchasing` referenciam o `Erp.Inventory`, para que emiti
 | [Erp.Core.Tests](tests/Erp.Core.Tests/) | Empresas, acessos, catálogo de artigos, clientes, fornecedores e armazéns, e o tratamento das claims JWT |
 | [Erp.Inventory.Tests](tests/Erp.Inventory.Tests/) | Razão de stock, movimentação por documento, reversão na anulação, contagens, o ficheiro de inventário e o custeio médio ponderado — incluindo a armadilha clássica de anular uma compra barata quando o médio já subiu |
 | [Erp.Purchasing.Tests](tests/Erp.Purchasing.Tests/) | Encomendas, receção, devoluções, faturas e notas de crédito de fornecedor: conferência a três, movimento de stock, anti-duplicação e anulação. E a autofaturação: numeração, cadeia de assinatura, aceitação, e o SAF-T `"S"` validado contra o esquema oficial |
-| [Erp.SeriesRegistry.Tests](tests/Erp.SeriesRegistry.Tests/) | Criação de séries, comunicação do código de validação e numeração |
+| [Erp.SeriesRegistry.Tests](tests/Erp.SeriesRegistry.Tests/) | Criação de séries, o conjunto padrão de uma empresa nova, comunicação do código de validação, numeração, e o que uma série deixa (e não deixa) alterar |
+| [Erp.IntegrationTests](tests/Erp.IntegrationTests/) | Contra um SQL Server a sério: numeração de séries e de documentos internos sob concorrência, saldos de stock, as regras de "não exceder o passo anterior", o índice anti-duplicação de faturas de fornecedor, atomicidade da transação que atravessa módulos, e o acordo entre o modelo e o esquema. Precisam de uma base de dados própria — ver o [README](tests/Erp.IntegrationTests/README.md) |
 | [Erp.Identity.Tests](tests/Erp.Identity.Tests/) | Invariantes do seed (clients, scopes, resources), serviços e o cliente de email |
 | [Erp.Notification.Tests](tests/Erp.Notification.Tests/) | Fila de emails, processamento e histórico |
 
@@ -266,7 +267,11 @@ Em Visual Studio existem os perfis de arranque múltiplo **"All"** e **"All + Wo
 
 Foram cinco contextos, e a maquinaria que os cosia — uma ligação partilhada, uma transação ambiente e um *unit of work* por módulo — desapareceu com eles. Um `SaveChangesAsync` escreve agora tudo o que o pedido acumulou, venha de que módulo vier, e as chaves estrangeiras entre módulos são relações a sério. O plano e as decisões estão em [Um `DbContext` para os módulos de negócio](docs/single-dbcontext.md).
 
-> **As transações explícitas continuam a ser precisas onde há bloqueios.** O `WITH (UPDLOCK, ROWLOCK)` só segura a linha até ao fim da transação; sem uma, o EF envolve cada `SaveChanges` na sua e o bloqueio da leitura é largado antes da escrita que depende dele. É por isso que a emissão de documentos, as notas de crédito, a faturação a partir de guias, o fecho de contagens e a receção, devolução e faturação de compras abrem uma.
+> **As transações explícitas continuam a ser precisas onde há bloqueios.** O `WITH (UPDLOCK, ROWLOCK)` só segura a linha até ao fim da transação; sem uma, o EF envolve cada `SaveChanges` na sua e o bloqueio da leitura é largado antes da escrita que depende dele. É por isso que a emissão de documentos, as notas de crédito, a faturação a partir de guias, o fecho de contagens, o acerto manual de existências e a receção, devolução e faturação de compras abrem uma.
+>
+> **E o saldo de stock leva `HOLDLOCK` além de `UPDLOCK`**, porque muitas vezes a linha ainda não existe: o primeiro movimento de um artigo é o que a cria. Um *update lock* não tem a que se agarrar quando nada corresponde, por isso vários primeiros movimentos leriam todos nulo, criariam todos um saldo, e todos menos um morreriam no índice único. O `HOLDLOCK` bloqueia o **intervalo** da chave, que é o que torna seguro "ler, e inserir se não estava lá".
+>
+> **Uma armadilha do EF Core que custou caro:** compor LINQ sobre um `FromSqlRaw` faz o EF envolver a instrução numa subconsulta e projetar as colunas ele próprio — e para uma *complex property* projeta os **nomes por omissão**, `ShipFrom_Address` em vez do `ShipFromAddress` que o mapeamento e a tabela usam. A consulta rebenta com *Invalid column name*, e só naquela entidade, porque a guia de movimentação é a única mapeada com `ComplexProperty`. Onde só se quer o bloqueio, usa-se `ExecuteSqlRawAsync` e não se materializa nada — que é mais honesto de qualquer forma: tomar um bloqueio não devia fingir ser uma consulta.
 
 A base do **Identity** fica separada: é outro processo, com ciclo de vida próprio e os stores do Duende.
 
@@ -372,9 +377,14 @@ Emite também os **recibos** — `RC` (regime de IVA de caixa) e `RG` (restantes
 | `GET` | `/api/series?companyId=` | `Read` |
 | `GET` | `/api/series/{id}` | `Read` |
 | `POST` | `/api/series` | `Admin` |
+| `PUT` | `/api/series/{id}` | `Admin` |
 | `POST` | `/api/series/{id}/communicate` | `Admin` |
 
 O acesso é por **scope** do token (políticas em [Policies.cs](src/Erp.Api/Authorization/Policies.cs)); a gestão de séries não depende do scope mas sim da role `SuperAdmin`, através da política `Admin`. Não existe endpoint de alteração nem de remoção de documentos: correções fazem-se por documento retificativo e a anulação escreve um registo de mudança de estado.
+
+**Uma empresa nova nasce com as suas séries.** Criar uma empresa cria também uma série por tipo de documento — as doze que existem, de `FT` a `RG` — codificadas `{Tipo}{Ano}` (`FT2026`, `NC2026`, `GR2026`…) e já com o efeito no stock habitual do tipo. Sem isto a empresa chegava incapaz de emitir seja o que fosse, e chegar lá dava doze passagens por um formulário para responder sempre o óbvio. Não as torna utilizáveis: falta o código de validação da AT, e esse ninguém o pode dar em nome da empresa. A composição é feita pelo host — uma empresa não sabe o que é uma série, e o registo de séries não sabe o que é uma empresa.
+
+**Uma série quase não se altera.** O tipo, o identificador, a numeração inicial e a marca de autofaturação foram comunicados à AT e estão escritos em todos os documentos já emitidos: mudá-los deixaria o registo em desacordo com os documentos. O que resta é o **efeito no stock**, que diz o que os *próximos* documentos da série fazem ao armazém — uma decisão de negócio, não fiscal, e que negócios diferentes tomam de forma diferente para o mesmo tipo de documento. É esse, e só esse, que o `PUT /api/series/{id}` aceita.
 
 ---
 
@@ -384,11 +394,13 @@ O stock é gerido **ao nível do armazém** — uma empresa pode ter vários —
 
 O stock é **valorizado ao custo médio ponderado**, e a regra cabe numa frase: *um movimento que traz o seu custo move valor a esse custo; um que não traz, move ao médio*. Uma compra traz, uma venda não. Cada movimento fica **carimbado com o custo a que moveu valor**, o que torna o razão auto-explicativo e faz com que anular uma compra desfaça exatamente o que ela fez — em vez de a desfazer ao que o stock vale hoje, que é onde o método clássico se desvia. A aritmética vive num sítio só, [`WeightedAverageCost`](src/Modules/Erp.Inventory/Domain/WeightedAverageCost.cs), partilhada entre o saldo corrente e o [recálculo do razão](src/Modules/Erp.Inventory/Domain/StockValuation.cs): o primeiro responde a *quanto vale isto agora*, o segundo a *quanto valia no fim de março* — que é o que o ficheiro de inventário precisa e nenhum valor guardado lhe pode dar. O teste de stock confere um contra o outro, e conta as diferenças de quantidade e de valor em separado, porque falham por motivos diferentes.
 
-O **custo de abertura** entra pelo acerto de existências, que pode declarar um custo unitário. É a única porta para quem começa a usar o sistema com o armazém já cheio; uma contagem normal não traz custo — encontra mercadoria, não preços — e o que aparece vale o médio do que já lá estava.
+O **custo de abertura** entra por duas portas, ambas para quem começa a usar o sistema com o armazém já cheio: o acerto de existências e a linha acrescentada a uma contagem, que podem declarar um custo unitário. Uma contagem normal não traz custo — encontra mercadoria, não preços — e o que aparece vale o médio do que já lá estava.
 
 Quem movimenta são os **documentos**: cada série declara o que faz ao stock (entrada, saída ou nada), e o movimento é gravado na mesma transação que o documento. Nos **documentos integradores** a regra é que ninguém movimenta duas vezes: se a guia de remessa já deu saída, a fatura que a consome não volta a dar. Anular um documento devolve o stock — por lançamento oposto, nunca por remoção, e uma segunda anulação não faz nada.
 
 As **contagens** são totais ou parciais, e a zeragem não é um mecanismo à parte: é uma contagem aberta com todas as linhas a zero, cujo fecho esvazia o stock em âmbito. Só pode haver uma contagem aberta por empresa. O fecho mede contra o saldo do momento e não contra a fotografia da abertura, para que movimentos feitos durante a contagem não sejam desfeitos.
+
+Uma contagem **abre mesmo sem existências nenhumas**, e a folha **cresce**: acrescenta-se um artigo que estava na prateleira e o sistema desconhecia, com o custo a que entrou. Sem isto o stock de abertura não teria por onde entrar — a contagem é a forma natural de o registar, e exigir stock para abrir uma contagem trancava a única porta pelo lado de dentro. Uma linha acrescentada abre a zero, por isso o que se contar é exatamente o que dá entrada.
 
 O **ficheiro de inventário** gera-se nas duas versões oficiais — `Stock_1_2.xsd` (`urn:StockFile:PT_1_02`, só quantidades) e `Inventario_2_01.xsd` (`urn:StockFile:PT_2_01`, valorizado, obrigatório desde 2021) — porque o inventário tanto pode ser comunicado valorizado como não. Ambos os XSD estão embebidos e **cada ficheiro é validado antes de ser entregue**. As quantidades **e os valores** vêm do razão **à data de referência**, e não dos saldos de hoje, que dariam a posição errada para qualquer período já fechado. A `ProductCategory` vem do campo `InventoryCategory` da ficha — que não é o `ProductType` do SAF-T: as letras coincidem mas os vocabulários não.
 
@@ -400,20 +412,21 @@ O **ficheiro de inventário** gera-se nas duas versões oficiais — `Stock_1_2.
 | `POST` | `/api/stock/adjustments` | `Write` |
 | `GET` | `/api/inventory-counts?companyId=` · `/api/inventory-counts/{id}` | `Read` |
 | `POST` | `/api/inventory-counts` | `Write` |
+| `POST` | `/api/inventory-counts/{id}/lines` | `Write` |
 | `PUT` | `/api/inventory-counts/{id}/lines` | `Write` |
 | `POST` | `/api/inventory-counts/{id}/close` | `Write` |
 | `GET` | `/api/inventory-file/summary?companyId=&fiscalYear=&endDate=&valued=` | `Read` |
 | `GET` | `/api/inventory-file?companyId=&fiscalYear=&endDate=&valued=` | `Read` |
 
-Os armazéns são dados mestre e vivem no Core (`/api/warehouses`), ao lado dos artigos e dos clientes: são usados por mais do que um módulo.
+Os armazéns são dados mestre e vivem no Core (`/api/warehouses`), ao lado dos artigos e dos clientes: são usados por mais do que um módulo. Na UI criam-se **dentro da ficha da empresa**, no mesmo sítio que os utilizadores com acesso — são estrutura da empresa, não trabalho do dia-a-dia.
 
 ---
 
 ## Endpoints do módulo Purchasing
 
-Do lado das compras **só um documento é fiscalmente relevante como documento nosso: a autofatura**, que ainda não está feita. Uma encomenda é um compromisso interno, e uma fatura de fornecedor é um documento *dele* que nós escrituramos — sem série nossa, sem assinatura, sem ATCUD. Daí a diferença de regime que salta à vista ao ler os dois módulos: **o `Erp.Sales` é *append-only* e o `Erp.Purchasing` não é.** Um erro de escrituração corrige-se corrigindo, porque não fomos nós que emitimos nada. A análise completa está no [plano](docs/purchasing.md#que-documentos-de-compras-são-fiscalmente-relevantes).
+Do lado das compras **só um documento é fiscalmente relevante como documento nosso: a autofatura**. Uma encomenda é um compromisso interno, e uma fatura de fornecedor é um documento *dele* que nós escrituramos — sem série nossa, sem assinatura, sem ATCUD. Daí a diferença de regime que salta à vista ao ler os dois módulos: **o `Erp.Sales` é *append-only* e o `Erp.Purchasing` não é**, tirando a autofaturação, que obedece às regras da faturação. Um erro de escrituração corrige-se corrigindo, porque não fomos nós que emitimos nada. A análise completa está no [plano](docs/purchasing.md#que-documentos-de-compras-são-fiscalmente-relevantes).
 
-Por ora existem as **encomendas a fornecedores**. O número (`ENC2026/7`) é nosso e não tem significado fiscal, por isso não leva o bloqueio de linha que uma série da AT exige: uma colisão é apanhada pelo índice único, e uma falha custa um número em vez de uma explicação. As linhas podem ser reescritas à vontade **até chegar mercadoria** — depois disso não, porque alterá-las reescreveria em silêncio aquilo contra o que a receção foi medida. Receber a mais é aceite, já que os fornecedores o fazem, mas nunca gera dívida negativa. E mercadoria que chegou não se desencomenda: uma encomenda com receções **fecha-se**, dando o resto por não vindo, e uma sem receções **anula-se**.
+As **encomendas a fornecedores** abrem o ciclo. O número (`ENC2026/7`) é nosso e não tem significado fiscal — sem série, sem assinatura, sem ATCUD — mas tem de ser **sequencial**: quem lê `REC2026/7` espera uma sétima receção e não sabe explicar um buraco. Vem por isso de um [contador](src/Modules/Erp.SeriesRegistry/Domain/DocumentCounter.cs), uma linha por empresa, prefixo e ano, bloqueada dentro da transação que escreve o documento. Derivá-lo do máximo já gravado não sobrevive a concorrência: vários pedidos leem o mesmo máximo e o índice único recusa todos menos um. As linhas podem ser reescritas à vontade **até chegar mercadoria** — depois disso não, porque alterá-las reescreveria em silêncio aquilo contra o que a receção foi medida. Receber a mais é aceite, já que os fornecedores o fazem, mas nunca gera dívida negativa. E mercadoria que chegou não se desencomenda: uma encomenda com receções **fecha-se**, dando o resto por não vindo, e uma sem receções **anula-se**.
 
 | Método | Rota | Autorização |
 |---|---|---|
@@ -554,13 +567,13 @@ A empresa ativa escolhe-se no cabeçalho e é partilhada por todas as páginas (
 | `/stock-movements/{id}/print` | Guia impressa, com locais, transporte e código da AT |
 | `/payments/{id}/print` | Recibo impresso, com faturas liquidadas e meios de pagamento |
 | `/series` | Séries de faturação |
-| `/series/new`, `/series/{id}` | Criar série e registar o código de validação da AT |
+| `/series/new`, `/series/{id}` | Criar série, registar o código de validação da AT e alterar o efeito no stock |
 | `/stock` | Existências por armazém, com razão de movimentos e acerto manual |
 | `/stock/check` | Teste de stock: saldo guardado contra soma dos movimentos |
-| `/warehouses`, `/warehouses/new`, `/warehouses/{id}` | Armazéns |
+| `/companies/{id}` | Ficha da empresa: dados, utilizadores com acesso, e **armazéns** |
 | `/inventory-counts` | Contagens de inventário |
 | `/inventory-counts/new` | Abrir contagem, total ou parcial, com a opção de começar a zero |
-| `/inventory-counts/{id}` | Folha de contagem e fecho com acerto |
+| `/inventory-counts/{id}` | Folha de contagem, acrescentar artigos com o custo, e fecho com acerto |
 | `/inventory-file` | Ficheiro de inventário para a AT, valorizado ou só com quantidades |
 | `/purchase-orders` | Encomendas a fornecedores, com filtro do que está por receber |
 | `/purchase-orders/new`, `/purchase-orders/{id}/edit` | Criar e corrigir encomenda |
@@ -628,7 +641,7 @@ Registo honesto do que ainda não está feito, para evitar surpresas:
 - **Menu com links por escrever** — Contabilidade e Relatórios ainda não têm páginas: clicá-las leva a `/not-found`.
 - **Comunicação à AT é manual** — as séries, as guias de transporte e os ficheiros são preparados e validados pelo ERP, mas quem os submete é o utilizador: os *webservices* SOAP da AT não estão integrados. O código de validação da série e o código de circulação da guia registam-se à mão.
 - **Custeio: médio ponderado, não FIFO** — o stock é valorizado ao custo médio ponderado das compras, calculado a partir do razão. O FIFO exigiria guardar camadas de custo e consumi-las por ordem, que é outra estrutura; o médio ponderado tira-se do razão sem nada de novo. O custo da ficha do artigo sobreviveu apenas como recurso último, para artigos que nenhuma compra chegou a custear, e o ficheiro de inventário diz quantas linhas precisaram dele.
-- **Sem testes de integração** — não há nada a correr contra um SQL Server real. Os bloqueios `UPDLOCK`, a transação partilhada entre Sales e Inventory e a reversão de stock na anulação são o tipo de coisa que só falha em concorrência, e é exatamente o que os testes com storages substituídos não conseguem apanhar.
+- **Testes de integração só correm localmente** — existem ([Erp.IntegrationTests](tests/Erp.IntegrationTests/)) e correm contra um SQL Server a sério, mas o *runner* do CI não tem um, por isso o workflow exclui-os com `--filter "Category!=Integration"`. É dívida assumida: um teste que só corre na máquina de alguém acaba por apodrecer. Falta pôr um SQL Server em contentor no CI.
 - **DTOs copiados à mão** — o `Erp.Main` mantém a sua própria cópia dos contratos da API em vez de os partilhar. Um campo renomeado de um lado compila do outro e chega em silêncio como `null` ou `Guid.Empty`; já aconteceu mais do que uma vez.
 - **SMTP por configurar** — sem `Smtp:Host` e `Smtp:FromEmail`, o worker marca os emails como `Failed` com essa mensagem. É visível no backoffice de notificações e resolve-se com configuração, não com código.
 - **Constantes duplicadas** — os scopes, roles e claims vivem em [Erp.Common](src/Shared/Erp.Common/Constants.cs), usado pela `Erp.Api` e pelo `Erp.Main`, mas o Identity mantém a sua cópia em `Erp.Identity.Common`. Os valores coincidem, mas alterar só um dos lados põe o seed e a API em desacordo sem erro de compilação.

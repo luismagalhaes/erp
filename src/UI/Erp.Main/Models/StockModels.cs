@@ -145,11 +145,25 @@ public sealed record InventoryCountLine(
     string ProductDescription,
     decimal SystemQuantity,
     decimal CountedQuantity,
-    decimal? AppliedDifference)
+    decimal? AppliedDifference,
+    decimal? UnitCost = null)
 {
     /// <summary>What closing the count would write to the ledger for this line.</summary>
     public decimal Difference => CountedQuantity - SystemQuantity;
 }
+
+/// <summary>
+/// A product to add to an open sheet, because the system did not know it was there.
+/// </summary>
+/// <param name="UnitCost">
+/// What the goods cost. The ledger has never seen these, so nothing else can say what they are
+/// worth: this is the door through which opening stock gets its cost.
+/// </param>
+public sealed record AddCountLineRequest(
+    Guid WarehouseId,
+    string ProductCode,
+    string ProductDescription,
+    decimal? UnitCost = null);
 
 /// <param name="StartAtZero">
 /// Opens every line at zero. Closing such a count empties the stock in scope — the zeroing step

@@ -187,13 +187,26 @@ As contagens vivem no `Erp.Inventory` e reaproveitam o razão em vez de lhe fugi
 contagem escreve um `StockLedgerEntry` de acerto por cada linha que se mexe, com a referência da
 contagem no motivo. Nada é apagado nem reescrito.
 
-Duas decisões que valem a pena reter:
+Três decisões que valem a pena reter:
 
 - **A zeragem não é um mecanismo à parte.** É uma contagem aberta com todas as linhas a zero; fechá-la
   esvazia o stock em âmbito. Um caminho só, auditável da mesma maneira, em vez de dois que divergem.
 - **O fecho mede contra o saldo do momento, não contra a fotografia da abertura.** Se algo mexeu no
   stock enquanto a contagem decorria, o acerto leva isso em conta em vez de o desfazer. Os saldos são
   relidos com `UPDLOCK` dentro da transação do fecho.
+- **A folha abre pelo que o sistema tem, mas não fica presa a isso.** Uma contagem abre mesmo com o
+  âmbito vazio, e acrescentam-se-lhe artigos que estavam na prateleira e o sistema desconhecia.
+
+> [!NOTE]
+> **A folha nem sempre pôde crescer, e isso tornava o módulo inutilizável no primeiro dia.** A
+> contagem era construída só a partir dos saldos existentes e recusava abrir se não houvesse nenhum:
+> *"There is no stock in the chosen scope to count."* Mas uma empresa que começa a usar o sistema com
+> o armazém cheio **não tem saldo nenhum**, e a contagem é justamente a forma natural de registar o
+> que lá está. A única porta estava trancada pelo lado de dentro.
+>
+> Passou a haver `InventoryCount.AddLine`, e a linha acrescentada pode declarar o **custo unitário** —
+> o razão nunca viu aquela mercadoria, por isso mais nada sabe quanto vale. É a mesma porta que o
+> acerto manual ganhou no [custeio](purchasing.md#como-ficou-a-fase-6), agora onde ela faz mais falta.
 
 Só pode haver **uma contagem aberta por empresa** — duas fechariam cada uma contra saldos que a outra
 mexeu. A regra está no serviço e no índice único filtrado `IX_InventoryCount_CompanyId_Open`.

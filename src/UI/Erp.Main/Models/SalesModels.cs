@@ -65,6 +65,12 @@ public sealed record CreateSeriesRequest(
 
 public sealed record CommunicateSeriesRequest(string ValidationCode);
 
+/// <summary>
+/// The only field a series still allows to be changed. Everything else was communicated to the AT
+/// or is already written into the documents issued from it.
+/// </summary>
+public sealed record UpdateSeriesRequest(string StockEffect);
+
 public sealed record InvoiceListItem(
     Guid Id,
     string DocumentNumber,

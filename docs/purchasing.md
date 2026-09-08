@@ -221,6 +221,22 @@ Passá-lo pela `Series` exigiria uma série que emite sem código de validação
 Se um dia se quiser um contador partilhado para números internos, é um segundo tipo dentro do
 `Erp.SeriesRegistry`, não o mesmo. Hoje não há procura para isso: são dez linhas por módulo.
 
+> [!NOTE]
+> **Passou a haver procura, e o contador foi feito.** As dez linhas por módulo derivavam o próximo
+> número do máximo já gravado, e isso não sobrevive a concorrência: vários pedidos leem o mesmo
+> máximo, propõem o mesmo número, e o índice único recusa todos menos um. Dez receções simultâneas
+> deixavam **uma receção e nove pedidos falhados**.
+>
+> Assumíamos que uma colisão custava "um número, não uma explicação à AT" — mas custa mais do que
+> isso: custa o pedido, e o utilizador vê um erro sem perceber porquê. E os números **têm de ser
+> sequenciais**: quem lê `REC2026/7` espera uma sétima receção e não sabe explicar um buraco.
+>
+> É agora o [`DocumentCounter`](../src/Modules/Erp.SeriesRegistry/Domain/DocumentCounter.cs), uma
+> linha por empresa, prefixo e ano, bloqueada com `UPDLOCK, HOLDLOCK` **dentro da transação que
+> escreve o documento** — o `HOLDLOCK` porque no primeiro documento do ano a linha ainda não existe.
+> Fica ao lado da `Series` e não dentro dela, exatamente como este parágrafo previa: passar um número
+> interno por uma série fiscal obrigaria a enfraquecer o `CanIssue`, que é uma guarda fiscal.
+
 ### [decisão] A exportação do SAF-T passa a compor-se a partir dos módulos
 
 Até aqui o serviço de exportação vivia no `Erp.Sales.Application` e lia diretamente os três

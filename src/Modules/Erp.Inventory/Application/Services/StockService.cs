@@ -1,3 +1,4 @@
+using Erp.Common;
 using Erp.Inventory.Domain;
 using Erp.Inventory.Infrastructure.Application;
 using Erp.Inventory.Infrastructure.Contracts;
@@ -5,7 +6,7 @@ using Erp.Inventory.Infrastructure.Storage;
 
 namespace Erp.Inventory.Application.Services;
 
-public sealed class StockService(IStockStorage storage) : IStockService
+public sealed class StockService(IStockStorage storage, IErpUnitOfWork unitOfWork) : IStockService
 {
     public async Task<IReadOnlyList<StockBalanceDto>> GetBalancesAsync(
         Guid companyId,
@@ -143,9 +144,16 @@ public sealed class StockService(IStockStorage storage) : IStockService
             createdByUserId: userId,
             unitCost: request.UnitCost);
 
+        // The lock on the balance row is only worth taking inside a transaction: a lock taken by a
+        // bare SELECT is released the moment that statement ends, which is long before the write
+        // that depends on it. Every other path that moves stock is called from inside a transaction
+        // its caller opened; a manual adjustment has no such caller, so it opens its own.
+        await using var transaction = await unitOfWork.BeginTransactionAsync(cancellationToken);
+
         var balance = await ApplyAsync(entry, cancellationToken);
 
         await storage.SaveChangesAsync(cancellationToken);
+        await transaction.CommitAsync(cancellationToken);
 
         return Map(balance);
     }

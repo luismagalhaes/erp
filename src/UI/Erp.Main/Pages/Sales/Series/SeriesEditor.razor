@@ -124,10 +124,6 @@
                     <MudText Typo="Typo.caption" Color="Color.Secondary">Estado</MudText>
                     <MudText>@_series.Status</MudText>
                 </MudItem>
-                <MudItem xs="12" md="3">
-                    <MudText Typo="Typo.caption" Color="Color.Secondary">Efeito no stock</MudText>
-                    <MudText>@StockEffects.Describe(_series.StockEffect)</MudText>
-                </MudItem>
                 @if (_series.SelfBilling)
                 {
                     <MudItem xs="12" md="3">
@@ -136,6 +132,38 @@
                     </MudItem>
                 }
             </MudGrid>
+
+            <MudAlert Severity="Severity.Normal" Dense="true" Class="mt-4">
+                O tipo, o identificador e a numeração <strong>não se alteram</strong>: foram comunicados
+                à AT e estão escritos em todos os documentos já emitidos. Para numerar de outra forma,
+                cria-se uma série nova.
+            </MudAlert>
+        </MudPaper>
+
+        <MudPaper Elevation="1" Class="pa-4">
+            <MudText Typo="Typo.h6" Class="mb-2">Efeito no stock</MudText>
+            <MudText Typo="Typo.body2" Color="Color.Secondary" Class="mb-3">
+                O que os <strong>próximos</strong> documentos desta série fazem às existências. Não é
+                uma decisão fiscal — o mesmo tipo de documento é usado de maneiras diferentes por
+                negócios diferentes — e por isso pode mudar. Os documentos já emitidos ficam como estão.
+            </MudText>
+
+            <MudStack Row="true" Spacing="2" AlignItems="AlignItems.Center">
+                <MudSelect T="string" @bind-Value="_stockEffect" @bind-Value:after="StateHasChanged"
+                           Label="Efeito no stock" Variant="Variant.Outlined" Margin="Margin.Dense"
+                           Style="max-width: 320px;">
+                    @foreach (var effect in StockEffects.All)
+                    {
+                        <MudSelectItem T="string" Value="@effect.Code">@effect.Label</MudSelectItem>
+                    }
+                </MudSelect>
+                <MudButton Variant="Variant.Filled" Color="Color.Primary"
+                           StartIcon="@Icons.Material.Filled.Save"
+                           Disabled="@(_saving || _stockEffect == _series.StockEffect)"
+                           OnClick="UpdateStockEffectAsync">
+                    Guardar
+                </MudButton>
+            </MudStack>
         </MudPaper>
 
         <MudPaper Elevation="1" Class="pa-4">
@@ -254,6 +282,8 @@
 
             if (_series is null)
                 _error = "Série não encontrada nesta empresa.";
+            else
+                _stockEffect = _series.StockEffect;
         }
         catch (Exception ex)
         {
@@ -295,6 +325,35 @@
         catch (Exception ex)
         {
             _error = $"Não foi possível criar a série: {ex.Message}";
+        }
+        finally
+        {
+            _saving = false;
+        }
+    }
+
+    private async Task UpdateStockEffectAsync()
+    {
+        _saving = true;
+        _error = null;
+
+        try
+        {
+            var (series, error) = await SalesApi.UpdateSeriesAsync(Id!.Value, _stockEffect);
+
+            if (series is null)
+            {
+                _error = error ?? "Não foi possível alterar o efeito no stock.";
+                return;
+            }
+
+            _series = series;
+            _stockEffect = series.StockEffect;
+            Snackbar.Add("Efeito no stock alterado.", Severity.Success);
+        }
+        catch (Exception ex)
+        {
+            _error = $"Não foi possível alterar o efeito no stock: {ex.Message}";
         }
         finally
         {

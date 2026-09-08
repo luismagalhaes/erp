@@ -36,6 +36,9 @@
                      Filterable="true" Hideable="true" ShowColumnOptions="true"
                      FilterMode="DataGridFilterMode.ColumnFilterMenu"
                      SortMode="SortMode.Multiple" Dense="true" Hover="true" Striped="true"
+                     DragDropColumnReordering="true" ColumnsPanelReordering="true"
+                     ColumnResizeMode="ResizeMode.Column" ShowMenuIcon="true"
+                     Virtualize="true" FixedHeader="true" Height="var(--erp-grid-height)"
                      QuickFilter="QuickFilter" RowsPerPage="25">
             <ToolBarContent>
                 <MudTextField @bind-Value="_search" Placeholder="Procurar por código, descrição ou código de barras"
@@ -43,10 +46,6 @@
                               Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.Search"
                               Underline="false" Class="mt-0 erp-grid-search" />
                 <MudSpacer />
-                <MudTooltip Text="Colunas visíveis">
-                    <MudIconButton Icon="@Icons.Material.Filled.Tune" Size="Size.Medium"
-                                   OnClick="@(() => _grid?.ShowColumnsPanel())" />
-                </MudTooltip>
             </ToolBarContent>
 
             <Columns>

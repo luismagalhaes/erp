@@ -30,14 +30,10 @@ public interface IPurchaseOrderStorage
         Guid? supplierId = null,
         CancellationToken cancellationToken = default);
 
-    Task<bool> NumberExistsAsync(Guid companyId, string number, CancellationToken cancellationToken = default);
-
     /// <summary>
     /// Highest sequence used by an order of this company in this year, for the next number. The
     /// order number is ours and has no fiscal meaning, so a gap in it costs nothing.
     /// </summary>
-    Task<int> GetLastSequenceAsync(Guid companyId, int year, CancellationToken cancellationToken = default);
-
     Task AddAsync(PurchaseOrder order, CancellationToken cancellationToken = default);
 
     Task SaveChangesAsync(CancellationToken cancellationToken = default);

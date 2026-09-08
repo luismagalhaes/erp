@@ -49,25 +49,6 @@ public sealed class SupplierReturnStorage(ErpDbContext dbContext) : ISupplierRet
         return rows.ToDictionary(row => row.ReceiptLineId, row => row.Quantity);
     }
 
-    public async Task<int> GetLastSequenceAsync(Guid companyId, int year, CancellationToken cancellationToken = default)
-    {
-        var prefix = $"DEV{year}/";
-
-        var numbers = await dbContext.Set<SupplierReturn>()
-            .AsNoTracking()
-            .Where(x => x.CompanyId == companyId && x.Number.StartsWith(prefix))
-            .Select(x => x.Number)
-            .ToListAsync(cancellationToken);
-
-        return numbers
-            .Select(number => int.TryParse(number[prefix.Length..], out var sequence) ? sequence : 0)
-            .DefaultIfEmpty(0)
-            .Max();
-    }
-
-    public Task<bool> NumberExistsAsync(Guid companyId, string number, CancellationToken cancellationToken = default) =>
-        dbContext.Set<SupplierReturn>().AnyAsync(x => x.CompanyId == companyId && x.Number == number, cancellationToken);
-
     public async Task AddAsync(SupplierReturn supplierReturn, CancellationToken cancellationToken = default) =>
         await dbContext.Set<SupplierReturn>().AddAsync(supplierReturn, cancellationToken);
 }

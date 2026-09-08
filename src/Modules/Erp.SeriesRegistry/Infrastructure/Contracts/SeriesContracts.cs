@@ -22,6 +22,19 @@ public sealed record CreateSeriesRequest(
 /// <param name="ValidationCode">Code returned by the tax authority when the series is registered.</param>
 public sealed record CommunicateSeriesRequest(string ValidationCode);
 
+/// <summary>
+/// What a series still allows to be changed after it exists, which is very little.
+/// </summary>
+/// <remarks>
+/// The document type, the code, the initial number and the self-billing flag are all communicated to
+/// the tax authority and are woven into every number already issued — changing any of them would
+/// leave the register disagreeing with the documents. What is left is the stock effect, which says
+/// what <b>future</b> documents of the series do to the warehouse: a business decision, not a fiscal
+/// one, and one that different businesses genuinely make differently for the same document type.
+/// </remarks>
+/// <param name="StockEffect">None, In or Out.</param>
+public sealed record UpdateSeriesRequest(string StockEffect);
+
 /// <param name="StockEffect">None, In or Out.</param>
 public sealed record SeriesListItemDto(
     Guid Id,

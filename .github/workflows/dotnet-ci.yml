@@ -32,8 +32,10 @@ jobs:
       - name: Build
         run: dotnet build Erp.slnx --configuration Release --no-restore
 
+      # The integration tests are left out: they need a real SQL Server, and this runner has none.
+      # They run locally against the database named in tests/Erp.IntegrationTests/README.md.
       - name: Test
-        run: dotnet test Erp.slnx --configuration Release --no-build --results-directory ./TestResults --logger "trx;LogFilePrefix=test-results" --logger "console;verbosity=detailed"
+        run: dotnet test Erp.slnx --configuration Release --no-build --filter "Category!=Integration" --results-directory ./TestResults --logger "trx;LogFilePrefix=test-results" --logger "console;verbosity=detailed"
 
       - name: List failed tests
         if: failure()

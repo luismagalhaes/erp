@@ -75,6 +75,7 @@ public sealed class InventoryModelConfiguration : IModuleModelConfiguration
             entity.Property(x => x.SystemQuantity).HasPrecision(19, 6);
             entity.Property(x => x.CountedQuantity).HasPrecision(19, 6);
             entity.Property(x => x.AppliedDifference).HasPrecision(19, 6);
+            entity.Property(x => x.UnitCost).HasPrecision(19, 6);
 
             entity.HasIndex(x => new { x.CountId, x.WarehouseId, x.ProductCode }).IsUnique();
         });

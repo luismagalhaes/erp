@@ -57,12 +57,12 @@ public class InventoryCountServiceTests
     private InventoryCountService CreateService() => new(_countStorage, _stockStorage, _unitOfWork);
 
     /// <summary>Puts a product in the warehouse, the way an issued document would have.</summary>
-    private StockBalance GivenStock(string productCode = "ART001", decimal quantity = 10m)
+    private StockBalance GivenStock(string productCode = "ART001", decimal quantity = 10m, decimal? unitCost = null)
     {
         var balance = StockBalance.Start(_companyId, _warehouseId, productCode, "Artigo de teste");
         balance.Apply(StockLedgerEntry.FromAdjustment(
             _companyId, _warehouseId, productCode, "Artigo de teste", quantity,
-            new DateOnly(2026, 1, 1), "Entrada inicial", Guid.NewGuid(), "user-1"));
+            new DateOnly(2026, 1, 1), "Entrada inicial", Guid.NewGuid(), "user-1", unitCost));
 
         _balances.Add(balance);
         return balance;
@@ -116,12 +116,132 @@ public class InventoryCountServiceTests
         await act.Should().ThrowAsync<InvalidOperationException>().WithMessage("*already an open count*");
     }
 
+    /// <summary>
+    /// A company that starts using the system with a full warehouse has no balances at all, and a
+    /// count is how that stock gets in. Refusing to open an empty sheet locked the only door from
+    /// the inside — so an empty scope opens, and products are added as they are found.
+    /// </summary>
     [Fact]
-    public async Task OpenAsync_refuses_a_scope_with_nothing_in_it()
+    public async Task OpenAsync_opens_an_empty_sheet_when_the_system_holds_nothing()
     {
-        var act = () => CreateService().OpenAsync(Request(), "user-1");
+        var count = await CreateService().OpenAsync(Request(), "user-1");
 
-        await act.Should().ThrowAsync<ArgumentException>().WithMessage("*no stock*");
+        count.LineCount.Should().Be(0);
+        count.Status.Should().Be("Open");
+    }
+
+    /// <summary>
+    /// Named products go on the sheet whether or not the system has heard of them: the caller asked
+    /// for them, and leaving them out quietly is how a count misses what it was opened to find.
+    /// </summary>
+    [Fact]
+    public async Task OpenAsync_puts_a_named_product_on_the_sheet_even_with_no_balance()
+    {
+        GivenStock("ART001", 10m);
+
+        var count = await CreateService().OpenAsync(Request(false, "ART001", "ART999"), "user-1");
+
+        count.LineCount.Should().Be(2);
+        count.Lines.Single(line => line.ProductCode == "ART999").SystemQuantity.Should().Be(0m);
+    }
+
+    [Fact]
+    public async Task AddLineAsync_puts_a_product_on_an_open_sheet_at_zero()
+    {
+        var opened = await CreateService().OpenAsync(Request(), "user-1");
+
+        var count = await CreateService().AddLineAsync(
+            opened.Id, new AddCountLineRequest(_warehouseId, "ART001", "Artigo de teste"));
+
+        var line = count!.Lines.Should().ContainSingle().Subject;
+        line.ProductCode.Should().Be("ART001");
+        line.SystemQuantity.Should().Be(0m);
+        line.CountedQuantity.Should().Be(0m);
+    }
+
+    /// <summary>
+    /// The opening-stock case end to end: nothing in the system, a sheet opened empty, a product
+    /// added with what it cost, and the ledger left holding both the quantity and the value.
+    /// </summary>
+    [Fact]
+    public async Task A_count_can_carry_opening_stock_and_its_cost_into_an_empty_warehouse()
+    {
+        var service = CreateService();
+        var opened = await service.OpenAsync(Request(), "user-1");
+
+        var count = await service.AddLineAsync(
+            opened.Id, new AddCountLineRequest(_warehouseId, "ART001", "Artigo de teste", UnitCost: 7m));
+
+        await service.SetCountedAsync(
+            opened.Id, [new CountedLineRequest(count!.Lines[0].Id, 20m)]);
+
+        await service.CloseAsync(opened.Id, "user-1");
+
+        var entry = _entries.Should().ContainSingle().Subject;
+        entry.Quantity.Should().Be(20m);
+        entry.UnitCost.Should().Be(7m);
+
+        var balance = _balances.Should().ContainSingle().Subject;
+        balance.Quantity.Should().Be(20m);
+        balance.AverageCost.Should().Be(7m);
+        balance.StockValue.Should().Be(140m);
+    }
+
+    /// <summary>
+    /// An ordinary count finds goods, not prices. What it turns up with no cost is worth the average
+    /// of what was already there.
+    /// </summary>
+    [Fact]
+    public async Task A_line_added_without_a_cost_takes_the_average_already_on_the_product()
+    {
+        GivenStock("ART001", 10m, unitCost: 4m);
+
+        var service = CreateService();
+        var opened = await service.OpenAsync(Request(), "user-1");
+
+        await service.SetCountedAsync(opened.Id, [new CountedLineRequest(opened.Lines[0].Id, 15m)]);
+        await service.CloseAsync(opened.Id, "user-1");
+
+        // The five found are worth what the ten already there were worth, and the ledger says so.
+        _entries.Should().ContainSingle().Which.UnitCost.Should().Be(4m);
+
+        var balance = _balances.Should().ContainSingle().Subject;
+        balance.Quantity.Should().Be(15m);
+        balance.AverageCost.Should().Be(4m);
+        balance.StockValue.Should().Be(60m);
+    }
+
+    [Fact]
+    public async Task AddLineAsync_refuses_a_product_already_on_the_sheet()
+    {
+        GivenStock("ART001", 10m);
+        var opened = await CreateService().OpenAsync(Request(), "user-1");
+
+        var act = () => CreateService().AddLineAsync(
+            opened.Id, new AddCountLineRequest(_warehouseId, "ART001", "Artigo de teste"));
+
+        await act.Should().ThrowAsync<InvalidOperationException>().WithMessage("*already on this count sheet*");
+    }
+
+    /// <summary>A count of one warehouse that reached into another would close outside its scope.</summary>
+    [Fact]
+    public async Task AddLineAsync_refuses_a_line_for_another_warehouse()
+    {
+        var opened = await CreateService().OpenAsync(Request(), "user-1");
+
+        var act = () => CreateService().AddLineAsync(
+            opened.Id, new AddCountLineRequest(Guid.NewGuid(), "ART001", "Artigo de teste"));
+
+        await act.Should().ThrowAsync<ArgumentException>().WithMessage("*count is of one warehouse*");
+    }
+
+    [Fact]
+    public async Task AddLineAsync_returns_null_for_a_count_that_does_not_exist()
+    {
+        var result = await CreateService().AddLineAsync(
+            Guid.NewGuid(), new AddCountLineRequest(_warehouseId, "ART001", "Artigo"));
+
+        result.Should().BeNull();
     }
 
     [Fact]

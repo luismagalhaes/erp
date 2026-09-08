@@ -9,6 +9,7 @@
 @using Erp.Main.Services
 @inject CoreApiClient CoreApi
 @inject IdentityApiClient IdentityApi
+@inject StockApiClient StockApi
 @inject CompanyState Company
 @inject NavigationManager Navigation
 @inject ISnackbar Snackbar
@@ -184,10 +185,134 @@
                         </NoRecordsContent>
                     </MudTable>
                 </MudTabPanel>
+
+                <MudTabPanel Text="Armazéns" Icon="@Icons.Material.Filled.Warehouse" Disabled="IsNew"
+                             ToolTip="@(IsNew ? "Guarde a empresa antes de criar armazéns" : null)">
+                    <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center" Class="mb-4">
+                        <MudText Typo="Typo.body2" Color="Color.Secondary">
+                            Onde esta empresa guarda existências. O predefinido é o que os documentos
+                            assumem quando não indicam outro.
+                        </MudText>
+                        <MudButton Variant="Variant.Filled" Color="Color.Primary"
+                                   StartIcon="@Icons.Material.Filled.Add"
+                                   OnClick="@(() => OpenWarehouse(null))">
+                            Novo armazém
+                        </MudButton>
+                    </MudStack>
+
+                    <MudTable Items="_warehouses" Hover="true" Striped="true" Dense="true"
+                              Loading="_workingWarehouses" Breakpoint="Breakpoint.Sm">
+                        <HeaderContent>
+                            <MudTh>Código</MudTh>
+                            <MudTh>Nome</MudTh>
+                            <MudTh>Localidade</MudTh>
+                            <MudTh Style="width: 140px;">Predefinido</MudTh>
+                            <MudTh Style="width: 120px;">Estado</MudTh>
+                            <MudTh Style="text-align: right;">Ações</MudTh>
+                        </HeaderContent>
+                        <RowTemplate>
+                            <MudTd DataLabel="Código">
+                                <MudText Typo="Typo.body2" Style="font-family: monospace;">@context.Code</MudText>
+                            </MudTd>
+                            <MudTd DataLabel="Nome">@context.Name</MudTd>
+                            <MudTd DataLabel="Localidade">@DescribeCity(context)</MudTd>
+                            <MudTd DataLabel="Predefinido">
+                                @if (context.IsDefault)
+                                {
+                                    <MudChip T="string" Size="Size.Small" Color="Color.Primary" Variant="Variant.Outlined">
+                                        Predefinido
+                                    </MudChip>
+                                }
+                            </MudTd>
+                            <MudTd DataLabel="Estado">
+                                @if (context.IsActive)
+                                {
+                                    <MudChip T="string" Size="Size.Small" Color="Color.Success" Variant="Variant.Text">
+                                        Ativo
+                                    </MudChip>
+                                }
+                                else
+                                {
+                                    <MudChip T="string" Size="Size.Small" Color="Color.Default" Variant="Variant.Text">
+                                        Inativo
+                                    </MudChip>
+                                }
+                            </MudTd>
+                            <MudTd DataLabel="Ações" Style="text-align: right;">
+                                <MudIconButton Icon="@Icons.Material.Filled.Edit" Size="Size.Small"
+                                               title="Editar armazém"
+                                               OnClick="@(() => OpenWarehouse(context))" />
+                            </MudTd>
+                        </RowTemplate>
+                        <NoRecordsContent>
+                            <MudText Typo="Typo.body2" Color="Color.Secondary">
+                                Esta empresa ainda não tem armazéns, por isso não há onde guardar stock.
+                            </MudText>
+                        </NoRecordsContent>
+                    </MudTable>
+                </MudTabPanel>
             </MudTabs>
         </MudPaper>
     }
 </MudStack>
+
+@* --- Armazém --- *@
+<MudDialog @bind-Visible="_warehouseOpen" Options="_dialogOptions">
+    <TitleContent>
+        <MudText Typo="Typo.h6">@(_warehouseId is null ? "Novo armazém" : "Editar armazém")</MudText>
+    </TitleContent>
+    <DialogContent>
+        <MudGrid>
+            <MudItem xs="12" md="3">
+                <MudTextField @bind-Value="_warehouseCode" @bind-Value:after="StateHasChanged" Immediate="true"
+                              Label="Código" Variant="Variant.Outlined" Required="true"
+                              Disabled="@(_warehouseId is not null)"
+                              HelperText="@(_warehouseId is null ? "Único na empresa" : "O código não pode ser alterado")" />
+            </MudItem>
+            <MudItem xs="12" md="9">
+                <MudTextField @bind-Value="_warehouseName" @bind-Value:after="StateHasChanged" Immediate="true"
+                              Label="Nome" Variant="Variant.Outlined" Required="true" />
+            </MudItem>
+
+            <MudItem xs="12" md="6">
+                <MudTextField @bind-Value="_warehouseAddress" Label="Morada" Variant="Variant.Outlined" />
+            </MudItem>
+            <MudItem xs="12" md="2">
+                <MudTextField @bind-Value="_warehousePostalCode" Label="Código postal" Variant="Variant.Outlined" />
+            </MudItem>
+            <MudItem xs="12" md="2">
+                <MudTextField @bind-Value="_warehouseCity" Label="Localidade" Variant="Variant.Outlined" />
+            </MudItem>
+            <MudItem xs="12" md="2">
+                <MudTextField @bind-Value="_warehouseCountry" Label="País" Variant="Variant.Outlined"
+                              HelperText="Código de 2 letras" />
+            </MudItem>
+
+            <MudItem xs="12" md="6">
+                <MudSwitch @bind-Value="_warehouseIsDefault" Color="Color.Primary" Label="Armazém predefinido" />
+                <MudText Typo="Typo.caption" Color="Color.Secondary">
+                    É o que os documentos assumem quando não indicam outro. Só pode haver um por empresa.
+                </MudText>
+            </MudItem>
+
+            @if (_warehouseId is not null)
+            {
+                <MudItem xs="12" md="6">
+                    <MudSwitch @bind-Value="_warehouseIsActive" Color="Color.Primary" Label="Armazém ativo" />
+                </MudItem>
+            }
+        </MudGrid>
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="@(() => _warehouseOpen = false)">Cancelar</MudButton>
+        <MudButton Variant="Variant.Filled" Color="Color.Primary"
+                   StartIcon="@Icons.Material.Filled.Save"
+                   Disabled="@(_working || !CanSaveWarehouse)"
+                   OnClick="SaveWarehouseAsync">
+            Guardar
+        </MudButton>
+    </DialogActions>
+</MudDialog>
 
 @code {
     /// <summary>As mesmas roles que o Identity emite, para não haver duas listas a divergir.</summary>
@@ -223,6 +348,25 @@
 
     private List<UserCompanyAdmin> _memberships = [];
     private List<IdentityUser> _users = [];
+
+    private readonly DialogOptions _dialogOptions = new() { MaxWidth = MaxWidth.Medium, FullWidth = true };
+
+    private bool _workingWarehouses;
+    private List<Warehouse> _warehouses = [];
+
+    private bool _warehouseOpen;
+    private Guid? _warehouseId;
+    private string _warehouseCode = string.Empty;
+    private string _warehouseName = string.Empty;
+    private string _warehouseAddress = string.Empty;
+    private string _warehouseCity = string.Empty;
+    private string _warehousePostalCode = string.Empty;
+    private string _warehouseCountry = "PT";
+    private bool _warehouseIsDefault;
+    private bool _warehouseIsActive = true;
+
+    private bool CanSaveWarehouse =>
+        !string.IsNullOrWhiteSpace(_warehouseCode) && !string.IsNullOrWhiteSpace(_warehouseName);
 
     private List<IdentityUser> _availableUsers =>
         [.. _users.Where(user => _memberships.All(m => m.UserId != user.Id))];
@@ -265,6 +409,7 @@
             _isActive = company.IsActive;
 
             await LoadUsersAsync();
+            await LoadWarehousesAsync();
         }
         catch (Exception ex)
         {
@@ -314,6 +459,90 @@
         _error = problems.Count == 0 ? null : string.Join(" ", problems);
         _workingUsers = false;
     }
+
+    private async Task LoadWarehousesAsync()
+    {
+        _workingWarehouses = true;
+
+        try
+        {
+            var (warehouses, error) = await StockApi.GetWarehousesAsync(Id!.Value);
+            _warehouses = [.. warehouses];
+
+            if (error is not null)
+                _error = error;
+        }
+        catch (Exception ex)
+        {
+            _error = $"Não foi possível carregar os armazéns: {ex.Message}";
+        }
+        finally
+        {
+            _workingWarehouses = false;
+        }
+    }
+
+    /// <summary>Opens the dialog on an existing warehouse, or empty for a new one.</summary>
+    private void OpenWarehouse(Warehouse? warehouse)
+    {
+        _warehouseId = warehouse?.Id;
+        _warehouseCode = warehouse?.Code ?? string.Empty;
+        _warehouseName = warehouse?.Name ?? string.Empty;
+        _warehouseAddress = warehouse?.Address ?? string.Empty;
+        _warehouseCity = warehouse?.City ?? string.Empty;
+        _warehousePostalCode = warehouse?.PostalCode ?? string.Empty;
+        _warehouseCountry = string.IsNullOrWhiteSpace(warehouse?.Country) ? "PT" : warehouse.Country;
+        _warehouseIsDefault = warehouse?.IsDefault ?? _warehouses.Count == 0;
+        _warehouseIsActive = warehouse?.IsActive ?? true;
+        _warehouseOpen = true;
+    }
+
+    private async Task SaveWarehouseAsync()
+    {
+        _working = true;
+        _error = null;
+
+        try
+        {
+            var address = Trimmed(_warehouseAddress);
+            var city = Trimmed(_warehouseCity);
+            var postalCode = Trimmed(_warehousePostalCode);
+            var country = string.IsNullOrWhiteSpace(_warehouseCountry) ? "PT" : _warehouseCountry.Trim();
+
+            var error = _warehouseId is { } id
+                ? await StockApi.UpdateWarehouseAsync(id, new UpdateWarehouseRequest(
+                    _warehouseName.Trim(), address, city, postalCode, country,
+                    _warehouseIsDefault, _warehouseIsActive))
+                : await StockApi.CreateWarehouseAsync(new CreateWarehouseRequest(
+                    Id!.Value, _warehouseCode.Trim(), _warehouseName.Trim(), address, city, postalCode,
+                    country, _warehouseIsDefault));
+
+            if (error is not null)
+            {
+                _error = error;
+                return;
+            }
+
+            Snackbar.Add($"Armazém {_warehouseCode} guardado.", Severity.Success);
+            _warehouseOpen = false;
+            await LoadWarehousesAsync();
+        }
+        catch (Exception ex)
+        {
+            _error = $"Não foi possível guardar o armazém: {ex.Message}";
+        }
+        finally
+        {
+            _working = false;
+        }
+    }
+
+    private static string? Trimmed(string value) =>
+        string.IsNullOrWhiteSpace(value) ? null : value.Trim();
+
+    private static string DescribeCity(Warehouse warehouse) =>
+        string.Join(" ", new[] { warehouse.PostalCode, warehouse.City }
+            .Where(part => !string.IsNullOrWhiteSpace(part)));
 
     private string DescribeUser(string userId) =>
         _users.FirstOrDefault(user => user.Id == userId) is { FullName: { Length: > 0 } fullName }

@@ -19,9 +19,5 @@ public interface ISupplierReturnStorage
         IReadOnlyCollection<Guid> receiptLineIds,
         CancellationToken cancellationToken = default);
 
-    Task<int> GetLastSequenceAsync(Guid companyId, int year, CancellationToken cancellationToken = default);
-
-    Task<bool> NumberExistsAsync(Guid companyId, string number, CancellationToken cancellationToken = default);
-
     Task AddAsync(SupplierReturn supplierReturn, CancellationToken cancellationToken = default);
 }

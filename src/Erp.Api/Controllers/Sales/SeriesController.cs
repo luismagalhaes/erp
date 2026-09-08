@@ -70,6 +70,35 @@ public sealed class SeriesController(ISeriesService seriesService) : ControllerB
     }
 
     /// <summary>
+    /// Changes what documents of this series do to stock, which is the only thing about a series
+    /// that may change once it exists: everything else is communicated to the tax authority or
+    /// already written into the documents issued from it.
+    /// </summary>
+    [HttpPut("{id:guid}")]
+    [Authorize(Policy = Policies.Admin)]
+    [ProducesResponseType<SeriesListItemDto>(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<SeriesListItemDto>> Update(
+        Guid id,
+        [FromBody] UpdateSeriesRequest request,
+        CancellationToken cancellationToken)
+    {
+        if (request is null)
+            return BadRequest(new { error = "A request body is required." });
+
+        try
+        {
+            var result = await seriesService.UpdateAsync(id, request, cancellationToken);
+            return result is null ? NotFound() : Ok(result);
+        }
+        catch (ArgumentException ex)
+        {
+            return BadRequest(new { error = ex.Message });
+        }
+    }
+
+    /// <summary>
     /// Records the validation code returned by the tax authority for this series, which is what
     /// unlocks issuing and completes the ATCUD.
     /// </summary>

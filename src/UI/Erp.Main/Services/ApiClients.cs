@@ -289,6 +289,39 @@ public class SalesApiClient(HttpClient http)
         return (new SaftFile(fileName, content, validationErrors), null);
     }
 
+    /// <summary>
+    /// The self-billing file, of type "S". It comes out one per supplier, with the supplier's tax id
+    /// in the header, because the invoices in it are their sales and not ours.
+    /// </summary>
+    public async Task<(SaftFile? File, string? Error)> DownloadSelfBillingSaftAsync(
+        Guid companyId,
+        Guid supplierId,
+        DateOnly startDate,
+        DateOnly endDate,
+        CancellationToken cancellationToken = default)
+    {
+        var response = await Http.GetAsync(
+            $"api/saft/self-billing?companyId={companyId}&supplierId={supplierId}" +
+            $"&startDate={startDate:yyyy-MM-dd}&endDate={endDate:yyyy-MM-dd}",
+            cancellationToken);
+
+        if (!response.IsSuccessStatusCode)
+            return (null, await ApiResponse.ReadErrorAsync(response, cancellationToken));
+
+        var fileName = response.Content.Headers.ContentDisposition?.FileNameStar
+            ?? response.Content.Headers.ContentDisposition?.FileName?.Trim('"')
+            ?? $"SAFT_S_{startDate:yyyyMMdd}_{endDate:yyyyMMdd}.xml";
+
+        var content = await response.Content.ReadAsByteArrayAsync(cancellationToken);
+
+        var validationErrors = response.Headers.TryGetValues("X-Saft-Validation-Errors", out var values)
+                               && int.TryParse(values.FirstOrDefault(), out var count)
+            ? count
+            : 0;
+
+        return (new SaftFile(fileName, content, validationErrors), null);
+    }
+
     // --- Receipts ---
 
     public async Task<(IReadOnlyList<PaymentListItem> Items, string? Error)> GetPaymentsAsync(

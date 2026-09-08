@@ -62,15 +62,25 @@ public class StockServiceTests
                 ];
             });
 
-        _storage.SumLedgerAsync(Arg.Any<Guid>(), Arg.Any<string?>(), Arg.Any<CancellationToken>())
+        // The ledger as the check reads it: the movements themselves, in order, so the check
+        // replays them exactly as the real storage would hand them over.
+        _storage.GetMovementsAsync(
+                Arg.Any<Guid>(), Arg.Any<DateOnly?>(), Arg.Any<string?>(), Arg.Any<CancellationToken>())
             .Returns(call =>
             {
-                var product = call.ArgAt<string?>(1);
+                var asAt = call.ArgAt<DateOnly?>(1);
+                var product = call.ArgAt<string?>(2);
 
-                return (IReadOnlyDictionary<(Guid, string), (decimal, int)>)_entries
-                    .Where(x => product == null || x.ProductCode == product)
-                    .GroupBy(x => (x.WarehouseId, x.ProductCode))
-                    .ToDictionary(g => g.Key, g => (g.Sum(x => x.Quantity), g.Count()));
+                return (IReadOnlyList<LedgerMovement>)
+                [
+                    .. _entries
+                        .Where(x => asAt == null || x.MovementDate <= asAt)
+                        .Where(x => product == null || x.ProductCode == product)
+                        .OrderBy(x => x.SystemEntryDateUtc)
+                        .ThenBy(x => x.Id)
+                        .Select(x => new LedgerMovement(
+                            x.WarehouseId, x.ProductCode, x.ProductDescription, x.Quantity, x.UnitCost))
+                ];
             });
     }
 
@@ -215,5 +225,99 @@ public class StockServiceTests
         var result = await service.CheckAsync(_companyId, "ART002");
 
         result.Lines.Should().ContainSingle().Which.ProductCode.Should().Be("ART002");
+    }
+
+    // --- Costing ---
+
+    /// <summary>
+    /// An opening adjustment is the only way a company that starts with a full warehouse gets its
+    /// cost into the system, so the adjustment is allowed to carry one.
+    /// </summary>
+    [Fact]
+    public async Task AdjustAsync_takes_the_cost_the_adjustment_carries()
+    {
+        var balance = await CreateService().AdjustAsync(Adjustment(10m) with { UnitCost = 4m }, "user-1");
+
+        balance.AverageCost.Should().Be(4m);
+        balance.StockValue.Should().Be(40m);
+    }
+
+    /// <summary>
+    /// An ordinary count finds goods, not prices: what turns up is worth the average of what was
+    /// already there.
+    /// </summary>
+    [Fact]
+    public async Task AdjustAsync_values_a_find_at_the_average_when_it_carries_no_cost()
+    {
+        var service = CreateService();
+        await service.AdjustAsync(Adjustment(10m) with { UnitCost = 4m }, "user-1");
+
+        var balance = await service.AdjustAsync(Adjustment(5m), "user-1");
+
+        balance.Quantity.Should().Be(15m);
+        balance.AverageCost.Should().Be(4m);
+        balance.StockValue.Should().Be(60m);
+    }
+
+    /// <summary>
+    /// The ledger says what each movement did to the value, not merely to the quantity — which is
+    /// what lets it be replayed and what lets a reversal undo exactly what it did.
+    /// </summary>
+    [Fact]
+    public async Task AdjustAsync_stamps_the_entry_with_the_cost_it_moved_at()
+    {
+        var service = CreateService();
+        await service.AdjustAsync(Adjustment(10m) with { UnitCost = 4m }, "user-1");
+        await service.AdjustAsync(Adjustment(-2m), "user-1");
+
+        _entries.Select(x => x.UnitCost).Should().Equal(4m, 4m);
+    }
+
+    /// <summary>
+    /// The stored value and the replay have to agree, or the check would be comparing a projection
+    /// against itself. Two purchases at different prices is the case that would drift first.
+    /// </summary>
+    [Fact]
+    public async Task CheckAsync_finds_the_stored_value_agreeing_with_the_replayed_ledger()
+    {
+        var service = CreateService();
+        await service.AdjustAsync(Adjustment(10m) with { UnitCost = 10m }, "user-1");
+        await service.AdjustAsync(Adjustment(10m) with { UnitCost = 20m }, "user-1");
+        await service.AdjustAsync(Adjustment(-5m), "user-1");
+
+        var result = await service.CheckAsync(_companyId);
+
+        var line = result.Lines.Should().ContainSingle().Subject;
+        line.RecordedValue.Should().Be(225m);
+        line.LedgerValue.Should().Be(225m);
+        line.ValueDifference.Should().Be(0m);
+        result.ProductsWithValueDifference.Should().Be(0);
+    }
+
+    /// <summary>
+    /// A value can drift while the quantity still agrees — the average depends on the order the
+    /// movements arrived in, not on their sum — so the two are counted separately.
+    /// </summary>
+    [Fact]
+    public async Task CheckAsync_reports_a_value_that_drifted_while_the_quantity_still_agrees()
+    {
+        var service = CreateService();
+        await service.AdjustAsync(Adjustment(10m) with { UnitCost = 10m }, "user-1");
+
+        // The entry keeps the quantity but forgets what it cost, as an entry written before
+        // costing existed would.
+        var costless = StockLedgerEntry.FromAdjustment(
+            _companyId, _warehouseId, "ART001", "Artigo de teste", 10m, new DateOnly(2026, 1, 15), "Sem custo");
+
+        _entries.Clear();
+        _entries.Add(costless);
+
+        var result = await service.CheckAsync(_companyId);
+
+        var line = result.Lines.Should().ContainSingle().Subject;
+        line.Difference.Should().Be(0m, "the quantity still adds up");
+        line.RecordedValue.Should().Be(100m);
+        line.LedgerValue.Should().Be(0m);
+        result.ProductsWithValueDifference.Should().Be(1);
     }
 }

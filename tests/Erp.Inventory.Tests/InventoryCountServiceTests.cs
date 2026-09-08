@@ -4,6 +4,7 @@ using Erp.Inventory.Infrastructure.Contracts;
 using Erp.Inventory.Infrastructure.Storage;
 using FluentAssertions;
 using NSubstitute;
+using Erp.Common;
 
 namespace Erp.Inventory.Tests;
 
@@ -15,8 +16,8 @@ public class InventoryCountServiceTests
 {
     private readonly IInventoryCountStorage _countStorage = Substitute.For<IInventoryCountStorage>();
     private readonly IStockStorage _stockStorage = Substitute.For<IStockStorage>();
-    private readonly IInventoryUnitOfWork _unitOfWork = Substitute.For<IInventoryUnitOfWork>();
-    private readonly IInventoryTransaction _transaction = Substitute.For<IInventoryTransaction>();
+    private readonly IErpUnitOfWork _unitOfWork = Substitute.For<IErpUnitOfWork>();
+    private readonly IErpTransaction _transaction = Substitute.For<IErpTransaction>();
 
     private readonly Guid _companyId = Guid.NewGuid();
     private readonly Guid _warehouseId = Guid.NewGuid();
@@ -195,7 +196,7 @@ public class InventoryCountServiceTests
     }
 
     /// <summary>
-    /// The balance is re-read under a lock at closing time, not taken from the picture at opening —
+    /// The balance is re-read under a lock at closing time, not taken from the picture at opening �?"
     /// that is what stops the count from undoing movements made while it was running.
     /// </summary>
     [Fact]

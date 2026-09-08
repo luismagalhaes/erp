@@ -5,6 +5,8 @@ using Erp.Sales.Infrastructure.Application;
 using Erp.Sales.Infrastructure.Contracts;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Erp.SeriesRegistry.Infrastructure.Application;
+using Erp.SeriesRegistry.Infrastructure.Contracts;
 
 namespace Erp.Api.Controllers.Sales;
 

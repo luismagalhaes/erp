@@ -379,6 +379,121 @@ public sealed record ReturnableReceiptLine(
     decimal ReturnableQuantity,
     decimal UnitCost);
 
+// --- Self-billing ---
+//
+// The one certified document of this module: an invoice we issue in a supplier's name. Everything
+// above records what a supplier sent us; these are the other way round, so they carry a number, an
+// ATCUD, a hash and a QR code, exactly like a sales invoice.
+
+public sealed record SelfBilledInvoiceListItem(
+    Guid Id,
+    string DocumentNumber,
+    string DocumentType,
+    string Atcud,
+    DateOnly IssueDate,
+    string SupplierName,
+    string SupplierTaxId,
+    decimal NetTotal,
+    decimal TaxPayable,
+    decimal GrossTotal,
+    string Status,
+    bool IsAccepted)
+{
+    public bool IsVoided => Status == "A";
+}
+
+public sealed record SelfBilledInvoiceLine(
+    Guid Id,
+    int LineNumber,
+    Guid? ReceiptLineId,
+    Guid? ReceiptId,
+    string ProductCode,
+    string ProductDescription,
+    decimal Quantity,
+    string UnitOfMeasure,
+    decimal UnitPrice,
+    decimal LineAmount,
+    string TaxCountryRegion,
+    string TaxCode,
+    decimal TaxPercentage,
+    decimal TaxAmount,
+    string? TaxExemptionCode,
+    string? TaxExemptionReason);
+
+public sealed record SelfBilledInvoiceTaxSummary(
+    string TaxCountryRegion,
+    string TaxCode,
+    decimal TaxPercentage,
+    decimal TaxableBase,
+    decimal TaxAmount);
+
+public sealed record SelfBilledInvoice(
+    Guid Id,
+    Guid CompanyId,
+    Guid SupplierId,
+    Guid SeriesId,
+    string DocumentType,
+    string DocumentNumber,
+    string Atcud,
+    DateOnly IssueDate,
+    DateTime SystemEntryDateUtc,
+    string Status,
+    DateTime? AcceptedBySupplierAtUtc,
+    PurchaseOrderSupplier Supplier,
+    decimal NetTotal,
+    decimal TaxPayable,
+    decimal GrossTotal,
+    string PrintableHash,
+    string HashControl,
+    string QrCodePayload,
+    IReadOnlyList<SelfBilledInvoiceLine> Lines,
+    IReadOnlyList<SelfBilledInvoiceTaxSummary> TaxSummary)
+{
+    public bool IsVoided => Status == "A";
+
+    public bool IsAccepted => AcceptedBySupplierAtUtc is not null;
+}
+
+public sealed record SelfBilledInvoiceLineRequest(
+    string ProductCode,
+    string ProductDescription,
+    decimal Quantity,
+    decimal UnitPrice,
+    decimal TaxPercentage,
+    string TaxCode = "NOR",
+    string TaxCountryRegion = "PT",
+    string UnitOfMeasure = "UN",
+    Guid? ReceiptLineId = null,
+    Guid? ReceiptId = null,
+    string? TaxExemptionCode = null,
+    string? TaxExemptionReason = null);
+
+public sealed record IssueSelfBilledInvoiceRequest(
+    Guid CompanyId,
+    Guid SupplierId,
+    Guid SeriesId,
+    DateOnly IssueDate,
+    IReadOnlyList<SelfBilledInvoiceLineRequest> Lines,
+    string? SupplierAgreementReference = null);
+
+public sealed record VoidSelfBilledInvoiceRequest(string Reason);
+
+/// <summary>A receipt line that has not been self-billed yet.</summary>
+public sealed record UnbilledReceiptLine(
+    Guid ReceiptId,
+    string ReceiptNumber,
+    DateOnly ReceiptDate,
+    Guid SupplierId,
+    string SupplierName,
+    Guid ReceiptLineId,
+    string ProductCode,
+    string ProductDescription,
+    string UnitOfMeasure,
+    decimal ReceivedQuantity,
+    decimal BilledQuantity,
+    decimal PendingQuantity,
+    decimal UnitCost);
+
 /// <summary>The supplier's document types, for the UI selects.</summary>
 public static class PurchaseDocumentTypes
 {

@@ -31,11 +31,17 @@ public sealed record UpdateWarehouseRequest(
     bool IsDefault,
     bool IsActive);
 
+/// <param name="AverageCost">
+/// Weighted average cost of a unit, derived from what came in and at what price. Zero means nothing
+/// costed has ever come in - not that the goods are free.
+/// </param>
 public sealed record StockBalance(
     Guid WarehouseId,
     string ProductCode,
     string ProductDescription,
     decimal Quantity,
+    decimal AverageCost,
+    decimal StockValue,
     DateTime LastMovementUtc);
 
 /// <param name="Quantity">Signed: positive brought stock in, negative took it out.</param>
@@ -52,6 +58,10 @@ public sealed record StockLedgerEntry(
     string? SourceDocumentNumber,
     string? Reason);
 
+/// <param name="ValueDifference">
+/// Checked apart from the quantity: the average cost depends on the order the movements arrived in,
+/// not merely their sum, so a value can drift while the quantity still agrees.
+/// </param>
 public sealed record StockCheckLine(
     Guid WarehouseId,
     string ProductCode,
@@ -59,6 +69,9 @@ public sealed record StockCheckLine(
     decimal RecordedQuantity,
     decimal LedgerQuantity,
     decimal Difference,
+    decimal RecordedValue,
+    decimal LedgerValue,
+    decimal ValueDifference,
     int EntryCount);
 
 public sealed record StockCheckResult(
@@ -66,6 +79,7 @@ public sealed record StockCheckResult(
     DateTime CheckedAtUtc,
     int ProductsChecked,
     int ProductsWithDifference,
+    int ProductsWithValueDifference,
     IReadOnlyList<StockCheckLine> Lines);
 
 public sealed record AdjustStockRequest(
@@ -75,11 +89,16 @@ public sealed record AdjustStockRequest(
     string ProductDescription,
     decimal Difference,
     DateOnly MovementDate,
-    string Reason);
+    string Reason,
+    decimal? UnitCost = null);
 
 /// <param name="ProductsWithoutCost">
-/// Products reported with a value of zero because the product file carries no cost. The
+/// Products reported with a value of zero because no source could put a cost on them. The
 /// communication requires the valuation, so this is worth seeing before submitting.
+/// </param>
+/// <param name="ProductsCostedFromFile">
+/// Products valued at the standard cost on the product file, because the ledger never observed what
+/// they cost. Acceptable for opening stock; a sign of something missing anywhere else.
 /// </param>
 public sealed record InventoryFileSummary(
     string FileName,
@@ -87,6 +106,7 @@ public sealed record InventoryFileSummary(
     decimal TotalQuantity,
     decimal TotalValue,
     int ProductsWithoutCost,
+    int ProductsCostedFromFile,
     int ProductsWithNegativeStock,
     int ValidationErrors,
     DateOnly EndDate);

@@ -1,5 +1,6 @@
 using Erp.Inventory.Infrastructure.Application;
-using Erp.Sales.Application.Configuration;
+using Erp.FiscalPT;
+using Erp.FiscalPT.Signing;
 using Erp.Sales.Application.Services;
 using Erp.Sales.Domain;
 using Erp.Sales.Infrastructure.Application;
@@ -7,6 +8,9 @@ using Erp.Sales.Infrastructure.Contracts;
 using Erp.Sales.Infrastructure.Storage;
 using Microsoft.Extensions.Options;
 using NSubstitute;
+using Erp.Common;
+using Erp.SeriesRegistry.Domain;
+using Erp.SeriesRegistry.Infrastructure.Storage;
 
 namespace Erp.Sales.Tests;
 
@@ -20,9 +24,9 @@ internal sealed class SalesTestContext
     public ISalesDocumentStorage DocumentStorage { get; } = Substitute.For<ISalesDocumentStorage>();
     public IStockMovementStorage MovementStorage { get; } = Substitute.For<IStockMovementStorage>();
     public ISeriesStorage SeriesStorage { get; } = Substitute.For<ISeriesStorage>();
-    public ISalesUnitOfWork UnitOfWork { get; } = Substitute.For<ISalesUnitOfWork>();
+    public IErpUnitOfWork UnitOfWork { get; } = Substitute.For<IErpUnitOfWork>();
     public IDocumentSigner Signer { get; } = Substitute.For<IDocumentSigner>();
-    public ISalesTransaction Transaction { get; } = Substitute.For<ISalesTransaction>();
+    public IErpTransaction Transaction { get; } = Substitute.For<IErpTransaction>();
 
     public List<SalesDocument> Persisted { get; } = [];
     public List<DocumentStatusChange> PersistedStatusChanges { get; } = [];

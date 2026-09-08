@@ -51,7 +51,7 @@ public static class SaftXmlWriter
             new XElement(Ns + "AuditFileVersion", SaftConstants.AuditFileVersion),
             new XElement(Ns + "CompanyID", header.CompanyId),
             new XElement(Ns + "TaxRegistrationNumber", header.TaxRegistrationNumber),
-            new XElement(Ns + "TaxAccountingBasis", SaftConstants.TaxAccountingBasisBilling),
+            new XElement(Ns + "TaxAccountingBasis", header.TaxAccountingBasis),
             new XElement(Ns + "CompanyName", header.CompanyName),
             Optional("BusinessName", header.BusinessName),
             BuildAddress("CompanyAddress", header.CompanyAddress),

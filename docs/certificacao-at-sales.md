@@ -17,8 +17,8 @@ esquema de base de dados que garante a inviolabilidade dos registos.
 
 | Fase | Estado |
 |---|---|
-| 1 — Estrutura de projetos | **Feito** — `Erp.FiscalPT` + `Erp.Sales.{Domain,Infrastructure,Application,Storage}` |
-| 2 — Modelo de dados imutável | **Feito** — entidades, `SalesDbContext`, migration `InitialSales` e [script de permissões](../src/Services/Erp.Sales.Storage/Data/Scripts/harden-sales-permissions.sql) |
+| 1 — Estrutura de projetos | **Feito** — `Erp.FiscalPT` + `Erp.Sales`, com as camadas em pastas |
+| 2 — Modelo de dados imutável | **Feito** — entidades, `SalesDbContext`, migration `InitialSales` e [script de permissões](../src/Modules/Erp.Sales/Storage/Data/Scripts/harden-sales-permissions.sql) |
 | 3 — Motor de assinatura | **Feito** — `DocumentSignatureString`, `RsaDocumentSigner`, `DocumentSigner` e 22 testes |
 | 4 — Séries e ATCUD | **Parcial** — modelo, ciclo de vida, gestão no frontend e registo manual do código de validação; falta o cliente SOAP do *SeriesWSService* |
 | 5 — Código QR | **Feito** — `QrCodePayloadBuilder` gera a mensagem e `QrCodeImage` renderiza a imagem PNG, impressa no documento |
@@ -138,14 +138,24 @@ desde o primeiro dia — o `Erp.FiscalPT.Tests` já existe exatamente para isso.
 | Projeto | Conteúdo |
 |---|---|
 | `Erp.FiscalPT` | Assinatura RSA e cadeia de hash, construção do ATCUD, *payload* do QR, escrita e validação do SAF-T. Sem dependências de EF nem de ASP.NET. |
-| `Erp.Sales.Domain` | Entidades e enums: `Series`, `SalesDocument`, `SalesDocumentLine`, `DocumentTax`, `CustomerSnapshot`. |
-| `Erp.Sales.Infrastructure` | Interfaces: `IDocumentIssuingService`, `ISeriesService`, `IDocumentSigner`, `IAtSeriesClient`, `ISaftExporter`, mais os contratos de storage. |
+| `Erp.Sales.Domain` | Entidades e enums: `SalesDocument`, `SalesDocumentLine`, `DocumentTax`, `CustomerSnapshot`. |
+| `Erp.Sales.Infrastructure` | Interfaces: `IDocumentIssuingService` e os contratos de storage. |
 | `Erp.Sales.Application` | Implementações dos serviços e orquestração da emissão. |
-| `Erp.Sales.Storage` | `SalesDbContext`, configurações, migrations e repositórios sobre a connection string `ErpDb`. |
+| `Erp.Sales/Storage` | `SalesModelConfiguration` com as tabelas do módulo, e os repositórios. O contexto e as migrations são partilhados, no `Erp.Storage`. |
 | `Erp.Api` | Controllers do módulo, DI e políticas de autorização — partilhado com os restantes módulos. |
 
 Cada projeto expõe o seu `DependencyInjection.cs` com um extension method (`AddSalesStorage`,
 `AddSalesApplication`), como já acontece no Core e no Identity.
+
+> [!NOTE]
+> **A previsão do primeiro parágrafo confirmou-se, e a arrumação acompanhou-a.** Quando as Compras
+> passaram a emitir autofaturas, tudo o que não é específico das vendas saiu deste módulo: a `Series`
+> foi para o [`Erp.SeriesRegistry`](../src/Modules/Erp.SeriesRegistry/), e o `IDocumentSigner`, o
+> `SigningKeyProvider`, as `FiscalOptions` e o `SaftExporter` foram para o `Erp.FiscalPT`, com um
+> `AddFiscalPT(configuration)` que os regista de uma vez para todos os módulos que emitem. É a mesma
+> chave e o mesmo número de certificado dos dois lados — é o mesmo programa que foi certificado.
+> Os projetos por camada também foram fundidos: hoje o módulo é um projeto só, com as camadas em
+> pastas (ver [Um `DbContext` para os módulos de negócio](single-dbcontext.md)).
 
 **Critério de aceitação:** solução compila com os projetos novos registados no `Erp.slnx`, e o
 `Erp.FiscalPT.Tests` passa a referenciar `Erp.FiscalPT`.
@@ -412,9 +422,10 @@ que a AT usa para auditar. Sem exportação válida não há certificação.
 
 **Como está implementado.** O gerador vive no [`Erp.FiscalPT/Saft`](../src/Shared/Erp.FiscalPT/Saft/),
 que é a biblioteca fiscal partilhada e não sabe nada de EF nem do módulo de vendas: recebe um
-`SaftAuditFile` e escreve o XML. O `SaftExportService` do Sales lê os documentos do período e
-preenche esse modelo; o `SaftController` junta-lhe a empresa, que pertence ao Core. Três decisões
-que valem a pena registar:
+`SaftAuditFile` e escreve o XML. O `SaftExporter`, na mesma biblioteca, pergunta a cada
+`ISaftDocumentSource` registada o que tem para o período — o `SalesSaftSource` traz os documentos de
+vendas — e o `SaftController` junta-lhe a empresa, que pertence ao Core. Três decisões que valem a
+pena registar:
 
 - **Os *master files* derivam dos próprios documentos.** Cada documento traz o snapshot do cliente,
   dos artigos e das taxas, por isso `Customer`, `Product` e `TaxTable` são construídos a partir das

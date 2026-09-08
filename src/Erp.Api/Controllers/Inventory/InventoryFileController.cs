@@ -142,6 +142,7 @@ public sealed class InventoryFileController(
                 result.TotalQuantity,
                 result.TotalValue,
                 result.ProductsWithoutCost,
+                result.ProductsCostedFromFile,
                 result.ProductsWithNegativeStock,
                 ValidationErrors = result.ValidationErrors.Count,
                 EndDate = reference

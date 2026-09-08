@@ -1,0 +1,560 @@
+@page "/self-billed-invoices/new"
+@attribute [Authorize]
+@implements IDisposable
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.AspNetCore.Components.Web
+@using MudBlazor
+@using Erp.Main.Models
+@using Erp.Main.Services
+@inject PurchasingApiClient Purchasing
+@inject CatalogApiClient Catalog
+@inject SalesApiClient Sales
+@inject CompanyState Company
+@inject NavigationManager Navigation
+@inject ISnackbar Snackbar
+
+<PageTitle>Emitir autofatura</PageTitle>
+
+<MudStack Spacing="4">
+    <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center">
+        <MudStack Spacing="0">
+            <MudText Typo="Typo.h4">Emitir autofatura</MudText>
+            <MudText Typo="Typo.body2" Color="Color.Secondary">
+                Nós emitimos, em nome do fornecedor. O documento fica numerado, assinado e imutável —
+                como qualquer fatura nossa.
+            </MudText>
+        </MudStack>
+
+        <MudButton Variant="Variant.Text" StartIcon="@Icons.Material.Filled.ArrowBack"
+                   OnClick="@(() => Navigation.NavigateTo("self-billed-invoices"))">
+            Voltar
+        </MudButton>
+    </MudStack>
+
+    @if (!string.IsNullOrWhiteSpace(_error))
+    {
+        <MudAlert Severity="Severity.Error" Dense="true">@_error</MudAlert>
+    }
+
+    @if (!Company.HasCompany)
+    {
+        <MudAlert Severity="Severity.Info">Escolha uma empresa no cabeçalho.</MudAlert>
+    }
+    else if (_series.Count == 0)
+    {
+        <MudAlert Severity="Severity.Warning">
+            Não há nenhuma série de autofaturação comunicada à AT. Crie uma em
+            <MudLink Href="series" Class="ml-1">Séries</MudLink>, marcada como autofaturação, e
+            comunique-a antes de emitir.
+        </MudAlert>
+    }
+    else
+    {
+        <MudPaper Elevation="1" Class="pa-4">
+            <MudText Typo="Typo.h6" Class="mb-3">O documento</MudText>
+            <MudGrid>
+                <MudItem xs="12" md="4">
+                    <MudSelect T="Guid?" Value="_supplierId" ValueChanged="OnSupplierChangedAsync"
+                               Label="Fornecedor" Variant="Variant.Outlined" Required="true"
+                               HelperText="O NIF dele é o cabeçalho do SAF-T que sai daqui">
+                        @foreach (var supplier in _suppliers)
+                        {
+                            <MudSelectItem T="Guid?" Value="@supplier.Id">
+                                @supplier.Code — @supplier.Name
+                            </MudSelectItem>
+                        }
+                    </MudSelect>
+                </MudItem>
+                <MudItem xs="12" md="3">
+                    <MudSelect T="Guid?" @bind-Value="_seriesId" @bind-Value:after="StateHasChanged"
+                               Label="Série" Variant="Variant.Outlined" Required="true"
+                               HelperText="Só séries de autofaturação">
+                        @foreach (var series in _series)
+                        {
+                            <MudSelectItem T="Guid?" Value="@series.Id">
+                                @series.DocumentType @series.SeriesCode
+                            </MudSelectItem>
+                        }
+                    </MudSelect>
+                </MudItem>
+                <MudItem xs="12" md="2">
+                    <MudDatePicker @bind-Date="_issueDate" Label="Data" Variant="Variant.Outlined"
+                                   DateFormat="yyyy-MM-dd" />
+                </MudItem>
+                <MudItem xs="12" md="3">
+                    <MudTextField @bind-Value="_agreementReference" Label="Acordo prévio"
+                                  Variant="Variant.Outlined"
+                                  HelperText="O que autoriza a autofaturação" />
+                </MudItem>
+            </MudGrid>
+        </MudPaper>
+
+        @if (_supplierId is not null)
+        {
+            @if (_unbilled.Count > 0)
+            {
+                <MudPaper Elevation="1" Class="pa-4">
+                    <MudStack Spacing="0" Class="mb-3">
+                        <MudText Typo="Typo.h6">Recebido por faturar</MudText>
+                        <MudText Typo="Typo.caption" Color="Color.Secondary">
+                            Estas linhas já deram entrada em stock na receção — a autofatura
+                            <strong>não movimenta stock nenhum</strong>, só acerta o dinheiro.
+                        </MudText>
+                    </MudStack>
+
+                    <MudTable Items="_unbilled" Dense="true" Hover="true" Striped="true" Breakpoint="Breakpoint.Sm">
+                        <HeaderContent>
+                            <MudTh Style="width: 60px;"></MudTh>
+                            <MudTh>Receção</MudTh>
+                            <MudTh>Artigo</MudTh>
+                            <MudTh Style="text-align: right;">Por faturar</MudTh>
+                            <MudTh Style="width: 140px;">A faturar</MudTh>
+                            <MudTh Style="width: 140px;">Preço unit.</MudTh>
+                        </HeaderContent>
+                        <RowTemplate>
+                            <MudTd>
+                                <MudCheckBox T="bool" Value="@IsChosen(context)"
+                                             ValueChanged="@(chosen => Toggle(context, chosen))"
+                                             Color="Color.Primary" Dense="true" />
+                            </MudTd>
+                            <MudTd DataLabel="Receção">
+                                <MudStack Spacing="0">
+                                    <MudText Typo="Typo.body2" Style="font-family: monospace;">
+                                        @context.ReceiptNumber
+                                    </MudText>
+                                    <MudText Typo="Typo.caption" Color="Color.Secondary">
+                                        @context.ReceiptDate.ToString("yyyy-MM-dd")
+                                    </MudText>
+                                </MudStack>
+                            </MudTd>
+                            <MudTd DataLabel="Artigo">
+                                <MudStack Spacing="0">
+                                    <MudText Typo="Typo.body2">@context.ProductCode</MudText>
+                                    <MudText Typo="Typo.caption" Color="Color.Secondary">
+                                        @context.ProductDescription
+                                    </MudText>
+                                </MudStack>
+                            </MudTd>
+                            <MudTd DataLabel="Por faturar" Style="text-align: right;">
+                                @context.PendingQuantity.ToString("N3") @context.UnitOfMeasure
+                            </MudTd>
+                            <MudTd DataLabel="A faturar">
+                                @if (Chosen(context) is { } chosen)
+                                {
+                                    <MudNumericField T="decimal" Value="chosen.Quantity"
+                                                     ValueChanged="@(quantity => SetQuantity(chosen, context, quantity))"
+                                                     Margin="Margin.Dense" Min="0"
+                                                     Max="@context.PendingQuantity" />
+                                }
+                            </MudTd>
+                            <MudTd DataLabel="Preço unit.">
+                                @if (Chosen(context) is { } chosen)
+                                {
+                                    <MudNumericField @bind-Value="chosen.UnitPrice" @bind-Value:after="StateHasChanged"
+                                                     Margin="Margin.Dense" Min="0" Format="N2" />
+                                }
+                            </MudTd>
+                        </RowTemplate>
+                    </MudTable>
+                </MudPaper>
+            }
+
+            <MudPaper Elevation="1" Class="pa-4">
+                <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center" Class="mb-3">
+                    <MudStack Spacing="0">
+                        <MudText Typo="Typo.h6">Outras linhas</MudText>
+                        <MudText Typo="Typo.caption" Color="Color.Secondary">
+                            Serviços e tudo o que não veio de uma receção.
+                        </MudText>
+                    </MudStack>
+                    <MudButton Variant="Variant.Outlined" Color="Color.Primary" Size="Size.Small"
+                               StartIcon="@Icons.Material.Filled.Add" OnClick="AddLine">
+                        Adicionar linha
+                    </MudButton>
+                </MudStack>
+
+                @if (_lines.Count > 0)
+                {
+                    <MudTable Items="_lines" Dense="true" Hover="true" Breakpoint="Breakpoint.Sm">
+                        <HeaderContent>
+                            <MudTh Style="width: 190px;">Artigo</MudTh>
+                            <MudTh>Descrição</MudTh>
+                            <MudTh Style="width: 100px;">Qtd.</MudTh>
+                            <MudTh Style="width: 130px;">Preço unit.</MudTh>
+                            <MudTh Style="width: 140px;">IVA</MudTh>
+                            <MudTh Style="width: 70px; text-align: right;">Ações</MudTh>
+                        </HeaderContent>
+                        <RowTemplate>
+                            <MudTd DataLabel="Artigo">
+                                <MudSelect T="Guid?" Value="context.ProductId"
+                                           ValueChanged="@(productId => OnProductChanged(context, productId))"
+                                           Margin="Margin.Dense" Clearable="true" Placeholder="Livre">
+                                    @foreach (var product in _products)
+                                    {
+                                        <MudSelectItem T="Guid?" Value="@product.Id">
+                                            @product.ProductCode — @product.Description
+                                        </MudSelectItem>
+                                    }
+                                </MudSelect>
+                            </MudTd>
+                            <MudTd DataLabel="Descrição">
+                                <MudTextField @bind-Value="context.ProductDescription" Margin="Margin.Dense" />
+                            </MudTd>
+                            <MudTd DataLabel="Qtd.">
+                                <MudNumericField @bind-Value="context.Quantity" @bind-Value:after="StateHasChanged"
+                                                 Margin="Margin.Dense" Min="0" />
+                            </MudTd>
+                            <MudTd DataLabel="Preço unit.">
+                                <MudNumericField @bind-Value="context.UnitPrice" @bind-Value:after="StateHasChanged"
+                                                 Margin="Margin.Dense" Min="0" Format="N2" />
+                            </MudTd>
+                            <MudTd DataLabel="IVA">
+                                <MudSelect T="string" Value="context.TaxCode"
+                                           ValueChanged="@(code => OnTaxCodeChanged(context, code))"
+                                           Margin="Margin.Dense">
+                                    @foreach (var rate in TaxRates)
+                                    {
+                                        <MudSelectItem T="string" Value="@rate.Code">@rate.Label</MudSelectItem>
+                                    }
+                                </MudSelect>
+                            </MudTd>
+                            <MudTd DataLabel="Ações" Style="text-align: right;">
+                                <MudIconButton Size="Size.Small" Icon="@Icons.Material.Filled.Delete"
+                                               Color="Color.Error" OnClick="@(() => _lines.Remove(context))" />
+                            </MudTd>
+                        </RowTemplate>
+                    </MudTable>
+                }
+                else
+                {
+                    <MudText Typo="Typo.body2" Color="Color.Secondary">Nenhuma.</MudText>
+                }
+
+                @if (_lines.Any(line => line.TaxCode == "ISE"))
+                {
+                    <MudGrid Class="mt-3">
+                        <MudItem xs="12" md="6">
+                            <MudTextField @bind-Value="_exemptionReason" @bind-Value:after="StateHasChanged"
+                                          Label="Motivo de isenção" Variant="Variant.Outlined" Required="true"
+                                          HelperText="Exigido em qualquer linha isenta" />
+                        </MudItem>
+                    </MudGrid>
+                }
+            </MudPaper>
+
+            <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center">
+                <MudStack Row="true" Spacing="6">
+                    <MudStack Spacing="0">
+                        <MudText Typo="Typo.caption" Color="Color.Secondary">Base</MudText>
+                        <MudText Typo="Typo.body1">@NetTotal.ToString("N2")</MudText>
+                    </MudStack>
+                    <MudStack Spacing="0">
+                        <MudText Typo="Typo.caption" Color="Color.Secondary">IVA</MudText>
+                        <MudText Typo="Typo.body1">@TaxTotal.ToString("N2")</MudText>
+                    </MudStack>
+                    <MudStack Spacing="0">
+                        <MudText Typo="Typo.caption" Color="Color.Secondary">Total</MudText>
+                        <MudText Typo="Typo.h6" Color="Color.Primary">@GrossTotal.ToString("N2")</MudText>
+                    </MudStack>
+                </MudStack>
+
+                <MudStack Row="true" Spacing="2">
+                    <MudButton Variant="Variant.Text"
+                               OnClick="@(() => Navigation.NavigateTo("self-billed-invoices"))">
+                        Cancelar
+                    </MudButton>
+                    <MudButton Variant="Variant.Filled" Color="Color.Primary"
+                               StartIcon="@Icons.Material.Filled.Receipt"
+                               Disabled="@(_saving || !CanIssue)"
+                               OnClick="IssueAsync">
+                        @(_saving ? "A emitir..." : "Emitir")
+                    </MudButton>
+                </MudStack>
+            </MudStack>
+        }
+    }
+</MudStack>
+
+@code {
+    private static readonly TaxRateOption[] TaxRates =
+    [
+        new("NOR", 23m, "Normal - 23%"),
+        new("INT", 13m, "Intermédia - 13%"),
+        new("RED", 6m, "Reduzida - 6%"),
+        new("ISE", 0m, "Isento")
+    ];
+
+    private bool _saving;
+    private string? _error;
+
+    private Guid? _supplierId;
+    private Guid? _seriesId;
+    private DateTime? _issueDate = DateTime.Today;
+    private string _agreementReference = string.Empty;
+    private string _exemptionReason = string.Empty;
+
+    private List<Partner> _suppliers = [];
+    private List<ProductListItem> _products = [];
+    private List<SalesSeries> _series = [];
+    private List<UnbilledReceiptLine> _unbilled = [];
+
+    private readonly List<ChosenLine> _chosen = [];
+    private readonly List<FreeLine> _lines = [];
+
+    private IEnumerable<FreeLine> ValidLines =>
+        _lines.Where(line => line.Quantity > 0 && !string.IsNullOrWhiteSpace(line.ProductCode));
+
+    private decimal NetTotal =>
+        _chosen.Where(line => line.Quantity > 0).Sum(line => Round(line.Quantity * line.UnitPrice))
+        + ValidLines.Sum(line => Round(line.Quantity * line.UnitPrice));
+
+    private decimal TaxTotal =>
+        _chosen.Where(line => line.Quantity > 0)
+            .Sum(line => Round(Round(line.Quantity * line.UnitPrice) * line.TaxPercentage / 100m))
+        + ValidLines.Sum(line => Round(Round(line.Quantity * line.UnitPrice) * line.TaxPercentage / 100m));
+
+    private decimal GrossTotal => NetTotal + TaxTotal;
+
+    private bool NeedsExemptionReason => ValidLines.Any(line => line.TaxCode == "ISE");
+
+    private bool CanIssue =>
+        _supplierId is not null
+        && _seriesId is not null
+        && (_chosen.Any(line => line.Quantity > 0) || ValidLines.Any())
+        && (!NeedsExemptionReason || !string.IsNullOrWhiteSpace(_exemptionReason));
+
+    protected override async Task OnInitializedAsync()
+    {
+        Company.Changed += OnCompanyChanged;
+        await Company.EnsureLoadedAsync();
+        await LoadAsync();
+    }
+
+    private async void OnCompanyChanged() => await InvokeAsync(async () =>
+    {
+        _supplierId = null;
+        _seriesId = null;
+        _chosen.Clear();
+        _lines.Clear();
+        _unbilled = [];
+        await LoadAsync();
+    });
+
+    private async Task LoadAsync()
+    {
+        if (!Company.HasCompany)
+        {
+            _error = Company.LoadError;
+            StateHasChanged();
+            return;
+        }
+
+        try
+        {
+            var (suppliers, suppliersError) = await Catalog.GetSuppliersAsync(Company.SelectedCompanyId);
+            _suppliers = [.. suppliers.Where(supplier => supplier.IsActive)];
+
+            var (products, productsError) = await Catalog.GetProductsAsync(Company.SelectedCompanyId);
+            _products = [.. products.Where(product => product.IsActive)];
+
+            // Only series marked for self-billing, and only those the tax authority has validated:
+            // anything else would put these documents in the wrong chain and the wrong file.
+            var series = await Sales.GetSeriesAsync(Company.SelectedCompanyId);
+            _series = [.. series.Where(x => x.SelfBilling && x.CanIssue)];
+            _seriesId ??= _series.FirstOrDefault()?.Id;
+
+            _error = suppliersError ?? productsError;
+        }
+        catch (Exception ex)
+        {
+            _error = $"Não foi possível preparar a emissão: {ex.Message}";
+        }
+        finally
+        {
+            StateHasChanged();
+        }
+    }
+
+    private async Task OnSupplierChangedAsync(Guid? supplierId)
+    {
+        _supplierId = supplierId;
+        _chosen.Clear();
+        _unbilled = [];
+
+        if (supplierId is null)
+        {
+            StateHasChanged();
+            return;
+        }
+
+        try
+        {
+            var (pending, error) = await Purchasing.GetUnbilledReceiptLinesAsync(
+                Company.SelectedCompanyId, supplierId);
+
+            _unbilled = [.. pending];
+            _error = error;
+        }
+        catch (Exception ex)
+        {
+            _error = $"Não foi possível carregar o que está por faturar: {ex.Message}";
+        }
+        finally
+        {
+            StateHasChanged();
+        }
+    }
+
+    private ChosenLine? Chosen(UnbilledReceiptLine line) =>
+        _chosen.FirstOrDefault(chosen => chosen.ReceiptLineId == line.ReceiptLineId);
+
+    private bool IsChosen(UnbilledReceiptLine line) => Chosen(line) is not null;
+
+    private void Toggle(UnbilledReceiptLine line, bool chosen)
+    {
+        var existing = Chosen(line);
+
+        if (chosen && existing is null)
+        {
+            _chosen.Add(new ChosenLine
+            {
+                ReceiptLineId = line.ReceiptLineId,
+                ReceiptId = line.ReceiptId,
+                ProductCode = line.ProductCode,
+                ProductDescription = line.ProductDescription,
+                UnitOfMeasure = line.UnitOfMeasure,
+                Quantity = line.PendingQuantity,
+                UnitPrice = line.UnitCost
+            });
+        }
+        else if (!chosen && existing is not null)
+        {
+            _chosen.Remove(existing);
+        }
+
+        StateHasChanged();
+    }
+
+    private void SetQuantity(ChosenLine chosen, UnbilledReceiptLine line, decimal quantity)
+    {
+        chosen.Quantity = Math.Clamp(quantity, 0m, line.PendingQuantity);
+        StateHasChanged();
+    }
+
+    private void AddLine() => _lines.Add(new FreeLine());
+
+    private void OnProductChanged(FreeLine line, Guid? productId)
+    {
+        line.ProductId = productId;
+
+        var product = _products.FirstOrDefault(x => x.Id == productId);
+        if (product is null)
+            return;
+
+        line.ProductCode = product.ProductCode;
+        line.ProductDescription = product.Description;
+        line.UnitOfMeasure = product.UnitOfMeasure;
+        line.UnitPrice = product.UnitCost;
+        OnTaxCodeChanged(line, product.DefaultTaxCode);
+    }
+
+    private void OnTaxCodeChanged(FreeLine line, string taxCode)
+    {
+        line.TaxCode = taxCode;
+        line.TaxPercentage = TaxRates.FirstOrDefault(rate => rate.Code == taxCode)?.Percentage ?? 0m;
+        StateHasChanged();
+    }
+
+    private async Task IssueAsync()
+    {
+        _saving = true;
+        _error = null;
+
+        try
+        {
+            var lines = _chosen
+                .Where(line => line.Quantity > 0)
+                .Select(line => new SelfBilledInvoiceLineRequest(
+                    line.ProductCode,
+                    line.ProductDescription,
+                    line.Quantity,
+                    line.UnitPrice,
+                    line.TaxPercentage,
+                    line.TaxCode,
+                    "PT",
+                    line.UnitOfMeasure,
+                    line.ReceiptLineId,
+                    line.ReceiptId))
+                .Concat(ValidLines.Select(line => new SelfBilledInvoiceLineRequest(
+                    line.ProductCode.Trim(),
+                    string.IsNullOrWhiteSpace(line.ProductDescription)
+                        ? line.ProductCode.Trim()
+                        : line.ProductDescription.Trim(),
+                    line.Quantity,
+                    line.UnitPrice,
+                    line.TaxPercentage,
+                    line.TaxCode,
+                    "PT",
+                    line.UnitOfMeasure,
+                    TaxExemptionReason: line.TaxCode == "ISE" ? _exemptionReason.Trim() : null)))
+                .ToList();
+
+            var (invoice, error) = await Purchasing.IssueSelfBilledInvoiceAsync(
+                new IssueSelfBilledInvoiceRequest(
+                    Company.SelectedCompanyId,
+                    _supplierId!.Value,
+                    _seriesId!.Value,
+                    DateOnly.FromDateTime(_issueDate ?? DateTime.Today),
+                    lines,
+                    string.IsNullOrWhiteSpace(_agreementReference) ? null : _agreementReference.Trim()));
+
+            if (invoice is null)
+            {
+                _error = error ?? "Não foi possível emitir a autofatura.";
+                return;
+            }
+
+            Snackbar.Add($"Autofatura {invoice.DocumentNumber} emitida.", Severity.Success);
+            Navigation.NavigateTo($"self-billed-invoices/{invoice.Id}");
+        }
+        catch (Exception ex)
+        {
+            _error = $"Não foi possível emitir a autofatura: {ex.Message}";
+        }
+        finally
+        {
+            _saving = false;
+        }
+    }
+
+    private static decimal Round(decimal value) => Math.Round(value, 2, MidpointRounding.AwayFromZero);
+
+    private sealed record TaxRateOption(string Code, decimal Percentage, string Label);
+
+    private sealed class ChosenLine
+    {
+        public Guid ReceiptLineId { get; set; }
+        public Guid ReceiptId { get; set; }
+        public string ProductCode { get; set; } = string.Empty;
+        public string ProductDescription { get; set; } = string.Empty;
+        public string UnitOfMeasure { get; set; } = "UN";
+        public decimal Quantity { get; set; }
+        public decimal UnitPrice { get; set; }
+        public string TaxCode { get; set; } = "NOR";
+        public decimal TaxPercentage { get; set; } = 23m;
+    }
+
+    private sealed class FreeLine
+    {
+        public Guid? ProductId { get; set; }
+        public string ProductCode { get; set; } = string.Empty;
+        public string ProductDescription { get; set; } = string.Empty;
+        public string UnitOfMeasure { get; set; } = "UN";
+        public decimal Quantity { get; set; } = 1;
+        public decimal UnitPrice { get; set; }
+        public string TaxCode { get; set; } = "NOR";
+        public decimal TaxPercentage { get; set; } = 23m;
+    }
+
+    public void Dispose() => Company.Changed -= OnCompanyChanged;
+}

@@ -1,0 +1,208 @@
+@page "/self-billed-invoices/{Id:guid}/print"
+@attribute [Authorize]
+@layout PrintLayout
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.AspNetCore.Components.Web
+@using MudBlazor
+@using Erp.Main.Components.Printing
+@using Erp.Main.Layout
+@using Erp.Main.Models
+@using Erp.Main.Services
+@inject PurchasingApiClient Purchasing
+@inject CoreApiClient CoreApi
+@inject CompanyState Company
+
+<PageTitle>@(_invoice?.DocumentNumber ?? "Autofatura")</PageTitle>
+
+<PrintToolbar Copy="_copy" CopyChanged="@(copy => _copy = copy)"
+              BackUrl="@($"self-billed-invoices/{Id}")" />
+
+@if (_loading)
+{
+    <MudProgressLinear Indeterminate="true" Color="Color.Primary" />
+}
+else if (_invoice is null)
+{
+    <MudAlert Severity="Severity.Error">@(_error ?? "Documento não encontrado.")</MudAlert>
+}
+else
+{
+    @* The designation the law requires on the paper: it says how the document came to exist. *@
+    <PrintDocumentHeader Company="_company"
+                         Designation="Autofaturação"
+                         DocumentNumber="@_invoice.DocumentNumber"
+                         DocumentDate="_invoice.IssueDate"
+                         Copy="@_copy" />
+
+    @if (_invoice.IsVoided)
+    {
+        <div class="print-voided">Documento anulado</div>
+    }
+
+    <div class="print-parties">
+        <div class="print-box">
+            @* On a self-billed invoice the roles are the other way round: the supplier sold. *@
+            <div class="label">Fornecedor (autofaturado)</div>
+            <div><strong>@_invoice.Supplier.Name</strong></div>
+            @if (!string.IsNullOrWhiteSpace(_invoice.Supplier.Address))
+            {
+                <div>@_invoice.Supplier.Address</div>
+            }
+            <div>NIF @_invoice.Supplier.TaxId</div>
+        </div>
+
+        @if (_company is not null)
+        {
+            <div class="print-box">
+                <div class="label">Adquirente (emitente)</div>
+                <div><strong>@_company.Name</strong></div>
+                <div>NIF @_company.TaxId</div>
+            </div>
+        }
+    </div>
+
+    <table class="print-table">
+        <thead>
+            <tr>
+                <th style="width: 24px;">#</th>
+                <th style="width: 70px;">Código</th>
+                <th>Descrição</th>
+                <th class="num" style="width: 60px;">Qtd.</th>
+                <th style="width: 34px;">Un.</th>
+                <th class="num" style="width: 70px;">Preço</th>
+                <th class="num" style="width: 44px;">IVA</th>
+                <th class="num" style="width: 76px;">Valor</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var line in _invoice.Lines)
+            {
+                <tr>
+                    <td>@line.LineNumber</td>
+                    <td>@line.ProductCode</td>
+                    <td>
+                        @line.ProductDescription
+                        @if (!string.IsNullOrWhiteSpace(line.TaxExemptionCode))
+                        {
+                            <span> (@line.TaxExemptionCode)</span>
+                        }
+                    </td>
+                    <td class="num">@line.Quantity.ToString("N3")</td>
+                    <td>@line.UnitOfMeasure</td>
+                    <td class="num">@line.UnitPrice.ToString("N2")</td>
+                    <td class="num">@line.TaxPercentage.ToString("N0")%</td>
+                    <td class="num">@line.LineAmount.ToString("N2")</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+
+    <div class="print-summary">
+        <div>
+            <table class="print-table" style="width: auto;">
+                <thead>
+                    <tr>
+                        <th>Espaço fiscal</th>
+                        <th>Taxa</th>
+                        <th class="num">Incidência</th>
+                        <th class="num">IVA</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var tax in _invoice.TaxSummary)
+                    {
+                        <tr>
+                            <td>@tax.TaxCountryRegion</td>
+                            <td>@tax.TaxCode @tax.TaxPercentage.ToString("N0")%</td>
+                            <td class="num">@tax.TaxableBase.ToString("N2")</td>
+                            <td class="num">@tax.TaxAmount.ToString("N2")</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+
+        <div class="print-totals">
+            <div class="row"><span>Base tributável</span><span>@_invoice.NetTotal.ToString("N2")</span></div>
+            <div class="row"><span>IVA</span><span>@_invoice.TaxPayable.ToString("N2")</span></div>
+            <div class="row grand"><span>Total</span><span>@_invoice.GrossTotal.ToString("N2") EUR</span></div>
+        </div>
+    </div>
+
+    @if (_exemptionReasons.Count > 0)
+    {
+        <div class="print-exemptions">
+            @foreach (var reason in _exemptionReasons)
+            {
+                <div>Isenção: @reason</div>
+            }
+        </div>
+    }
+
+    <PrintFiscalFooter PrintableHash="@_invoice.PrintableHash"
+                       Atcud="@_invoice.Atcud"
+                       QrCodePayload="@_invoice.QrCodePayload">
+        <div>Emitido em @_invoice.SystemEntryDateUtc.ToString("yyyy-MM-dd HH:mm:ss") UTC</div>
+        <div>Autofaturação ao abrigo do artigo 36.º n.º 11 do CIVA</div>
+    </PrintFiscalFooter>
+}
+
+@code {
+    [Parameter]
+    public Guid Id { get; set; }
+
+    private bool _loading = true;
+    private string? _error;
+    private string _copy = "Original";
+    private Guid? _loadedId;
+
+    private SelfBilledInvoice? _invoice;
+    private CompanyDetail? _company;
+    private List<string> _exemptionReasons = [];
+
+    protected override async Task OnParametersSetAsync()
+    {
+        // A layout re-render sets the parameters again; only reload when the route changed.
+        if (_loadedId == Id)
+            return;
+
+        _loadedId = Id;
+        await LoadAsync();
+    }
+
+    private async Task LoadAsync()
+    {
+        _loading = true;
+
+        try
+        {
+            await Company.EnsureLoadedAsync();
+
+            _invoice = await Purchasing.GetSelfBilledInvoiceAsync(Id);
+
+            if (_invoice is null)
+            {
+                _error = "Documento não encontrado.";
+                return;
+            }
+
+            // Each exemption reason is printed once, however many lines carry it.
+            _exemptionReasons = [.. _invoice.Lines
+                .Select(line => line.TaxExemptionReason)
+                .Where(reason => !string.IsNullOrWhiteSpace(reason))
+                .Select(reason => reason!)
+                .Distinct(StringComparer.Ordinal)];
+
+            if (Company.HasCompany)
+                _company = await CoreApi.GetCompanyAsync(Company.SelectedCompanyId);
+        }
+        catch (Exception ex)
+        {
+            _error = $"Não foi possível carregar o documento: {ex.Message}";
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+}

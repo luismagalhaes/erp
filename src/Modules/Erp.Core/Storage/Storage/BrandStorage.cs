@@ -1,0 +1,156 @@
+﻿using Erp.Core.Domain;
+using Erp.Core.Infrastructure.Storage;
+using Erp.Core.Storage.Data;
+using Microsoft.EntityFrameworkCore;
+using Erp.Storage;
+
+namespace Erp.Core.Storage.Storage;
+
+public sealed class BrandStorage(ErpDbContext dbContext) : IBrandStorage
+{
+    public async Task<IReadOnlyList<Brand>> GetAllAsync(Guid companyId, CancellationToken cancellationToken = default) =>
+        await dbContext.Set<Brand>()
+            .AsNoTracking()
+            .Where(x => x.CompanyId == companyId)
+            .OrderBy(x => x.Name)
+            .ToListAsync(cancellationToken);
+
+    public Task<Brand?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default) =>
+        dbContext.Set<Brand>().FirstOrDefaultAsync(x => x.Id == id, cancellationToken);
+
+    public Task<bool> CodeExistsAsync(Guid companyId, string code, CancellationToken cancellationToken = default) =>
+        dbContext.Set<Brand>().AnyAsync(x => x.CompanyId == companyId && x.Code == code, cancellationToken);
+
+    public async Task AddAsync(Brand brand, CancellationToken cancellationToken = default) =>
+        await dbContext.Set<Brand>().AddAsync(brand, cancellationToken);
+
+    public Task SaveChangesAsync(CancellationToken cancellationToken = default) =>
+        dbContext.SaveChangesAsync(cancellationToken);
+}
+
+public sealed class ProductFamilyStorage(ErpDbContext dbContext) : IProductFamilyStorage
+{
+    public async Task<IReadOnlyList<ProductFamily>> GetAllAsync(Guid companyId, CancellationToken cancellationToken = default) =>
+        await dbContext.Set<ProductFamily>()
+            .AsNoTracking()
+            .Include(x => x.Subfamilies)
+            .Where(x => x.CompanyId == companyId)
+            .OrderBy(x => x.Name)
+            .ToListAsync(cancellationToken);
+
+    public Task<ProductFamily?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default) =>
+        dbContext.Set<ProductFamily>()
+            .Include(x => x.Subfamilies)
+            .FirstOrDefaultAsync(x => x.Id == id, cancellationToken);
+
+    public Task<bool> CodeExistsAsync(Guid companyId, string code, CancellationToken cancellationToken = default) =>
+        dbContext.Set<ProductFamily>().AnyAsync(x => x.CompanyId == companyId && x.Code == code, cancellationToken);
+
+    public async Task AddAsync(ProductFamily family, CancellationToken cancellationToken = default) =>
+        await dbContext.Set<ProductFamily>().AddAsync(family, cancellationToken);
+
+    public Task SaveChangesAsync(CancellationToken cancellationToken = default) =>
+        dbContext.SaveChangesAsync(cancellationToken);
+}
+
+public sealed class ProductSubfamilyStorage(ErpDbContext dbContext) : IProductSubfamilyStorage
+{
+    public async Task<IReadOnlyList<ProductSubfamily>> GetAllAsync(
+        Guid companyId,
+        Guid? familyId = null,
+        CancellationToken cancellationToken = default) =>
+        await dbContext.Set<ProductSubfamily>()
+            .AsNoTracking()
+            .Include(x => x.Family)
+            .Where(x => x.CompanyId == companyId && (familyId == null || x.FamilyId == familyId))
+            .OrderBy(x => x.Family.Name)
+            .ThenBy(x => x.Name)
+            .ToListAsync(cancellationToken);
+
+    public Task<ProductSubfamily?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default) =>
+        dbContext.Set<ProductSubfamily>()
+            .Include(x => x.Family)
+            .FirstOrDefaultAsync(x => x.Id == id, cancellationToken);
+
+    public Task<bool> CodeExistsAsync(Guid companyId, string code, CancellationToken cancellationToken = default) =>
+        dbContext.Set<ProductSubfamily>().AnyAsync(x => x.CompanyId == companyId && x.Code == code, cancellationToken);
+
+    public async Task AddAsync(ProductSubfamily subfamily, CancellationToken cancellationToken = default) =>
+        await dbContext.Set<ProductSubfamily>().AddAsync(subfamily, cancellationToken);
+
+    public Task SaveChangesAsync(CancellationToken cancellationToken = default) =>
+        dbContext.SaveChangesAsync(cancellationToken);
+}
+
+public sealed class ProductStorage(ErpDbContext dbContext) : IProductStorage
+{
+    public async Task<IReadOnlyList<Product>> GetAllAsync(Guid companyId, CancellationToken cancellationToken = default) =>
+        await dbContext.Set<Product>()
+            .AsNoTracking()
+            .Include(x => x.Family)
+            .Include(x => x.Subfamily)
+            .Include(x => x.Brand)
+            .Where(x => x.CompanyId == companyId)
+            .OrderBy(x => x.ProductCode)
+            .ToListAsync(cancellationToken);
+
+    public Task<Product?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default) =>
+        dbContext.Set<Product>()
+            .Include(x => x.Family)
+            .Include(x => x.Subfamily)
+            .Include(x => x.Brand)
+            .FirstOrDefaultAsync(x => x.Id == id, cancellationToken);
+
+    public Task<bool> CodeExistsAsync(Guid companyId, string productCode, CancellationToken cancellationToken = default) =>
+        dbContext.Set<Product>().AnyAsync(x => x.CompanyId == companyId && x.ProductCode == productCode, cancellationToken);
+
+    public async Task AddAsync(Product product, CancellationToken cancellationToken = default) =>
+        await dbContext.Set<Product>().AddAsync(product, cancellationToken);
+
+    public Task SaveChangesAsync(CancellationToken cancellationToken = default) =>
+        dbContext.SaveChangesAsync(cancellationToken);
+}
+
+public sealed class CustomerStorage(ErpDbContext dbContext) : ICustomerStorage
+{
+    public async Task<IReadOnlyList<Customer>> GetAllAsync(Guid companyId, CancellationToken cancellationToken = default) =>
+        await dbContext.Set<Customer>()
+            .AsNoTracking()
+            .Where(x => x.CompanyId == companyId)
+            .OrderBy(x => x.Name)
+            .ToListAsync(cancellationToken);
+
+    public Task<Customer?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default) =>
+        dbContext.Set<Customer>().FirstOrDefaultAsync(x => x.Id == id, cancellationToken);
+
+    public Task<bool> CodeExistsAsync(Guid companyId, string code, CancellationToken cancellationToken = default) =>
+        dbContext.Set<Customer>().AnyAsync(x => x.CompanyId == companyId && x.Code == code, cancellationToken);
+
+    public async Task AddAsync(Customer customer, CancellationToken cancellationToken = default) =>
+        await dbContext.Set<Customer>().AddAsync(customer, cancellationToken);
+
+    public Task SaveChangesAsync(CancellationToken cancellationToken = default) =>
+        dbContext.SaveChangesAsync(cancellationToken);
+}
+
+public sealed class SupplierStorage(ErpDbContext dbContext) : ISupplierStorage
+{
+    public async Task<IReadOnlyList<Supplier>> GetAllAsync(Guid companyId, CancellationToken cancellationToken = default) =>
+        await dbContext.Set<Supplier>()
+            .AsNoTracking()
+            .Where(x => x.CompanyId == companyId)
+            .OrderBy(x => x.Name)
+            .ToListAsync(cancellationToken);
+
+    public Task<Supplier?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default) =>
+        dbContext.Set<Supplier>().FirstOrDefaultAsync(x => x.Id == id, cancellationToken);
+
+    public Task<bool> CodeExistsAsync(Guid companyId, string code, CancellationToken cancellationToken = default) =>
+        dbContext.Set<Supplier>().AnyAsync(x => x.CompanyId == companyId && x.Code == code, cancellationToken);
+
+    public async Task AddAsync(Supplier supplier, CancellationToken cancellationToken = default) =>
+        await dbContext.Set<Supplier>().AddAsync(supplier, cancellationToken);
+
+    public Task SaveChangesAsync(CancellationToken cancellationToken = default) =>
+        dbContext.SaveChangesAsync(cancellationToken);
+}

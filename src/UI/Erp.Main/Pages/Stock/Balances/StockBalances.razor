@@ -79,6 +79,8 @@
                 <MudTh>Descrição</MudTh>
                 <MudTh>Armazém</MudTh>
                 <MudTh Style="text-align: right;">Quantidade</MudTh>
+                <MudTh Style="text-align: right;">Custo médio</MudTh>
+                <MudTh Style="text-align: right;">Valor</MudTh>
                 <MudTh>Último movimento</MudTh>
                 <MudTh Style="text-align: right;">Ações</MudTh>
             </HeaderContent>
@@ -94,6 +96,21 @@
                         <strong>@context.Quantity.ToString("N3")</strong>
                     </MudText>
                 </MudTd>
+                <MudTd DataLabel="Custo médio" Style="text-align: right;">
+                    @if (context.AverageCost == 0)
+                    {
+                        <MudTooltip Text="Nada com custo entrou ainda por compra ou acerto de abertura">
+                            <MudText Typo="Typo.body2" Color="Color.Secondary">—</MudText>
+                        </MudTooltip>
+                    }
+                    else
+                    {
+                        <MudText Typo="Typo.body2">@context.AverageCost.ToString("N4")</MudText>
+                    }
+                </MudTd>
+                <MudTd DataLabel="Valor" Style="text-align: right;">
+                    <MudText Typo="Typo.body2">@context.StockValue.ToString("N2")</MudText>
+                </MudTd>
                 <MudTd DataLabel="Último movimento">
                     @context.LastMovementUtc.ToString("yyyy-MM-dd HH:mm")
                 </MudTd>
@@ -108,6 +125,28 @@
             </NoRecordsContent>
         </MudTable>
     </MudPaper>
+
+    @if (_balances.Count > 0)
+    {
+        <MudStack Row="true" Spacing="6" Justify="Justify.FlexEnd">
+            <MudStack Spacing="0" AlignItems="AlignItems.End">
+                <MudText Typo="Typo.caption" Color="Color.Secondary">Valor das existências</MudText>
+                <MudText Typo="Typo.h6" Color="Color.Primary">@TotalValue.ToString("N2")</MudText>
+                <MudText Typo="Typo.caption" Color="Color.Secondary">
+                    Ao custo médio ponderado do que foi comprado
+                </MudText>
+            </MudStack>
+        </MudStack>
+    }
+
+    @if (_withoutCostCount > 0)
+    {
+        <MudAlert Severity="Severity.Info" Dense="true">
+            @_withoutCostCount @(_withoutCostCount == 1 ? "artigo tem" : "artigos têm") existências sem
+            custo conhecido: entraram por acerto, ou antes de haver custeio. Valem zero na valorização
+            até uma compra lhes dar um preço — ou até um acerto de abertura o declarar.
+        </MudAlert>
+    }
 
     @if (_negativeCount > 0)
     {
@@ -196,6 +235,21 @@
                 <MudNumericField T="decimal" Value="AdjustDifference" Label="Diferença"
                                  Variant="Variant.Outlined" ReadOnly="true" Format="N3" />
             </MudItem>
+            @if (AdjustDifference > 0)
+            {
+                <MudItem xs="12" md="6">
+                    <MudNumericField T="decimal?" @bind-Value="_adjustUnitCost"
+                                     Label="Custo unitário" Variant="Variant.Outlined" Format="N4"
+                                     Clearable="true"
+                                     HelperText="Só para stock de abertura; em branco vale o custo médio atual" />
+                </MudItem>
+                <MudItem xs="12" md="6" Class="d-flex align-center">
+                    <MudText Typo="Typo.caption" Color="Color.Secondary">
+                        Uma contagem encontra mercadoria, não preços. Declare um custo apenas quando
+                        estiver a introduzir existências que nunca passaram por uma compra aqui.
+                    </MudText>
+                </MudItem>
+            }
             <MudItem xs="12">
                 <MudTextField @bind-Value="_adjustReason" @bind-Value:after="StateHasChanged" Immediate="true"
                               Label="Motivo" Variant="Variant.Outlined" Required="true"
@@ -226,6 +280,9 @@
     private List<Warehouse> _warehouses = [];
     private List<StockBalance> _balances = [];
     private int _negativeCount;
+    private int _withoutCostCount;
+
+    private decimal TotalValue => _balances.Sum(x => x.StockValue);
 
     private bool _ledgerOpen;
     private bool _ledgerLoading;
@@ -239,6 +296,7 @@
     private string _adjustProductDescription = string.Empty;
     private decimal _adjustCurrent;
     private decimal _adjustCounted;
+    private decimal? _adjustUnitCost;
     private string _adjustReason = string.Empty;
 
     private decimal AdjustDifference => _adjustCounted - _adjustCurrent;
@@ -291,6 +349,7 @@
             _balances = [.. balances];
             _error ??= error;
             _negativeCount = _balances.Count(x => x.Quantity < 0);
+            _withoutCostCount = _balances.Count(x => x.Quantity != 0 && x.AverageCost == 0);
         }
         catch (Exception ex)
         {
@@ -353,6 +412,7 @@
         _adjustProductDescription = balance.ProductDescription;
         _adjustCurrent = balance.Quantity;
         _adjustCounted = balance.Quantity;
+        _adjustUnitCost = null;
         _adjustReason = string.Empty;
         _adjustOpen = true;
     }
@@ -373,7 +433,9 @@
                 _adjustProductDescription,
                 AdjustDifference,
                 DateOnly.FromDateTime(DateTime.Today),
-                _adjustReason.Trim()));
+                _adjustReason.Trim(),
+                // Only meaningful on a find: what leaves, leaves at the average.
+                AdjustDifference > 0 ? _adjustUnitCost : null));
 
             if (error is not null)
             {

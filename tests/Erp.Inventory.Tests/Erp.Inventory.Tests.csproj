@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
@@ -17,9 +17,9 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\src\Services\Erp.Inventory.Application\Erp.Inventory.Application.csproj" />
+    <ProjectReference Include="..\..\src\Modules\Erp.Inventory\Erp.Inventory.csproj" />
     <!-- The stock effect of each document type is decided on the Sales series. -->
-    <ProjectReference Include="..\..\src\Services\Erp.Sales.Domain\Erp.Sales.Domain.csproj" />
+    <ProjectReference Include="..\..\src\Modules\Erp.Sales\Erp.Sales.csproj" />
   </ItemGroup>
 
   <ItemGroup>

@@ -1,5 +1,168 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
 html, body {
-    font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+    font-family: 'Inter', 'Segoe UI', Helvetica, Arial, sans-serif;
+}
+
+/* Shell */
+.erp-appbar {
+    border-bottom: 1px solid var(--mud-palette-divider);
+}
+
+.erp-brand {
+    font-weight: 700;
+    letter-spacing: -0.01em;
+    color: var(--mud-palette-primary);
+}
+
+.erp-user-avatar {
+    cursor: pointer;
+    font-size: 0.85rem;
+    font-weight: 600;
+}
+
+/* Side menu */
+.erp-main {
+    border-top: 6px solid var(--mud-palette-primary);
+}
+
+.erp-drawer {
+    border-right: 1px solid var(--mud-palette-divider);
+}
+
+.erp-drawer .mud-navmenu {
+    padding: 8px;
+}
+
+.erp-drawer .mud-nav-link {
+    border-radius: 8px;
+    margin-bottom: 2px;
+    font-weight: 500;
+}
+
+.erp-drawer .mud-nav-link.active:not(.mud-nav-link-disabled) {
+    background-color: rgba(32, 179, 163, 0.12);
+    color: var(--mud-palette-primary);
+    font-weight: 600;
+}
+
+.erp-drawer .mud-nav-link.active:not(.mud-nav-link-disabled) .mud-icon-root {
+    color: var(--mud-palette-primary);
+}
+
+.erp-drawer .mud-nav-link:hover:not(.active) {
+    background-color: var(--mud-palette-background-grey);
+}
+
+/* Surfaces */
+.erp-card {
+    border: 1px solid var(--mud-palette-divider);
+    background-color: var(--mud-palette-surface);
+}
+
+.erp-form-actions {
+    position: sticky;
+    bottom: 0;
+    z-index: 5;
+    border: 1px solid var(--mud-palette-divider);
+    background-color: var(--mud-palette-surface);
+    backdrop-filter: blur(6px);
+}
+
+/* Dense forms: an ERP screen must show as many fields as possible without scrolling. */
+.erp-form .mud-grid {
+    margin: -6px;
+    width: calc(100% + 12px);
+}
+
+.erp-form .mud-grid-item {
+    padding: 6px;
+}
+
+.erp-form .mud-input.mud-input-outlined .mud-input-slot {
+    padding-top: 8px;
+    padding-bottom: 8px;
+    font-size: 0.875rem;
+}
+
+.erp-form .mud-input-outlined-border {
+    border-radius: 8px;
+}
+
+.erp-form .mud-input-label-inputcontrol {
+    font-size: 0.875rem;
+}
+
+/* Keep the floating-label animation working on dense selects: the resting label must
+   be vertically centered against the smaller input slot, and the shrunk label must sit
+   on the outline like on text fields. */
+.erp-form .mud-input-label-outlined:not(.mud-input-label-margin-dense) {
+    transform: translate(14px, 10px) scale(1);
+}
+
+.erp-form .mud-input-label-outlined.mud-input-label-margin-dense {
+    transform: translate(14px, 10px) scale(1);
+}
+
+.erp-form .mud-input-label-outlined.mud-shrink,
+.erp-form .mud-input-label-outlined.mud-input-label-margin-dense.mud-shrink {
+    transform: translate(14px, -8px) scale(0.75);
+}
+
+.erp-form .mud-select .mud-input-outlined-border legend {
+    font-size: 0.75em;
+}
+
+.erp-form .mud-input-helper-text {
+    margin-top: 2px;
+    font-size: 0.72rem;
+    line-height: 1.2;
+}
+
+.erp-form .mud-switch {
+    margin: 0;
+}
+
+/* Data grid */
+.erp-grid .mud-toolbar {
+    border-bottom: 1px solid var(--mud-palette-divider);
+    min-height: 56px;
+}
+
+.erp-grid-search {
+    max-width: 640px;
+}
+
+.erp-grid-footer {
+    border-top: 1px solid var(--mud-palette-divider);
+}
+
+.erp-grid .mud-table-head .mud-table-cell {
+    background-color: var(--mud-palette-surface);
+    font-weight: 600;
+    font-size: 0.8rem;
+    color: var(--mud-palette-text-primary);
+    border-bottom: 1px solid var(--mud-palette-divider);
+    white-space: nowrap;
+}
+
+.erp-grid .mud-table-row:hover .mud-table-cell {
+    background-color: var(--mud-palette-table-hover);
+}
+
+.erp-grid .mud-table-cell {
+    padding-top: 10px;
+    padding-bottom: 10px;
+}
+
+.erp-mono {
+    font-family: 'JetBrains Mono', Consolas, monospace;
+    font-size: 0.82rem;
+}
+
+.erp-numeric {
+    text-align: right;
+    font-variant-numeric: tabular-nums;
 }
 
 h1:focus {
@@ -7,17 +170,17 @@ h1:focus {
 }
 
 a, .btn-link {
-    color: #0071c1;
+    color: var(--mud-palette-primary);
 }
 
 .btn-primary {
     color: #fff;
-    background-color: #1b6ec2;
-    border-color: #1861ac;
+    background-color: #20b3a3;
+    border-color: #1a9a8d;
 }
 
 .btn:focus, .btn:active:focus, .btn-link.nav-link:focus, .form-control:focus, .form-check-input:focus {
-  box-shadow: 0 0 0 0.1rem white, 0 0 0 0.25rem #258cfb;
+  box-shadow: 0 0 0 0.1rem white, 0 0 0 0.25rem rgba(32, 179, 163, 0.5);
 }
 
 .content {
@@ -85,7 +248,7 @@ a, .btn-link {
     }
 
         .loading-progress circle:last-child {
-            stroke: #1b6ec2;
+            stroke: #20b3a3;
             stroke-dasharray: calc(3.141 * var(--blazor-load-percentage, 0%) * 0.8), 500%;
             transition: stroke-dasharray 0.05s ease-in-out;
         }
@@ -109,7 +272,7 @@ a, .btn-link {
 }
 
 code {
-    color: #c02d76;
+    color: #0e7c6f;
 }
 
 .form-floating > .form-control-plaintext::placeholder, .form-floating > .form-control::placeholder {

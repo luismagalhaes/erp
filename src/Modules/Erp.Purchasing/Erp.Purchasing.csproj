@@ -1,0 +1,33 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    One project for the whole module. The folders keep the layers legible - Domain, Infrastructure
+    (the abstractions), Application (the implementations) and Storage - but they are no longer four
+    assemblies. The boundary that matters is the module, and that is still a project.
+  -->
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <RootNamespace>Erp.Purchasing</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="10.*" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="10.*" />
+    <PackageReference Include="Microsoft.Extensions.Options.ConfigurationExtensions" Version="10.*" />
+    <PackageReference Include="SonarAnalyzer.CSharp" Version="9.32.0.97167" PrivateAssets="all" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\Shared\Erp.Common\Erp.Common.csproj" />
+    <ProjectReference Include="..\..\Shared\Erp.FiscalPT\Erp.FiscalPT.csproj" />
+    <ProjectReference Include="..\..\Shared\Erp.Storage\Erp.Storage.csproj" />
+    <!-- Receiving goods has to record the stock it brings in, in the same transaction. -->
+    <ProjectReference Include="..\Erp.Inventory\Erp.Inventory.csproj" />
+    <!-- Self-billed invoices are numbered from a series, like every other document we issue. -->
+    <ProjectReference Include="..\Erp.SeriesRegistry\Erp.SeriesRegistry.csproj" />
+  </ItemGroup>
+
+</Project>

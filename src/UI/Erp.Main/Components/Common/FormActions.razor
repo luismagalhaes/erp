@@ -1,0 +1,40 @@
+@using MudBlazor
+
+@* Sticky action bar shown at the bottom of every editor page. *@
+<MudPaper Elevation="0" Class="erp-form-actions pa-4">
+    <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center">
+        <MudText Typo="Typo.caption" Class="mud-text-secondary">@Hint</MudText>
+
+        <MudStack Row="true" Spacing="2" AlignItems="AlignItems.Center">
+            <MudButton Variant="Variant.Text" Color="Color.Default"
+                       Disabled="@Busy" OnClick="OnCancel">
+                @CancelText
+            </MudButton>
+            <MudButton Variant="Variant.Filled" Color="Color.Primary"
+                       StartIcon="@Icons.Material.Filled.Save"
+                       Disabled="@(Busy || Disabled)" OnClick="OnSubmit">
+                @if (Busy)
+                {
+                    <MudProgressCircular Size="Size.Small" Indeterminate="true" Class="mr-2" />
+                }
+                @SubmitText
+            </MudButton>
+        </MudStack>
+    </MudStack>
+</MudPaper>
+
+@code {
+    [Parameter] public string SubmitText { get; set; } = "Guardar";
+
+    [Parameter] public string CancelText { get; set; } = "Cancelar";
+
+    [Parameter] public string? Hint { get; set; }
+
+    [Parameter] public bool Busy { get; set; }
+
+    [Parameter] public bool Disabled { get; set; }
+
+    [Parameter] public EventCallback OnSubmit { get; set; }
+
+    [Parameter] public EventCallback OnCancel { get; set; }
+}

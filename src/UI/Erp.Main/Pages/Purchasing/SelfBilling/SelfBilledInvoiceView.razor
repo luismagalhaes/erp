@@ -1,0 +1,285 @@
+@page "/self-billed-invoices/{Id:guid}"
+@attribute [Authorize]
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.AspNetCore.Components.Web
+@using MudBlazor
+@using Erp.Main.Models
+@using Erp.Main.Services
+@inject PurchasingApiClient Purchasing
+@inject NavigationManager Navigation
+@inject ISnackbar Snackbar
+
+<PageTitle>@(_invoice?.DocumentNumber ?? "Autofatura")</PageTitle>
+
+<MudStack Spacing="4">
+    <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center">
+        <MudStack Spacing="0">
+            <MudText Typo="Typo.h4">@(_invoice?.DocumentNumber ?? "Autofatura")</MudText>
+            @if (_invoice is not null)
+            {
+                <MudText Typo="Typo.body2" Color="Color.Secondary" Style="font-family: monospace;">
+                    ATCUD:@_invoice.Atcud
+                </MudText>
+            }
+        </MudStack>
+
+        <MudStack Row="true" Spacing="2">
+            <MudButton Variant="Variant.Outlined" Color="Color.Primary"
+                       StartIcon="@Icons.Material.Filled.Print"
+                       Disabled="@(_invoice is null)"
+                       OnClick="@(() => Navigation.NavigateTo($"self-billed-invoices/{Id}/print"))">
+                Imprimir
+            </MudButton>
+            <MudButton Variant="Variant.Text" StartIcon="@Icons.Material.Filled.ArrowBack"
+                       OnClick="@(() => Navigation.NavigateTo("self-billed-invoices"))">
+                Voltar
+            </MudButton>
+        </MudStack>
+    </MudStack>
+
+    @if (!string.IsNullOrWhiteSpace(_error))
+    {
+        <MudAlert Severity="Severity.Error" Dense="true">@_error</MudAlert>
+    }
+
+    @if (_loading)
+    {
+        <MudProgressLinear Indeterminate="true" Color="Color.Primary" />
+    }
+    else if (_invoice is not null)
+    {
+        @if (_invoice.IsVoided)
+        {
+            <MudAlert Severity="Severity.Warning" Dense="true">
+                Documento anulado. O registo original é preservado, como exige a certificação.
+            </MudAlert>
+        }
+        else if (!_invoice.IsAccepted)
+        {
+            <MudAlert Severity="Severity.Warning" Dense="true">
+                O fornecedor ainda não aceitou este documento. O artigo 36.º n.º 11 do CIVA exige a
+                aceitação de <strong>cada</strong> documento, não apenas o acordo prévio.
+            </MudAlert>
+        }
+
+        <MudPaper Elevation="1" Class="pa-4">
+            <MudGrid>
+                <MudItem xs="12" md="3">
+                    <MudText Typo="Typo.caption" Color="Color.Secondary">Fornecedor (autofaturado)</MudText>
+                    <MudText>@_invoice.Supplier.Name</MudText>
+                    <MudText Typo="Typo.body2" Color="Color.Secondary">NIF @_invoice.Supplier.TaxId</MudText>
+                </MudItem>
+                <MudItem xs="12" md="3">
+                    <MudText Typo="Typo.caption" Color="Color.Secondary">Data do documento</MudText>
+                    <MudText>@_invoice.IssueDate.ToString("yyyy-MM-dd")</MudText>
+                </MudItem>
+                <MudItem xs="12" md="3">
+                    <MudText Typo="Typo.caption" Color="Color.Secondary">Registo no sistema</MudText>
+                    <MudText>@_invoice.SystemEntryDateUtc.ToString("yyyy-MM-dd HH:mm:ss") UTC</MudText>
+                </MudItem>
+                <MudItem xs="12" md="3">
+                    <MudText Typo="Typo.caption" Color="Color.Secondary">Aceitação do fornecedor</MudText>
+                    <MudText>
+                        @(_invoice.AcceptedBySupplierAtUtc?.ToString("yyyy-MM-dd HH:mm") ?? "Por aceitar")
+                    </MudText>
+                </MudItem>
+            </MudGrid>
+        </MudPaper>
+
+        <MudPaper Elevation="1" Class="pa-2">
+            <MudTable Items="_invoice.Lines" Dense="true" Hover="true" Striped="true" Breakpoint="Breakpoint.Sm">
+                <HeaderContent>
+                    <MudTh>#</MudTh>
+                    <MudTh>Código</MudTh>
+                    <MudTh>Descrição</MudTh>
+                    <MudTh Style="text-align: right;">Qtd.</MudTh>
+                    <MudTh Style="text-align: right;">Preço unit.</MudTh>
+                    <MudTh Style="text-align: right;">Base</MudTh>
+                    <MudTh Style="text-align: right;">IVA</MudTh>
+                    <MudTh Style="text-align: right;">Valor IVA</MudTh>
+                </HeaderContent>
+                <RowTemplate>
+                    <MudTd DataLabel="#">@context.LineNumber</MudTd>
+                    <MudTd DataLabel="Código">@context.ProductCode</MudTd>
+                    <MudTd DataLabel="Descrição">@context.ProductDescription</MudTd>
+                    <MudTd DataLabel="Qtd." Style="text-align: right;">@context.Quantity.ToString("N3")</MudTd>
+                    <MudTd DataLabel="Preço unit." Style="text-align: right;">@context.UnitPrice.ToString("N2")</MudTd>
+                    <MudTd DataLabel="Base" Style="text-align: right;">@context.LineAmount.ToString("N2")</MudTd>
+                    <MudTd DataLabel="IVA" Style="text-align: right;">@context.TaxPercentage.ToString("N0")%</MudTd>
+                    <MudTd DataLabel="Valor IVA" Style="text-align: right;">@context.TaxAmount.ToString("N2")</MudTd>
+                </RowTemplate>
+            </MudTable>
+        </MudPaper>
+
+        <MudStack Row="true" Spacing="4" Justify="Justify.FlexEnd">
+            <MudPaper Elevation="1" Class="pa-4" Style="min-width: 280px;">
+                <MudStack Spacing="2">
+                    <MudStack Row="true" Justify="Justify.SpaceBetween">
+                        <MudText Typo="Typo.body2">Base tributável</MudText>
+                        <MudText Typo="Typo.body2">@_invoice.NetTotal.ToString("N2")</MudText>
+                    </MudStack>
+                    <MudStack Row="true" Justify="Justify.SpaceBetween">
+                        <MudText Typo="Typo.body2">IVA</MudText>
+                        <MudText Typo="Typo.body2">@_invoice.TaxPayable.ToString("N2")</MudText>
+                    </MudStack>
+                    <MudDivider />
+                    <MudStack Row="true" Justify="Justify.SpaceBetween">
+                        <MudText Typo="Typo.h6">Total</MudText>
+                        <MudText Typo="Typo.h6" Color="Color.Primary">@_invoice.GrossTotal.ToString("N2")</MudText>
+                    </MudStack>
+                </MudStack>
+            </MudPaper>
+        </MudStack>
+
+        <MudExpansionPanels Elevation="1">
+            <MudExpansionPanel Text="Dados do código QR">
+                <MudText Typo="Typo.caption" Color="Color.Secondary" Class="mb-2">
+                    Mensagem gerada segundo a Portaria 195/2020. O campo A é o nosso NIF — o programa
+                    que assinou é nosso — e o campo B é o do fornecedor.
+                </MudText>
+                <MudPaper Elevation="0" Class="pa-3" Style="overflow-x: auto;">
+                    <MudText Style="font-family: monospace; font-size: 0.8rem; white-space: nowrap;">
+                        @_invoice.QrCodePayload
+                    </MudText>
+                </MudPaper>
+            </MudExpansionPanel>
+
+            @if (!_invoice.IsVoided && !_invoice.IsAccepted)
+            {
+                <MudExpansionPanel Text="Registar aceitação do fornecedor">
+                    <MudText Typo="Typo.body2" Color="Color.Secondary" Class="mb-3">
+                        Sem a aceitação do fornecedor o documento existe, mas o regime de
+                        autofaturação não está cumprido. Regista-se uma vez.
+                    </MudText>
+                    <MudButton Variant="Variant.Filled" Color="Color.Success"
+                               StartIcon="@Icons.Material.Filled.Check"
+                               Disabled="_accepting" OnClick="AcceptAsync">
+                        Registar aceitação
+                    </MudButton>
+                </MudExpansionPanel>
+            }
+
+            @if (!_invoice.IsVoided)
+            {
+                <MudExpansionPanel Text="Anular documento">
+                    <MudText Typo="Typo.body2" Color="Color.Secondary" Class="mb-3">
+                        A anulação não apaga nem altera o documento: regista o novo estado e o motivo,
+                        mantendo o registo original e o seu lugar na cadeia de assinatura. As linhas de
+                        receção que este documento faturava voltam a ficar por faturar.
+                    </MudText>
+                    <MudStack Row="true" Spacing="2" AlignItems="AlignItems.Center">
+                        <MudTextField @bind-Value="_voidReason" Label="Motivo" Variant="Variant.Outlined"
+                                      Margin="Margin.Dense" Style="max-width: 480px;" />
+                        <MudButton Variant="Variant.Filled" Color="Color.Error"
+                                   StartIcon="@Icons.Material.Filled.Cancel"
+                                   Disabled="@(_voiding || string.IsNullOrWhiteSpace(_voidReason))"
+                                   OnClick="VoidAsync">
+                            Anular
+                        </MudButton>
+                    </MudStack>
+                </MudExpansionPanel>
+            }
+        </MudExpansionPanels>
+    }
+</MudStack>
+
+@code {
+    [Parameter]
+    public Guid Id { get; set; }
+
+    private bool _loading = true;
+    private bool _voiding;
+    private bool _accepting;
+    private string? _error;
+
+    private Guid? _loadedId;
+    private string _voidReason = string.Empty;
+    private SelfBilledInvoice? _invoice;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        // A layout re-render sets the parameters again; only reload when the route changed.
+        if (_loadedId == Id)
+            return;
+
+        _loadedId = Id;
+        await LoadAsync();
+    }
+
+    private async Task LoadAsync()
+    {
+        _loading = true;
+
+        try
+        {
+            _invoice = await Purchasing.GetSelfBilledInvoiceAsync(Id);
+            if (_invoice is null)
+                _error = "Documento não encontrado.";
+        }
+        catch (Exception ex)
+        {
+            _error = $"Não foi possível carregar o documento: {ex.Message}";
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private async Task AcceptAsync()
+    {
+        _accepting = true;
+        _error = null;
+
+        try
+        {
+            var (invoice, error) = await Purchasing.AcceptSelfBilledInvoiceAsync(Id);
+
+            if (invoice is null)
+            {
+                _error = error ?? "Não foi possível registar a aceitação.";
+                return;
+            }
+
+            _invoice = invoice;
+            Snackbar.Add("Aceitação registada.", Severity.Success);
+        }
+        catch (Exception ex)
+        {
+            _error = $"Não foi possível registar a aceitação: {ex.Message}";
+        }
+        finally
+        {
+            _accepting = false;
+        }
+    }
+
+    private async Task VoidAsync()
+    {
+        _voiding = true;
+        _error = null;
+
+        try
+        {
+            var (invoice, error) = await Purchasing.VoidSelfBilledInvoiceAsync(Id, _voidReason.Trim());
+
+            if (invoice is null)
+            {
+                _error = error ?? "Não foi possível anular o documento.";
+                return;
+            }
+
+            _invoice = invoice;
+            _voidReason = string.Empty;
+            Snackbar.Add("Documento anulado.", Severity.Success);
+        }
+        catch (Exception ex)
+        {
+            _error = $"Não foi possível anular o documento: {ex.Message}";
+        }
+        finally
+        {
+            _voiding = false;
+        }
+    }
+}

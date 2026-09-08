@@ -169,7 +169,7 @@ Então o corte é entre a regra e a linha:
 
 - **no `Erp.FiscalPT`**, ao lado do ATCUD e do número de documento, que são a mesma matéria: o estado
   da série e a regra de numeração, como tipos puros;
-- **num módulo `Erp.Series`**, a linha: a entidade EF, a leitura bloqueada, a comunicação à AT, o
+- **num módulo `Erp.SeriesRegistry`**, a linha: a entidade EF, a leitura bloqueada, a comunicação à AT, o
   ecrã. Sales e Purchasing tiram números de lá.
 
 O ganho de levar a regra para o FiscalPT não é poupar código — são dez linhas. É que a série, o
@@ -198,7 +198,7 @@ sempre.
 **Fica na fase 5a**, junto com a autofaturação, que é a primeira coisa que precisa dela. As fases 1 a
 4 não tocam em séries — nenhum documento de compras é numerado por nós.
 
-#### O que o `Erp.Series` passa a servir, e o que não
+#### O que o `Erp.SeriesRegistry` passa a servir, e o que não
 
 O ponto de o extrair é deixar de ser coisa do Sales: o mesmo registo passa a numerar do **lado do
 cliente** (faturas, guias, recibos) e do **lado do fornecedor** (autofaturas), com um só ecrã e um só
@@ -219,12 +219,13 @@ Passá-lo pela `Series` exigiria uma série que emite sem código de validação
 `CanIssue`, que é uma guarda fiscal, para acomodar um documento que não é fiscal. Fica onde está.
 
 Se um dia se quiser um contador partilhado para números internos, é um segundo tipo dentro do
-`Erp.Series`, não o mesmo. Hoje não há procura para isso: são dez linhas por módulo.
+`Erp.SeriesRegistry`, não o mesmo. Hoje não há procura para isso: são dez linhas por módulo.
 
 ### [decisão] A exportação do SAF-T passa a compor-se a partir dos módulos
 
-Hoje o `SaftExportService` vive no `Erp.Sales.Application` e lê diretamente os três *storages* de
-vendas. Isso já é uma inclinação errada: **o SAF-T é um ficheiro da empresa, não das vendas** — o
+Até aqui o serviço de exportação vivia no `Erp.Sales.Application` e lia diretamente os três
+*storages* de vendas. Isso já era uma inclinação errada: **o SAF-T é um ficheiro da empresa, não das
+vendas** — o
 controller já lhe tem de juntar a empresa, que pertence ao Core.
 
 O modelo do ficheiro já está pronto para isto. O `SaftAuditFile` no `Erp.FiscalPT` é uma estrutura
@@ -238,7 +239,7 @@ O desenho:
   declarando **para que tipo de ficheiro** serve;
 - o `Erp.Sales.Application` implementa-a para o ficheiro `"F"`: faturas, guias e recibos;
 - o `Erp.Purchasing.Application` implementa-a para o ficheiro `"S"`: as autofaturas, por fornecedor;
-- um `SaftExportService` neutro pergunta às fontes do tipo pedido, junta e manda escrever.
+- um exportador neutro pergunta às fontes do tipo pedido, junta e manda escrever.
 
 **Não são dois módulos a alimentar o mesmo ficheiro — são dois ficheiros de tipos diferentes.** É por
 isso que o tipo entra na interface em vez de ficar implícito: o `TaxAccountingBasis` deixa de ser a
@@ -257,6 +258,33 @@ um só, com o nosso.
 
 Nada disto muda o `Erp.FiscalPT`, tirando o `TaxAccountingBasis` deixar de ser constante: o escritor
 já não sabe de onde vêm os documentos, e é essa a razão de a proposta funcionar.
+
+#### Como ficou
+
+O `TaxAccountingBasis` passou do `SaftXmlWriter` para o `SaftHeader`: quem exporta decide de que
+ficheiro se trata. O `SaftFileAssembler`, puro, junta o que as fontes deram e **desduplica os master
+files** por chave, para que dois módulos que conheçam o mesmo cliente não produzam duas entradas —
+que é o que as restrições de unicidade do esquema exigem.
+
+Uma correção ao desenho de cima: os *master files* **não se derivam do modelo SAF-T**. Um
+`SaftInvoice` leva apenas o `CustomerID`; o nome e a morada que a tabela `Customer` precisa vivem nos
+documentos do módulo. Por isso cada fonte traz os seus, e o montador desduplica.
+
+O `SalesSaftSource` ficou com tudo o que sabe o que é um `SalesDocument`. O exportador não lê
+documentos: pede às fontes registadas **para o tipo pedido**, e uma autofatura nunca pode cair no
+ficheiro de faturação por engano.
+
+E o exportador foi para onde pertence: **`Erp.FiscalPT.Saft.SaftExporter`**. O ficheiro é da entidade
+tributável, não do módulo de vendas, e o exportador não lê nada — recebe as fontes, a entidade
+(`SaftEntityInfo`) e o produtor (`SaftProducerInfo`) e devolve um `SaftExportOutcome`. É isso que
+permite que o ficheiro `"S"` da autofaturação saia do mesmo código que o `"F"`, sem que nenhum dos
+dois módulos conheça o outro.
+
+No `Erp.Sales` ficou só o `SaftSummaryService` — quantos documentos o módulo emitiu no período e
+quanto valeram. Isso sim são dados de vendas.
+
+O host faz a composição: liga o `SaftProducerOptions` à secção `Fiscal` do `appsettings` e regista o
+`SaftExporter`, que recebe por DI todas as `ISaftDocumentSource` que os módulos declararem.
 
 ### [decisão] A fatura do fornecedor é registo, não emissão — e portanto é editável
 
@@ -324,6 +352,9 @@ Quando existir, o custeio substitui o `Product.UnitCost` como fonte da valoriza�
 inventário. Até lá, o custo da ficha continua a servir, e o ecrã continua a avisar quantos artigos vão
 com valor zero.
 
+> Foi feito, e a decisão entre médio ponderado e FIFO manteve-se onde estava: **médio ponderado**. Ver
+> [Como ficou a fase 6](#como-ficou-a-fase-6).
+
 ### [decisão] Conferência a três: encomenda → receção → fatura
 
 A cada passo, o seguinte não pode exceder o anterior:
@@ -382,7 +413,7 @@ E, do lado emitido, a autofatura — que se parece com um `SalesDocument` e não
 ```
 SelfBilledInvoice                 SelfBilledInvoiceLine
   Id, CompanyId, SupplierId         Id, InvoiceId, LineNumber
-  SeriesId  ← do Erp.Series         ProductCode, Description
+  SeriesId  ← do SeriesRegistry         ProductCode, Description
   Number, Atcud                     Quantity, UnitPrice
   IssueDate, SystemEntryDate        TaxCode, TaxPercentage, TaxAmount
   Hash, PreviousHash, HashControl
@@ -412,13 +443,25 @@ declaração de IVA separa-os.
 | 2 | Receção de mercadoria, com entrada em stock e conferência contra a encomenda | **Feito** |
 | 3 | Registo de faturas de fornecedor, com a regra do documento integrador e o índice anti-duplicação | **Feito** |
 | 4 | Devoluções e notas de crédito de fornecedor | **Feito** |
-| 5a | Regra da série para o `Erp.FiscalPT`, linha para o `Erp.Series`, e exportação do SAF-T composta por módulo | Por fazer |
-| 5b | Autofaturação no `Erp.Purchasing`, com série própria e exportação SAF-T `"S"` por fornecedor | Por fazer |
-| 6 | Custo médio ponderado a partir do razão, substituindo o custo da ficha na valorização | Por fazer |
+| 5a | Regra da série para o `Erp.FiscalPT`, linha para o `Erp.SeriesRegistry` | **Feito** |
+| 5a-bis | Exportação do SAF-T composta por módulo (`ISaftDocumentSource`, `TaxAccountingBasis` do exportador) | **Feito** |
+| 5b | Autofaturação no `Erp.Purchasing`, com série própria e exportação SAF-T `"S"` por fornecedor | **Feito** |
+| 6 | Custo médio ponderado a partir do razão, substituindo o custo da ficha na valorização | **Feito** |
 
 A fase 5a é refactorização pura: no fim dela o sistema faz exatamente o mesmo que fazia, e os testes
 existentes do SAF-T e das séries são a rede que diz que assim é. Convém fazê-la **antes** de escrever
 a autofaturação e não ao mesmo tempo, para que uma falha se saiba logo de que lado veio.
+
+> [!NOTE]
+> **A 5a esteve bloqueada, e o desbloqueio deu outro trabalho.** Ao começá-la percebeu-se que tirar a
+> `Series` do `SalesDbContext` faria perder as chaves estrangeiras de `SalesDocument`,
+> `StockMovement` e `Payment` para ela. Isso levantou a pergunta de fundo — se a base de dados é uma
+> só, porquê cinco contextos? — que foi resolvida primeiro, em
+> [Um `DbContext` para os módulos de negócio](single-dbcontext.md).
+>
+> Feito isso, a `Series` saiu para o `Erp.SeriesRegistry` **sem perder FK nenhuma e sem o modelo
+> mudar**. A regra está em [`SeriesState`](../src/Shared/Erp.FiscalPT/Documents/SeriesState.cs), no
+> `Erp.FiscalPT`, ao lado do ATCUD que dela se constrói.
 
 Fora deste plano, e deliberadamente: contas correntes de fornecedores e pagamentos (é outro módulo),
 lançamento contabilístico (Accounting), e a conferência contra o e-Fatura (precisa dos *webservices*
@@ -428,9 +471,9 @@ da AT, que ainda não estão integrados para nada).
 
 ### Como ficou a fase 1
 
-O módulo `Erp.Purchasing` segue a divisão em camadas dos outros e tem o seu próprio
-`__EFMigrationsHistory_Purchasing`. Não depende do Core: o controller lê o fornecedor e o armazém e
-entrega-os, tal como o Sales já recebe o cliente em vez de o ir buscar.
+O módulo `Erp.Purchasing` segue a organização dos outros: um projeto, com as camadas em pastas. Não
+depende do Core — o controller lê o fornecedor e o armazém e entrega-os, tal como o Sales já recebe o
+cliente em vez de o ir buscar.
 
 Três coisas decididas ao escrever, que o desenho não tinha fechado:
 
@@ -456,9 +499,8 @@ explicação à AT.
 agnóstico do módulo, por isso a receção regista-se nele como qualquer documento — direção `In`, tipo
 `REC` — sem nada de novo no Inventory.
 
-A **transação partilhada** entra em serviço pela primeira vez fora do Sales. O `PurchasingUnitOfWork`
-abre a transação e publica-a no `IAmbientDbTransaction`; o `StockStorage` junta-se-lhe. Assim a
-receção, as entradas no razão e as quantidades recebidas da encomenda **caem juntas ou não caem**.
+A receção, as entradas no razão e as quantidades recebidas da encomenda **caem juntas ou não caem**,
+porque os módulos partilham um `DbContext` e um `SaveChangesAsync` escreve tudo.
 Sem isso, o armazém e a encomenda ficariam a discordar sobre o que chegou, e ninguém daria por isso
 até um teste de stocks.
 
@@ -537,6 +579,113 @@ fornecedor; o sinal pertence ao tipo e aplica-se ao somar. É o mesmo critério 
 > A devolução regista o **movimento**, não o transporte. Mercadoria que viaja de volta precisa de um
 > documento de transporte, e **esse é nosso e é fiscal**: uma guia de devolução (`GD`), emitida pelo
 > `Erp.Sales`, que já existe. Os ecrãs dizem-no e ligam para lá.
+
+### Como ficou a fase 5b
+
+A autofatura é o único documento deste módulo que **nós emitimos**, e por isso é o único que se parece
+com o `Erp.Sales` e não com o resto do `Erp.Purchasing`: numerada de uma série comunicada, assinada na
+cadeia, com ATCUD, QR e anulação por registo de estado. `SelfBilledInvoice`, `…Line`, `…TaxSummary` e
+`…StatusChange` — as mesmas quatro tabelas de um documento certificado.
+
+**A maquinaria de assinatura mudou de casa.** `IDocumentSigner`, `SigningKeyProvider` e as
+`FiscalOptions` viviam no `Erp.Sales`; se ficassem lá, o `Erp.Purchasing` teria de depender do módulo
+de vendas para assinar uma compra. Foram para o `Erp.FiscalPT`, com um `AddFiscalPT(configuration)`
+que regista a chave, o assinador e o `SaftExporter`. É a mesma chave e o mesmo número de certificado
+dos dois lados — é o mesmo programa que foi certificado.
+
+> Isto obrigou a acrescentar ao `Erp.FiscalPT` duas referências que ele não tinha: as *abstractions*
+> de logging e de opções. Fica menos puro do que estava; a alternativa era duplicar o provedor de
+> chave ou fazer o Purchasing depender do Sales, e ambas são piores.
+
+**A série ganhou um sinal próprio.** Uma série de autofaturação tem tipo `FT` como qualquer outra, e
+sem mais nada nada as distinguiria — mas os seus números pertencem aos documentos de um fornecedor e
+a um SAF-T diferente. Daí `Series.SelfBilling`: o `Erp.Sales` recusa emitir de uma série marcada, e o
+`Erp.Purchasing` recusa emitir de uma que não esteja. Só tipos de faturação a podem ter.
+
+**A autofatura não movimenta stock.** A mercadoria entrou na receção — a mesma regra do documento
+integrador que já valia para a fatura do fornecedor. O que a autofatura consome é a linha de receção
+*por faturar*, lida com a receção bloqueada, e anulá-la põe essa linha outra vez disponível.
+
+`AcceptedBySupplierAtUtc` e `SupplierAgreementReference` estão ambos lá porque o artigo 36.º n.º 11
+exige as duas coisas: o **acordo prévio** e a **aceitação de cada documento**. A aceitação regista-se
+uma vez e os ecrãs avisam enquanto faltar.
+
+#### O ficheiro `"S"`
+
+Sai do mesmo `SaftExporter` que o de faturação; o que muda é o tipo pedido e quem é o sujeito. O
+`SelfBillingSaftSource` só responde a pedidos do tipo `"S"`, e sempre estreitado ao NIF de **um**
+fornecedor: um ficheiro que juntasse dois teria um cabeçalho verdadeiro para um só.
+
+A parte que se lê ao contrário até se olhar do lado certo: a tabela `Customer` do ficheiro leva **um
+único registo, o nosso**, com `SelfBillingIndicator = 1`. O documento titula uma venda *do
+fornecedor*, e nessa venda o cliente somos nós.
+
+Isso obrigou a uma adição no contrato: o `SaftExportSpec` passou a ter, além do `Subject` (o
+fornecedor, cujo NIF vai no cabeçalho), um `SelfBiller` — nós. Num ficheiro `"F"` não faz sentido e é
+nulo; num `"S"` é obrigatório, e o exportador recusa sem ele.
+
+O QR segue a mesma lógica de espelho: o campo A é o **nosso** NIF, porque o programa que assinou é
+nosso, e o campo B é o do fornecedor.
+
+O teste que fecha isto é o mesmo das vendas — documentos reais, montados e validados contra o XSD
+oficial da AT — mais um que confirma o inverso: **nada deste módulo aparece no ficheiro de
+faturação**.
+
+### Como ficou a fase 6
+
+A regra cabe numa frase: **um movimento que traz o seu custo move valor a esse custo; um que não
+traz, move ao médio**. Uma compra traz, uma venda não, e é tudo. Está em
+[`WeightedAverageCost`](../src/Modules/Erp.Inventory/Domain/WeightedAverageCost.cs), puro, e é a
+única aritmética de custeio que existe no sistema.
+
+O interessante é que os módulos **já faziam** essa distinção sem saber: o `GoodsReceiptService` e o
+`SupplierReturnService` passavam `UnitCost` ao razão desde a fase 2, e o `SalesDocumentService` nunca
+passou. O que faltava era alguém fazer alguma coisa com isso.
+
+#### O que se guarda e o que se recalcula
+
+Duas respostas para duas perguntas diferentes:
+
+| | Onde | Responde a |
+|---|---|---|
+| `StockBalance.AverageCost` e `StockValue` | Guardado, movido na mesma transação e sob o mesmo *lock* da quantidade | «quanto vale isto agora» |
+| [`StockValuation.Replay`](../src/Modules/Erp.Inventory/Domain/StockValuation.cs) | Recalculado do razão, a pedido | «quanto valia isto a 31 de março» |
+
+O ficheiro de inventário precisa da segunda e nenhum valor guardado lha pode dar. E o teste de stock
+usa-a para conferir a primeira — **uma projeção só é de confiar enquanto algo a recalcular**. Passou a
+comparar valor além de quantidade, e conta-os em separado, porque falham por motivos diferentes: uma
+quantidade diverge quando alguém escreveu fora do caminho; um valor diverge quando os movimentos foram
+aplicados por outra ordem.
+
+Isto substituiu dois `GROUP BY` em SQL por uma leitura de movimentos. Uma quantidade soma-se na base
+de dados; **um médio ponderado não**, porque depende da ordem em que os movimentos entraram.
+
+#### As duas armadilhas do método
+
+**A anulação de uma compra.** Comprar 10 a 5 e depois 10 a 7 dá um médio de 6. Anular a primeira
+compra ao médio de hoje tiraria 60, deixando as 10 unidades compradas a 7 a valer 60 em vez de 70. O
+que evita isto é o `StockLedgerEntry.Reverse` já copiar o `UnitCost` do original: a reversão desfaz
+exatamente o que a original fez.
+
+Isso levou à segunda peça: **cada movimento passa a ser carimbado com o custo a que moveu valor**.
+Uma venda que sai ao médio guarda esse médio. O razão fica auto-explicativo — lê-se uma linha e vê-se
+o que ela fez ao valor, não só à quantidade — e a sua reversão desfaz o que ela fez, não o que o stock
+vale hoje.
+
+#### O stock de abertura
+
+Uma empresa que começa a usar o sistema com o armazém cheio não tem compras nenhumas no razão, e sem
+mais nada o seu inventário inteiro valeria zero. Por isso o **acerto passou a poder declarar um
+custo**: é a única porta por onde o custo de abertura entra. Uma contagem normal continua a não trazer
+custo — encontra mercadoria, não preços — e o que aparece vale o médio do que já lá estava.
+
+#### O custo da ficha não desapareceu
+
+Ficou como **recurso último**, para artigos que o razão nunca custeou, e o resultado diz quantas
+linhas precisaram dele (`ProductsCostedFromFile`). Foi um desvio deliberado ao plano, que dizia
+«substitui»: substituir sem rede deixaria a valorização a zero para toda a gente com stock anterior
+ao sistema, e a distinção entre «ninguém sabe o custo» e «o custo veio da ficha» é exatamente o que
+um contabilista quer ver antes de submeter.
 
 ---
 

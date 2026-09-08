@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
@@ -21,7 +21,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\src\Notification\Erp.Notification.Application\Erp.Notification.Application.csproj" />
+    <ProjectReference Include="..\..\src\Modules\Erp.Notification\Erp.Notification.csproj" />
   </ItemGroup>
 
   <ItemGroup>

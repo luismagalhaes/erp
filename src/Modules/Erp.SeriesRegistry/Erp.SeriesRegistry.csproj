@@ -1,0 +1,29 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    The series registry, shared by every module that issues certified documents. It used to live
+    inside Erp.Sales, which is where it was first written - but a series knows nothing about an
+    invoice, and the tax authority sees one register per company, whatever module the numbers are
+    for. Sales numbers its invoices here; self-billing will number its own.
+  -->
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <RootNamespace>Erp.Series</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="10.*" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="10.*" />
+    <PackageReference Include="SonarAnalyzer.CSharp" Version="9.32.0.97167" PrivateAssets="all" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\Shared\Erp.Common\Erp.Common.csproj" />
+    <ProjectReference Include="..\..\Shared\Erp.FiscalPT\Erp.FiscalPT.csproj" />
+    <ProjectReference Include="..\..\Shared\Erp.Storage\Erp.Storage.csproj" />
+  </ItemGroup>
+
+</Project>

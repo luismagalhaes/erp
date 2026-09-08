@@ -1,0 +1,111 @@
+using Erp.Common;
+using Erp.FiscalPT.Documents;
+using Erp.SeriesRegistry.Domain;
+using Erp.SeriesRegistry.Infrastructure.Application;
+using Erp.SeriesRegistry.Infrastructure.Contracts;
+using Erp.SeriesRegistry.Infrastructure.Storage;
+
+namespace Erp.SeriesRegistry.Application.Services;
+
+public sealed class SeriesService(ISeriesStorage storage, IErpUnitOfWork unitOfWork) : ISeriesService
+{
+    public async Task<IReadOnlyList<SeriesListItemDto>> GetAllAsync(Guid companyId, CancellationToken cancellationToken = default)
+    {
+        var series = await storage.GetAllAsync(companyId, cancellationToken);
+        return series.Select(Map).ToList();
+    }
+
+    public async Task<SeriesListItemDto?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
+    {
+        var series = await storage.GetByIdAsync(id, cancellationToken);
+        return series is null ? null : Map(series);
+    }
+
+    public async Task<SeriesListItemDto> CreateAsync(CreateSeriesRequest request, string? userId, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+
+        // A series numbers invoicing documents, movement documents or receipts; all three are
+        // numbered and signed the same way.
+        if (!SalesDocumentTypes.IsSupported(request.DocumentType)
+            && !MovementDocumentTypes.IsSupported(request.DocumentType)
+            && !PaymentDocumentTypes.IsSupported(request.DocumentType))
+        {
+            throw new ArgumentException($"Unsupported document type '{request.DocumentType}'.", nameof(request));
+        }
+
+        // Self-billing is a way of invoicing, so it only makes sense on an invoicing type. A
+        // self-billed guia or recibo is not a thing the regime provides for.
+        if (request.SelfBilling && !SalesDocumentTypes.IsSupported(request.DocumentType))
+        {
+            throw new ArgumentException(
+                $"Document type '{request.DocumentType}' cannot be self-billed.",
+                nameof(request));
+        }
+
+        if (string.IsNullOrWhiteSpace(request.SeriesCode))
+            throw new ArgumentException("Series code is required.", nameof(request));
+
+        if (await storage.ExistsAsync(request.CompanyId, request.DocumentType, request.SeriesCode, cancellationToken))
+            throw new InvalidOperationException($"Series '{request.SeriesCode}' already exists for document type '{request.DocumentType}'.");
+
+        var series = new Domain.Series
+        {
+            CompanyId = request.CompanyId,
+            DocumentType = request.DocumentType,
+            SeriesCode = request.SeriesCode.Trim(),
+            InitialSequence = request.InitialSequence < 1 ? 1 : request.InitialSequence,
+            EstablishmentCode = request.EstablishmentCode,
+            // The document type says what usually happens to stock; the caller can override it,
+            // because the same type is used differently by different businesses.
+            StockEffect = ParseStockEffect(request.StockEffect, request.DocumentType),
+            SelfBilling = request.SelfBilling,
+            CreatedByUserId = userId
+        };
+
+        await storage.AddAsync(series, cancellationToken);
+        await unitOfWork.SaveChangesAsync(cancellationToken);
+
+        return Map(series);
+    }
+
+    public async Task<SeriesListItemDto?> CommunicateAsync(Guid id, string validationCode, CancellationToken cancellationToken = default)
+    {
+        var series = await storage.GetByIdAsync(id, cancellationToken);
+        if (series is null)
+            return null;
+
+        series.Communicate(validationCode.Trim(), DateTime.UtcNow);
+        await unitOfWork.SaveChangesAsync(cancellationToken);
+
+        return Map(series);
+    }
+
+    /// <summary>
+    /// Takes the effect the caller asked for, or the default for the document type when it said
+    /// nothing. An unknown value is refused rather than quietly turned into "moves no stock",
+    /// which would leave the warehouse wrong without anyone noticing.
+    /// </summary>
+    private static StockEffect ParseStockEffect(string? requested, string documentType)
+    {
+        if (string.IsNullOrWhiteSpace(requested))
+            return DefaultStockEffects.For(documentType);
+
+        if (!Enum.TryParse<StockEffect>(requested, ignoreCase: true, out var effect))
+            throw new ArgumentException($"Unknown stock effect '{requested}'.", nameof(requested));
+
+        return effect;
+    }
+
+    private static SeriesListItemDto Map(Domain.Series series) =>
+        new(series.Id,
+            series.CompanyId,
+            series.DocumentType,
+            series.SeriesCode,
+            series.CurrentSequence,
+            series.ValidationCode,
+            series.Status.ToString(),
+            series.CanIssue,
+            series.StockEffect.ToString(),
+            series.SelfBilling);
+}

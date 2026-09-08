@@ -4,6 +4,7 @@ using Erp.Sales.Domain;
 using Erp.Sales.Infrastructure.Contracts;
 using FluentAssertions;
 using NSubstitute;
+using Erp.SeriesRegistry.Domain;
 
 namespace Erp.Sales.Tests;
 

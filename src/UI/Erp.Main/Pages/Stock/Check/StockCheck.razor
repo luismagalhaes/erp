@@ -53,21 +53,36 @@
 
     @if (_result is not null)
     {
-        @if (_result.ProductsWithDifference == 0)
+        @if (_result.ProductsWithDifference == 0 && _result.ProductsWithValueDifference == 0)
         {
             <MudAlert Severity="Severity.Success">
                 @_result.ProductsChecked @(_result.ProductsChecked == 1 ? "artigo verificado" : "artigos verificados"),
-                sem diferenças. Os saldos batem certo com os movimentos.
+                sem diferenças. As quantidades <strong>e os valores</strong> batem certo com os movimentos.
             </MudAlert>
         }
         else
         {
-            <MudAlert Severity="Severity.Error">
-                @_result.ProductsWithDifference de @_result.ProductsChecked
-                @(_result.ProductsWithDifference == 1 ? "artigo não bate" : "artigos não batem") certo.
-                Uma diferença significa que alguém escreveu fora do caminho normal — o saldo mudou sem
-                um movimento que o explique, ou houve movimento sem saldo.
-            </MudAlert>
+            @if (_result.ProductsWithDifference > 0)
+            {
+                <MudAlert Severity="Severity.Error">
+                    @_result.ProductsWithDifference de @_result.ProductsChecked
+                    @(_result.ProductsWithDifference == 1 ? "artigo não bate" : "artigos não batem") certo
+                    na quantidade. Uma diferença significa que alguém escreveu fora do caminho normal —
+                    o saldo mudou sem um movimento que o explique, ou houve movimento sem saldo.
+                </MudAlert>
+            }
+
+            @if (_result.ProductsWithValueDifference > 0)
+            {
+                <MudAlert Severity="Severity.Warning">
+                    @_result.ProductsWithValueDifference
+                    @(_result.ProductsWithValueDifference == 1 ? "artigo não bate" : "artigos não batem")
+                    certo no <strong>valor</strong>. O custo médio depende da <strong>ordem</strong> em que
+                    os movimentos entraram, não só da sua soma — por isso um valor pode divergir com a
+                    quantidade a bater certo. A causa habitual são movimentos antigos, escritos antes de
+                    haver custeio e sem custo nenhum registado.
+                </MudAlert>
+            }
         }
 
         <MudPaper Elevation="1" Class="pa-2">
@@ -85,6 +100,8 @@
                     <MudTh Style="text-align: right;">Saldo guardado</MudTh>
                     <MudTh Style="text-align: right;">Soma dos movimentos</MudTh>
                     <MudTh Style="text-align: right;">Diferença</MudTh>
+                    <MudTh Style="text-align: right;">Valor guardado</MudTh>
+                    <MudTh Style="text-align: right;">Valor recalculado</MudTh>
                     <MudTh Style="text-align: right;">Movimentos</MudTh>
                 </HeaderContent>
                 <RowTemplate>
@@ -104,6 +121,15 @@
                     <MudTd DataLabel="Diferença" Style="text-align: right;">
                         <MudText Typo="Typo.body2" Color="@(context.Difference == 0 ? Color.Success : Color.Error)">
                             <strong>@context.Difference.ToString("N3")</strong>
+                        </MudText>
+                    </MudTd>
+                    <MudTd DataLabel="Valor guardado" Style="text-align: right;">
+                        @context.RecordedValue.ToString("N2")
+                    </MudTd>
+                    <MudTd DataLabel="Valor recalculado" Style="text-align: right;">
+                        <MudText Typo="Typo.body2"
+                                 Color="@(context.ValueDifference == 0 ? Color.Default : Color.Error)">
+                            @context.LedgerValue.ToString("N2")
                         </MudText>
                     </MudTd>
                     <MudTd DataLabel="Movimentos" Style="text-align: right;">@context.EntryCount</MudTd>
@@ -133,7 +159,8 @@
     private IEnumerable<StockCheckLine> Visible =>
         _result is null
             ? []
-            : _result.Lines.Where(line => !_onlyDifferences || line.Difference != 0);
+            : _result.Lines.Where(line =>
+                !_onlyDifferences || line.Difference != 0 || line.ValueDifference != 0);
 
     protected override async Task OnInitializedAsync()
     {

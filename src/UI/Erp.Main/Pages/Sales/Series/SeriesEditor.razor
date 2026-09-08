@@ -77,6 +77,21 @@
                         a partir de uma guia não volta a movimentar o que a guia já movimentou.
                     </MudText>
                 </MudItem>
+
+                @if (CanSelfBill)
+                {
+                    <MudItem xs="12" md="4" Class="d-flex align-center">
+                        <MudSwitch @bind-Value="_selfBilling" @bind-Value:after="StateHasChanged"
+                                   Color="Color.Warning" Label="Série de autofaturação" />
+                    </MudItem>
+                    <MudItem xs="12" md="8" Class="d-flex align-center">
+                        <MudText Typo="Typo.body2" Color="Color.Secondary">
+                            Numera faturas que emitimos <strong>em nome do fornecedor</strong>, ao abrigo do
+                            artigo 36.º n.º 11 do CIVA. Não pode numerar vendas nossas, e os seus documentos
+                            saem num SAF-T próprio, do tipo <strong>S</strong>, um por fornecedor.
+                        </MudText>
+                    </MudItem>
+                }
             </MudGrid>
 
             <MudStack Row="true" Justify="Justify.FlexEnd" Class="mt-4">
@@ -113,6 +128,13 @@
                     <MudText Typo="Typo.caption" Color="Color.Secondary">Efeito no stock</MudText>
                     <MudText>@StockEffects.Describe(_series.StockEffect)</MudText>
                 </MudItem>
+                @if (_series.SelfBilling)
+                {
+                    <MudItem xs="12" md="3">
+                        <MudText Typo="Typo.caption" Color="Color.Secondary">Utilização</MudText>
+                        <MudText>Autofaturação</MudText>
+                    </MudItem>
+                }
             </MudGrid>
         </MudPaper>
 
@@ -183,6 +205,13 @@
     private string _establishmentCode = string.Empty;
     private string _validationCode = string.Empty;
     private string _stockEffect = DefaultStockEffectFor("FT");
+    private bool _selfBilling;
+
+    /// <summary>
+    /// Self-billing is a way of invoicing, so only invoicing types offer it. The API refuses the
+    /// rest; the switch simply does not appear.
+    /// </summary>
+    private bool CanSelfBill => _documentType is "FT" or "FS" or "FR" or "NC" or "ND";
 
     /// <summary>
     /// Mirrors the API's defaults, so the screen shows what the server would choose. The server
@@ -249,7 +278,8 @@
                 _seriesCode.Trim(),
                 _initialSequence,
                 string.IsNullOrWhiteSpace(_establishmentCode) ? null : _establishmentCode.Trim(),
-                _stockEffect);
+                _stockEffect,
+                CanSelfBill && _selfBilling);
 
             var (series, error) = await SalesApi.CreateSeriesAsync(request);
 

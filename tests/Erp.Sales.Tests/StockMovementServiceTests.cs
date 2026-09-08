@@ -1,5 +1,7 @@
+using Erp.SeriesRegistry.Domain;
 using Erp.Inventory.Infrastructure.Application;
-using Erp.Sales.Application.Configuration;
+using Erp.FiscalPT;
+using Erp.FiscalPT.Signing;
 using Erp.Sales.Application.Services;
 using Erp.Sales.Domain;
 using Erp.Sales.Infrastructure.Application;
@@ -8,6 +10,8 @@ using Erp.Sales.Infrastructure.Storage;
 using FluentAssertions;
 using Microsoft.Extensions.Options;
 using NSubstitute;
+using Erp.Common;
+using Erp.SeriesRegistry.Infrastructure.Storage;
 
 namespace Erp.Sales.Tests;
 
@@ -15,9 +19,9 @@ public class StockMovementServiceTests
 {
     private readonly IStockMovementStorage _movements = Substitute.For<IStockMovementStorage>();
     private readonly ISeriesStorage _series = Substitute.For<ISeriesStorage>();
-    private readonly ISalesUnitOfWork _unitOfWork = Substitute.For<ISalesUnitOfWork>();
+    private readonly IErpUnitOfWork _unitOfWork = Substitute.For<IErpUnitOfWork>();
     private readonly IDocumentSigner _signer = Substitute.For<IDocumentSigner>();
-    private readonly ISalesTransaction _transaction = Substitute.For<ISalesTransaction>();
+    private readonly IErpTransaction _transaction = Substitute.For<IErpTransaction>();
     private readonly List<StockMovement> _persisted = [];
     private readonly List<MovementStatusChange> _persistedStatusChanges = [];
     private readonly Guid _companyId = Guid.NewGuid();

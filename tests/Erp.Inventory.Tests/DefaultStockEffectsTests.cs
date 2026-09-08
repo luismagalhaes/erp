@@ -1,5 +1,6 @@
 using Erp.Sales.Domain;
 using FluentAssertions;
+using Erp.SeriesRegistry.Domain;
 
 namespace Erp.Inventory.Tests;
 

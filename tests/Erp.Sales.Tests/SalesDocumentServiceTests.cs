@@ -1,3 +1,4 @@
+using Erp.SeriesRegistry.Domain;
 using Erp.Sales.Domain;
 using FluentAssertions;
 using NSubstitute;
@@ -168,6 +169,25 @@ public class SalesDocumentServiceTests
 
         await act.Should().ThrowAsync<InvalidOperationException>()
             .WithMessage("*validation code*");
+        _context.Persisted.Should().BeEmpty();
+    }
+
+    /// <summary>
+    /// A self-billing series has document type "FT" like any other, so nothing else tells it apart.
+    /// Its numbers belong to a supplier's documents and to the "S" SAF-T; one of our own sales in
+    /// that chain would end up in the wrong file.
+    /// </summary>
+    [Fact]
+    public async Task IssueAsync_refuses_a_self_billing_series()
+    {
+        var series = _context.GivenCommunicatedSeries(_companyId);
+        series.SelfBilling = true;
+
+        var service = _context.CreateService();
+
+        var act = () => service.IssueAsync(SalesTestContext.InvoiceRequest(_companyId, series.Id), "user-1");
+
+        await act.Should().ThrowAsync<ArgumentException>().WithMessage("*self-billing*");
         _context.Persisted.Should().BeEmpty();
     }
 

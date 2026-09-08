@@ -6,6 +6,7 @@ using Erp.Purchasing.Infrastructure.Contracts;
 using Erp.Purchasing.Infrastructure.Storage;
 using FluentAssertions;
 using NSubstitute;
+using Erp.Common;
 
 namespace Erp.Purchasing.Tests;
 
@@ -18,8 +19,8 @@ public class PurchaseInvoiceServiceTests
     private readonly IPurchaseInvoiceStorage _invoices = Substitute.For<IPurchaseInvoiceStorage>();
     private readonly IGoodsReceiptStorage _receipts = Substitute.For<IGoodsReceiptStorage>();
     private readonly IStockRecorder _stock = Substitute.For<IStockRecorder>();
-    private readonly IPurchasingUnitOfWork _unitOfWork = Substitute.For<IPurchasingUnitOfWork>();
-    private readonly IPurchasingTransaction _transaction = Substitute.For<IPurchasingTransaction>();
+    private readonly IErpUnitOfWork _unitOfWork = Substitute.For<IErpUnitOfWork>();
+    private readonly IErpTransaction _transaction = Substitute.For<IErpTransaction>();
 
     private readonly Guid _companyId = Guid.NewGuid();
     private readonly Guid _supplierId = Guid.NewGuid();

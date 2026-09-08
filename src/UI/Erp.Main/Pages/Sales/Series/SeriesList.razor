@@ -50,7 +50,17 @@
                     <MudChip T="string" Size="Size.Small" Variant="Variant.Outlined">@context.DocumentType</MudChip>
                 </MudTd>
                 <MudTd DataLabel="Série">
-                    <MudText Typo="Typo.body2" Style="font-family: monospace;">@context.SeriesCode</MudText>
+                    <MudStack Row="true" Spacing="1" AlignItems="AlignItems.Center">
+                        <MudText Typo="Typo.body2" Style="font-family: monospace;">@context.SeriesCode</MudText>
+                        @if (context.SelfBilling)
+                        {
+                            <MudTooltip Text="Numera faturas emitidas em nome do fornecedor">
+                                <MudChip T="string" Size="Size.Small" Color="Color.Warning" Variant="Variant.Text">
+                                    Autofaturação
+                                </MudChip>
+                            </MudTooltip>
+                        }
+                    </MudStack>
                 </MudTd>
                 <MudTd DataLabel="Código de validação">
                     @if (string.IsNullOrWhiteSpace(context.ValidationCode))

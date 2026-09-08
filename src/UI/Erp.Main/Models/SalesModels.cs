@@ -51,7 +51,8 @@ public sealed record SalesSeries(
     string? ValidationCode,
     string Status,
     bool CanIssue,
-    string StockEffect = "None");
+    string StockEffect = "None",
+    bool SelfBilling = false);
 
 public sealed record CreateSeriesRequest(
     Guid CompanyId,
@@ -59,7 +60,8 @@ public sealed record CreateSeriesRequest(
     string SeriesCode,
     int InitialSequence = 1,
     string? EstablishmentCode = null,
-    string? StockEffect = null);
+    string? StockEffect = null,
+    bool SelfBilling = false);
 
 public sealed record CommunicateSeriesRequest(string ValidationCode);
 

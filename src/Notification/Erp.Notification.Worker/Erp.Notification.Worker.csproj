@@ -14,7 +14,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Erp.Notification.Application\Erp.Notification.Application.csproj" />
-    <ProjectReference Include="..\Erp.Notification.Storage\Erp.Notification.Storage.csproj" />
+    <ProjectReference Include="..\..\Modules\Erp.Notification\Erp.Notification.csproj" />
   </ItemGroup>
 </Project>

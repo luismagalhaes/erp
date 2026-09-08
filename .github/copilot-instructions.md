@@ -28,6 +28,7 @@
 - All business modules share the `erp-api` audience; access between modules is separated by scope, not by audience.
 - Every host must expose a health endpoint through a `HealthController` and publish OpenAPI, with the Scalar reference available in development.
 - Blazor pages are organized one folder per feature under `Pages` (for example `Pages/Backoffice/Companies`, `Pages/Sales/Invoices`), keeping the listing and its create/edit pages together. Never leave pages loose at the root of an area.
+- In Erp.Main Blazor pages, PageHeaders must only display the title without description/subtitle. For detail/create/edit pages, use breadcrumbs in the format "<Listagem> / <Ação>" (e.g., "Artigos / Editar artigo", "Artigos / Novo artigo"), where the first level links to the listing and the last is disabled.
 
 ## UI Design Requirements
 - For Identity Razor Pages UI, use a shared layout with `@RenderBody` and a Mud-like visual style.

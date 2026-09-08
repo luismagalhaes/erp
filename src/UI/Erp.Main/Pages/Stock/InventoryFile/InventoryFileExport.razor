@@ -18,8 +18,9 @@
     <MudStack Spacing="0">
         <MudText Typo="Typo.h4">Comunicação de inventários</MudText>
         <MudText Typo="Typo.body2" Color="Color.Secondary">
-            Ficheiro das existências à data de referência, para comunicar à AT. Para períodos de 2021
-            em diante o formato é o valorizado (2_01); o anterior, só com quantidades (1_02), fica
+            Ficheiro das existências à data de referência, para comunicar à AT, valorizadas ao
+            <strong>custo médio ponderado das compras</strong> à mesma data. Para períodos de 2021 em
+            diante o formato é o valorizado (2_01); o anterior, só com quantidades (1_02), fica
             disponível para períodos mais antigos.
         </MudText>
     </MudStack>
@@ -95,6 +96,9 @@
                         <MudText Typo="Typo.caption" Color="Color.Secondary">
                             Valor total@(_valued ? string.Empty : " (não vai no ficheiro)")
                         </MudText>
+                        <MudText Typo="Typo.caption" Color="Color.Secondary">
+                            Custo médio ponderado
+                        </MudText>
                         <MudText Typo="Typo.h5" Color="@(_valued ? Color.Primary : Color.Secondary)">
                             @_summary.TotalValue.ToString("N2")
                         </MudText>
@@ -144,10 +148,22 @@
                     {
                         <MudAlert Severity="Severity.Warning" Class="mt-3">
                             @_summary.ProductsWithoutCost de @_summary.LineCount
-                            @(_summary.ProductsWithoutCost == 1 ? "artigo vai" : "artigos vão") com valor zero,
-                            porque não têm custo na ficha. A comunicação valorizada exige a valorização:
-                            preencha o custo unitário dos artigos antes de submeter.
-                            <MudLink Href="products" Class="ml-2">Ir aos artigos</MudLink>
+                            @(_summary.ProductsWithoutCost == 1 ? "artigo vai" : "artigos vão") com valor zero:
+                            nem as compras lhes deram um custo, nem a ficha o tem. A comunicação valorizada
+                            exige a valorização — registe a compra, declare o custo num acerto de abertura,
+                            ou preencha o custo na ficha.
+                            <MudLink Href="stock" Class="ml-2">Ver existências</MudLink>
+                        </MudAlert>
+                    }
+
+                    @if (_valued && _summary.ProductsCostedFromFile > 0)
+                    {
+                        <MudAlert Severity="Severity.Info" Class="mt-3">
+                            @_summary.ProductsCostedFromFile
+                            @(_summary.ProductsCostedFromFile == 1 ? "artigo foi valorizado" : "artigos foram valorizados")
+                            ao <strong>custo da ficha</strong>, por o razão nunca ter observado o que
+                            custaram. É o esperado em stock de abertura; fora disso, indica compras que não
+                            chegaram a ser registadas.
                         </MudAlert>
                     }
                 }

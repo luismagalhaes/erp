@@ -4,6 +4,7 @@
 @using Microsoft.AspNetCore.Authorization
 @using Microsoft.AspNetCore.Components.Web
 @using MudBlazor
+@using Erp.Main.Components.Common
 @using Erp.Main.Models
 @using Erp.Main.Services
 @inject CatalogApiClient Catalog
@@ -13,96 +14,103 @@
 <PageTitle>Artigos</PageTitle>
 
 <MudStack Spacing="4">
-    <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center">
-        <MudStack Spacing="0">
-            <MudText Typo="Typo.h4">Artigos</MudText>
-            <MudText Typo="Typo.body2" Color="Color.Secondary">
-                Ficheiro de artigos usado nas linhas dos documentos e no SAF-T.
-            </MudText>
-        </MudStack>
-
-        <MudButton Variant="Variant.Filled" Color="Color.Primary"
-                   StartIcon="@Icons.Material.Filled.Add"
-                   Disabled="@(!Company.HasCompany)"
-                   OnClick="@(() => Navigation.NavigateTo("products/new"))">
-            Novo artigo
-        </MudButton>
-    </MudStack>
+    <PageHeader Title="Artigos">
+        <Actions>
+            <MudButton Variant="Variant.Filled" Color="Color.Primary"
+                       StartIcon="@Icons.Material.Filled.Add"
+                       Disabled="@(!Company.HasCompany)"
+                       OnClick="@(() => Navigation.NavigateTo("products/new"))">
+                Novo artigo
+            </MudButton>
+        </Actions>
+    </PageHeader>
 
     @if (!string.IsNullOrWhiteSpace(_error))
     {
         <MudAlert Severity="Severity.Error" Dense="true">@_error</MudAlert>
     }
 
-    <MudPaper Elevation="1" Class="pa-4">
-        <MudGrid>
-            <MudItem xs="12" md="4">
-                <MudTextField @bind-Value="_search" Label="Procurar" Variant="Variant.Outlined"
-                              Margin="Margin.Dense" Immediate="true"
+    <MudPaper Elevation="0" Class="erp-card">
+        <MudDataGrid @ref="_grid" T="ProductListItem" Items="_products" Loading="_loading"
+                     Class="erp-grid"
+                     Filterable="true" Hideable="true" ShowColumnOptions="true"
+                     FilterMode="DataGridFilterMode.ColumnFilterMenu"
+                     SortMode="SortMode.Multiple" Dense="true" Hover="true" Striped="true"
+                     QuickFilter="QuickFilter" RowsPerPage="25">
+            <ToolBarContent>
+                <MudTextField @bind-Value="_search" Placeholder="Procurar por código, descrição ou código de barras"
+                              Variant="Variant.Text" Margin="Margin.Dense" Immediate="true" Clearable="true"
                               Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.Search"
-                              Placeholder="Código, descrição ou código de barras" />
-            </MudItem>
-            <MudItem xs="12" md="4">
-                <MudSelect T="Guid?" @bind-Value="_familyFilter" Label="Família" Variant="Variant.Outlined"
-                           Margin="Margin.Dense" Clearable="true">
-                    @foreach (var family in _families)
-                    {
-                        <MudSelectItem T="Guid?" Value="@family.Id">@family.Name</MudSelectItem>
-                    }
-                </MudSelect>
-            </MudItem>
-            <MudItem xs="12" md="4">
-                <MudSelect T="Guid?" @bind-Value="_brandFilter" Label="Marca" Variant="Variant.Outlined"
-                           Margin="Margin.Dense" Clearable="true">
-                    @foreach (var brand in _brands)
-                    {
-                        <MudSelectItem T="Guid?" Value="@brand.Id">@brand.Name</MudSelectItem>
-                    }
-                </MudSelect>
-            </MudItem>
-        </MudGrid>
-    </MudPaper>
+                              Underline="false" Class="mt-0 erp-grid-search" />
+                <MudSpacer />
+                <MudTooltip Text="Colunas visíveis">
+                    <MudIconButton Icon="@Icons.Material.Filled.Tune" Size="Size.Medium"
+                                   OnClick="@(() => _grid?.ShowColumnsPanel())" />
+                </MudTooltip>
+            </ToolBarContent>
 
-    <MudPaper Elevation="1" Class="pa-2">
-        <MudTable Items="Filtered" Hover="true" Striped="true" Dense="true" Loading="_loading"
-                  Breakpoint="Breakpoint.Sm">
-            <HeaderContent>
-                <MudTh>Código</MudTh>
-                <MudTh>Descrição</MudTh>
-                <MudTh>Família</MudTh>
-                <MudTh>Subfamília</MudTh>
-                <MudTh>Marca</MudTh>
-                <MudTh Style="text-align: right;">Preço</MudTh>
-                <MudTh>IVA</MudTh>
-                <MudTh>Estado</MudTh>
-                <MudTh Style="text-align: right;">Ações</MudTh>
-            </HeaderContent>
-            <RowTemplate>
-                <MudTd DataLabel="Código">
-                    <MudText Typo="Typo.body2" Style="font-family: monospace;">@context.ProductCode</MudText>
-                </MudTd>
-                <MudTd DataLabel="Descrição">@context.Description</MudTd>
-                <MudTd DataLabel="Família">@(context.FamilyName ?? "—")</MudTd>
-                <MudTd DataLabel="Subfamília">@(context.SubfamilyName ?? "—")</MudTd>
-                <MudTd DataLabel="Marca">@(context.BrandName ?? "—")</MudTd>
-                <MudTd DataLabel="Preço" Style="text-align: right;">@context.UnitPrice.ToString("N2")</MudTd>
-                <MudTd DataLabel="IVA">@context.DefaultTaxCode (@context.DefaultTaxPercentage.ToString("N0")%)</MudTd>
-                <MudTd DataLabel="Estado">
-                    <MudChip T="string" Size="Size.Small" Variant="Variant.Outlined"
-                             Color="@(context.IsActive ? Color.Success : Color.Default)">
-                        @(context.IsActive ? "Ativo" : "Inativo")
-                    </MudChip>
-                </MudTd>
-                <MudTd DataLabel="Ações" Style="text-align: right;">
-                    <MudIconButton Icon="@Icons.Material.Filled.Edit" Size="Size.Small"
-                                   title="Editar artigo"
-                                   OnClick="@(() => Navigation.NavigateTo($"products/{context.Id}"))" />
-                </MudTd>
-            </RowTemplate>
+            <Columns>
+                <PropertyColumn Property="x => x.ProductCode" Title="Código">
+                    <CellTemplate>
+                        <span class="erp-mono">@context.Item.ProductCode</span>
+                    </CellTemplate>
+                </PropertyColumn>
+                <PropertyColumn Property="x => x.Description" Title="Descrição" />
+                <PropertyColumn Property="x => x.FamilyName" Title="Família" />
+                <PropertyColumn Property="x => x.SubfamilyName" Title="Subfamília" Hidden="true" />
+                <PropertyColumn Property="x => x.BrandName" Title="Marca" />
+                <PropertyColumn Property="x => x.UnitPrice" Title="Preço" Format="N2"
+                                CellClass="erp-numeric" HeaderClass="erp-numeric" />
+                <PropertyColumn Property="x => x.DefaultTaxCode" Title="IVA">
+                    <CellTemplate>
+                        @context.Item.DefaultTaxCode (@context.Item.DefaultTaxPercentage.ToString("N0")%)
+                    </CellTemplate>
+                </PropertyColumn>
+                <PropertyColumn Property="x => x.IsActive" Title="Estado">
+                    <CellTemplate>
+                        <MudChip T="string" Size="Size.Small" Variant="Variant.Text"
+                                 Color="@(context.Item.IsActive ? Color.Success : Color.Default)">
+                            @(context.Item.IsActive ? "Ativo" : "Inativo")
+                        </MudChip>
+                    </CellTemplate>
+                </PropertyColumn>
+                <TemplateColumn Title="" Sortable="false" Filterable="false" Hideable="false"
+                                CellClass="erp-numeric" HeaderClass="erp-numeric">
+                    <CellTemplate>
+                        <MudMenu Icon="@Icons.Material.Filled.MoreVert" Size="Size.Small"
+                                 AnchorOrigin="Origin.BottomRight" TransformOrigin="Origin.TopRight">
+                            <MudMenuItem Icon="@Icons.Material.Filled.Edit"
+                                         OnClick="@(() => Navigation.NavigateTo($"products/{context.Item.Id}"))">
+                                Editar
+                            </MudMenuItem>
+                        </MudMenu>
+                    </CellTemplate>
+                </TemplateColumn>
+            </Columns>
+
             <NoRecordsContent>
-                <MudText Typo="Typo.body2" Color="Color.Secondary">Nenhum artigo corresponde ao filtro.</MudText>
+                <MudStack AlignItems="AlignItems.Center" Spacing="1" Class="pa-8">
+                    <MudIcon Icon="@Icons.Material.Filled.Inventory2" Size="Size.Large" Class="mud-text-secondary" />
+                    <MudText Typo="Typo.subtitle1">Sem artigos para mostrar</MudText>
+                    <MudText Typo="Typo.body2" Class="mud-text-secondary">
+                        Ajuste os filtros ou crie o primeiro artigo.
+                    </MudText>
+                </MudStack>
             </NoRecordsContent>
-        </MudTable>
+
+            <PagerContent>
+                <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween"
+                          Class="erp-grid-footer px-4 py-2">
+                    <MudStack Row="true" Spacing="1" AlignItems="AlignItems.Center">
+                        <MudText Typo="Typo.body2" Class="mud-text-secondary">@_products.Count artigos</MudText>
+                        <MudIconButton Icon="@Icons.Material.Filled.Refresh" Size="Size.Small"
+                                       Color="Color.Primary" title="Atualizar" OnClick="LoadAsync" />
+                    </MudStack>
+                    <MudDataGridPager T="ProductListItem" RowsPerPageString="Linhas por página"
+                                      InfoFormat="{first_item}-{last_item} de {all_items}" Class="pa-0" />
+                </MudStack>
+            </PagerContent>
+        </MudDataGrid>
     </MudPaper>
 </MudStack>
 
@@ -110,21 +118,15 @@
     private bool _loading = true;
     private string? _error;
     private string _search = string.Empty;
-    private Guid? _familyFilter;
-    private Guid? _brandFilter;
+    private MudDataGrid<ProductListItem>? _grid;
 
     private List<ProductListItem> _products = [];
-    private List<ProductFamily> _families = [];
-    private List<Brand> _brands = [];
 
-    private IEnumerable<ProductListItem> Filtered =>
-        _products.Where(product =>
-            (_familyFilter is null || product.FamilyId == _familyFilter)
-            && (_brandFilter is null || product.BrandId == _brandFilter)
-            && (string.IsNullOrWhiteSpace(_search)
-                || product.ProductCode.Contains(_search, StringComparison.OrdinalIgnoreCase)
-                || product.Description.Contains(_search, StringComparison.OrdinalIgnoreCase)
-                || (product.Barcode?.Contains(_search, StringComparison.OrdinalIgnoreCase) ?? false)));
+    private Func<ProductListItem, bool> QuickFilter => product =>
+        string.IsNullOrWhiteSpace(_search)
+        || product.ProductCode.Contains(_search, StringComparison.OrdinalIgnoreCase)
+        || product.Description.Contains(_search, StringComparison.OrdinalIgnoreCase)
+        || (product.Barcode?.Contains(_search, StringComparison.OrdinalIgnoreCase) ?? false);
 
     protected override async Task OnInitializedAsync()
     {
@@ -152,13 +154,6 @@
         {
             var (products, error) = await Catalog.GetProductsAsync(Company.SelectedCompanyId);
             _products = [.. products];
-
-            var (families, _) = await Catalog.GetFamiliesAsync(Company.SelectedCompanyId);
-            _families = [.. families];
-
-            var (brands, _) = await Catalog.GetBrandsAsync(Company.SelectedCompanyId);
-            _brands = [.. brands];
-
             _error = error;
         }
         catch (Exception ex)

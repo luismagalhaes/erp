@@ -1,9 +1,10 @@
-@page "/products/new"
+﻿@page "/products/new"
 @page "/products/{Id:guid}"
 @attribute [Authorize]
 @using Microsoft.AspNetCore.Authorization
 @using Microsoft.AspNetCore.Components.Web
 @using MudBlazor
+@using Erp.Main.Components.Common
 @using Erp.Main.Models
 @using Erp.Main.Services
 @inject CatalogApiClient Catalog
@@ -13,23 +14,16 @@
 
 <PageTitle>@(IsNew ? "Novo artigo" : "Editar artigo")</PageTitle>
 
-<MudStack Spacing="4">
-    <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center">
-        <MudStack Spacing="0">
-            <MudText Typo="Typo.h4">@(IsNew ? "Novo artigo" : "Editar artigo")</MudText>
-            @if (!IsNew)
-            {
-                <MudText Typo="Typo.body2" Color="Color.Secondary">
-                    Alterar o artigo não muda documentos já emitidos: cada um guarda a sua própria cópia.
-                </MudText>
-            }
-        </MudStack>
-
-        <MudButton Variant="Variant.Text" StartIcon="@Icons.Material.Filled.ArrowBack"
-                   OnClick="@(() => Navigation.NavigateTo("products"))">
-            Voltar
-        </MudButton>
-    </MudStack>
+<MudStack Spacing="3">
+    <PageHeader Title="@(IsNew ? "Novo artigo" : "Editar artigo")"
+                Breadcrumbs="Breadcrumbs">
+        <Actions>
+            <MudButton Variant="Variant.Text" StartIcon="@Icons.Material.Filled.ArrowBack"
+                       OnClick="@(() => Navigation.NavigateTo("products"))">
+                Voltar
+            </MudButton>
+        </Actions>
+    </PageHeader>
 
     @if (!string.IsNullOrWhiteSpace(_error))
     {
@@ -42,158 +36,137 @@
     }
     else
     {
-        <MudPaper Elevation="1" Class="pa-4">
-            <MudText Typo="Typo.h6" Class="mb-3">Identificação</MudText>
-            <MudGrid>
-                <MudItem xs="12" md="3">
-                    <MudTextField @bind-Value="_productCode" Label="Código" Variant="Variant.Outlined"
-                                  Required="true" Disabled="@(!IsNew)"
-                                  HelperText="@(IsNew ? null : "O código não pode ser alterado")" />
-                </MudItem>
-                <MudItem xs="12" md="6">
-                    <MudTextField @bind-Value="_description" Label="Descrição" Variant="Variant.Outlined" Required="true" />
-                </MudItem>
-                <MudItem xs="12" md="3">
-                    <MudTextField @bind-Value="_barcode" Label="Código de barras" Variant="Variant.Outlined" />
-                </MudItem>
-            </MudGrid>
-        </MudPaper>
-
-        <MudPaper Elevation="1" Class="pa-4">
-            <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center" Class="mb-3">
-                <MudText Typo="Typo.h6">Classificação</MudText>
-                <MudStack Row="true" Spacing="1">
-                    <MudButton Variant="Variant.Text" Size="Size.Small" StartIcon="@Icons.Material.Filled.Category"
-                               OnClick="@(() => Navigation.NavigateTo("product-families"))">Famílias</MudButton>
-                    <MudButton Variant="Variant.Text" Size="Size.Small" StartIcon="@Icons.Material.Filled.Sell"
-                               OnClick="@(() => Navigation.NavigateTo("brands"))">Marcas</MudButton>
-                </MudStack>
-            </MudStack>
-
-            <MudGrid>
-                <MudItem xs="12" md="4">
-                    <MudSelect T="Guid?" Value="_familyId" ValueChanged="OnFamilyChanged"
-                               Label="Família" Variant="Variant.Outlined" Clearable="true">
-                        @foreach (var family in _families)
-                        {
-                            <MudSelectItem T="Guid?" Value="@family.Id">@family.Name</MudSelectItem>
-                        }
-                    </MudSelect>
-                </MudItem>
-                <MudItem xs="12" md="4">
-                    <MudSelect T="Guid?" @bind-Value="_subfamilyId" Label="Subfamília" Variant="Variant.Outlined"
-                               Clearable="true" Disabled="@(_familyId is null)"
-                               HelperText="@(_familyId is null ? "Escolha primeiro a família" : null)">
-                        @foreach (var subfamily in AvailableSubfamilies)
-                        {
-                            <MudSelectItem T="Guid?" Value="@subfamily.Id">@subfamily.Name</MudSelectItem>
-                        }
-                    </MudSelect>
-                </MudItem>
-                <MudItem xs="12" md="4">
-                    <MudSelect T="Guid?" @bind-Value="_brandId" Label="Marca" Variant="Variant.Outlined" Clearable="true">
-                        @foreach (var brand in _brands)
-                        {
-                            <MudSelectItem T="Guid?" Value="@brand.Id">@brand.Name</MudSelectItem>
-                        }
-                    </MudSelect>
-                </MudItem>
-            </MudGrid>
-        </MudPaper>
-
-        <MudPaper Elevation="1" Class="pa-4">
-            <MudText Typo="Typo.h6" Class="mb-3">Preço e fiscalidade</MudText>
-            <MudGrid>
-                <MudItem xs="12" md="3">
-                    <MudSelect @bind-Value="_productType" Label="Tipo" Variant="Variant.Outlined">
-                        <MudSelectItem T="string" Value="@("P")">Produto</MudSelectItem>
-                        <MudSelectItem T="string" Value="@("S")">Serviço</MudSelectItem>
-                        <MudSelectItem T="string" Value="@("O")">Outro</MudSelectItem>
-                        <MudSelectItem T="string" Value="@("I")">Impostos e taxas</MudSelectItem>
-                    </MudSelect>
-                </MudItem>
-                <MudItem xs="12" md="3">
-                    <MudNumericField @bind-Value="_unitPrice" Label="Preço unitário" Variant="Variant.Outlined"
-                                     Min="0" Format="N2" />
-                </MudItem>
-                <MudItem xs="12" md="3">
-                    <MudTextField @bind-Value="_unitOfMeasure" Label="Unidade" Variant="Variant.Outlined" />
-                </MudItem>
-                <MudItem xs="12" md="3">
-                    <MudSelect T="string" Value="_taxCode" ValueChanged="OnTaxCodeChanged"
-                               Label="IVA" Variant="Variant.Outlined">
-                        @foreach (var rate in TaxRates)
-                        {
-                            <MudSelectItem T="string" Value="@rate.Code">@rate.Label</MudSelectItem>
-                        }
-                    </MudSelect>
-                </MudItem>
-                <MudItem xs="12" md="3">
-                    <MudSelect @bind-Value="_taxCountryRegion" Label="Espaço fiscal" Variant="Variant.Outlined">
-                        <MudSelectItem T="string" Value="@("PT")">Continente</MudSelectItem>
-                        <MudSelectItem T="string" Value="@("PT-AC")">Açores</MudSelectItem>
-                        <MudSelectItem T="string" Value="@("PT-MA")">Madeira</MudSelectItem>
-                    </MudSelect>
-                </MudItem>
-
+        <EditorCard Title="Artigo" Icon="@Icons.Material.Filled.Inventory2">
+            <HeaderActions>
+                <MudButton Variant="Variant.Text" Size="Size.Small" StartIcon="@Icons.Material.Filled.Category"
+                           OnClick="@(() => Navigation.NavigateTo("product-families"))">Famílias</MudButton>
+                <MudButton Variant="Variant.Text" Size="Size.Small" StartIcon="@Icons.Material.Filled.Sell"
+                           OnClick="@(() => Navigation.NavigateTo("brands"))">Marcas</MudButton>
                 @if (!IsNew)
                 {
-                    <MudItem xs="12">
-                        <MudSwitch @bind-Value="_isActive" Color="Color.Primary" Label="Artigo ativo" />
-                    </MudItem>
+                    <MudSwitch @bind-Value="_isActive" Color="Color.Primary" Size="Size.Small" Label="Ativo" />
                 }
-            </MudGrid>
-        </MudPaper>
-
-        <MudPaper Elevation="1" Class="pa-4">
-            <MudText Typo="Typo.h6" Class="mb-1">Stock e inventário</MudText>
-            <MudText Typo="Typo.body2" Color="Color.Secondary" Class="mb-3">
-                O que vai no ficheiro de inventário comunicado à AT.
-            </MudText>
-
-            <MudGrid>
-                <MudItem xs="12" md="4">
-                    <MudNumericField @bind-Value="_unitCost" Label="Custo unitário" Variant="Variant.Outlined"
-                                     Min="0" Format="N2"
-                                     HelperText="Valoriza o stock na comunicação valorizada" />
-                </MudItem>
-                <MudItem xs="12" md="8">
-                    <MudSelect @bind-Value="_inventoryCategory" Label="Categoria de inventário"
-                               Variant="Variant.Outlined"
-                               HelperText="Não é o mesmo que o tipo do SAF-T acima — são vocabulários diferentes">
-                        @foreach (var category in InventoryCategories.All)
-                        {
-                            <MudSelectItem T="string" Value="@category.Code">
-                                @category.Code — @category.Label
-                            </MudSelectItem>
-                        }
-                    </MudSelect>
-                </MudItem>
-
-                @if (_inventoryCategory == "B")
-                {
-                    <MudItem xs="12">
-                        <MudAlert Severity="Severity.Info" Dense="true">
-                            Ativos biológicos só existem no formato valorizado (2_01). Numa comunicação
-                            só com quantidades, este artigo vai como mercadoria.
-                        </MudAlert>
+            </HeaderActions>
+            <ChildContent>
+                <MudGrid>
+                    <MudItem xs="12" sm="3" md="2">
+                        <MudTextField @bind-Value="_productCode" Label="Código" Variant="Variant.Outlined"
+                                      Margin="Margin.Dense" Required="true" Disabled="@(!IsNew)" />
                     </MudItem>
-                }
-            </MudGrid>
+                    <MudItem xs="12" sm="9" md="6">
+                        <MudTextField @bind-Value="_description" Label="Descrição" Variant="Variant.Outlined"
+                                      Margin="Margin.Dense" Required="true" />
+                    </MudItem>
+                    <MudItem xs="12" sm="6" md="2">
+                        <MudTextField @bind-Value="_barcode" Label="Código de barras" Variant="Variant.Outlined"
+                                      Margin="Margin.Dense" />
+                    </MudItem>
+                    <MudItem xs="12" sm="6" md="2">
+                        <MudSelect @bind-Value="_productType" Label="Tipo" Variant="Variant.Outlined"
+                                   Margin="Margin.Dense">
+                            <MudSelectItem T="string" Value="@("P")">Produto</MudSelectItem>
+                            <MudSelectItem T="string" Value="@("S")">Serviço</MudSelectItem>
+                            <MudSelectItem T="string" Value="@("O")">Outro</MudSelectItem>
+                            <MudSelectItem T="string" Value="@("I")">Impostos e taxas</MudSelectItem>
+                        </MudSelect>
+                    </MudItem>
 
-            <MudStack Row="true" Justify="Justify.FlexEnd" Class="mt-4">
-                <MudButton Variant="Variant.Filled" Color="Color.Primary"
-                           StartIcon="@Icons.Material.Filled.Save"
-                           Disabled="@(_saving || !CanSave)"
-                           OnClick="SaveAsync">
-                    Guardar
-                </MudButton>
-            </MudStack>
-        </MudPaper>
+                    <MudItem xs="12" sm="4" md="4">
+                        <MudSelect T="Guid?" Value="_familyId" ValueChanged="OnFamilyChanged"
+                                   Label="Família" Variant="Variant.Outlined" Margin="Margin.Dense" Clearable="true">
+                            @foreach (var family in _families)
+                            {
+                                <MudSelectItem T="Guid?" Value="@family.Id">@family.Name</MudSelectItem>
+                            }
+                        </MudSelect>
+                    </MudItem>
+                    <MudItem xs="12" sm="4" md="4">
+                        <MudSelect T="Guid?" @bind-Value="_subfamilyId" Label="Subfamília" Variant="Variant.Outlined"
+                                   Margin="Margin.Dense" Clearable="true" Disabled="@(_familyId is null)">
+                            @foreach (var subfamily in AvailableSubfamilies)
+                            {
+                                <MudSelectItem T="Guid?" Value="@subfamily.Id">@subfamily.Name</MudSelectItem>
+                            }
+                        </MudSelect>
+                    </MudItem>
+                    <MudItem xs="12" sm="4" md="4">
+                        <MudSelect T="Guid?" @bind-Value="_brandId" Label="Marca" Variant="Variant.Outlined"
+                                   Margin="Margin.Dense" Clearable="true">
+                            @foreach (var brand in _brands)
+                            {
+                                <MudSelectItem T="Guid?" Value="@brand.Id">@brand.Name</MudSelectItem>
+                            }
+                        </MudSelect>
+                    </MudItem>
+
+                    <MudItem xs="6" sm="3" md="2">
+                        <MudNumericField @bind-Value="_unitPrice" Label="Preço unitário" Variant="Variant.Outlined"
+                                         Margin="Margin.Dense" Min="0" Format="N2" />
+                    </MudItem>
+                    <MudItem xs="6" sm="3" md="2">
+                        <MudNumericField @bind-Value="_unitCost" Label="Custo unitário" Variant="Variant.Outlined"
+                                         Margin="Margin.Dense" Min="0" Format="N2" />
+                    </MudItem>
+                    <MudItem xs="6" sm="2" md="2">
+                        <MudTextField @bind-Value="_unitOfMeasure" Label="Unidade" Variant="Variant.Outlined"
+                                      Margin="Margin.Dense" />
+                    </MudItem>
+                    <MudItem xs="6" sm="2" md="2">
+                        <MudSelect T="string" Value="_taxCode" ValueChanged="OnTaxCodeChanged"
+                                   Label="IVA" Variant="Variant.Outlined" Margin="Margin.Dense">
+                            @foreach (var rate in TaxRates)
+                            {
+                                <MudSelectItem T="string" Value="@rate.Code">@rate.Label</MudSelectItem>
+                            }
+                        </MudSelect>
+                    </MudItem>
+                    <MudItem xs="12" sm="2" md="2">
+                        <MudSelect @bind-Value="_taxCountryRegion" Label="Espaço fiscal" Variant="Variant.Outlined"
+                                   Margin="Margin.Dense">
+                            <MudSelectItem T="string" Value="@("PT")">Continente</MudSelectItem>
+                            <MudSelectItem T="string" Value="@("PT-AC")">Açores</MudSelectItem>
+                            <MudSelectItem T="string" Value="@("PT-MA")">Madeira</MudSelectItem>
+                        </MudSelect>
+                    </MudItem>
+                    <MudItem xs="12" sm="12" md="2">
+                        <MudSelect @bind-Value="_inventoryCategory" Label="Cat. inventário"
+                                   Variant="Variant.Outlined" Margin="Margin.Dense">
+                            @foreach (var category in InventoryCategories.All)
+                            {
+                                <MudSelectItem T="string" Value="@category.Code">
+                                    @category.Code — @category.Label
+                                </MudSelectItem>
+                            }
+                        </MudSelect>
+                    </MudItem>
+
+                    @if (_inventoryCategory == "B")
+                    {
+                        <MudItem xs="12">
+                            <MudAlert Severity="Severity.Info" Dense="true">
+                                Ativos biológicos só existem no formato valorizado (2_01). Numa comunicação
+                                só com quantidades, este artigo vai como mercadoria.
+                            </MudAlert>
+                        </MudItem>
+                    }
+                </MudGrid>
+            </ChildContent>
+        </EditorCard>
+
+        <FormActions Busy="_saving" Disabled="@(!CanSave)"
+                     Hint="@(CanSave ? null : "Preencha o código e a descrição para poder guardar.")"
+                     OnSubmit="SaveAsync"
+                     OnCancel="@(() => Navigation.NavigateTo("products"))" />
     }
 </MudStack>
 
 @code {
+    private List<BreadcrumbItem> Breadcrumbs =>
+    [
+        new("Artigos", href: "products"),
+        new(IsNew ? "Novo artigo" : "Editar artigo", href: null, disabled: true)
+    ];
+
     private static readonly TaxRateOption[] TaxRates =
     [
         new("NOR", 23m, "Normal - 23%"),

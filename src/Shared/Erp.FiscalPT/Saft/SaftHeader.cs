@@ -6,6 +6,13 @@ namespace Erp.FiscalPT.Saft;
 /// </summary>
 public sealed class SaftHeader
 {
+    /// <summary>
+    /// Which kind of file this is — see <see cref="SaftFileType"/>. It belongs to the header and
+    /// not to the writer, because the writer serves more than one: a self-billing file has the same
+    /// structure as a billing one and is still a different file.
+    /// </summary>
+    public string TaxAccountingBasis { get; init; } = SaftFileType.Billing;
+
     /// <summary>Registry number and office, or the tax id when there is none.</summary>
     public string CompanyId { get; init; } = string.Empty;
 

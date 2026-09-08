@@ -4,41 +4,19 @@
   <Folder Name="/src/Erp/Api/">
     <Project Path="src/Erp.Api/Erp.Api.csproj" />
   </Folder>
-  <Folder Name="/src/Erp/Modules/" />
-  <Folder Name="/src/Erp/Modules/Core/">
-    <Project Path="src/Services/Erp.Core.Application/Erp.Core.Application.csproj" />
-    <Project Path="src/Services/Erp.Core.Domain/Erp.Core.Domain.csproj" />
-    <Project Path="src/Services/Erp.Core.Infrastructure/Erp.Core.Infrastructure.csproj" />
-    <Project Path="src/Services/Erp.Core.Storage/Erp.Core.Storage.csproj" />
-  </Folder>
-  <Folder Name="/src/Erp/Modules/Notification/">
-    <Project Path="src/Notification/Erp.Notification.Application/Erp.Notification.Application.csproj" />
-    <Project Path="src/Notification/Erp.Notification.Domain/Erp.Notification.Domain.csproj" />
-    <Project Path="src/Notification/Erp.Notification.Infrastructure/Erp.Notification.Infrastructure.csproj" />
-    <Project Path="src/Notification/Erp.Notification.Storage/Erp.Notification.Storage.csproj" />
+  <Folder Name="/src/Erp/Modules/">
+    <Project Path="src/Modules/Erp.Core/Erp.Core.csproj" />
+    <Project Path="src/Modules/Erp.SeriesRegistry/Erp.SeriesRegistry.csproj" />
+    <Project Path="src/Modules/Erp.Sales/Erp.Sales.csproj" />
+    <Project Path="src/Modules/Erp.Inventory/Erp.Inventory.csproj" />
+    <Project Path="src/Modules/Erp.Purchasing/Erp.Purchasing.csproj" />
+    <Project Path="src/Modules/Erp.Notification/Erp.Notification.csproj" />
     <Project Path="src/Notification/Erp.Notification.Worker/Erp.Notification.Worker.csproj" />
-  </Folder>
-  <Folder Name="/src/Erp/Modules/Inventory/">
-    <Project Path="src/Services/Erp.Inventory.Application/Erp.Inventory.Application.csproj" />
-    <Project Path="src/Services/Erp.Inventory.Domain/Erp.Inventory.Domain.csproj" />
-    <Project Path="src/Services/Erp.Inventory.Infrastructure/Erp.Inventory.Infrastructure.csproj" />
-    <Project Path="src/Services/Erp.Inventory.Storage/Erp.Inventory.Storage.csproj" />
-  </Folder>
-  <Folder Name="/src/Erp/Modules/Purchasing/">
-    <Project Path="src/Services/Erp.Purchasing.Application/Erp.Purchasing.Application.csproj" />
-    <Project Path="src/Services/Erp.Purchasing.Domain/Erp.Purchasing.Domain.csproj" />
-    <Project Path="src/Services/Erp.Purchasing.Infrastructure/Erp.Purchasing.Infrastructure.csproj" />
-    <Project Path="src/Services/Erp.Purchasing.Storage/Erp.Purchasing.Storage.csproj" />
-  </Folder>
-  <Folder Name="/src/Erp/Modules/Sales/">
-    <Project Path="src/Services/Erp.Sales.Application/Erp.Sales.Application.csproj" />
-    <Project Path="src/Services/Erp.Sales.Domain/Erp.Sales.Domain.csproj" />
-    <Project Path="src/Services/Erp.Sales.Infrastructure/Erp.Sales.Infrastructure.csproj" />
-    <Project Path="src/Services/Erp.Sales.Storage/Erp.Sales.Storage.csproj" />
   </Folder>
   <Folder Name="/src/Erp/Shared/">
     <Project Path="src/Shared/Erp.Common/Erp.Common.csproj" />
     <Project Path="src/Shared/Erp.FiscalPT/Erp.FiscalPT.csproj" />
+    <Project Path="src/Shared/Erp.Storage/Erp.Storage.csproj" />
   </Folder>
   <Folder Name="/src/Erp/UI/">
     <Project Path="src/UI/Erp.Main/Erp.Main.csproj" />
@@ -59,6 +37,7 @@
     <Project Path="tests/Erp.Notification.Tests/Erp.Notification.Tests.csproj" />
     <Project Path="tests/Erp.Inventory.Tests/Erp.Inventory.Tests.csproj" />
     <Project Path="tests/Erp.Purchasing.Tests/Erp.Purchasing.Tests.csproj" />
+    <Project Path="tests/Erp.SeriesRegistry.Tests/Erp.SeriesRegistry.Tests.csproj" />
     <Project Path="tests/Erp.Sales.Tests/Erp.Sales.Tests.csproj" />
   </Folder>
   <Folder Name="/tests/Identity/">

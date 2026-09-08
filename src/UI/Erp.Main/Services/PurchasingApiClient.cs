@@ -301,6 +301,95 @@ public sealed class PurchasingApiClient(HttpClient http)
         return (await response.Content.ReadFromJsonAsync<SupplierReturn>(cancellationToken), null);
     }
 
+    // --- Self-billing ---
+
+    public async Task<(IReadOnlyList<SelfBilledInvoiceListItem> Items, string? Error)> GetSelfBilledInvoicesAsync(
+        Guid companyId,
+        Guid? supplierId = null,
+        CancellationToken cancellationToken = default)
+    {
+        var url = $"api/self-billed-invoices?companyId={companyId}";
+
+        if (supplierId is { } supplier)
+            url += $"&supplierId={supplier}";
+
+        var response = await http.GetAsync(url, cancellationToken);
+
+        if (!response.IsSuccessStatusCode)
+            return ([], await ApiResponse.ReadErrorAsync(response, cancellationToken));
+
+        var items = await response.Content.ReadFromJsonAsync<List<SelfBilledInvoiceListItem>>(cancellationToken);
+        return (items ?? [], null);
+    }
+
+    public async Task<SelfBilledInvoice?> GetSelfBilledInvoiceAsync(
+        Guid id,
+        CancellationToken cancellationToken = default)
+    {
+        var response = await http.GetAsync($"api/self-billed-invoices/{id}", cancellationToken);
+        return response.IsSuccessStatusCode
+            ? await response.Content.ReadFromJsonAsync<SelfBilledInvoice>(cancellationToken)
+            : null;
+    }
+
+    /// <summary>What has been received but not yet self-billed.</summary>
+    public async Task<(IReadOnlyList<UnbilledReceiptLine> Items, string? Error)> GetUnbilledReceiptLinesAsync(
+        Guid companyId,
+        Guid? supplierId = null,
+        CancellationToken cancellationToken = default)
+    {
+        var url = $"api/self-billed-invoices/unbilled-receipts?companyId={companyId}";
+
+        if (supplierId is { } supplier)
+            url += $"&supplierId={supplier}";
+
+        var response = await http.GetAsync(url, cancellationToken);
+
+        if (!response.IsSuccessStatusCode)
+            return ([], await ApiResponse.ReadErrorAsync(response, cancellationToken));
+
+        var items = await response.Content.ReadFromJsonAsync<List<UnbilledReceiptLine>>(cancellationToken);
+        return (items ?? [], null);
+    }
+
+    public async Task<(SelfBilledInvoice? Invoice, string? Error)> IssueSelfBilledInvoiceAsync(
+        IssueSelfBilledInvoiceRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        var response = await http.PostAsJsonAsync("api/self-billed-invoices", request, cancellationToken);
+
+        if (!response.IsSuccessStatusCode)
+            return (null, await ApiResponse.ReadErrorAsync(response, cancellationToken));
+
+        return (await response.Content.ReadFromJsonAsync<SelfBilledInvoice>(cancellationToken), null);
+    }
+
+    public async Task<(SelfBilledInvoice? Invoice, string? Error)> AcceptSelfBilledInvoiceAsync(
+        Guid id,
+        CancellationToken cancellationToken = default)
+    {
+        var response = await http.PostAsync($"api/self-billed-invoices/{id}/accept", null, cancellationToken);
+
+        if (!response.IsSuccessStatusCode)
+            return (null, await ApiResponse.ReadErrorAsync(response, cancellationToken));
+
+        return (await response.Content.ReadFromJsonAsync<SelfBilledInvoice>(cancellationToken), null);
+    }
+
+    public async Task<(SelfBilledInvoice? Invoice, string? Error)> VoidSelfBilledInvoiceAsync(
+        Guid id,
+        string reason,
+        CancellationToken cancellationToken = default)
+    {
+        var response = await http.PostAsJsonAsync(
+            $"api/self-billed-invoices/{id}/void", new VoidSelfBilledInvoiceRequest(reason), cancellationToken);
+
+        if (!response.IsSuccessStatusCode)
+            return (null, await ApiResponse.ReadErrorAsync(response, cancellationToken));
+
+        return (await response.Content.ReadFromJsonAsync<SelfBilledInvoice>(cancellationToken), null);
+    }
+
     private async Task<(PurchaseOrder? Order, string? Error)> PostAsync(
         string url,
         ClosePurchaseOrderRequest? content,

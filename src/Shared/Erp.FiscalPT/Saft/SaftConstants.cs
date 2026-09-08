@@ -11,8 +11,11 @@ public static class SaftConstants
 
     public const string Namespace = "urn:OECD:StandardAuditFile-Tax:PT_1.04_01";
 
-    /// <summary>Only billing data is exported, so the accounting basis is "F".</summary>
-    public const string TaxAccountingBasisBilling = "F";
+    /// <summary>
+    /// Kept for callers that still name it here; the value belongs to
+    /// <see cref="SaftFileType.Billing"/>, and the file it goes into is chosen by whoever exports.
+    /// </summary>
+    public const string TaxAccountingBasisBilling = SaftFileType.Billing;
 
     /// <summary>The file covers the whole taxable entity, not a single establishment.</summary>
     public const string TaxEntityGlobal = "Global";

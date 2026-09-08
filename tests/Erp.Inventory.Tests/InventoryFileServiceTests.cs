@@ -2,6 +2,7 @@ using System.Text;
 using System.Xml.Linq;
 using Erp.FiscalPT.Inventory;
 using Erp.Inventory.Application.Services;
+using Erp.Inventory.Domain;
 using Erp.Inventory.Infrastructure.Contracts;
 using Erp.Inventory.Infrastructure.Storage;
 using FluentAssertions;
@@ -16,13 +17,26 @@ public class InventoryFileServiceTests
 
     private readonly IStockStorage _storage = Substitute.For<IStockStorage>();
     private readonly Guid _companyId = Guid.NewGuid();
-    private readonly Dictionary<string, (decimal Quantity, string Description)> _stock = [];
+    private readonly Guid _warehouseId = Guid.NewGuid();
+    private readonly List<LedgerMovement> _ledger = [];
 
     public InventoryFileServiceTests()
     {
-        _storage.SumLedgerAsAtAsync(Arg.Any<Guid>(), Arg.Any<DateOnly>(), Arg.Any<CancellationToken>())
-            .Returns(_ => (IReadOnlyDictionary<string, (decimal, string)>)_stock);
+        _storage.GetMovementsAsync(
+                Arg.Any<Guid>(), Arg.Any<DateOnly?>(), Arg.Any<string?>(), Arg.Any<CancellationToken>())
+            .Returns(_ => (IReadOnlyList<LedgerMovement>)[.. _ledger]);
     }
+
+    /// <summary>
+    /// One movement into the ledger, which is the only way stock and its cost exist at all. A null
+    /// cost is stock the ledger never observed a price for.
+    /// </summary>
+    private void GivenStock(
+        string productCode = "ART001",
+        decimal quantity = 10m,
+        decimal? unitCost = 25m,
+        string description = "Artigo de teste") =>
+        _ledger.Add(new LedgerMovement(_warehouseId, productCode, description, quantity, unitCost));
 
     private InventoryFileService CreateService() => new(_storage);
 
@@ -45,7 +59,7 @@ public class InventoryFileServiceTests
     [Fact]
     public async Task BuildAsync_reports_the_stock_held_at_the_reference_date()
     {
-        _stock["ART001"] = (10m, "Artigo de teste");
+        GivenStock("ART001", 10m);
 
         var result = await CreateService().BuildAsync(Request(Product()));
 
@@ -60,23 +74,60 @@ public class InventoryFileServiceTests
     [Fact]
     public async Task BuildAsync_asks_the_ledger_for_the_reference_date()
     {
-        _stock["ART001"] = (1m, "Artigo");
+        GivenStock("ART001", 1m);
 
         await CreateService().BuildAsync(Request(Product()));
 
-        await _storage.Received(1).SumLedgerAsAtAsync(
-            _companyId, new DateOnly(2026, 12, 31), Arg.Any<CancellationToken>());
+        await _storage.Received(1).GetMovementsAsync(
+            _companyId, new DateOnly(2026, 12, 31), null, Arg.Any<CancellationToken>());
     }
 
+    /// <summary>
+    /// The whole point of the costing: the file is valued at what the goods actually cost, not at
+    /// the standard cost typed into the product file. Here the two disagree, and the ledger wins.
+    /// </summary>
     [Fact]
-    public async Task BuildAsync_values_the_stock_at_the_product_cost()
+    public async Task BuildAsync_values_the_stock_at_the_cost_the_ledger_observed()
     {
-        _stock["ART001"] = (3m, "Artigo");
+        GivenStock("ART001", 3m, unitCost: 12.5m);
 
-        var result = await CreateService().BuildAsync(Request(Product(unitCost: 12.5m)));
+        var result = await CreateService().BuildAsync(Request(Product(unitCost: 99m)));
 
         Parse(result).Element(Ns(true) + "Stock")!
             .Element(Ns(true) + "ClosingStockValue")!.Value.Should().Be("37.50");
+        result.ProductsCostedFromFile.Should().Be(0);
+    }
+
+    /// <summary>
+    /// Weighted average, not the last price paid: ten at 10 and ten at 20 leave twenty at 15.
+    /// </summary>
+    [Fact]
+    public async Task BuildAsync_values_the_stock_at_the_weighted_average_of_what_was_bought()
+    {
+        GivenStock("ART001", 10m, unitCost: 10m);
+        GivenStock("ART001", 10m, unitCost: 20m);
+
+        var result = await CreateService().BuildAsync(Request(Product()));
+
+        result.TotalQuantity.Should().Be(20m);
+        result.TotalValue.Should().Be(300m);
+    }
+
+    /// <summary>
+    /// Stock the ledger never put a price on — opening stock, or anything from before costing —
+    /// falls back to the product file rather than being reported as worthless, and the caller is
+    /// told how often that happened.
+    /// </summary>
+    [Fact]
+    public async Task BuildAsync_falls_back_to_the_product_file_when_the_ledger_costed_nothing()
+    {
+        GivenStock("ART001", 4m, unitCost: null);
+
+        var result = await CreateService().BuildAsync(Request(Product(unitCost: 7m)));
+
+        result.TotalValue.Should().Be(28m);
+        result.ProductsCostedFromFile.Should().Be(1);
+        result.ProductsWithoutCost.Should().Be(0);
     }
 
     /// <summary>
@@ -86,8 +137,8 @@ public class InventoryFileServiceTests
     [Fact]
     public async Task BuildAsync_counts_the_products_with_no_cost()
     {
-        _stock["ART001"] = (10m, "Artigo um");
-        _stock["ART002"] = (5m, "Artigo dois");
+        GivenStock("ART001", 10m);
+        GivenStock("ART002", 5m, unitCost: null);
 
         var result = await CreateService().BuildAsync(
             Request(Product("ART001", 25m), Product("ART002", 0m)));
@@ -98,8 +149,8 @@ public class InventoryFileServiceTests
     [Fact]
     public async Task BuildAsync_leaves_out_products_with_no_stock()
     {
-        _stock["ART001"] = (0m, "Artigo sem stock");
-        _stock["ART002"] = (4m, "Artigo com stock");
+        GivenStock("ART001", 0m);
+        GivenStock("ART002", 4m);
 
         var result = await CreateService().BuildAsync(Request(Product("ART001"), Product("ART002")));
 
@@ -113,7 +164,7 @@ public class InventoryFileServiceTests
     [Fact]
     public async Task BuildAsync_reports_a_negative_quantity_rather_than_hiding_it()
     {
-        _stock["ART001"] = (-2m, "Artigo");
+        GivenStock("ART001", -2m);
 
         var result = await CreateService().BuildAsync(Request(Product()));
 
@@ -129,7 +180,7 @@ public class InventoryFileServiceTests
     [Fact]
     public async Task BuildAsync_falls_back_to_the_description_kept_by_the_ledger()
     {
-        _stock["ART999"] = (7m, "Artigo descontinuado");
+        GivenStock("ART999", 7m, description: "Artigo descontinuado");
 
         var result = await CreateService().BuildAsync(Request(Product()));
 
@@ -140,7 +191,7 @@ public class InventoryFileServiceTests
     [Fact]
     public async Task BuildAsync_names_the_file_after_the_entity_and_the_date()
     {
-        _stock["ART001"] = (1m, "Artigo");
+        GivenStock("ART001", 1m);
 
         var result = await CreateService().BuildAsync(Request(Product()));
 
@@ -150,7 +201,7 @@ public class InventoryFileServiceTests
     [Fact]
     public async Task BuildAsync_strips_non_digits_from_the_tax_registration_number()
     {
-        _stock["ART001"] = (1m, "Artigo");
+        GivenStock("ART001", 1m);
 
         var request = Request(Product()) with
         {
@@ -191,7 +242,7 @@ public class InventoryFileServiceTests
     [InlineData(false, "1_02")]
     public async Task BuildAsync_writes_the_version_the_caller_asked_for(bool valued, string fileVersion)
     {
-        _stock["ART001"] = (10m, "Artigo");
+        GivenStock("ART001", 10m);
 
         var result = await CreateService().BuildAsync(Request(Product()) with { Valued = valued });
 
@@ -206,7 +257,7 @@ public class InventoryFileServiceTests
     [Fact]
     public async Task BuildAsync_leaves_the_value_out_of_the_quantities_only_file()
     {
-        _stock["ART001"] = (10m, "Artigo");
+        GivenStock("ART001", 10m);
 
         var result = await CreateService().BuildAsync(Request(Product()) with { Valued = false });
 
@@ -221,7 +272,7 @@ public class InventoryFileServiceTests
     [Fact]
     public async Task BuildAsync_still_totals_the_value_on_the_quantities_only_file()
     {
-        _stock["ART001"] = (4m, "Artigo");
+        GivenStock("ART001", 4m, unitCost: 10m);
 
         var result = await CreateService().BuildAsync(
             Request(Product(unitCost: 10m)) with { Valued = false });
@@ -236,7 +287,8 @@ public class InventoryFileServiceTests
     [Fact]
     public async Task BuildAsync_does_not_count_missing_costs_on_the_quantities_only_file()
     {
-        _stock["ART001"] = (10m, "Artigo");
+        // Neither source knows what it cost, so on the valued file this would be counted.
+        GivenStock("ART001", 10m, unitCost: null);
 
         var result = await CreateService().BuildAsync(
             Request(Product(unitCost: 0m)) with { Valued = false });
@@ -251,7 +303,7 @@ public class InventoryFileServiceTests
     [Fact]
     public async Task BuildAsync_falls_back_to_merchandise_for_a_category_the_schema_does_not_know()
     {
-        _stock["ART001"] = (10m, "Artigo");
+        GivenStock("ART001", 10m);
 
         var valued = await CreateService().BuildAsync(Request(Product(category: "B")));
         var quantitiesOnly = await CreateService().BuildAsync(

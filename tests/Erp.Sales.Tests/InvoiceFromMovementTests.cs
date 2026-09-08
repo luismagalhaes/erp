@@ -1,3 +1,4 @@
+using Erp.SeriesRegistry.Domain;
 using Erp.Sales.Domain;
 using Erp.Sales.Infrastructure.Contracts;
 using FluentAssertions;

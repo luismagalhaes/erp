@@ -168,21 +168,18 @@ InventoryCountLine
 O movimento de stock é gravado **na mesma transação** que o documento: um documento emitido sem o
 movimento correspondente, ou o contrário, é uma inconsistência que ninguém deteta a tempo.
 
-Como o `SalesDbContext` e o `InventoryDbContext` são contextos distintos sobre a mesma base, isso
-exige partilharem a ligação e a transação. A solução tem três peças, todas em `Erp.Common` para que
-nenhum módulo tenha de conhecer o outro:
+Hoje isso é imediato: **os módulos partilham um `DbContext`**, por isso o documento e o movimento de
+stock são escritos no mesmo `SaveChangesAsync`, e a transação que a emissão abre — para segurar a
+linha da série — cobre ambos. Não há nada a coordenar.
 
-- **`SharedDbConnection`** — uma ligação por pedido, que todos os `DbContext` recebem em vez da
-  *connection string*. O primeiro módulo a registá-la ganha; os restantes juntam-se.
-- **`IAmbientDbTransaction`** — onde o `SalesUnitOfWork` publica a transação que abriu.
-- O `StockStorage` chama `UseTransaction` antes de escrever, entrando na transação em curso.
+> Nem sempre foi assim. O Sales e o Inventory tiveram contextos distintos sobre a mesma base, e isso
+> exigia uma ligação partilhada por pedido, uma transação ambiente publicada por um módulo e apanhada
+> pelo outro, e um `UnitOfWork` por módulo a saber juntar-se a ela. Tudo isso foi apagado quando os
+> contextos se juntaram — ver [Um `DbContext` para os módulos de negócio](single-dbcontext.md). O
+> `EnsureEnlisted` do `StockStorage` desapareceu sem substituto: não há transação para se juntar.
 
-A consequência a conhecer: um pedido não pode correr consultas em dois contextos ao mesmo tempo,
-porque uma ligação não serve dois leitores. Todo o nosso código espera por uma chamada antes de
-começar a seguinte, o que é o que torna isto seguro.
-
-O `Erp.Sales.Application` referencia o `Erp.Inventory.Infrastructure` — **só as interfaces**. A
-implementação fica atrás do módulo de inventário.
+O `Erp.Sales` referencia o `Erp.Inventory`, e o contrato é o `IStockRecorder`, que não sabe de que
+módulo vem o documento — foi isso que permitiu ao Purchasing reutilizá-lo sem tocar no Inventory.
 
 ### Como ficou a fase 3
 
@@ -247,3 +244,13 @@ padrão: o custeio a sério — média ponderada ou FIFO, movido por cada compra
 não existe. Enquanto não existir, é isto que valoriza o stock, e o ecrã avisa quantos artigos vão
 com valor zero por não terem custo preenchido — aviso que só faz sentido na versão valorizada, e só
 lá aparece.
+
+> [!NOTE]
+> **Deixou de ser assim.** A fase 6 do [módulo de compras](purchasing.md#como-ficou-a-fase-6)
+> trouxe o **custo médio ponderado**, calculado a partir do razão: uma compra traz o seu preço, uma
+> venda sai ao médio, e o ficheiro é valorizado ao médio **à data de referência** — que não é o médio
+> de hoje, pela mesma razão por que as quantidades já não eram as de hoje.
+>
+> O custo da ficha sobrou como recurso último, para artigos que o razão nunca custeou, e o ecrã passou
+> a distinguir os dois casos: quantos artigos ninguém conseguiu custear, e quantos foram valorizados
+> pela ficha.

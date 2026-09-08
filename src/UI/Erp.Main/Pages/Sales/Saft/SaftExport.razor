@@ -8,6 +8,7 @@
 @using Erp.Main.Models
 @using Erp.Main.Services
 @inject SalesApiClient SalesApi
+@inject CatalogApiClient Catalog
 @inject CompanyState Company
 @inject IJSRuntime JS
 @inject ISnackbar Snackbar
@@ -170,6 +171,46 @@
             Os documentos anulados vão no ficheiro com o estado "A": o SAF-T tem de dar conta de todos os
             números emitidos. Os totais de controlo contam apenas os que não estão anulados.
         </MudAlert>
+
+        <MudPaper Elevation="1" Class="pa-4">
+            <MudStack Spacing="0" Class="mb-3">
+                <MudText Typo="Typo.h6">Autofaturação</MudText>
+                <MudText Typo="Typo.body2" Color="Color.Secondary">
+                    Ficheiro à parte, do tipo <strong>S</strong>, e <strong>um por fornecedor</strong>: os
+                    documentos são vendas dele, e é o NIF dele que vai no cabeçalho. Nenhum destes
+                    documentos entra no ficheiro de faturação acima.
+                </MudText>
+            </MudStack>
+
+            <MudGrid>
+                <MudItem xs="12" md="6">
+                    <MudSelect T="Guid?" @bind-Value="_selfBillingSupplierId" @bind-Value:after="StateHasChanged"
+                               Label="Fornecedor autofaturado" Variant="Variant.Outlined">
+                        @foreach (var supplier in _suppliers)
+                        {
+                            <MudSelectItem T="Guid?" Value="@supplier.Id">
+                                @supplier.Code — @supplier.Name
+                            </MudSelectItem>
+                        }
+                    </MudSelect>
+                </MudItem>
+                <MudItem xs="12" md="6" Class="d-flex align-center">
+                    <MudButton Variant="Variant.Filled" Color="Color.Primary"
+                               StartIcon="@Icons.Material.Filled.Download"
+                               Disabled="@(_exportingSelfBilling || _selfBillingSupplierId is null)"
+                               OnClick="ExportSelfBillingAsync">
+                        @(_exportingSelfBilling ? "A gerar..." : "Gerar ficheiro S")
+                    </MudButton>
+                </MudItem>
+            </MudGrid>
+
+            @if (_suppliers.Count == 0)
+            {
+                <MudAlert Severity="Severity.Info" Dense="true" Class="mt-3">
+                    Não há fornecedores ativos nesta empresa.
+                </MudAlert>
+            }
+        </MudPaper>
     }
 </MudStack>
 
@@ -193,6 +234,10 @@
     private SaftPeriodSummary? _summary;
     private int? _validationErrors;
 
+    private bool _exportingSelfBilling;
+    private Guid? _selfBillingSupplierId;
+    private List<Partner> _suppliers = [];
+
     private int TotalDocuments =>
         _summary is null ? 0 : _summary.InvoiceCount + _summary.StockMovementCount + _summary.PaymentCount;
 
@@ -208,9 +253,38 @@
         await Company.EnsureLoadedAsync();
         ApplyPeriod();
         await LoadSummaryAsync();
+        await LoadSuppliersAsync();
     }
 
-    private async void OnCompanyChanged() => await InvokeAsync(LoadSummaryAsync);
+    private async void OnCompanyChanged() => await InvokeAsync(async () =>
+    {
+        _selfBillingSupplierId = null;
+        await LoadSummaryAsync();
+        await LoadSuppliersAsync();
+    });
+
+    private async Task LoadSuppliersAsync()
+    {
+        if (!Company.HasCompany)
+        {
+            _suppliers = [];
+            return;
+        }
+
+        try
+        {
+            var (suppliers, _) = await Catalog.GetSuppliersAsync(Company.SelectedCompanyId);
+            _suppliers = [.. suppliers.Where(supplier => supplier.IsActive)];
+        }
+        catch (Exception ex)
+        {
+            _error = $"Não foi possível carregar os fornecedores: {ex.Message}";
+        }
+        finally
+        {
+            StateHasChanged();
+        }
+    }
 
     /// <summary>Turns the chosen kind of period into the actual dates. Custom ranges are left alone.</summary>
     private void ApplyPeriod()
@@ -341,6 +415,44 @@
         finally
         {
             _exporting = false;
+        }
+    }
+
+    private async Task ExportSelfBillingAsync()
+    {
+        _exportingSelfBilling = true;
+        _error = null;
+
+        try
+        {
+            var (file, error) = await SalesApi.DownloadSelfBillingSaftAsync(
+                Company.SelectedCompanyId, _selfBillingSupplierId!.Value, StartDate, EndDate);
+
+            if (file is null)
+            {
+                _error = error ?? "Não foi possível gerar o ficheiro de autofaturação.";
+                return;
+            }
+
+            await JS.InvokeVoidAsync(
+                "erpDownloadFile", file.FileName, "application/xml", Convert.ToBase64String(file.Content));
+
+            if (file.ValidationErrors == 0)
+            {
+                Snackbar.Add($"{file.FileName} gerado e validado no esquema oficial.", Severity.Success);
+            }
+            else
+            {
+                Snackbar.Add($"{file.FileName} gerado, mas não passa no esquema oficial.", Severity.Warning);
+            }
+        }
+        catch (Exception ex)
+        {
+            _error = $"Não foi possível gerar o ficheiro de autofaturação: {ex.Message}";
+        }
+        finally
+        {
+            _exportingSelfBilling = false;
         }
     }
 

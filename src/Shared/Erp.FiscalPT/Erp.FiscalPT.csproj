@@ -10,6 +10,9 @@
   <ItemGroup>
     <PackageReference Include="SonarAnalyzer.CSharp" Version="9.32.0.97167" PrivateAssets="all" />
     <PackageReference Include="QRCoder" Version="1.*" />
+    <!-- Only for the signing key provider and AddFiscalPT: abstractions, no hosting baggage. -->
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="10.*" />
+    <PackageReference Include="Microsoft.Extensions.Options.ConfigurationExtensions" Version="10.*" />
   </ItemGroup>
 
   <ItemGroup>

@@ -2,6 +2,8 @@ using Erp.Api.Authorization;
 using Erp.Core.Application;
 using Erp.Core.Storage;
 using Erp.Common;
+using Erp.FiscalPT;
+using Erp.FiscalPT.Saft;
 using Erp.Notification.Application;
 using Erp.Notification.Storage;
 using Erp.Inventory.Application;
@@ -10,6 +12,8 @@ using Erp.Purchasing.Application;
 using Erp.Purchasing.Storage;
 using Erp.Sales.Application;
 using Erp.Sales.Storage;
+using Erp.SeriesRegistry;
+using Erp.Storage;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Scalar.AspNetCore;
 using Serilog;
@@ -26,23 +30,33 @@ try
         .Enrich.FromLogContext()
         .ReadFrom.Configuration(ctx.Configuration));
 
-    // One host, one module per folder. Each module keeps its own layers, its own schema and its
-    // own database; only the process is shared.
-    builder.Services.AddCoreStorage(builder.Configuration);
+    // One context for every business module: they share a database, so sharing the context is what
+    // lets a document, the stock it moves and the order it came from be written in one transaction.
+    // Each module then adds its own tables to that model, and its services.
+    builder.Services.AddErpStorage(builder.Configuration);
+
+    builder.Services.AddCoreStorage();
     builder.Services.AddCoreApplication();
 
-    builder.Services.AddSalesStorage(builder.Configuration);
-    builder.Services.AddSalesApplication(
+    // The series registry comes before the modules that take numbers from it.
+    builder.Services.AddSeries();
+
+    // What every module that issues fiscal documents shares: the signing key, the signer, and the
+    // SAF-T exporter, which collects from whichever modules register an ISaftDocumentSource below.
+    builder.Services.AddFiscalPT(
         builder.Configuration,
         allowDevelopmentKeyGeneration: builder.Environment.IsDevelopment());
 
-    builder.Services.AddInventoryStorage(builder.Configuration);
+    builder.Services.AddSalesStorage();
+    builder.Services.AddSalesApplication();
+
+    builder.Services.AddInventoryStorage();
     builder.Services.AddInventoryApplication();
 
-    builder.Services.AddPurchasingStorage(builder.Configuration);
+    builder.Services.AddPurchasingStorage();
     builder.Services.AddPurchasingApplication();
 
-    builder.Services.AddNotificationStorage(builder.Configuration);
+    builder.Services.AddNotificationStorage();
     builder.Services.AddNotificationApplication(builder.Configuration);
 
     builder.Services.AddControllers();

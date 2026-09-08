@@ -20,8 +20,8 @@ public class SupplierCreditNoteTests
     private readonly IPurchaseInvoiceStorage _invoices = Substitute.For<IPurchaseInvoiceStorage>();
     private readonly IGoodsReceiptStorage _receipts = Substitute.For<IGoodsReceiptStorage>();
     private readonly IStockRecorder _stock = Substitute.For<IStockRecorder>();
-    private readonly IErpUnitOfWork _unitOfWork = Substitute.For<IErpUnitOfWork>();
-    private readonly IErpTransaction _transaction = Substitute.For<IErpTransaction>();
+    private readonly IUnitOfWork _unitOfWork = Substitute.For<IUnitOfWork>();
+    private readonly ITransaction _transaction = Substitute.For<ITransaction>();
 
     private readonly Guid _companyId = Guid.NewGuid();
     private readonly Guid _supplierId = Guid.NewGuid();

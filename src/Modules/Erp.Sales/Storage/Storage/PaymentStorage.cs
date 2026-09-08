@@ -1,4 +1,4 @@
-﻿using Erp.FiscalPT.Documents;
+using Erp.FiscalPT.Documents;
 using Erp.Sales.Domain;
 using Erp.Sales.Infrastructure.Storage;
 using Erp.Sales.Storage.Data;
@@ -7,7 +7,7 @@ using Erp.Storage;
 
 namespace Erp.Sales.Storage.Storage;
 
-public sealed class PaymentStorage(ErpDbContext dbContext) : IPaymentStorage
+public sealed class PaymentStorage(AppDbContext dbContext) : IPaymentStorage
 {
     public async Task<IReadOnlyList<Payment>> GetAllAsync(Guid companyId, CancellationToken cancellationToken = default)
     {

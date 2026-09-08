@@ -24,7 +24,7 @@ namespace Erp.Sales.Application.Services;
 public sealed class StockMovementService(
     IStockMovementStorage movementStorage,
     ISeriesStorage seriesStorage,
-    IErpUnitOfWork unitOfWork,
+    IUnitOfWork unitOfWork,
     IDocumentSigner signer,
     IStockRecorder stockRecorder,
     IOptions<FiscalOptions> fiscalOptions) : IStockMovementService

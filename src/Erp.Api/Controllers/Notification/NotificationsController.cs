@@ -1,4 +1,4 @@
-using Erp.Api.Authorization;
+using Erp.Api.Services;
 using Erp.Api.Contracts;
 using Erp.Notification.Domain.Models;
 using Erp.Notification.Infrastructure.Application;

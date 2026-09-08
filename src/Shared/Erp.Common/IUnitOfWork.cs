@@ -13,9 +13,9 @@ namespace Erp.Common;
 /// soon as the read finishes — long before the write that depends on it.
 /// </para>
 /// </remarks>
-public interface IErpUnitOfWork
+public interface IUnitOfWork
 {
-    Task<IErpTransaction> BeginTransactionAsync(CancellationToken cancellationToken = default);
+    Task<ITransaction> BeginTransactionAsync(CancellationToken cancellationToken = default);
 
     Task SaveChangesAsync(CancellationToken cancellationToken = default);
 }

@@ -1,4 +1,4 @@
-using Erp.Api;
+using Erp.Api.Services;
 using Erp.Storage;
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
@@ -21,7 +21,7 @@ namespace Erp.IntegrationTests;
 /// unit test can tell us and the thing that breaks quietly.
 /// </para>
 /// <para>
-/// The container is built with <see cref="ErpModules.AddErpModules"/> — the same call
+/// The container is built with <see cref="Modules.AddModules"/> — the same call
 /// <c>Program.cs</c> makes — so what these tests exercise is the wiring the API actually uses.
 /// </para>
 /// </remarks>
@@ -59,14 +59,14 @@ public sealed class SqlServerFixture : IAsyncLifetime
 
         var services = new ServiceCollection();
         services.AddLogging(logging => logging.SetMinimumLevel(LogLevel.Warning));
-        services.AddErpModules(configuration, allowDevelopmentKeyGeneration: true);
+        services.AddModules(configuration, allowDevelopmentKeyGeneration: true);
 
         // validateScopes catches a scoped service captured by a singleton, which is the kind of
         // wiring mistake that only shows up under load in production.
         _provider = services.BuildServiceProvider(validateScopes: true);
 
         await using var scope = _provider.CreateAsyncScope();
-        var context = scope.ServiceProvider.GetRequiredService<ErpDbContext>();
+        var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
 
         await context.Database.MigrateAsync();
         await ClearAsync(context);
@@ -81,7 +81,7 @@ public sealed class SqlServerFixture : IAsyncLifetime
     /// at the <b>start</b> rather than at the end is deliberate: what a failing run leaves behind is
     /// still there to be looked at.
     /// </remarks>
-    private static async Task ClearAsync(ErpDbContext context)
+    private static async Task ClearAsync(AppDbContext context)
     {
         // Constraints off for the duration, so the tables need not be emptied in dependency order —
         // an order that would have to be maintained by hand every time a foreign key is added.
@@ -103,7 +103,7 @@ public sealed class SqlServerFixture : IAsyncLifetime
     }
 
     /// <summary>
-    /// A scope of its own, with its own <see cref="ErpDbContext"/> — which is what a request gets.
+    /// A scope of its own, with its own <see cref="AppDbContext"/> — which is what a request gets.
     /// Concurrency tests take several at once, because two scopes are what two requests are.
     /// </summary>
     public AsyncServiceScope CreateScope() =>

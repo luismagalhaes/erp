@@ -1,4 +1,4 @@
-﻿using Erp.Core.Domain;
+using Erp.Core.Domain;
 using Erp.Core.Infrastructure.Contracts;
 using Erp.Core.Infrastructure.Storage;
 using Erp.Core.Storage.Data;
@@ -7,7 +7,7 @@ using Erp.Storage;
 
 namespace Erp.Core.Storage.Storage;
 
-public sealed class BrandStorage(ErpDbContext dbContext) : IBrandStorage
+public sealed class BrandStorage(AppDbContext dbContext) : IBrandStorage
 {
     public async Task<IReadOnlyList<Brand>> GetAllAsync(Guid companyId, CancellationToken cancellationToken = default) =>
         await dbContext.Set<Brand>()
@@ -29,7 +29,7 @@ public sealed class BrandStorage(ErpDbContext dbContext) : IBrandStorage
         dbContext.SaveChangesAsync(cancellationToken);
 }
 
-public sealed class ProductFamilyStorage(ErpDbContext dbContext) : IProductFamilyStorage
+public sealed class ProductFamilyStorage(AppDbContext dbContext) : IProductFamilyStorage
 {
     public async Task<IReadOnlyList<ProductFamily>> GetAllAsync(Guid companyId, CancellationToken cancellationToken = default) =>
         await dbContext.Set<ProductFamily>()
@@ -54,7 +54,7 @@ public sealed class ProductFamilyStorage(ErpDbContext dbContext) : IProductFamil
         dbContext.SaveChangesAsync(cancellationToken);
 }
 
-public sealed class ProductSubfamilyStorage(ErpDbContext dbContext) : IProductSubfamilyStorage
+public sealed class ProductSubfamilyStorage(AppDbContext dbContext) : IProductSubfamilyStorage
 {
     public async Task<IReadOnlyList<ProductSubfamily>> GetAllAsync(
         Guid companyId,
@@ -83,7 +83,7 @@ public sealed class ProductSubfamilyStorage(ErpDbContext dbContext) : IProductSu
         dbContext.SaveChangesAsync(cancellationToken);
 }
 
-public sealed class ProductStorage(ErpDbContext dbContext) : IProductStorage
+public sealed class ProductStorage(AppDbContext dbContext) : IProductStorage
 {
     public async Task<IReadOnlyList<Product>> GetAllAsync(Guid companyId, CancellationToken cancellationToken = default) =>
         await dbContext.Set<Product>()
@@ -141,7 +141,7 @@ public sealed class ProductStorage(ErpDbContext dbContext) : IProductStorage
         dbContext.SaveChangesAsync(cancellationToken);
 }
 
-public sealed class CustomerStorage(ErpDbContext dbContext) : ICustomerStorage
+public sealed class CustomerStorage(AppDbContext dbContext) : ICustomerStorage
 {
     public async Task<IReadOnlyList<Customer>> GetAllAsync(Guid companyId, CancellationToken cancellationToken = default) =>
         await dbContext.Set<Customer>()
@@ -163,7 +163,7 @@ public sealed class CustomerStorage(ErpDbContext dbContext) : ICustomerStorage
         dbContext.SaveChangesAsync(cancellationToken);
 }
 
-public sealed class SupplierStorage(ErpDbContext dbContext) : ISupplierStorage
+public sealed class SupplierStorage(AppDbContext dbContext) : ISupplierStorage
 {
     public async Task<IReadOnlyList<Supplier>> GetAllAsync(Guid companyId, CancellationToken cancellationToken = default) =>
         await dbContext.Set<Supplier>()

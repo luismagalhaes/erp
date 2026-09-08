@@ -8,9 +8,9 @@ namespace Erp.Storage;
 /// The one unit of work, over the one context. A save writes everything the request accumulated,
 /// whichever module put it there.
 /// </summary>
-public sealed class ErpUnitOfWork(ErpDbContext dbContext) : IErpUnitOfWork
+public sealed class UnitOfWork(AppDbContext dbContext) : IUnitOfWork
 {
-    public async Task<IErpTransaction> BeginTransactionAsync(CancellationToken cancellationToken = default)
+    public async Task<ITransaction> BeginTransactionAsync(CancellationToken cancellationToken = default)
     {
         // Nesting is not allowed by EF and would be a bug here: whoever opened the outer one is
         // still counting on it, so an inner scope joins instead of starting its own.
@@ -23,7 +23,7 @@ public sealed class ErpUnitOfWork(ErpDbContext dbContext) : IErpUnitOfWork
     public Task SaveChangesAsync(CancellationToken cancellationToken = default) =>
         dbContext.SaveChangesAsync(cancellationToken);
 
-    private sealed class OwnedTransaction(IDbContextTransaction transaction) : IErpTransaction
+    private sealed class OwnedTransaction(IDbContextTransaction transaction) : ITransaction
     {
         public Task CommitAsync(CancellationToken cancellationToken = default) =>
             transaction.CommitAsync(cancellationToken);
@@ -35,7 +35,7 @@ public sealed class ErpUnitOfWork(ErpDbContext dbContext) : IErpUnitOfWork
     /// A transaction someone else owns. Committing and disposing are theirs to do, so this does
     /// nothing — otherwise the inner scope would end a transaction the outer one still needs.
     /// </summary>
-    private sealed class JoinedTransaction : IErpTransaction
+    private sealed class JoinedTransaction : ITransaction
     {
         public Task CommitAsync(CancellationToken cancellationToken = default) => Task.CompletedTask;
 

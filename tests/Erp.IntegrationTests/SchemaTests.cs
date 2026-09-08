@@ -26,7 +26,7 @@ public class SchemaTests(SqlServerFixture fixture)
     public async Task The_migrations_leave_nothing_the_model_still_wants_to_change()
     {
         await using var scope = fixture.CreateScope();
-        var context = scope.ServiceProvider.GetRequiredService<ErpDbContext>();
+        var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
 
         var pending = await context.Database.GetPendingMigrationsAsync();
 
@@ -42,7 +42,7 @@ public class SchemaTests(SqlServerFixture fixture)
     public async Task Every_mapped_entity_can_be_read_from_the_database()
     {
         await using var scope = fixture.CreateScope();
-        var context = scope.ServiceProvider.GetRequiredService<ErpDbContext>();
+        var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
 
         var failures = new List<string>();
 

@@ -6,7 +6,7 @@ using Erp.Inventory.Infrastructure.Storage;
 
 namespace Erp.Inventory.Application.Services;
 
-public sealed class StockService(IStockStorage storage, IErpUnitOfWork unitOfWork) : IStockService
+public sealed class StockService(IStockStorage storage, IUnitOfWork unitOfWork) : IStockService
 {
     public async Task<IReadOnlyList<StockBalanceDto>> GetBalancesAsync(
         Guid companyId,

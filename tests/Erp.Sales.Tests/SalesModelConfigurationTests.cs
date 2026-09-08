@@ -26,13 +26,13 @@ public class SalesModelConfigurationTests
     /// <summary>The model as the host builds it: one context, one module contributing its tables.</summary>
     private static IModel BuildModel()
     {
-        var options = new DbContextOptionsBuilder<ErpDbContext>()
+        var options = new DbContextOptionsBuilder<AppDbContext>()
             // Never opened: building the model is all this needs, and the provider only has to be
             // the same one production uses, so the SQL Server naming conventions apply.
             .UseSqlServer("Server=(localdb)\\MSSQLLocalDB;Database=ErpModelOnly;")
             .Options;
 
-        using var context = new ErpDbContext(options, [new SalesModelConfiguration()]);
+        using var context = new AppDbContext(options, [new SalesModelConfiguration()]);
 
         return context.Model;
     }
@@ -75,11 +75,11 @@ public class SalesModelConfigurationTests
     [Fact]
     public void The_invoiceable_movements_query_asks_for_the_columns_the_database_has()
     {
-        var options = new DbContextOptionsBuilder<ErpDbContext>()
+        var options = new DbContextOptionsBuilder<AppDbContext>()
             .UseSqlServer("Server=(localdb)\\MSSQLLocalDB;Database=ErpModelOnly;")
             .Options;
 
-        using var context = new ErpDbContext(options, [new SalesModelConfiguration()]);
+        using var context = new AppDbContext(options, [new SalesModelConfiguration()]);
 
         var sql = context.Set<StockMovement>()
             .AsNoTracking()

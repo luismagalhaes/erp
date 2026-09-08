@@ -1,4 +1,5 @@
 using System.Net.Http.Json;
+using Erp.Common;
 using Erp.Main.Models;
 
 namespace Erp.Main.Services;
@@ -244,8 +245,8 @@ public sealed class StockApiClient(HttpClient http)
         return (new InventoryFile(
             fileName,
             content,
-            ReadCount(response, "X-Inventory-Products-Without-Cost"),
-            ReadCount(response, "X-Inventory-Validation-Errors")), null);
+            ReadCount(response, Constants.Headers.InventoryProductsWithoutCost),
+            ReadCount(response, Constants.Headers.InventoryValidationErrors)), null);
     }
 
     private static int ReadCount(HttpResponseMessage response, string header)

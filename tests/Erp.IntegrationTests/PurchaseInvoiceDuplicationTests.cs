@@ -132,7 +132,7 @@ public class PurchaseInvoiceDuplicationTests(SqlServerFixture fixture)
 
         var writing = () => scenario.InScopeAsync(async services =>
         {
-            var context = services.GetRequiredService<Erp.Storage.ErpDbContext>();
+            var context = services.GetRequiredService<Erp.Storage.AppDbContext>();
 
             // Straight to the table, past every rule the service applies.
             await context.Database.ExecuteSqlAsync(

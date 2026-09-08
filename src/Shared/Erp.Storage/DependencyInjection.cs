@@ -11,13 +11,13 @@ public static class DependencyInjection
     /// Registers the one context the business modules share. Call it before the modules, which then
     /// add their own <see cref="IModuleModelConfiguration"/> and storages.
     /// </summary>
-    public static IServiceCollection AddErpStorage(this IServiceCollection services, IConfiguration configuration)
+    public static IServiceCollection AddStorage(this IServiceCollection services, IConfiguration configuration)
     {
         var connectionString = configuration.GetConnectionString("ErpDb")
             ?? throw new InvalidOperationException("Connection string 'ErpDb' not found.");
 
-        services.AddDbContext<ErpDbContext>(options => options.UseSqlServer(connectionString));
-        services.AddScoped<IErpUnitOfWork, ErpUnitOfWork>();
+        services.AddDbContext<AppDbContext>(options => options.UseSqlServer(connectionString));
+        services.AddScoped<IUnitOfWork, UnitOfWork>();
 
         return services;
     }

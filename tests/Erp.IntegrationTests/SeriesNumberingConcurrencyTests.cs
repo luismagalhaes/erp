@@ -92,7 +92,7 @@ public class SeriesNumberingConcurrencyTests(SqlServerFixture fixture)
 
         var chain = await scenario.InScopeAsync(async services =>
         {
-            var context = services.GetRequiredService<ErpDbContext>();
+            var context = services.GetRequiredService<AppDbContext>();
 
             // Read from the table, not through the service: what matters is what was written, and
             // the detail DTO deliberately exposes only the four printed characters of the hash.

@@ -1,4 +1,5 @@
 using System.Net.Http.Json;
+using Erp.Common;
 using Erp.Main.Models;
 
 namespace Erp.Main.Services;
@@ -281,7 +282,7 @@ public class SalesApiClient(HttpClient http)
 
         var content = await response.Content.ReadAsByteArrayAsync(cancellationToken);
 
-        var validationErrors = response.Headers.TryGetValues("X-Saft-Validation-Errors", out var values)
+        var validationErrors = response.Headers.TryGetValues(Constants.Headers.SaftValidationErrors, out var values)
                                && int.TryParse(values.FirstOrDefault(), out var count)
             ? count
             : 0;
@@ -314,7 +315,7 @@ public class SalesApiClient(HttpClient http)
 
         var content = await response.Content.ReadAsByteArrayAsync(cancellationToken);
 
-        var validationErrors = response.Headers.TryGetValues("X-Saft-Validation-Errors", out var values)
+        var validationErrors = response.Headers.TryGetValues(Constants.Headers.SaftValidationErrors, out var values)
                                && int.TryParse(values.FirstOrDefault(), out var count)
             ? count
             : 0;

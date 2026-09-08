@@ -6,7 +6,7 @@ namespace Erp.Main.Theme;
 /// Single source of truth for the application look and feel.
 /// Adjust the palette here to rebrand the whole ERP.
 /// </summary>
-public static class ErpTheme
+public static class AppTheme
 {
     private const string FontFamily = "Inter";
 

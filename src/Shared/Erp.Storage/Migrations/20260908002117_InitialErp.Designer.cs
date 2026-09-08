@@ -12,7 +12,7 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 namespace Erp.Storage.Migrations
 {
-    [DbContext(typeof(ErpDbContext))]
+    [DbContext(typeof(AppDbContext))]
     [Migration("20260908002117_InitialErp")]
     partial class InitialErp
     {

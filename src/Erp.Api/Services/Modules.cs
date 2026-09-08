@@ -12,7 +12,7 @@ using Erp.Sales.Storage;
 using Erp.SeriesRegistry;
 using Erp.Storage;
 
-namespace Erp.Api;
+namespace Erp.Api.Services;
 
 /// <summary>
 /// Every business module, registered in the order they depend on each other.
@@ -22,7 +22,7 @@ namespace Erp.Api;
 /// host builds. A test that wired the modules itself would be testing its own wiring, and would go
 /// on passing after production drifted away from it.
 /// </remarks>
-public static class ErpModules
+public static class Modules
 {
     /// <param name="services">The host's service collection.</param>
     /// <param name="configuration">Carries the connection string and the fiscal settings.</param>
@@ -30,7 +30,7 @@ public static class ErpModules
     /// Lets the signing key be generated locally when none is configured. True in development and
     /// in tests; false anywhere a real certificate is expected.
     /// </param>
-    public static IServiceCollection AddErpModules(
+    public static IServiceCollection AddModules(
         this IServiceCollection services,
         IConfiguration configuration,
         bool allowDevelopmentKeyGeneration)
@@ -38,7 +38,7 @@ public static class ErpModules
         // One context for every business module: they share a database, so sharing the context is
         // what lets a document, the stock it moves and the order it came from be written in one
         // transaction. Each module then adds its own tables to that model, and its services.
-        services.AddErpStorage(configuration);
+        services.AddStorage(configuration);
 
         services.AddCoreStorage();
         services.AddCoreApplication();

@@ -1,4 +1,4 @@
-﻿using Erp.Purchasing.Domain;
+using Erp.Purchasing.Domain;
 using Erp.Purchasing.Infrastructure.Storage;
 using Erp.Purchasing.Storage.Data;
 using Microsoft.EntityFrameworkCore;
@@ -6,7 +6,7 @@ using Erp.Storage;
 
 namespace Erp.Purchasing.Storage.Storage;
 
-public sealed class PurchaseOrderStorage(ErpDbContext dbContext) : IPurchaseOrderStorage
+public sealed class PurchaseOrderStorage(AppDbContext dbContext) : IPurchaseOrderStorage
 {
     /// <summary>Statuses that still expect goods.</summary>
     private static readonly PurchaseOrderStatus[] OpenStatuses =

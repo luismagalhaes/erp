@@ -19,9 +19,9 @@ public class StockMovementServiceTests
 {
     private readonly IStockMovementStorage _movements = Substitute.For<IStockMovementStorage>();
     private readonly ISeriesStorage _series = Substitute.For<ISeriesStorage>();
-    private readonly IErpUnitOfWork _unitOfWork = Substitute.For<IErpUnitOfWork>();
+    private readonly IUnitOfWork _unitOfWork = Substitute.For<IUnitOfWork>();
     private readonly IDocumentSigner _signer = Substitute.For<IDocumentSigner>();
-    private readonly IErpTransaction _transaction = Substitute.For<IErpTransaction>();
+    private readonly ITransaction _transaction = Substitute.For<ITransaction>();
     private readonly List<StockMovement> _persisted = [];
     private readonly List<MovementStatusChange> _persistedStatusChanges = [];
     private readonly Guid _companyId = Guid.NewGuid();

@@ -9,7 +9,7 @@ namespace Erp.Inventory.Application.Services;
 public sealed class InventoryCountService(
     IInventoryCountStorage countStorage,
     IStockStorage stockStorage,
-    IErpUnitOfWork unitOfWork) : IInventoryCountService
+    IUnitOfWork unitOfWork) : IInventoryCountService
 {
     public async Task<IReadOnlyList<InventoryCountDto>> GetAllAsync(
         Guid companyId,

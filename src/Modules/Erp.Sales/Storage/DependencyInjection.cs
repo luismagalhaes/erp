@@ -10,7 +10,7 @@ public static class DependencyInjection
 {
     /// <summary>
     /// The module's tables and storages. The context itself belongs to the host, which registers it
-    /// once with <c>AddErpStorage</c>.
+    /// once with <c>AddStorage</c>.
     /// </summary>
     public static IServiceCollection AddSalesStorage(this IServiceCollection services)
     {

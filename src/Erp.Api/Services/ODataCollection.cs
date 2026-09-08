@@ -1,6 +1,6 @@
 using System.Text.Json.Serialization;
 
-namespace Erp.Api.Controllers;
+namespace Erp.Api.Services;
 
 /// <summary>
 /// The OData collection envelope returned by the query routes. The controllers apply the query

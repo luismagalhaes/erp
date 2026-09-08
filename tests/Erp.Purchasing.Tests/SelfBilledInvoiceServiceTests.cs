@@ -24,8 +24,8 @@ public class SelfBilledInvoiceServiceTests
     private readonly IGoodsReceiptStorage _receipts = Substitute.For<IGoodsReceiptStorage>();
     private readonly ISeriesStorage _series = Substitute.For<ISeriesStorage>();
     private readonly IDocumentSigner _signer = Substitute.For<IDocumentSigner>();
-    private readonly IErpUnitOfWork _unitOfWork = Substitute.For<IErpUnitOfWork>();
-    private readonly IErpTransaction _transaction = Substitute.For<IErpTransaction>();
+    private readonly IUnitOfWork _unitOfWork = Substitute.For<IUnitOfWork>();
+    private readonly ITransaction _transaction = Substitute.For<ITransaction>();
 
     private readonly Guid _companyId = Guid.NewGuid();
     private readonly Guid _supplierId = Guid.NewGuid();

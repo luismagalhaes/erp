@@ -11,8 +11,8 @@ namespace Erp.Inventory.Tests;
 public class StockServiceTests
 {
     private readonly IStockStorage _storage = Substitute.For<IStockStorage>();
-    private readonly IErpUnitOfWork _unitOfWork = Substitute.For<IErpUnitOfWork>();
-    private readonly IErpTransaction _transaction = Substitute.For<IErpTransaction>();
+    private readonly IUnitOfWork _unitOfWork = Substitute.For<IUnitOfWork>();
+    private readonly ITransaction _transaction = Substitute.For<ITransaction>();
     private readonly Guid _companyId = Guid.NewGuid();
     private readonly Guid _warehouseId = Guid.NewGuid();
 

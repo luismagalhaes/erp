@@ -7,7 +7,7 @@ using Erp.Storage;
 
 namespace Erp.Sales.Storage.Storage;
 
-public sealed class SalesDocumentStorage(ErpDbContext dbContext) : ISalesDocumentStorage
+public sealed class SalesDocumentStorage(AppDbContext dbContext) : ISalesDocumentStorage
 {
     public async Task<IReadOnlyList<SalesDocument>> GetAllAsync(Guid companyId, CancellationToken cancellationToken = default)
     {

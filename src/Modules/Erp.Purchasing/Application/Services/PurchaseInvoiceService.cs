@@ -23,7 +23,7 @@ public sealed class PurchaseInvoiceService(
     IPurchaseInvoiceStorage invoiceStorage,
     IGoodsReceiptStorage receiptStorage,
     IStockRecorder stockRecorder,
-    IErpUnitOfWork unitOfWork) : IPurchaseInvoiceService
+    IUnitOfWork unitOfWork) : IPurchaseInvoiceService
 {
     /// <summary>The document type the stock ledger records these movements under.</summary>
     private const string StockDocumentType = "FTF";

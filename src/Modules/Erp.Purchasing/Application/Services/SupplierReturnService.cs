@@ -24,7 +24,7 @@ public sealed class SupplierReturnService(
     IGoodsReceiptStorage receiptStorage,
     IStockRecorder stockRecorder,
     IDocumentNumbers documentNumbers,
-    IErpUnitOfWork unitOfWork) : ISupplierReturnService
+    IUnitOfWork unitOfWork) : ISupplierReturnService
 {
     private const string NumberPrefix = "DEV";
 

@@ -26,7 +26,7 @@ public sealed class SelfBilledInvoiceService(
     IGoodsReceiptStorage receiptStorage,
     ISeriesStorage seriesStorage,
     IDocumentSigner signer,
-    IErpUnitOfWork unitOfWork,
+    IUnitOfWork unitOfWork,
     IOptions<FiscalOptions> fiscalOptions) : ISelfBilledInvoiceService
 {
     private readonly FiscalOptions _fiscal = fiscalOptions.Value;

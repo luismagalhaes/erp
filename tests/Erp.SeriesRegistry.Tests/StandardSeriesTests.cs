@@ -15,7 +15,7 @@ namespace Erp.SeriesRegistry.Tests;
 public class StandardSeriesTests
 {
     private readonly ISeriesStorage _storage = Substitute.For<ISeriesStorage>();
-    private readonly IErpUnitOfWork _unitOfWork = Substitute.For<IErpUnitOfWork>();
+    private readonly IUnitOfWork _unitOfWork = Substitute.For<IUnitOfWork>();
     private readonly Guid _companyId = Guid.NewGuid();
 
     private readonly List<Series> _stored = [];

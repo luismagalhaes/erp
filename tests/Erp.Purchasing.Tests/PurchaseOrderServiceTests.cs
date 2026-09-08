@@ -11,7 +11,7 @@ namespace Erp.Purchasing.Tests;
 public class PurchaseOrderServiceTests
 {
     private readonly IPurchaseOrderStorage _storage = Substitute.For<IPurchaseOrderStorage>();
-    private readonly IErpUnitOfWork _unitOfWork = Substitute.For<IErpUnitOfWork>();
+    private readonly IUnitOfWork _unitOfWork = Substitute.For<IUnitOfWork>();
     private readonly Guid _companyId = Guid.NewGuid();
     private readonly Guid _supplierId = Guid.NewGuid();
     private readonly Guid _warehouseId = Guid.NewGuid();
@@ -21,7 +21,7 @@ public class PurchaseOrderServiceTests
     public PurchaseOrderServiceTests()
     {
         _unitOfWork.BeginTransactionAsync(Arg.Any<CancellationToken>())
-            .Returns(Substitute.For<IErpTransaction>());
+            .Returns(Substitute.For<ITransaction>());
 
         _storage.When(x => x.AddAsync(Arg.Any<PurchaseOrder>(), Arg.Any<CancellationToken>()))
             .Do(call => _orders.Add(call.Arg<PurchaseOrder>()));

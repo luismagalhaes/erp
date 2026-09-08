@@ -23,6 +23,33 @@ public static class Constants
         public const string Role = "role";
         public const string Name = "name";
         public const string Subject = "sub";
+        public const string Scope = "scope";
+    }
+
+    /// <summary>
+    /// Response headers the API writes and the UI reads. They are a contract between the two
+    /// processes, so neither side may own the name.
+    /// </summary>
+    public static class Headers
+    {
+        /// <summary>How many validation errors the generated SAF-T file carries.</summary>
+        public const string SaftValidationErrors = "X-Saft-Validation-Errors";
+
+        /// <summary>How many products were exported without a known cost.</summary>
+        public const string InventoryProductsWithoutCost = "X-Inventory-Products-Without-Cost";
+
+        /// <summary>How many validation errors the generated inventory file carries.</summary>
+        public const string InventoryValidationErrors = "X-Inventory-Validation-Errors";
+    }
+
+    /// <summary>Limits applied to the OData listing endpoints the data grids call.</summary>
+    public static class ODataQueryLimits
+    {
+        /// <summary>
+        /// The ceiling for a page, applied when the caller asks for no <c>$top</c>. It keeps one
+        /// request from reading a whole table.
+        /// </summary>
+        public const int MaxPageSize = 500;
     }
 
     public static class Scopes

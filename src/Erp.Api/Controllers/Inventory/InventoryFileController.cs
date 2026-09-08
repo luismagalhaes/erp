@@ -1,4 +1,5 @@
-using Erp.Api.Authorization;
+using Erp.Api.Services;
+using Erp.Common;
 using Erp.Core.Infrastructure.Application;
 using Erp.Inventory.Infrastructure.Application;
 using Erp.Inventory.Infrastructure.Contracts;
@@ -20,11 +21,6 @@ public sealed class InventoryFileController(
     IProductService productService,
     ILogger<InventoryFileController> logger) : ControllerBase
 {
-    /// <summary>How many problems the generated file has, so a client can react without parsing it.</summary>
-    public const string ProductsWithoutCostHeader = "X-Inventory-Products-Without-Cost";
-
-    public const string ValidationErrorsHeader = "X-Inventory-Validation-Errors";
-
     /// <summary>
     /// Builds the file for a period and returns it as an XML download. The stock reported is the
     /// stock held on the last day of the period. With <c>valued</c> it follows schema 2_01, which
@@ -79,8 +75,8 @@ public sealed class InventoryFileController(
             var result = await inventoryFileService.BuildAsync(request, cancellationToken);
 
             // Stock valued at zero would be refused by the tax authority, so the count travels back.
-            Response.Headers[ProductsWithoutCostHeader] = result.ProductsWithoutCost.ToString();
-            Response.Headers[ValidationErrorsHeader] = result.ValidationErrors.Count.ToString();
+            Response.Headers[Constants.Headers.InventoryProductsWithoutCost] = result.ProductsWithoutCost.ToString();
+            Response.Headers[Constants.Headers.InventoryValidationErrors] = result.ValidationErrors.Count.ToString();
 
             foreach (var error in result.ValidationErrors)
                 logger.LogWarning("Inventory file {FileName} does not conform to the schema: {Error}", result.FileName, error);

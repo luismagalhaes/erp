@@ -1,4 +1,4 @@
-﻿using Erp.Purchasing.Domain;
+using Erp.Purchasing.Domain;
 using Erp.Purchasing.Infrastructure.Storage;
 using Erp.Purchasing.Storage.Data;
 using Microsoft.EntityFrameworkCore;
@@ -6,7 +6,7 @@ using Erp.Storage;
 
 namespace Erp.Purchasing.Storage.Storage;
 
-public sealed class SupplierReturnStorage(ErpDbContext dbContext) : ISupplierReturnStorage
+public sealed class SupplierReturnStorage(AppDbContext dbContext) : ISupplierReturnStorage
 {
     public async Task<IReadOnlyList<SupplierReturn>> GetAllAsync(
         Guid companyId,

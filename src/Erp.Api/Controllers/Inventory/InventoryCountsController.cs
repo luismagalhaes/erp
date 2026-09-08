@@ -1,5 +1,5 @@
 using System.Security.Claims;
-using Erp.Api.Authorization;
+using Erp.Api.Services;
 using Erp.Inventory.Infrastructure.Application;
 using Erp.Inventory.Infrastructure.Contracts;
 using Microsoft.AspNetCore.Authorization;

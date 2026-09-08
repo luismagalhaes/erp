@@ -8,7 +8,7 @@ using Erp.Storage;
 
 namespace Erp.Inventory.Storage.Storage;
 
-public sealed class StockStorage(ErpDbContext dbContext) : IStockStorage
+public sealed class StockStorage(AppDbContext dbContext) : IStockStorage
 {
     // There used to be an EnsureEnlisted here, joining the transaction another module's context had
     // opened. With one context there is nothing to join: whoever opened the transaction opened it

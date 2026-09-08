@@ -1,4 +1,4 @@
-ï»¿using Erp.Sales.Domain;
+using Erp.Sales.Domain;
 using Erp.Sales.Infrastructure.Storage;
 using Erp.Sales.Storage.Data;
 using Microsoft.EntityFrameworkCore;
@@ -6,7 +6,7 @@ using Erp.Storage;
 
 namespace Erp.Sales.Storage.Storage;
 
-public sealed class StockMovementStorage(ErpDbContext dbContext) : IStockMovementStorage
+public sealed class StockMovementStorage(AppDbContext dbContext) : IStockMovementStorage
 {
     public async Task<IReadOnlyList<StockMovement>> GetAllAsync(Guid companyId, CancellationToken cancellationToken = default)
     {
@@ -81,12 +81,12 @@ public sealed class StockMovementStorage(ErpDbContext dbContext) : IStockMovemen
 
         foreach (var movementId in movementIds)
         {
-            // Executed rather than queried, because all that is wanted here is the lock â€” the
+            // Executed rather than queried, because all that is wanted here is the lock — the
             // movement itself is loaded properly below.
             //
             // It also has to be executed. Composing LINQ over FromSqlRaw makes EF wrap the raw
             // statement in a subquery and project the columns itself, and for a *complex property*
-            // it projects the default names â€” [ShipFrom_Address] rather than the [ShipFromAddress]
+            // it projects the default names — [ShipFrom_Address] rather than the [ShipFromAddress]
             // the mapping and the table both use. The query then fails with "Invalid column name",
             // and only on this entity, because it is the only one mapped with ComplexProperty.
             //

@@ -1,4 +1,4 @@
-﻿using Erp.Notification.Domain.Models;
+using Erp.Notification.Domain.Models;
 using Erp.Notification.Infrastructure.Storage;
 using Erp.Notification.Storage.Data;
 using Microsoft.EntityFrameworkCore;
@@ -6,7 +6,7 @@ using Erp.Storage;
 
 namespace Erp.Notification.Storage.Storage;
 
-public sealed class EmailNotificationStorage(ErpDbContext dbContext) : IEmailNotificationStorage
+public sealed class EmailNotificationStorage(AppDbContext dbContext) : IEmailNotificationStorage
 {
     public async Task AddAsync(EmailNotification notification, CancellationToken cancellationToken = default)
     {

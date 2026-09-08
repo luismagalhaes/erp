@@ -1,4 +1,5 @@
-using Erp.Api.Authorization;
+using Erp.Api.Services;
+using Erp.Common;
 using Erp.Core.Infrastructure.Application;
 using Erp.Core.Infrastructure.Contracts;
 using Erp.FiscalPT;
@@ -26,9 +27,6 @@ public sealed class SaftController(
     IOptions<FiscalOptions> fiscalOptions,
     ILogger<SaftController> logger) : ControllerBase
 {
-    /// <summary>Header carrying how many schema problems the generated file has, if any.</summary>
-    public const string ValidationErrorsHeader = "X-Saft-Validation-Errors";
-
     /// <summary>What a period holds, so the user can check it before generating the file.</summary>
     [HttpGet("summary")]
     [Authorize(Policy = Policies.Read)]
@@ -158,7 +156,7 @@ public sealed class SaftController(
             var result = await exporter.ExportAsync(spec, cancellationToken);
 
             // The file is handed over either way, but a schema problem must not pass in silence.
-            Response.Headers[ValidationErrorsHeader] = result.ValidationErrors.Count.ToString();
+            Response.Headers[Constants.Headers.SaftValidationErrors] = result.ValidationErrors.Count.ToString();
 
             foreach (var error in result.ValidationErrors)
                 logger.LogWarning("SAF-T {FileName} does not conform to the schema: {Error}", result.FileName, error);

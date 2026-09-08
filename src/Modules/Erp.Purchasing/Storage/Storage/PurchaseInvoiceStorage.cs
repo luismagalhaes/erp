@@ -1,4 +1,4 @@
-﻿using Erp.Purchasing.Domain;
+using Erp.Purchasing.Domain;
 using Erp.Purchasing.Infrastructure.Storage;
 using Erp.Purchasing.Storage.Data;
 using Microsoft.EntityFrameworkCore;
@@ -6,7 +6,7 @@ using Erp.Storage;
 
 namespace Erp.Purchasing.Storage.Storage;
 
-public sealed class PurchaseInvoiceStorage(ErpDbContext dbContext) : IPurchaseInvoiceStorage
+public sealed class PurchaseInvoiceStorage(AppDbContext dbContext) : IPurchaseInvoiceStorage
 {
     public async Task<IReadOnlyList<PurchaseInvoice>> GetAllAsync(
         Guid companyId,

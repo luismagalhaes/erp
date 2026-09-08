@@ -7,7 +7,7 @@ using Erp.SeriesRegistry.Infrastructure.Storage;
 
 namespace Erp.SeriesRegistry.Application.Services;
 
-public sealed class SeriesService(ISeriesStorage storage, IErpUnitOfWork unitOfWork) : ISeriesService
+public sealed class SeriesService(ISeriesStorage storage, IUnitOfWork unitOfWork) : ISeriesService
 {
     public async Task<IReadOnlyList<SeriesListItemDto>> GetAllAsync(Guid companyId, CancellationToken cancellationToken = default)
     {

@@ -20,7 +20,7 @@ public sealed class PaymentService(
     IPaymentStorage paymentStorage,
     ISalesDocumentStorage documentStorage,
     ISeriesStorage seriesStorage,
-    IErpUnitOfWork unitOfWork,
+    IUnitOfWork unitOfWork,
     IDocumentSigner signer,
     IOptions<FiscalOptions> fiscalOptions) : IPaymentService
 {

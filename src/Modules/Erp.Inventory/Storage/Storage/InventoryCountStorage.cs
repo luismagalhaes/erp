@@ -1,4 +1,4 @@
-﻿using Erp.Inventory.Domain;
+using Erp.Inventory.Domain;
 using Erp.Inventory.Infrastructure.Storage;
 using Erp.Inventory.Storage.Data;
 using Microsoft.EntityFrameworkCore;
@@ -6,7 +6,7 @@ using Erp.Storage;
 
 namespace Erp.Inventory.Storage.Storage;
 
-public sealed class InventoryCountStorage(ErpDbContext dbContext) : IInventoryCountStorage
+public sealed class InventoryCountStorage(AppDbContext dbContext) : IInventoryCountStorage
 {
     public async Task<IReadOnlyList<InventoryCount>> GetAllAsync(
         Guid companyId,

@@ -1,4 +1,4 @@
-﻿using Erp.Core.Domain;
+using Erp.Core.Domain;
 using Erp.Core.Infrastructure.Storage;
 using Erp.Core.Storage.Data;
 using Microsoft.EntityFrameworkCore;
@@ -6,7 +6,7 @@ using Erp.Storage;
 
 namespace Erp.Core.Storage.Storage;
 
-public sealed class UserCompanyStorage(ErpDbContext dbContext) : IUserCompanyStorage
+public sealed class UserCompanyStorage(AppDbContext dbContext) : IUserCompanyStorage
 {
     public async Task<IReadOnlyList<UserCompany>> GetActiveByUserAsync(string userId, CancellationToken cancellationToken = default)
     {

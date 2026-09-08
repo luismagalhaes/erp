@@ -4,7 +4,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Erp.SeriesRegistry.Storage;
 
-public sealed class SeriesStorage(ErpDbContext dbContext) : ISeriesStorage
+public sealed class SeriesStorage(AppDbContext dbContext) : ISeriesStorage
 {
     public async Task<IReadOnlyList<Domain.Series>> GetAllAsync(Guid companyId, CancellationToken cancellationToken = default)
     {

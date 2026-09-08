@@ -19,9 +19,9 @@ public class PaymentServiceTests
     private readonly IPaymentStorage _payments = Substitute.For<IPaymentStorage>();
     private readonly ISalesDocumentStorage _documents = Substitute.For<ISalesDocumentStorage>();
     private readonly ISeriesStorage _series = Substitute.For<ISeriesStorage>();
-    private readonly IErpUnitOfWork _unitOfWork = Substitute.For<IErpUnitOfWork>();
+    private readonly IUnitOfWork _unitOfWork = Substitute.For<IUnitOfWork>();
     private readonly IDocumentSigner _signer = Substitute.For<IDocumentSigner>();
-    private readonly IErpTransaction _transaction = Substitute.For<IErpTransaction>();
+    private readonly ITransaction _transaction = Substitute.For<ITransaction>();
     private readonly List<Payment> _persisted = [];
     private readonly List<PaymentStatusChange> _persistedStatusChanges = [];
     private readonly Dictionary<Guid, decimal> _settled = [];

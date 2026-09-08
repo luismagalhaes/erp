@@ -1,4 +1,5 @@
-using Erp.Api.Authorization;
+using Erp.Api.Services;
+using Erp.Api.Services;
 using Erp.Core.Infrastructure.Application;
 using Erp.Core.Infrastructure.Contracts;
 using Microsoft.AspNetCore.Authorization;
@@ -17,8 +18,6 @@ namespace Erp.Api.Controllers.Core;
 [Produces("application/json")]
 public sealed class ProductsController(IProductService productService) : ControllerBase
 {
-    private const int MaxPageSize = 500;
-
     /// <summary>Lists the products of a company.</summary>
     [HttpGet]
     [ProducesResponseType<IReadOnlyList<ProductListItemDto>>(StatusCodes.Status200OK)]
@@ -46,29 +45,7 @@ public sealed class ProductsController(IProductService productService) : Control
         if (companyId == Guid.Empty)
             return BadRequest(new { error = "companyId is required." });
 
-        // The options are applied by hand instead of through [EnableQuery] because this route is a
-        // plain MVC route: without an EDM route the attribute cannot emit the { value, @odata.count }
-        // envelope the grids expect, and $count would fail. The count is taken after $filter but
-        // before $skip/$top so the pager knows the size of the whole result.
-        var settings = new ODataQuerySettings();
-        var query = productService.Query(companyId);
-
-        if (options.Filter is not null)
-            query = (IQueryable<ProductListItemDto>)options.Filter.ApplyTo(query, settings);
-
-        var count = query.Count();
-
-        if (options.OrderBy is not null)
-            query = options.OrderBy.ApplyTo(query, settings);
-
-        if (options.Skip is not null)
-            query = options.Skip.ApplyTo(query, settings);
-
-        query = options.Top is not null
-            ? options.Top.ApplyTo(query, settings)
-            : query.Take(MaxPageSize);
-
-        return Ok(new ODataCollection<ProductListItemDto>(count, [.. query]));
+        return Ok(ODataQueryExecutor.Execute(productService.Query(companyId), options));
     }
 
     /// <summary>Gets a single product.</summary>

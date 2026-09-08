@@ -24,7 +24,7 @@ public sealed class GoodsReceiptService(
     IPurchaseOrderStorage orderStorage,
     IStockRecorder stockRecorder,
     IDocumentNumbers documentNumbers,
-    IErpUnitOfWork unitOfWork) : IGoodsReceiptService
+    IUnitOfWork unitOfWork) : IGoodsReceiptService
 {
     /// <summary>Prefix of the receipt number. Ours, with no fiscal meaning.</summary>
     private const string NumberPrefix = "REC";

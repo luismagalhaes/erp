@@ -112,7 +112,7 @@ public class StockBalanceConcurrencyTests(SqlServerFixture fixture)
         async Task WriteAsync()
         {
             await using var scope = fixture.CreateScope();
-            var context = scope.ServiceProvider.GetRequiredService<ErpDbContext>();
+            var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
 
             var entry = StockLedgerEntry.FromDocument(
                 scenario.CompanyId,

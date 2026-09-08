@@ -15,8 +15,8 @@ namespace Erp.Storage;
 /// The Identity host is not part of this: another process, another database, and the Duende stores.
 /// </para>
 /// </remarks>
-public sealed class ErpDbContext(
-    DbContextOptions<ErpDbContext> options,
+public sealed class AppDbContext(
+    DbContextOptions<AppDbContext> options,
     IEnumerable<IModuleModelConfiguration> modules) : DbContext(options)
 {
     protected override void OnModelCreating(ModelBuilder modelBuilder)

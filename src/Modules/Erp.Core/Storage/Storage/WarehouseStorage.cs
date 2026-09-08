@@ -1,4 +1,4 @@
-﻿using Erp.Core.Domain;
+using Erp.Core.Domain;
 using Erp.Core.Infrastructure.Storage;
 using Erp.Core.Storage.Data;
 using Microsoft.EntityFrameworkCore;
@@ -6,7 +6,7 @@ using Erp.Storage;
 
 namespace Erp.Core.Storage.Storage;
 
-public sealed class WarehouseStorage(ErpDbContext dbContext) : IWarehouseStorage
+public sealed class WarehouseStorage(AppDbContext dbContext) : IWarehouseStorage
 {
     public async Task<IReadOnlyList<Warehouse>> GetAllAsync(Guid companyId, CancellationToken cancellationToken = default) =>
         await dbContext.Set<Warehouse>()

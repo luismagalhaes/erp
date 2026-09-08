@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Erp.Purchasing.Storage.Storage;
 
-public sealed class SelfBilledInvoiceStorage(ErpDbContext dbContext) : ISelfBilledInvoiceStorage
+public sealed class SelfBilledInvoiceStorage(AppDbContext dbContext) : ISelfBilledInvoiceStorage
 {
     public async Task<IReadOnlyList<SelfBilledInvoice>> GetAllAsync(
         Guid companyId,

@@ -21,7 +21,7 @@ public sealed class SalesDocumentService(
     ISalesDocumentStorage documentStorage,
     ISeriesStorage seriesStorage,
     IStockMovementStorage movementStorage,
-    IErpUnitOfWork unitOfWork,
+    IUnitOfWork unitOfWork,
     IDocumentSigner signer,
     IStockRecorder stockRecorder,
     IOptions<FiscalOptions> fiscalOptions) : ISalesDocumentService

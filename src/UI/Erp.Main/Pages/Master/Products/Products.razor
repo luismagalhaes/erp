@@ -25,121 +25,78 @@
         </Actions>
     </PageHeader>
 
-    @if (!string.IsNullOrWhiteSpace(_error))
-    {
-        <MudAlert Severity="Severity.Error" Dense="true">@_error</MudAlert>
-    }
+    <DataGrid @ref="_grid" T="ProductListItem"
+                 LoadAsync="@((companyId, query, ct) => Catalog.QueryProductsAsync(companyId, query, ct))"
+                 SearchFields="SearchFields" DefaultOrderBy="ProductCode"
+                 SearchPlaceholder="Procurar por código, descrição ou código de barras"
+                 EmptyIcon="@Icons.Material.Filled.Inventory2"
+                 EmptyTitle="Sem artigos para mostrar"
+                 EmptyDescription="Ajuste os filtros ou crie o primeiro artigo."
+                 ItemsLabel="artigos"
+                 LoadErrorMessage="Não foi possível carregar os artigos">
+        <Columns>
+            <PropertyColumn Property="x => x.ProductCode" Title="Código"/>
+            <PropertyColumn Property="x => x.Description" Title="Descrição" />
+            <PropertyColumn Property="x => x.FamilyName" Title="Família">
+                <FilterTemplate>
+                    <MudStack Spacing="2" Class="pa-2" Style="min-width: 260px;">
+                        <MudAutocomplete T="string" Label="Família" Placeholder="Pesquisar família..."
+                                         Value="@string.Empty"
+                                         ValueChanged="@(value => AddFamilyFilterAsync(context, value))"
+                                         SearchFunc="SearchFamiliesAsync" ResetValueOnEmptyText="true"
+                                         CoerceValue="false" MaxItems="null"
+                                         Margin="Margin.Dense" Variant="Variant.Outlined" Dense="true" />
 
-    <MudPaper Elevation="0" Class="erp-card">
-        <MudDataGrid @ref="_grid" T="ProductListItem" VirtualizeServerData="LoadServerDataAsync" Loading="_loading"
-                     Class="erp-grid"
-                     Filterable="true" Hideable="true" ShowColumnOptions="false"
-                     ShowFilterIcons="true"
-                     FilterMode="DataGridFilterMode.ColumnFilterMenu"
-                     SortMode="SortMode.Multiple" Dense="true" Hover="true" Striped="true"
-                     DragDropColumnReordering="true" ColumnsPanelReordering="true"
-                     ColumnResizeMode="ResizeMode.Column" ShowMenuIcon="true"
-                     FixedHeader="true" Height="var(--erp-grid-height)"
-                     Virtualize="true" ItemSize="36" OverscanCount="12">
-            <ToolBarContent>
-                <MudTextField Value="_search" ValueChanged="@((string value) => OnSearchChangedAsync(value))"
-                              T="string" Placeholder="Procurar por código, descrição ou código de barras"
-                              Variant="Variant.Text" Margin="Margin.Dense" Immediate="true" Clearable="true"
-                              DebounceInterval="400"
-                              Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.Search"
-                              Underline="false" Class="mt-0 erp-grid-search" />
-                <MudSpacer />
-            </ToolBarContent>
-
-            <Columns>
-                <PropertyColumn Property="x => x.ProductCode" Title="Código"/>
-                <PropertyColumn Property="x => x.Description" Title="Descrição" />
-                <PropertyColumn Property="x => x.FamilyName" Title="Família">
-                    <FilterTemplate>
-                        <MudStack Spacing="2" Class="pa-2" Style="min-width: 260px;">
-                            <MudAutocomplete T="string" Label="Família" Placeholder="Pesquisar família..."
-                                             Value="@string.Empty"
-                                             ValueChanged="@(value => AddFamilyFilterAsync(context, value))"
-                                             SearchFunc="SearchFamiliesAsync" ResetValueOnEmptyText="true"
-                                             CoerceValue="false" MaxItems="null"
-                                             Margin="Margin.Dense" Variant="Variant.Outlined" Dense="true" />
-
-                            @if (_familyFilter.Count > 0)
-                            {
-                                <MudChipSet T="string" AllClosable="true"
-                                            OnClose="@(chip => RemoveFamilyFilterAsync(context, chip.Value))">
-                                    @foreach (var name in _familyFilter)
-                                    {
-                                        <MudChip T="string" Value="@name" Size="Size.Small"
-                                                 Color="Color.Primary" Variant="Variant.Text">@name</MudChip>
-                                    }
-                                </MudChipSet>
-                            }
-                        </MudStack>
-                    </FilterTemplate>
-                </PropertyColumn>
-                <PropertyColumn Property="x => x.SubfamilyName" Title="Subfamília" Hidden="true" />
-                <PropertyColumn Property="x => x.BrandName" Title="Marca" />
-                <PropertyColumn Property="x => x.UnitPrice" Title="Preço" Format="N2"
-                                CellClass="erp-numeric" HeaderClass="erp-numeric" />
-                <PropertyColumn Property="x => x.DefaultTaxCode" Title="IVA">
-                    <CellTemplate>
-                        @context.Item.DefaultTaxCode (@context.Item.DefaultTaxPercentage.ToString("N0")%)
-                    </CellTemplate>
-                </PropertyColumn>
-                <PropertyColumn Property="x => x.IsActive" Title="Estado">
-                    <CellTemplate>
-                        <MudChip T="string" Size="Size.Small" Variant="Variant.Text"
-                                 Color="@(context.Item.IsActive ? Color.Success : Color.Default)">
-                            @(context.Item.IsActive ? "Ativo" : "Inativo")
-                        </MudChip>
-                    </CellTemplate>
-                </PropertyColumn>
-                <TemplateColumn Title="" Sortable="false" Filterable="false" Hideable="false"
-                                StickyRight="true"
-                                CellClass="erp-numeric" HeaderClass="erp-numeric">
-                    <CellTemplate>
-                        <MudMenu Icon="@Icons.Material.Filled.MoreVert" Size="Size.Small"
-                                 AnchorOrigin="Origin.BottomRight" TransformOrigin="Origin.TopRight">
-                            <MudMenuItem Icon="@Icons.Material.Filled.Edit"
-                                         OnClick="@(() => Navigation.NavigateTo($"products/{context.Item.Id}"))">
-                                Editar
-                            </MudMenuItem>
-                        </MudMenu>
-                    </CellTemplate>
-                </TemplateColumn>
-            </Columns>
-
-            <NoRecordsContent>
-                <MudStack AlignItems="AlignItems.Center" Spacing="1" Class="pa-8">
-                    <MudIcon Icon="@Icons.Material.Filled.Inventory2" Size="Size.Large" Class="mud-text-secondary" />
-                    <MudText Typo="Typo.subtitle1">Sem artigos para mostrar</MudText>
-                    <MudText Typo="Typo.body2" Class="mud-text-secondary">
-                        Ajuste os filtros ou crie o primeiro artigo.
-                    </MudText>
-                </MudStack>
-            </NoRecordsContent>
-
-            <PagerContent>
-                <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween"
-                          Class="erp-grid-footer px-4 py-2">
-                    <MudStack Row="true" Spacing="1" AlignItems="AlignItems.Center">
-                        <MudText Typo="Typo.body2" Class="mud-text-secondary">@_totalItems artigos</MudText>
-                        <MudIconButton Icon="@Icons.Material.Filled.Refresh" Size="Size.Small"
-                                       Color="Color.Primary" title="Atualizar" OnClick="ReloadAsync" />
+                        @if (_familyFilter.Count > 0)
+                        {
+                            <MudChipSet T="string" AllClosable="true"
+                                        OnClose="@(chip => RemoveFamilyFilterAsync(context, chip.Value))">
+                                @foreach (var name in _familyFilter)
+                                {
+                                    <MudChip T="string" Value="@name" Size="Size.Small"
+                                             Color="Color.Primary" Variant="Variant.Text">@name</MudChip>
+                                }
+                            </MudChipSet>
+                        }
                     </MudStack>
-                </MudStack>
-            </PagerContent>
-        </MudDataGrid>
-    </MudPaper>
+                </FilterTemplate>
+            </PropertyColumn>
+            <PropertyColumn Property="x => x.SubfamilyName" Title="Subfamília" Hidden="true" />
+            <PropertyColumn Property="x => x.BrandName" Title="Marca" />
+            <PropertyColumn Property="x => x.UnitPrice" Title="Preço" Format="N2"
+                            CellClass="erp-numeric" HeaderClass="erp-numeric" />
+            <PropertyColumn Property="x => x.DefaultTaxCode" Title="IVA">
+                <CellTemplate>
+                    @context.Item.DefaultTaxCode (@context.Item.DefaultTaxPercentage.ToString("N0")%)
+                </CellTemplate>
+            </PropertyColumn>
+            <PropertyColumn Property="x => x.IsActive" Title="Estado">
+                <CellTemplate>
+                    <MudChip T="string" Size="Size.Small" Variant="Variant.Text"
+                             Color="@(context.Item.IsActive ? Color.Success : Color.Default)">
+                        @(context.Item.IsActive ? "Ativo" : "Inativo")
+                    </MudChip>
+                </CellTemplate>
+            </PropertyColumn>
+            <TemplateColumn Title="" Sortable="false" Filterable="false" Hideable="false"
+                            StickyRight="true"
+                            CellClass="erp-numeric" HeaderClass="erp-numeric">
+                <CellTemplate>
+                    <MudMenu Icon="@Icons.Material.Filled.MoreVert" Size="Size.Small"
+                             AnchorOrigin="Origin.BottomRight" TransformOrigin="Origin.TopRight">
+                        <MudMenuItem Icon="@Icons.Material.Filled.Edit"
+                                     OnClick="@(() => Navigation.NavigateTo($"products/{context.Item.Id}"))">
+                            Editar
+                        </MudMenuItem>
+                    </MudMenu>
+                </CellTemplate>
+            </TemplateColumn>
+        </Columns>
+    </DataGrid>
 </MudStack>
 
 @code {
-    private bool _loading = true;
-    private string? _error;
-    private string _search = string.Empty;
-    private int _totalItems;
-    private MudDataGrid<ProductListItem>? _grid;
+    private DataGrid<ProductListItem>? _grid;
 
     /// <summary>
     /// The families feeding the column filter. Family is a foreign key, so the filter offers the
@@ -164,17 +121,12 @@
     {
         Company.Changed += OnCompanyChanged;
         await Company.EnsureLoadedAsync();
-        _error = Company.LoadError;
         await LoadFamiliesAsync();
     }
 
     private async void OnCompanyChanged()
     {
-        await InvokeAsync(async () =>
-        {
-            await LoadFamiliesAsync();
-            await ReloadAsync();
-        });
+        await InvokeAsync(LoadFamiliesAsync);
     }
 
     /// <summary>
@@ -243,127 +195,6 @@
 
         await context.Actions.ApplyFilterAsync(context.FilterDefinition);
     }
-
-    private async Task OnSearchChangedAsync(string value)
-    {
-        _search = value;
-        await ReloadAsync();
-    }
-
-    private Task ReloadAsync() => _grid is null ? Task.CompletedTask : _grid.ReloadServerData();
-
-    /// <summary>
-    /// Translates the grid state into an OData query. The grid asks for the window it is about to
-    /// paint, so the browser only ever holds the rows around the scroll position while filtering,
-    /// sorting and paging stay in the database.
-    /// </summary>
-    private async Task<GridData<ProductListItem>> LoadServerDataAsync(
-        GridStateVirtualize<ProductListItem> state, CancellationToken cancellationToken)
-    {
-        _error = Company.LoadError;
-
-        if (!Company.HasCompany)
-        {
-            _totalItems = 0;
-            return new GridData<ProductListItem> { Items = [], TotalItems = 0 };
-        }
-
-        _loading = true;
-
-        try
-        {
-            var query = new ODataQuery
-            {
-                Skip = state.StartIndex,
-                Top = state.Count
-            };
-
-            if (!string.IsNullOrWhiteSpace(_search))
-                query.Filter(ODataQuery.ContainsAny(_search.Trim(), SearchFields));
-
-            foreach (var filter in state.FilterDefinitions)
-                query.Filter(BuildFilter(filter));
-
-            foreach (var sort in state.SortDefinitions)
-                query.OrderBy(sort.SortBy, sort.Descending);
-
-            // The order has to be stable, otherwise the same row could come back in two different
-            // windows as the user scrolls.
-            if (state.SortDefinitions.Count == 0)
-                query.OrderBy("ProductCode", descending: false);
-
-            var (items, count, error) = await Catalog.QueryProductsAsync(
-                Company.SelectedCompanyId, query, cancellationToken);
-
-            _error = error;
-            _totalItems = count;
-
-            return new GridData<ProductListItem> { Items = items, TotalItems = count };
-        }
-        catch (OperationCanceledException)
-        {
-            // The grid cancels the window it no longer needs while the user scrolls. Letting it
-            // bubble up is what tells the virtualizer to discard this result instead of painting
-            // an empty window over the rows it already has.
-            throw;
-        }
-        catch (Exception ex)
-        {
-            _error = $"Não foi possível carregar os artigos: {ex.Message}";
-            _totalItems = 0;
-            return new GridData<ProductListItem> { Items = [], TotalItems = 0 };
-        }
-        finally
-        {
-            _loading = false;
-            StateHasChanged();
-        }
-    }
-
-    /// <summary>
-    /// Converts a single column filter into its OData expression. Unsupported combinations return
-    /// null so they are simply skipped rather than producing a request the server rejects.
-    /// </summary>
-    private static string? BuildFilter(IFilterDefinition<ProductListItem> filter)
-    {
-        var field = filter.Column?.PropertyName;
-
-        if (string.IsNullOrWhiteSpace(field) || string.IsNullOrWhiteSpace(filter.Operator))
-            return null;
-
-        return filter.Operator switch
-        {
-            FilterOperator.String.Empty => $"{field} eq null or {field} eq ''",
-            FilterOperator.String.NotEmpty => $"{field} ne null and {field} ne ''",
-            _ when filter.Value is null => null,
-            // A multi value selection becomes an OR of equalities, which is what OData understands.
-            _ when filter.Value is IReadOnlyCollection<string> values =>
-                values.Count == 0
-                    ? null
-                    : $"({string.Join(" or ", values.Select(item => $"{field} eq {ODataQuery.Literal(item)}"))})",
-            FilterOperator.String.Contains => $"contains(tolower({field}), {ODataQuery.Literal(filter.Value.ToString()!.ToLowerInvariant())})",
-            FilterOperator.String.NotContains => $"not contains(tolower({field}), {ODataQuery.Literal(filter.Value.ToString()!.ToLowerInvariant())})",
-            FilterOperator.String.StartsWith => $"startswith(tolower({field}), {ODataQuery.Literal(filter.Value.ToString()!.ToLowerInvariant())})",
-            FilterOperator.String.EndsWith => $"endswith(tolower({field}), {ODataQuery.Literal(filter.Value.ToString()!.ToLowerInvariant())})",
-            FilterOperator.String.Equal or FilterOperator.Number.Equal => $"{field} eq {Value(filter.Value)}",
-            FilterOperator.String.NotEqual or FilterOperator.Number.NotEqual => $"{field} ne {Value(filter.Value)}",
-            FilterOperator.Number.GreaterThan => $"{field} gt {Value(filter.Value)}",
-            FilterOperator.Number.GreaterThanOrEqual => $"{field} ge {Value(filter.Value)}",
-            FilterOperator.Number.LessThan => $"{field} lt {Value(filter.Value)}",
-            FilterOperator.Number.LessThanOrEqual => $"{field} le {Value(filter.Value)}",
-            FilterOperator.Boolean.Is => $"{field} eq {Value(filter.Value)}",
-            _ => null
-        };
-    }
-
-    private static string Value(object value) => value switch
-    {
-        string text => ODataQuery.Literal(text),
-        bool flag => flag ? "true" : "false",
-        Guid id => id.ToString(),
-        IFormattable number => number.ToString(null, System.Globalization.CultureInfo.InvariantCulture),
-        _ => ODataQuery.Literal(value.ToString() ?? string.Empty)
-    };
 
     public void Dispose() => Company.Changed -= OnCompanyChanged;
 }

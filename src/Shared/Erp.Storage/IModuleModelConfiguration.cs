@@ -7,7 +7,7 @@ namespace Erp.Storage;
 /// to the entities it maps.
 /// </summary>
 /// <remarks>
-/// This is what keeps the <see cref="ErpDbContext"/> from knowing any entity. Without it the shared
+/// This is what keeps the <see cref="AppDbContext"/> from knowing any entity. Without it the shared
 /// project would have to reference every module's domain, and the dependency would point the wrong
 /// way: adding a module would mean editing shared code.
 /// <para>

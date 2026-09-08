@@ -1,5 +1,4 @@
-using Erp.Api;
-using Erp.Api.Authorization;
+using Erp.Api.Services;
 using Erp.Common;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.OData;
@@ -20,7 +19,7 @@ try
 
     // Every business module, in one call, so the integration tests can build the same container
     // instead of a lookalike of their own.
-    builder.Services.AddErpModules(
+    builder.Services.AddModules(
         builder.Configuration,
         allowDevelopmentKeyGeneration: builder.Environment.IsDevelopment());
 
@@ -50,7 +49,7 @@ try
         });
 
     builder.Services.AddAuthorizationBuilder()
-        .AddErpPolicies();
+        .AddPolicies();
 
     builder.Services.AddOpenApi();
 

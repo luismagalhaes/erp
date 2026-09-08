@@ -15,7 +15,7 @@ namespace Erp.Purchasing.Application.Services;
 public sealed class PurchaseOrderService(
     IPurchaseOrderStorage storage,
     IDocumentNumbers documentNumbers,
-    IErpUnitOfWork unitOfWork) : IPurchaseOrderService
+    IUnitOfWork unitOfWork) : IPurchaseOrderService
 {
     /// <summary>Prefix of the order number. Ours, with no fiscal meaning.</summary>
     private const string NumberPrefix = "ENC";

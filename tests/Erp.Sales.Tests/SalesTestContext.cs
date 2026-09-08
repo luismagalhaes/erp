@@ -24,9 +24,9 @@ internal sealed class SalesTestContext
     public ISalesDocumentStorage DocumentStorage { get; } = Substitute.For<ISalesDocumentStorage>();
     public IStockMovementStorage MovementStorage { get; } = Substitute.For<IStockMovementStorage>();
     public ISeriesStorage SeriesStorage { get; } = Substitute.For<ISeriesStorage>();
-    public IErpUnitOfWork UnitOfWork { get; } = Substitute.For<IErpUnitOfWork>();
+    public IUnitOfWork UnitOfWork { get; } = Substitute.For<IUnitOfWork>();
     public IDocumentSigner Signer { get; } = Substitute.For<IDocumentSigner>();
-    public IErpTransaction Transaction { get; } = Substitute.For<IErpTransaction>();
+    public ITransaction Transaction { get; } = Substitute.For<ITransaction>();
 
     public List<SalesDocument> Persisted { get; } = [];
     public List<DocumentStatusChange> PersistedStatusChanges { get; } = [];

@@ -5,7 +5,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Erp.SeriesRegistry.Storage;
 
-public sealed class DocumentCounterStorage(ErpDbContext dbContext) : IDocumentCounterStorage
+public sealed class DocumentCounterStorage(AppDbContext dbContext) : IDocumentCounterStorage
 {
     public async Task<DocumentCounter?> GetForUpdateAsync(
         Guid companyId,

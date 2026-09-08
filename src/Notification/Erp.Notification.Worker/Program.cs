@@ -13,7 +13,7 @@ builder.Services.AddSerilog((services, lc) => lc
 
 // The worker only drains the email queue, but the context is the same one the API uses: the
 // modules share a database, and now a model.
-builder.Services.AddErpStorage(builder.Configuration);
+builder.Services.AddStorage(builder.Configuration);
 builder.Services.AddNotificationStorage();
 builder.Services.AddNotificationApplication(builder.Configuration);
 

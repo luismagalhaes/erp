@@ -1,4 +1,4 @@
-using Erp.Api.Authorization;
+using Erp.Api.Services;
 using Erp.Core.Infrastructure.Application;
 using Erp.Core.Infrastructure.Contracts;
 using Microsoft.AspNetCore.Authorization;

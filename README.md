@@ -116,8 +116,8 @@ O `Erp.Sales` e o `Erp.Purchasing` referenciam o `Erp.Inventory`, para que emiti
 
 | Projeto | Descrição |
 |---|---|
-| [Erp.Common](src/Shared/Erp.Common/) | Constantes que descrevem o contrato do access token — roles, claims, scopes e api resources — partilhadas pela `Erp.Api` e pelo `Erp.Main`, para não dependerem de um projeto do Identity. E o `IErpUnitOfWork`, que os serviços usam para gravar e abrir transações sem saberem que existe EF Core. |
-| [Erp.Storage](src/Shared/Erp.Storage/) | O `ErpDbContext` que todos os módulos de negócio partilham, as migrations e o `IModuleModelConfiguration` com que cada módulo declara as suas tabelas. Não referencia módulo nenhum. |
+| [Erp.Common](src/Shared/Erp.Common/) | Constantes que descrevem o contrato do access token — roles, claims, scopes e api resources — partilhadas pela `Erp.Api` e pelo `Erp.Main`, para não dependerem de um projeto do Identity. E o `IUnitOfWork`, que os serviços usam para gravar e abrir transações sem saberem que existe EF Core. |
+| [Erp.Storage](src/Shared/Erp.Storage/) | O `AppDbContext` que todos os módulos de negócio partilham, as migrations e o `IModuleModelConfiguration` com que cada módulo declara as suas tabelas. Não referencia módulo nenhum. |
 | [Erp.FiscalPT](src/Shared/Erp.FiscalPT/) | Primitivas de fiscalidade portuguesa sem dependências de infraestrutura: string e assinatura RSA dos documentos, ATCUD, número de documento, mensagem e imagem do código QR, arredondamento fiscal, e os geradores e validadores do **SAF-T (PT)** e do **ficheiro de inventário**, com os XSD oficiais embebidos. |
 
 ### Notification
@@ -232,7 +232,7 @@ dotnet build Erp.slnx
 dotnet run --project .\src\Identity\Erp.Identity\Erp.Identity.csproj -- --seed
 
 # 3. Aplicar as migrations dos módulos de negócio (um contexto para todos)
-dotnet ef database update --context ErpDbContext `
+dotnet ef database update --context AppDbContext `
   --startup-project .\src\Erp.Api\Erp.Api.csproj
 
 # 4. Arrancar os três processos (em terminais separados)
@@ -263,7 +263,7 @@ Em Visual Studio existem os perfis de arranque múltiplo **"All"** e **"All + Wo
 
 **Uma base de dados para o ERP**, com todas as tabelas em `dbo`. É o que permite que emitir uma fatura, dar saída de stock e gerar o lançamento contabilístico caibam numa transação — sem transações distribuídas nem sagas dentro de um único processo — e o que devolve as chaves estrangeiras entre módulos que a separação anterior impedia.
 
-**Um `DbContext` para todos os módulos de negócio**: o [`ErpDbContext`](src/Shared/Erp.Storage/ErpDbContext.cs), com um só `__EFMigrationsHistory`. Ele **não conhece entidade nenhuma** — cada módulo declara as suas tabelas numa `IModuleModelConfiguration` no seu próprio projeto, para que a dependência continue a apontar dos módulos para o partilhado e acrescentar um módulo nunca implique editar código partilhado.
+**Um `DbContext` para todos os módulos de negócio**: o [`AppDbContext`](src/Shared/Erp.Storage/AppDbContext.cs), com um só `__EFMigrationsHistory`. Ele **não conhece entidade nenhuma** — cada módulo declara as suas tabelas numa `IModuleModelConfiguration` no seu próprio projeto, para que a dependência continue a apontar dos módulos para o partilhado e acrescentar um módulo nunca implique editar código partilhado.
 
 Foram cinco contextos, e a maquinaria que os cosia — uma ligação partilhada, uma transação ambiente e um *unit of work* por módulo — desapareceu com eles. Um `SaveChangesAsync` escreve agora tudo o que o pedido acumulou, venha de que módulo vier, e as chaves estrangeiras entre módulos são relações a sério. O plano e as decisões estão em [Um `DbContext` para os módulos de negócio](docs/single-dbcontext.md).
 
@@ -281,7 +281,7 @@ O Identity usa três contextos (ASP.NET Identity, Configuration Store e Persiste
 
 ```powershell
 # Nova migration dos módulos de negócio (o startup project é sempre o Erp.Api)
-dotnet ef migrations add <Nome> --context ErpDbContext `
+dotnet ef migrations add <Nome> --context AppDbContext `
   --project .\src\Shared\Erp.Storage\Erp.Storage.csproj `
   --startup-project .\src\Erp.Api\Erp.Api.csproj
 
@@ -331,7 +331,7 @@ Os testes **migram-na sozinhos** e **nunca a apagam** — poder abri-la depois d
 dotnet test Erp.slnx --filter "Category=Integration"
 ```
 
-Cada teste cria **a sua própria empresa**. Quase tudo neste sistema tem âmbito de empresa, o que torna esse isolamento barato e verdadeiro, e evita esvaziar tabelas entre testes. O contentor de DI é construído com o mesmo `AddErpModules` que o `Program.cs` usa — um teste que montasse a sua própria versão estaria a testar a sua própria montagem, e continuaria a passar depois de a produção divergir.
+Cada teste cria **a sua própria empresa**. Quase tudo neste sistema tem âmbito de empresa, o que torna esse isolamento barato e verdadeiro, e evita esvaziar tabelas entre testes. O contentor de DI é construído com o mesmo `AddModules` que o `Program.cs` usa — um teste que montasse a sua própria versão estaria a testar a sua própria montagem, e continuaria a passar depois de a produção divergir.
 
 O CI ainda os exclui, com `--filter "Category!=Integration"`, porque o *runner* não tem SQL Server — ver [Estado atual e limitações conhecidas](#estado-atual-e-limitações-conhecidas).
 
@@ -472,7 +472,7 @@ O `pending` devolve o que os fornecedores ainda devem, linha a linha, e é o que
 
 ### Receção de mercadoria
 
-É aqui que **uma compra movimenta stock**. A receção entra no razão como qualquer documento — o `IStockRecorder` já era agnóstico do módulo — e a receção, as entradas no razão e as quantidades recebidas da encomenda são escritas **na mesma transação** — hoje simplesmente porque partilham o `ErpDbContext`, e o serviço abre a transação pelo `IErpUnitOfWork`. Sem isso o armazém e a encomenda ficariam a discordar sobre o que chegou, e ninguém daria por isso até um teste de stocks.
+É aqui que **uma compra movimenta stock**. A receção entra no razão como qualquer documento — o `IStockRecorder` já era agnóstico do módulo — e a receção, as entradas no razão e as quantidades recebidas da encomenda são escritas **na mesma transação** — hoje simplesmente porque partilham o `AppDbContext`, e o serviço abre a transação pelo `IUnitOfWork`. Sem isso o armazém e a encomenda ficariam a discordar sobre o que chegou, e ninguém daria por isso até um teste de stocks.
 
 Não se recebe mais do que a encomenda ainda deve, e a encomenda é **bloqueada antes** de se ler o que falta — o mesmo problema e a mesma solução do "não faturar mais do que a guia moveu". Mercadoria que chega sem encomenda é aceite: acontece, e recusá-la não ajudaria ninguém.
 

@@ -2,10 +2,13 @@
 @implements IDisposable
 @using MudBlazor
 @using Microsoft.AspNetCore.Components.Authorization
+@using Microsoft.Extensions.Localization
 @using Erp.Main.Services
 @using Erp.Main.Theme
+@using Erp.Main.Resources
 @inject NavigationManager Navigation
 @inject CompanyState Company
+@inject IStringLocalizer<MainResources> Localizer
 
 <MudThemeProvider Theme="AppTheme.Default" @bind-IsDarkMode="_isDarkMode" />
 @* Required by every component that opens an overlay: selects, date pickers and menus. *@
@@ -38,11 +41,17 @@
             </Authorized>
         </AuthorizeView>
 
-        <MudTooltip Text="@(_isDarkMode ? "Modo claro" : "Modo escuro")">
+        <MudTooltip Text="@(_isDarkMode ? Localizer["Layout_LightMode"] : Localizer["Layout_DarkMode"])">
             <MudIconButton Color="Color.Inherit"
                            Icon="@(_isDarkMode ? Icons.Material.Filled.LightMode : Icons.Material.Filled.DarkMode)"
                            OnClick="@ToggleDarkMode" />
         </MudTooltip>
+
+        <MudMenu Icon="@Icons.Material.Filled.Language" Color="Color.Inherit" Class="ml-1"
+                 AnchorOrigin="Origin.BottomRight" TransformOrigin="Origin.TopRight">
+            <MudMenuItem OnClick='@(() => SetCulture("pt-PT"))'>Português</MudMenuItem>
+            <MudMenuItem OnClick='@(() => SetCulture("en-US"))'>English</MudMenuItem>
+        </MudMenu>
 
         <AuthorizeView>
             <Authorized>
@@ -56,7 +65,7 @@
                         </MudTooltip>
                     </ActivatorContent>
                     <ChildContent>
-                        <MudMenuItem Icon="@Icons.Material.Filled.Logout" OnClick="@Logout">Terminar sessão</MudMenuItem>
+                        <MudMenuItem Icon="@Icons.Material.Filled.Logout" OnClick="@Logout">@Localizer["Layout_Logout"]</MudMenuItem>
                     </ChildContent>
                 </MudMenu>
             </Authorized>
@@ -108,6 +117,14 @@
     {
         var currentPath = "/" + Navigation.ToBaseRelativePath(Navigation.Uri);
         Navigation.NavigateTo($"authentication/logout?returnUrl={Uri.EscapeDataString(currentPath)}", forceLoad: true);
+    }
+
+    private void SetCulture(string culture)
+    {
+        var currentPath = "/" + Navigation.ToBaseRelativePath(Navigation.Uri);
+        Navigation.NavigateTo(
+            $"/culture/set?culture={Uri.EscapeDataString(culture)}&redirectUri={Uri.EscapeDataString(currentPath)}",
+            forceLoad: true);
     }
 
     public void Dispose() => Company.Changed -= OnCompanyStateChanged;

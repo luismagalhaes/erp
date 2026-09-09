@@ -1,8 +1,11 @@
 @page "/access-denied"
 @layout Erp.Main.Layout.MainLayout
 @using Microsoft.AspNetCore.Components.Web
+@using Microsoft.Extensions.Localization
+@using Erp.Main.Resources
+@inject IStringLocalizer<MainResources> Localizer
 
-<PageTitle>Access Denied</PageTitle>
+<PageTitle>@Localizer["AccessDenied_PageTitle"]</PageTitle>
 
-<h3>Access Denied</h3>
-<p>You do not have permission to access this page.</p>
+<h3>@Localizer["AccessDenied_Heading"]</h3>
+<p>@Localizer["AccessDenied_Message"]</p>

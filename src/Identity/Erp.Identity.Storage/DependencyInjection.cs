@@ -1,7 +1,9 @@
 using Erp.Identity.Data;
 using Erp.Identity.Infrastructure.Storage;
+using Erp.Identity.Storage.Services;
 using Erp.Identity.Storage.Storage;
 using Duende.IdentityServer.EntityFramework.DbContexts;
+using Duende.IdentityServer.Services;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
@@ -64,6 +66,10 @@ public static class DependencyInjection
                 options.TokenCleanupInterval = 3600;
             })
             .AddAspNetIdentity<ApplicationUser>();
+
+        // Overrides the default AspNetIdentity profile service so the "locale" claim (part of
+        // the standard "profile" scope) is issued from ApplicationUser.PreferredLanguage.
+        services.AddTransient<IProfileService, LocalizedProfileService>();
 
         services.AddDbContextFactory<ConfigurationDbContext>(
             options => options.UseSqlServer(connectionString,

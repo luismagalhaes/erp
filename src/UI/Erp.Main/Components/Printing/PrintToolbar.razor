@@ -1,14 +1,17 @@
 @using Microsoft.JSInterop
 @using MudBlazor
+@using Microsoft.Extensions.Localization
+@using Erp.Main.Resources
 @inject IJSRuntime JS
 @inject NavigationManager Navigation
+@inject IStringLocalizer<MainResources> Localizer
 
 @* On screen only: the copy selector and the print button never reach the paper. *@
 
 <div class="print-toolbar">
     <MudButton Variant="Variant.Text" StartIcon="@Icons.Material.Filled.ArrowBack" Size="Size.Small"
                OnClick="@(() => Navigation.NavigateTo(BackUrl))">
-        Voltar
+        @Localizer["Print_BackButton"]
     </MudButton>
 
     <MudSelect T="string" Value="Copy" ValueChanged="OnCopyChanged" Dense="true" Margin="Margin.Dense"
@@ -21,7 +24,7 @@
 
     <MudButton Variant="Variant.Filled" Color="Color.Primary" Size="Size.Small"
                StartIcon="@Icons.Material.Filled.Print" OnClick="PrintAsync">
-        Imprimir
+        @Localizer["Print_PrintButton"]
     </MudButton>
 </div>
 

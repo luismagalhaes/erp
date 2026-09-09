@@ -8,11 +8,14 @@
 @using Erp.Main.Layout
 @using Erp.Main.Models
 @using Erp.Main.Services
+@using Microsoft.Extensions.Localization
+@using Erp.Main.Resources
 @inject SalesApiClient SalesApi
 @inject CoreApiClient CoreApi
 @inject CompanyState Company
+@inject IStringLocalizer<MainResources> L
 
-<PageTitle>@(_payment?.PaymentRefNo ?? "Recibo")</PageTitle>
+<PageTitle>@(_payment?.PaymentRefNo ?? L["PaymentPrint_DefaultTitle"])</PageTitle>
 
 <PrintToolbar Copy="_copy" CopyChanged="@(copy => _copy = copy)" BackUrl="@($"payments/{Id}")" />
 
@@ -22,32 +25,32 @@
 }
 else if (_payment is null)
 {
-    <MudAlert Severity="Severity.Error">@(_error ?? "Recibo não encontrado.")</MudAlert>
+    <MudAlert Severity="Severity.Error">@(_error ?? L["PaymentPrint_PaymentNotFound"])</MudAlert>
 }
 else
 {
     <PrintDocumentHeader Company="_company"
-                         Designation="Recibo"
+                         Designation="@L["PaymentPrint_Designation"]"
                          DocumentNumber="@_payment.PaymentRefNo"
                          DocumentDate="_payment.TransactionDate"
                          Copy="@_copy" />
 
     @if (_payment.Status == "A")
     {
-        <div class="print-voided">Recibo anulado</div>
+        <div class="print-voided">@L["PaymentPrint_VoidedNotice"]</div>
     }
 
     <div class="print-parties">
         <div class="print-box">
-            <div class="label">Cliente</div>
+            <div class="label">@L["PaymentPrint_CustomerLabel"]</div>
             <div><strong>@_payment.PartyName</strong></div>
-            <div>NIF @_payment.PartyTaxId</div>
+            <div>@L["PaymentPrint_TaxIdPrefix", _payment.PartyTaxId]</div>
         </div>
 
         @if (!string.IsNullOrWhiteSpace(_payment.Description))
         {
             <div class="print-box">
-                <div class="label">Observações</div>
+                <div class="label">@L["PaymentPrint_NotesLabel"]</div>
                 <div>@_payment.Description</div>
             </div>
         }
@@ -56,10 +59,10 @@ else
     <table class="print-table">
         <thead>
             <tr>
-                <th style="width: 24px;">#</th>
-                <th>Documento liquidado</th>
-                <th style="width: 80px;">Data</th>
-                <th class="num" style="width: 90px;">Valor</th>
+                <th style="width: 24px;">@L["PaymentPrint_NumberColumn"]</th>
+                <th>@L["PaymentPrint_SettledDocumentColumn"]</th>
+                <th style="width: 80px;">@L["PaymentPrint_DateColumn"]</th>
+                <th class="num" style="width: 90px;">@L["PaymentPrint_ValueColumn"]</th>
             </tr>
         </thead>
         <tbody>
@@ -80,9 +83,9 @@ else
             <table class="print-table" style="width: auto;">
                 <thead>
                     <tr>
-                        <th>Meio de pagamento</th>
-                        <th style="width: 80px;">Data</th>
-                        <th class="num" style="width: 90px;">Valor</th>
+                        <th>@L["PaymentPrint_MethodColumn"]</th>
+                        <th style="width: 80px;">@L["PaymentPrint_DateColumn"]</th>
+                        <th class="num" style="width: 90px;">@L["PaymentPrint_ValueColumn"]</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -99,15 +102,15 @@ else
         </div>
 
         <div class="print-totals">
-            <div class="row"><span>IVA</span><span>@_payment.TaxPayable.ToString("N2")</span></div>
-            <div class="row grand"><span>Total recebido</span><span>@_payment.GrossTotal.ToString("N2") EUR</span></div>
+            <div class="row"><span>@L["PaymentPrint_TaxLabel"]</span><span>@_payment.TaxPayable.ToString("N2")</span></div>
+            <div class="row grand"><span>@L["PaymentPrint_TotalReceivedLabel"]</span><span>@_payment.GrossTotal.ToString("N2") EUR</span></div>
         </div>
     </div>
 
     <PrintFiscalFooter PrintableHash="@_payment.PrintableHash"
                        Atcud="@_payment.Atcud"
                        QrCodePayload="@_payment.QrCodePayload">
-        <div>Emitido em @_payment.SystemEntryDateUtc.ToString("yyyy-MM-dd HH:mm:ss") UTC</div>
+        <div>@L["PaymentPrint_IssuedOn", _payment.SystemEntryDateUtc.ToString("yyyy-MM-dd HH:mm:ss")]</div>
     </PrintFiscalFooter>
 }
 
@@ -145,7 +148,7 @@ else
 
             if (_payment is null)
             {
-                _error = "Recibo não encontrado.";
+                _error = L["PaymentPrint_PaymentNotFound"];
                 return;
             }
 
@@ -154,7 +157,7 @@ else
         }
         catch (Exception ex)
         {
-            _error = $"Não foi possível carregar o recibo: {ex.Message}";
+            _error = L["PaymentPrint_LoadError", ex.Message];
         }
         finally
         {

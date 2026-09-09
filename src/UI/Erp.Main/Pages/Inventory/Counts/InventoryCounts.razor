@@ -7,20 +7,23 @@
 @using Erp.Main.Components.Common
 @using Erp.Main.Models
 @using Erp.Main.Services
+@using Erp.Main.Resources
+@using Microsoft.Extensions.Localization
 @inject StockApiClient StockApi
 @inject CompanyState Company
 @inject NavigationManager Navigation
+@inject IStringLocalizer<MainResources> Localizer
 
-<PageTitle>Inventários</PageTitle>
+<PageTitle>@Localizer["InventoryCounts_PageTitle"]</PageTitle>
 
 <MudStack Spacing="4">
-    <PageHeader Title="Inventários">
+    <PageHeader Title="@Localizer["InventoryCounts_PageTitle"]">
         <Actions>
             <MudButton Variant="Variant.Filled" Color="Color.Primary"
                        StartIcon="@Icons.Material.Filled.Add"
                        Disabled="@(!Company.HasCompany || _openCount is not null)"
                        OnClick="@(() => Navigation.NavigateTo("inventory-counts/new"))">
-                Abrir contagem
+                @Localizer["InventoryCounts_OpenButton"]
             </MudButton>
         </Actions>
     </PageHeader>
@@ -30,13 +33,12 @@
         <MudAlert Severity="Severity.Info">
             <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center" Class="width-full">
                 <div>
-                    A contagem <strong>@_openCount.Reference</strong> está aberta, com
-                    @_openCount.LineCount @(_openCount.LineCount == 1 ? "artigo" : "artigos").
-                    Enquanto estiver aberta não é possível abrir outra.
+                    @string.Format(Localizer["InventoryCounts_OpenNotice"], _openCount.Reference, _openCount.LineCount,
+                             _openCount.LineCount == 1 ? Localizer["InventoryCounts_OpenSingular"] : Localizer["InventoryCounts_OpenPlural"])
                 </div>
                 <MudButton Variant="Variant.Filled" Color="Color.Primary" Size="Size.Small"
                            OnClick="@(() => Open(_openCount.Id))">
-                    Continuar
+                    @Localizer["InventoryCounts_ContinueButton"]
                 </MudButton>
             </MudStack>
         </MudAlert>
@@ -45,31 +47,31 @@
     <DataGrid T="InventoryCountListItem"
               LoadAsync="@((companyId, query, ct) => StockApi.QueryInventoryCountsAsync(companyId, query, ct))"
               SearchFields="SearchFields" DefaultOrderBy="CreatedAtUtc desc"
-              SearchPlaceholder="Procurar referência"
+              SearchPlaceholder="@Localizer["InventoryCounts_SearchPlaceholder"]"
               EmptyIcon="@Icons.Material.Filled.Inventory"
-              EmptyTitle="Sem contagens para mostrar"
-              EmptyDescription="Ajuste os filtros ou abra a primeira contagem."
-              ItemsLabel="contagens"
-              LoadErrorMessage="Não foi possível carregar as contagens">
+              EmptyTitle="@Localizer["InventoryCounts_EmptyTitle"]"
+              EmptyDescription="@Localizer["InventoryCounts_EmptyDescription"]"
+              ItemsLabel="@Localizer["InventoryCounts_ItemsLabel"]"
+              LoadErrorMessage="@Localizer["InventoryCounts_LoadError"]">
         <Columns>
-            <PropertyColumn Property="x => x.Reference" Title="Referência" CellClass="erp-mono" />
-            <PropertyColumn Property="x => x.CountDate" Title="Data" Format="yyyy-MM-dd" />
-            <PropertyColumn Property="x => x.Scope" Title="Âmbito">
+            <PropertyColumn Property="x => x.Reference" Title="@Localizer["InventoryCounts_ReferenceColumn"]" CellClass="erp-mono" />
+            <PropertyColumn Property="x => x.CountDate" Title="@Localizer["InventoryCounts_DateColumn"]" Format="yyyy-MM-dd" />
+            <PropertyColumn Property="x => x.Scope" Title="@Localizer["InventoryCounts_ScopeColumn"]">
                 <CellTemplate>
                     @ScopeLabel(context.Item.Scope)
                 </CellTemplate>
             </PropertyColumn>
-            <PropertyColumn Property="x => x.Status" Title="Estado">
+            <PropertyColumn Property="x => x.Status" Title="@Localizer["InventoryCounts_StatusColumn"]">
                 <CellTemplate>
                     <MudChip T="string" Size="Size.Small" Variant="Variant.Text"
                              Color="@(context.Item.IsOpen ? Color.Warning : Color.Success)">
-                        @(context.Item.IsOpen ? "Aberta" : "Fechada")
+                        @(context.Item.IsOpen ? Localizer["InventoryCounts_StatusOpen"] : Localizer["InventoryCounts_StatusClosed"])
                     </MudChip>
                 </CellTemplate>
             </PropertyColumn>
-            <PropertyColumn Property="x => x.LineCount" Title="Artigos"
+            <PropertyColumn Property="x => x.LineCount" Title="@Localizer["InventoryCounts_LineCountColumn"]"
                             CellClass="erp-numeric" HeaderClass="erp-numeric" />
-            <PropertyColumn Property="x => x.LinesWithDifference" Title="Com diferença"
+            <PropertyColumn Property="x => x.LinesWithDifference" Title="@Localizer["InventoryCounts_DifferenceColumn"]"
                             CellClass="erp-numeric" HeaderClass="erp-numeric">
                 <CellTemplate>
                     <MudText Typo="Typo.body2"
@@ -78,7 +80,7 @@
                     </MudText>
                 </CellTemplate>
             </PropertyColumn>
-            <PropertyColumn Property="x => x.ClosedAtUtc" Title="Fechada em" Format="yyyy-MM-dd HH:mm" />
+            <PropertyColumn Property="x => x.ClosedAtUtc" Title="@Localizer["InventoryCounts_ClosedAtColumn"]" Format="yyyy-MM-dd HH:mm" />
             <TemplateColumn Title="" Sortable="false" Filterable="false" Hideable="false"
                             StickyRight="true"
                             CellClass="erp-numeric" HeaderClass="erp-numeric">
@@ -87,7 +89,7 @@
                              AnchorOrigin="Origin.BottomRight" TransformOrigin="Origin.TopRight">
                         <MudMenuItem Icon="@(context.Item.IsOpen ? Icons.Material.Filled.Edit : Icons.Material.Filled.Visibility)"
                                      OnClick="@(() => Open(context.Item.Id))">
-                            @(context.Item.IsOpen ? "Continuar a contagem" : "Ver a contagem")
+                            @(context.Item.IsOpen ? Localizer["InventoryCounts_ContinueAction"] : Localizer["InventoryCounts_ViewAction"])
                         </MudMenuItem>
                     </MudMenu>
                 </CellTemplate>
@@ -130,11 +132,11 @@
 
     private void Open(Guid id) => Navigation.NavigateTo($"inventory-counts/{id}");
 
-    private static string ScopeLabel(string scope) => scope switch
+    private string ScopeLabel(string scope) => scope switch
     {
-        "Total" => "Empresa inteira",
-        "Warehouse" => "Um armazém",
-        "Products" => "Artigos escolhidos",
+        "Total" => Localizer["InventoryCounts_ScopeTotal"],
+        "Warehouse" => Localizer["InventoryCounts_ScopeWarehouse"],
+        "Products" => Localizer["InventoryCounts_ScopeProducts"],
         _ => scope
     };
 

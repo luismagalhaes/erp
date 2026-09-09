@@ -3,23 +3,26 @@
 @using Microsoft.AspNetCore.Authorization
 @using Microsoft.AspNetCore.Components.Web
 @using MudBlazor
+@using Microsoft.Extensions.Localization
 @using Erp.Main.Components.Common
 @using Erp.Main.Models
+@using Erp.Main.Resources
 @using Erp.Main.Services
 @inject SeriesApiClient SalesApi
 @inject CompanyState Company
 @inject NavigationManager Navigation
+@inject IStringLocalizer<MainResources> L
 
-<PageTitle>Séries de faturação</PageTitle>
+<PageTitle>@L["SeriesList_PageTitle"]</PageTitle>
 
 <MudStack Spacing="4">
-    <PageHeader Title="Séries de faturação">
+    <PageHeader Title="@L["SeriesList_PageTitle"]">
         <Actions>
             <MudButton Variant="Variant.Filled" Color="Color.Primary"
                        StartIcon="@Icons.Material.Filled.Add"
                        Disabled="@(!Company.HasCompany)"
                        OnClick="@(() => Navigation.NavigateTo("series/new"))">
-                Nova série
+                @L["SeriesList_NewSeriesButton"]
             </MudButton>
         </Actions>
     </PageHeader>
@@ -27,36 +30,36 @@
     <DataGrid T="SalesSeries"
               LoadAsync="@((companyId, query, ct) => SalesApi.QuerySeriesAsync(companyId, query, ct))"
               SearchFields="SearchFields" DefaultOrderBy="DocumentType,SeriesCode"
-              SearchPlaceholder="Procurar por tipo ou série"
+              SearchPlaceholder="@L["SeriesList_SearchPlaceholder"]"
               EmptyIcon="@Icons.Material.Filled.Numbers"
-              EmptyTitle="Sem séries para mostrar"
-              EmptyDescription="Ajuste os filtros ou crie a primeira série."
-              ItemsLabel="séries"
-              LoadErrorMessage="Não foi possível carregar as séries">
+              EmptyTitle="@L["SeriesList_EmptyTitle"]"
+              EmptyDescription="@L["SeriesList_EmptyDescription"]"
+              ItemsLabel="@L["SeriesList_ItemsLabel"]"
+              LoadErrorMessage="@L["SeriesList_LoadErrorMessage"]">
         <Columns>
-            <PropertyColumn Property="x => x.DocumentType" Title="Tipo">
+            <PropertyColumn Property="x => x.DocumentType" Title="@L["SeriesList_TypeColumn"]">
                 <CellTemplate>
                     <MudChip T="string" Size="Size.Small" Variant="Variant.Text">@context.Item.DocumentType</MudChip>
                 </CellTemplate>
             </PropertyColumn>
-            <PropertyColumn Property="x => x.SeriesCode" Title="Série" CellClass="erp-mono" />
-            <PropertyColumn Property="x => x.SelfBilling" Title="Autofaturação">
+            <PropertyColumn Property="x => x.SeriesCode" Title="@L["SeriesList_SeriesColumn"]" CellClass="erp-mono" />
+            <PropertyColumn Property="x => x.SelfBilling" Title="@L["SeriesList_SelfBillingColumn"]">
                 <CellTemplate>
                     @if (context.Item.SelfBilling)
                     {
-                        <MudTooltip Text="Numera faturas emitidas em nome do fornecedor">
+                        <MudTooltip Text="@L["SeriesList_SelfBillingTooltip"]">
                             <MudChip T="string" Size="Size.Small" Color="Color.Warning" Variant="Variant.Text">
-                                Autofaturação
+                                @L["SeriesList_SelfBillingChip"]
                             </MudChip>
                         </MudTooltip>
                     }
                 </CellTemplate>
             </PropertyColumn>
-            <PropertyColumn Property="x => x.ValidationCode" Title="Código de validação">
+            <PropertyColumn Property="x => x.ValidationCode" Title="@L["SeriesList_ValidationCodeColumn"]">
                 <CellTemplate>
                     @if (string.IsNullOrWhiteSpace(context.Item.ValidationCode))
                     {
-                        <MudText Typo="Typo.caption" Color="Color.Secondary">Por comunicar</MudText>
+                        <MudText Typo="Typo.caption" Color="Color.Secondary">@L["SeriesList_NotCommunicated"]</MudText>
                     }
                     else
                     {
@@ -64,9 +67,9 @@
                     }
                 </CellTemplate>
             </PropertyColumn>
-            <PropertyColumn Property="x => x.CurrentSequence" Title="Último n.º"
+            <PropertyColumn Property="x => x.CurrentSequence" Title="@L["SeriesList_LastNumberColumn"]"
                             CellClass="erp-numeric" HeaderClass="erp-numeric" />
-            <PropertyColumn Property="x => x.Status" Title="Estado">
+            <PropertyColumn Property="x => x.Status" Title="@L["SeriesList_StatusColumn"]">
                 <CellTemplate>
                     <MudChip T="string" Size="Size.Small" Variant="Variant.Text"
                              Color="@(context.Item.CanIssue ? Color.Success : Color.Warning)">
@@ -82,7 +85,7 @@
                              AnchorOrigin="Origin.BottomRight" TransformOrigin="Origin.TopRight">
                         <MudMenuItem Icon="@Icons.Material.Filled.Edit"
                                      OnClick="@(() => Navigation.NavigateTo($"series/{context.Item.Id}"))">
-                            Abrir série
+                            @L["SeriesList_OpenSeriesAction"]
                         </MudMenuItem>
                     </MudMenu>
                 </CellTemplate>
@@ -94,12 +97,12 @@
 @code {
     private static readonly string[] SearchFields = ["DocumentType", "SeriesCode"];
 
-    private static string DescribeStatus(string status) => status switch
+    private string DescribeStatus(string status) => status switch
     {
-        "Created" => "Criada",
-        "Communicated" => "Comunicada",
-        "Active" => "Ativa",
-        "Finalized" => "Finalizada",
+        "Created" => L["SeriesList_StatusCreated"],
+        "Communicated" => L["SeriesList_StatusCommunicated"],
+        "Active" => L["SeriesList_StatusActive"],
+        "Finalized" => L["SeriesList_StatusFinalized"],
         _ => status
     };
 }

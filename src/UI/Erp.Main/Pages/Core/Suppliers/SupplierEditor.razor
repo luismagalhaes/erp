@@ -7,28 +7,31 @@
 @using Erp.Main.Components
 @using Erp.Main.Models
 @using Erp.Main.Services
+@using Erp.Main.Resources
+@using Microsoft.Extensions.Localization
 @inject CatalogApiClient Catalog
 @inject CompanyState Company
 @inject NavigationManager Navigation
 @inject ISnackbar Snackbar
+@inject IStringLocalizer<MainResources> Localizer
 
-<PageTitle>@(IsNew ? "Novo fornecedor" : "Editar fornecedor")</PageTitle>
+<PageTitle>@(IsNew ? Localizer["SupplierEditor_NewTitle"] : Localizer["SupplierEditor_EditTitle"])</PageTitle>
 
 <MudStack Spacing="4">
     <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center">
         <MudStack Spacing="0">
-            <MudText Typo="Typo.h4">@(IsNew ? "Novo fornecedor" : "Editar fornecedor")</MudText>
+            <MudText Typo="Typo.h4">@(IsNew ? Localizer["SupplierEditor_NewTitle"] : Localizer["SupplierEditor_EditTitle"])</MudText>
             @if (!IsNew)
             {
                 <MudText Typo="Typo.body2" Color="Color.Secondary">
-                    Alterar o fornecedor não muda documentos já emitidos: cada um guarda a sua própria cópia.
+                    @Localizer["SupplierEditor_UpdateHint"]
                 </MudText>
             }
         </MudStack>
 
         <MudButton Variant="Variant.Text" StartIcon="@Icons.Material.Filled.ArrowBack"
                    OnClick="@(() => Navigation.NavigateTo("suppliers"))">
-            Voltar
+            @Localizer["Common_Back"]
         </MudButton>
     </MudStack>
 
@@ -41,7 +44,7 @@
     @if (!Company.HasCompany)
     {
         <MudAlert Severity="Severity.Warning" Dense="true">
-            Escolha uma empresa no cabeçalho antes de criar fornecedores.
+            @Localizer["SupplierEditor_NoCompanyWarning"]
         </MudAlert>
     }
 
@@ -54,14 +57,14 @@
         <MudPaper Elevation="1" Class="pa-4">
             @* ModelChanged is what re-renders this page, so the save button follows what is typed. *@
             <PartnerFormFields Model="_model" ModelChanged="OnModelChanged"
-                               AllowCodeEdit="IsNew" ShowActive="@(!IsNew)" ActiveLabel="Fornecedor ativo" />
+                               AllowCodeEdit="IsNew" ShowActive="@(!IsNew)" ActiveLabel="@Localizer["SupplierEditor_ActiveLabel"]" />
 
             <MudStack Row="true" Justify="Justify.FlexEnd" Class="mt-4">
                 <MudButton Variant="Variant.Filled" Color="Color.Primary"
                            StartIcon="@Icons.Material.Filled.Save"
                            Disabled="@(_saving || !_model.IsValid || !Company.HasCompany)"
                            OnClick="SaveAsync">
-                    Guardar
+                    @Localizer["Common_SaveButton"]
                 </MudButton>
             </MudStack>
         </MudPaper>
@@ -108,7 +111,7 @@
 
             if (supplier is null)
             {
-                _error = "Fornecedor não encontrado.";
+                _error = Localizer["SupplierEditor_NotFound"];
                 return;
             }
 
@@ -116,7 +119,7 @@
         }
         catch (Exception ex)
         {
-            _error = $"Não foi possível carregar o fornecedor: {ex.Message}";
+            _error = string.Format(Localizer["SupplierEditor_LoadError"], ex.Message);
         }
         finally
         {
@@ -147,12 +150,12 @@
                 return;
             }
 
-            Snackbar.Add(IsNew ? "Fornecedor criado." : "Fornecedor atualizado.", Severity.Success);
+            Snackbar.Add(IsNew ? Localizer["SupplierEditor_Created"].Value : Localizer["SupplierEditor_Updated"].Value, Severity.Success);
             Navigation.NavigateTo("suppliers");
         }
         catch (Exception ex)
         {
-            _error = $"Não foi possível guardar o fornecedor: {ex.Message}";
+            _error = string.Format(Localizer["SupplierEditor_SaveError"], ex.Message);
         }
         finally
         {

@@ -1,4 +1,7 @@
 @using Erp.FiscalPT.QrCode
+@using Microsoft.Extensions.Localization
+@using Erp.Main.Resources
+@inject IStringLocalizer<MainResources> Localizer
 
 @*
     The mentions whose absence is, by itself, grounds for non-conformity: the four characters of
@@ -8,13 +11,13 @@
 <div class="print-footer">
     @if (!string.IsNullOrWhiteSpace(QrCodePayload))
     {
-        <img src="@_qrCodeDataUri" alt="Código QR do documento" />
+        <img src="@_qrCodeDataUri" alt="@Localizer["Print_QrCodeAlt"]" />
     }
 
     <div class="mentions">
         @* The four characters run together, and the hyphen separates them from the notice. *@
         <div class="certified">
-            @PrintableHash-Processado por programa certificado n.º @(_certificateNumber ?? "—")/AT
+            @PrintableHash-@string.Format(Localizer["Print_CertifiedProgramNotice"].Value, _certificateNumber ?? "—")
         </div>
         <div>ATCUD: @Atcud</div>
         @if (ChildContent is not null)

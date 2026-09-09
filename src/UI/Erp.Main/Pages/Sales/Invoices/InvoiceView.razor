@@ -3,22 +3,25 @@
 @using Microsoft.AspNetCore.Authorization
 @using Microsoft.AspNetCore.Components.Web
 @using MudBlazor
+@using Microsoft.Extensions.Localization
 @using Erp.Main.Models
+@using Erp.Main.Resources
 @using Erp.Main.Services
 @inject SalesApiClient SalesApi
 @inject NavigationManager Navigation
 @inject ISnackbar Snackbar
+@inject IStringLocalizer<MainResources> L
 
-<PageTitle>@(_invoice?.DocumentNumber ?? "Documento")</PageTitle>
+<PageTitle>@(_invoice?.DocumentNumber ?? L["InvoiceView_DefaultTitle"])</PageTitle>
 
 <MudStack Spacing="4">
     <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center">
         <MudStack Spacing="0">
-            <MudText Typo="Typo.h4">@(_invoice?.DocumentNumber ?? "Documento")</MudText>
+            <MudText Typo="Typo.h4">@(_invoice?.DocumentNumber ?? L["InvoiceView_DefaultTitle"])</MudText>
             @if (_invoice is not null)
             {
                 <MudText Typo="Typo.body2" Color="Color.Secondary" Style="font-family: monospace;">
-                    ATCUD:@_invoice.Atcud
+                    @string.Format(L["InvoiceView_AtcudLabel"], _invoice.Atcud)
                 </MudText>
             }
         </MudStack>
@@ -28,11 +31,11 @@
                        StartIcon="@Icons.Material.Filled.Print"
                        Disabled="@(_invoice is null)"
                        OnClick="@(() => Navigation.NavigateTo($"invoices/{Id}/print"))">
-                Imprimir
+                @L["InvoiceView_PrintButton"]
             </MudButton>
             <MudButton Variant="Variant.Text" StartIcon="@Icons.Material.Filled.ArrowBack"
                        OnClick="@(() => Navigation.NavigateTo("invoices"))">
-                Voltar
+                @L["InvoiceView_BackButton"]
             </MudButton>
         </MudStack>
     </MudStack>
@@ -51,35 +54,35 @@
         @if (_invoice.Status == "A")
         {
             <MudAlert Severity="Severity.Warning" Dense="true">
-                Documento anulado. O registo original é preservado, como exige a certificação.
+                @L["InvoiceView_CancelledNotice"]
             </MudAlert>
         }
 
         <MudPaper Elevation="1" Class="pa-4">
             <MudGrid>
                 <MudItem xs="12" md="3">
-                    <MudText Typo="Typo.caption" Color="Color.Secondary">Cliente</MudText>
+                    <MudText Typo="Typo.caption" Color="Color.Secondary">@L["InvoiceView_CustomerLabel"]</MudText>
                     <MudText>@_invoice.CustomerName</MudText>
-                    <MudText Typo="Typo.body2" Color="Color.Secondary">NIF @_invoice.CustomerTaxId</MudText>
+                    <MudText Typo="Typo.body2" Color="Color.Secondary">@string.Format(L["InvoiceView_TaxIdLabel"], _invoice.CustomerTaxId)</MudText>
                 </MudItem>
                 <MudItem xs="12" md="3">
-                    <MudText Typo="Typo.caption" Color="Color.Secondary">Data do documento</MudText>
+                    <MudText Typo="Typo.caption" Color="Color.Secondary">@L["InvoiceView_DocumentDateLabel"]</MudText>
                     <MudText>@_invoice.DocumentDate.ToString("yyyy-MM-dd")</MudText>
                 </MudItem>
                 <MudItem xs="12" md="3">
-                    <MudText Typo="Typo.caption" Color="Color.Secondary">Registo no sistema</MudText>
+                    <MudText Typo="Typo.caption" Color="Color.Secondary">@L["InvoiceView_SystemEntryLabel"]</MudText>
                     <MudText>@_invoice.SystemEntryDateUtc.ToString("yyyy-MM-dd HH:mm:ss") UTC</MudText>
                 </MudItem>
                 <MudItem xs="12" md="3">
-                    <MudText Typo="Typo.caption" Color="Color.Secondary">Assinatura</MudText>
+                    <MudText Typo="Typo.caption" Color="Color.Secondary">@L["InvoiceView_SignatureLabel"]</MudText>
                     <MudText Style="font-family: monospace;">@_invoice.PrintableHash</MudText>
-                    <MudText Typo="Typo.body2" Color="Color.Secondary">Processado por programa certificado</MudText>
+                    <MudText Typo="Typo.body2" Color="Color.Secondary">@L["InvoiceView_CertifiedProgramNote"]</MudText>
                 </MudItem>
 
                 @if (!string.IsNullOrWhiteSpace(_invoice.RectifiedDocumentNumber))
                 {
                     <MudItem xs="12">
-                        <MudText Typo="Typo.caption" Color="Color.Secondary">Documento retificado</MudText>
+                        <MudText Typo="Typo.caption" Color="Color.Secondary">@L["InvoiceView_RectifiedDocumentLabel"]</MudText>
                         <MudText>
                             <span style="font-family: monospace;">@_invoice.RectifiedDocumentNumber</span>
                             — @_invoice.RectificationReason
@@ -92,24 +95,24 @@
         <MudPaper Elevation="1" Class="pa-2">
             <MudTable Items="_invoice.Lines" Dense="true" Hover="true" Striped="true" Breakpoint="Breakpoint.Sm">
                 <HeaderContent>
-                    <MudTh>#</MudTh>
-                    <MudTh>Código</MudTh>
-                    <MudTh>Descrição</MudTh>
-                    <MudTh Style="text-align: right;">Qtd.</MudTh>
-                    <MudTh Style="text-align: right;">Preço unit.</MudTh>
-                    <MudTh Style="text-align: right;">Base</MudTh>
-                    <MudTh Style="text-align: right;">IVA</MudTh>
-                    <MudTh Style="text-align: right;">Valor IVA</MudTh>
+                    <MudTh>@L["InvoiceView_LineNumberColumn"]</MudTh>
+                    <MudTh>@L["InvoiceView_CodeColumn"]</MudTh>
+                    <MudTh>@L["InvoiceView_DescriptionColumn"]</MudTh>
+                    <MudTh Style="text-align: right;">@L["InvoiceView_QuantityColumn"]</MudTh>
+                    <MudTh Style="text-align: right;">@L["InvoiceView_UnitPriceColumn"]</MudTh>
+                    <MudTh Style="text-align: right;">@L["InvoiceView_NetColumn"]</MudTh>
+                    <MudTh Style="text-align: right;">@L["InvoiceView_TaxColumn"]</MudTh>
+                    <MudTh Style="text-align: right;">@L["InvoiceView_TaxAmountColumn"]</MudTh>
                 </HeaderContent>
                 <RowTemplate>
-                    <MudTd DataLabel="#">@context.LineNumber</MudTd>
-                    <MudTd DataLabel="Código">@context.ProductCode</MudTd>
-                    <MudTd DataLabel="Descrição">@context.ProductDescription</MudTd>
-                    <MudTd DataLabel="Qtd." Style="text-align: right;">@context.Quantity.ToString("N3")</MudTd>
-                    <MudTd DataLabel="Preço unit." Style="text-align: right;">@context.UnitPrice.ToString("N2")</MudTd>
-                    <MudTd DataLabel="Base" Style="text-align: right;">@context.LineAmount.ToString("N2")</MudTd>
-                    <MudTd DataLabel="IVA" Style="text-align: right;">@context.TaxPercentage.ToString("N0")%</MudTd>
-                    <MudTd DataLabel="Valor IVA" Style="text-align: right;">@context.TaxAmount.ToString("N2")</MudTd>
+                    <MudTd DataLabel="@L["InvoiceView_LineNumberColumn"]">@context.LineNumber</MudTd>
+                    <MudTd DataLabel="@L["InvoiceView_CodeColumn"]">@context.ProductCode</MudTd>
+                    <MudTd DataLabel="@L["InvoiceView_DescriptionColumn"]">@context.ProductDescription</MudTd>
+                    <MudTd DataLabel="@L["InvoiceView_QuantityColumn"]" Style="text-align: right;">@context.Quantity.ToString("N3")</MudTd>
+                    <MudTd DataLabel="@L["InvoiceView_UnitPriceColumn"]" Style="text-align: right;">@context.UnitPrice.ToString("N2")</MudTd>
+                    <MudTd DataLabel="@L["InvoiceView_NetColumn"]" Style="text-align: right;">@context.LineAmount.ToString("N2")</MudTd>
+                    <MudTd DataLabel="@L["InvoiceView_TaxColumn"]" Style="text-align: right;">@context.TaxPercentage.ToString("N0")%</MudTd>
+                    <MudTd DataLabel="@L["InvoiceView_TaxAmountColumn"]" Style="text-align: right;">@context.TaxAmount.ToString("N2")</MudTd>
                 </RowTemplate>
             </MudTable>
         </MudPaper>
@@ -118,16 +121,16 @@
             <MudPaper Elevation="1" Class="pa-4" Style="min-width: 280px;">
                 <MudStack Spacing="2">
                     <MudStack Row="true" Justify="Justify.SpaceBetween">
-                        <MudText Typo="Typo.body2">Base tributável</MudText>
+                        <MudText Typo="Typo.body2">@L["InvoiceView_TaxableBaseLabel"]</MudText>
                         <MudText Typo="Typo.body2">@_invoice.NetTotal.ToString("N2")</MudText>
                     </MudStack>
                     <MudStack Row="true" Justify="Justify.SpaceBetween">
-                        <MudText Typo="Typo.body2">IVA</MudText>
+                        <MudText Typo="Typo.body2">@L["InvoiceView_TaxLabel"]</MudText>
                         <MudText Typo="Typo.body2">@_invoice.TaxPayable.ToString("N2")</MudText>
                     </MudStack>
                     <MudDivider />
                     <MudStack Row="true" Justify="Justify.SpaceBetween">
-                        <MudText Typo="Typo.h6">Total</MudText>
+                        <MudText Typo="Typo.h6">@L["InvoiceView_TotalLabel"]</MudText>
                         <MudText Typo="Typo.h6" Color="Color.Primary">@_invoice.GrossTotal.ToString("N2")</MudText>
                     </MudStack>
                 </MudStack>
@@ -135,9 +138,9 @@
         </MudStack>
 
         <MudExpansionPanels Elevation="1">
-            <MudExpansionPanel Text="Dados do código QR">
+            <MudExpansionPanel Text="@L["InvoiceView_QrDataTitle"]">
                 <MudText Typo="Typo.caption" Color="Color.Secondary" Class="mb-2">
-                    Mensagem gerada segundo a Portaria 195/2020.
+                    @L["InvoiceView_QrDataDescription"]
                 </MudText>
                 <MudPaper Elevation="0" Class="pa-3" Style="overflow-x: auto;">
                     <MudText Style="font-family: monospace; font-size: 0.8rem; white-space: nowrap;">
@@ -148,19 +151,18 @@
 
             @if (_invoice.Status != "A")
             {
-                <MudExpansionPanel Text="Anular documento">
+                <MudExpansionPanel Text="@L["InvoiceView_VoidDocumentTitle"]">
                     <MudText Typo="Typo.body2" Color="Color.Secondary" Class="mb-3">
-                        A anulação não apaga nem altera o documento: regista o novo estado e o motivo,
-                        mantendo o registo original e o seu lugar na cadeia de assinatura.
+                        @L["InvoiceView_VoidHelpText"]
                     </MudText>
                     <MudStack Row="true" Spacing="2" AlignItems="AlignItems.Center">
-                        <MudTextField @bind-Value="_voidReason" Label="Motivo" Variant="Variant.Outlined"
+                        <MudTextField @bind-Value="_voidReason" Label="@L["InvoiceView_ReasonLabel"]" Variant="Variant.Outlined"
                                       Margin="Margin.Dense" Style="max-width: 480px;" />
                         <MudButton Variant="Variant.Filled" Color="Color.Error"
                                    StartIcon="@Icons.Material.Filled.Cancel"
                                    Disabled="@(_voiding || string.IsNullOrWhiteSpace(_voidReason))"
                                    OnClick="VoidAsync">
-                            Anular
+                            @L["InvoiceView_VoidButton"]
                         </MudButton>
                     </MudStack>
                 </MudExpansionPanel>
@@ -199,11 +201,11 @@
         {
             _invoice = await SalesApi.GetInvoiceAsync(Id);
             if (_invoice is null)
-                _error = "Documento não encontrado.";
+                _error = L["InvoiceView_DocumentNotFound"];
         }
         catch (Exception ex)
         {
-            _error = $"Não foi possível carregar o documento: {ex.Message}";
+            _error = string.Format(L["InvoiceView_LoadError"], ex.Message);
         }
         finally
         {
@@ -226,13 +228,13 @@
                 return;
             }
 
-            Snackbar.Add("Documento anulado.", Severity.Success);
+            Snackbar.Add(L["InvoiceView_VoidedSuccess"], Severity.Success);
             _voidReason = string.Empty;
             await LoadAsync();
         }
         catch (Exception ex)
         {
-            _error = $"Não foi possível anular o documento: {ex.Message}";
+            _error = string.Format(L["InvoiceView_VoidError"], ex.Message);
         }
         finally
         {

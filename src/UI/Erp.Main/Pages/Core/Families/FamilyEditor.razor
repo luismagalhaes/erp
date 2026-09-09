@@ -6,20 +6,23 @@
 @using MudBlazor
 @using Erp.Main.Models
 @using Erp.Main.Services
+@using Erp.Main.Resources
+@using Microsoft.Extensions.Localization
 @inject CatalogApiClient Catalog
 @inject CompanyState Company
 @inject NavigationManager Navigation
 @inject ISnackbar Snackbar
+@inject IStringLocalizer<MainResources> L
 
-<PageTitle>@(IsNew ? "Nova família" : "Editar família")</PageTitle>
+<PageTitle>@(IsNew ? L["FamilyEditor_NewTitle"] : L["FamilyEditor_EditTitle"])</PageTitle>
 
 <MudStack Spacing="4">
     <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center">
-        <MudText Typo="Typo.h4">@(IsNew ? "Nova família" : "Editar família")</MudText>
+        <MudText Typo="Typo.h4">@(IsNew ? L["FamilyEditor_NewTitle"] : L["FamilyEditor_EditTitle"])</MudText>
 
         <MudButton Variant="Variant.Text" StartIcon="@Icons.Material.Filled.ArrowBack"
                    OnClick="@(() => Navigation.NavigateTo("product-families"))">
-            Voltar
+            @L["FamilyEditor_BackButton"]
         </MudButton>
     </MudStack>
 
@@ -37,18 +40,18 @@
         <MudPaper Elevation="1" Class="pa-4">
             <MudGrid>
                 <MudItem xs="12" md="3">
-                    <MudTextField @bind-Value="_code" Label="Código" Variant="Variant.Outlined"
+                    <MudTextField @bind-Value="_code" Label="@L["FamilyEditor_CodeLabel"]" Variant="Variant.Outlined"
                                   Required="true" Disabled="@(!IsNew)"
-                                  HelperText="@(IsNew ? null : "O código não pode ser alterado")" />
+                                  HelperText="@(IsNew ? null : L["FamilyEditor_CodeHelperText"])" />
                 </MudItem>
                 <MudItem xs="12" md="9">
-                    <MudTextField @bind-Value="_name" Label="Nome" Variant="Variant.Outlined" Required="true" />
+                    <MudTextField @bind-Value="_name" Label="@L["FamilyEditor_NameLabel"]" Variant="Variant.Outlined" Required="true" />
                 </MudItem>
 
                 @if (!IsNew)
                 {
                     <MudItem xs="12">
-                        <MudSwitch @bind-Value="_isActive" Color="Color.Primary" Label="Família ativa" />
+                        <MudSwitch @bind-Value="_isActive" Color="Color.Primary" Label="@L["FamilyEditor_ActiveLabel"]" />
                     </MudItem>
                 }
             </MudGrid>
@@ -58,7 +61,7 @@
                            StartIcon="@Icons.Material.Filled.Save"
                            Disabled="@(_saving || !CanSave)"
                            OnClick="SaveAsync">
-                    Guardar
+                    @L["FamilyEditor_SaveButton"]
                 </MudButton>
             </MudStack>
         </MudPaper>
@@ -107,7 +110,7 @@
 
             if (family is null)
             {
-                _error = "Família não encontrada.";
+                _error = L["FamilyEditor_NotFound"];
                 return;
             }
 
@@ -117,7 +120,7 @@
         }
         catch (Exception ex)
         {
-            _error = $"Não foi possível carregar a família: {ex.Message}";
+            _error = string.Format(L["FamilyEditor_LoadError"], ex.Message);
         }
         finally
         {
@@ -143,12 +146,12 @@
                 return;
             }
 
-            Snackbar.Add(IsNew ? "Família criada." : "Família atualizada.", Severity.Success);
+            Snackbar.Add(IsNew ? L["FamilyEditor_CreatedMessage"] : L["FamilyEditor_UpdatedMessage"], Severity.Success);
             Navigation.NavigateTo("product-families");
         }
         catch (Exception ex)
         {
-            _error = $"Não foi possível guardar a família: {ex.Message}";
+            _error = string.Format(L["FamilyEditor_SaveError"], ex.Message);
         }
         finally
         {

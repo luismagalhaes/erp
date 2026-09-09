@@ -6,20 +6,23 @@
 @using Erp.Main.Components.Common
 @using Erp.Main.Models
 @using Erp.Main.Services
+@using Erp.Main.Resources
+@using Microsoft.Extensions.Localization
 @inject PurchasingApiClient Purchasing
 @inject CompanyState Company
 @inject NavigationManager Navigation
+@inject IStringLocalizer<MainResources> L
 
-<PageTitle>Receções de mercadoria</PageTitle>
+<PageTitle>@L["GoodsReceipts_PageTitle"]</PageTitle>
 
 <MudStack Spacing="4">
-    <PageHeader Title="Receções">
+    <PageHeader Title="@L["GoodsReceipts_Title"]">
         <Actions>
             <MudButton Variant="Variant.Filled" Color="Color.Primary"
                        StartIcon="@Icons.Material.Filled.MoveToInbox"
                        Disabled="@(!Company.HasCompany)"
                        OnClick="@(() => Navigation.NavigateTo("goods-receipts/new"))">
-                Receber mercadoria
+                @L["GoodsReceipts_NewAction"]
             </MudButton>
         </Actions>
     </PageHeader>
@@ -27,32 +30,32 @@
     <DataGrid T="GoodsReceiptListItem"
               LoadAsync="@((companyId, query, ct) => Purchasing.QueryReceiptsAsync(companyId, query, ct))"
               SearchFields="SearchFields" DefaultOrderBy="ReceiptDate desc,Number desc"
-              SearchPlaceholder="Procurar número, fornecedor ou guia"
+              SearchPlaceholder="@L["GoodsReceipts_SearchPlaceholder"]"
               EmptyIcon="@Icons.Material.Filled.MoveToInbox"
-              EmptyTitle="Sem receções para mostrar"
-              EmptyDescription="Ajuste os filtros ou registe a primeira receção."
-              ItemsLabel="receções"
-              LoadErrorMessage="Não foi possível carregar as receções">
+              EmptyTitle="@L["GoodsReceipts_EmptyTitle"]"
+              EmptyDescription="@L["GoodsReceipts_EmptyDescription"]"
+              ItemsLabel="@L["GoodsReceipts_ItemsLabel"]"
+              LoadErrorMessage="@L["GoodsReceipts_LoadErrorMessage"]">
         <Columns>
-            <PropertyColumn Property="x => x.Number" Title="Número" CellClass="erp-mono" />
-            <PropertyColumn Property="x => x.ReceiptDate" Title="Data" Format="yyyy-MM-dd" />
-            <PropertyColumn Property="x => x.SupplierName" Title="Fornecedor" />
-            <PropertyColumn Property="x => x.SupplierDocumentNumber" Title="Documento do fornecedor">
+            <PropertyColumn Property="x => x.Number" Title="@L["GoodsReceipts_NumberColumn"]" CellClass="erp-mono" />
+            <PropertyColumn Property="x => x.ReceiptDate" Title="@L["GoodsReceipts_DateColumn"]" Format="yyyy-MM-dd" />
+            <PropertyColumn Property="x => x.SupplierName" Title="@L["GoodsReceipts_SupplierColumn"]" />
+            <PropertyColumn Property="x => x.SupplierDocumentNumber" Title="@L["GoodsReceipts_SupplierDocumentColumn"]">
                 <CellTemplate>
                     @(string.IsNullOrWhiteSpace(context.Item.SupplierDocumentNumber)
                         ? "—"
                         : context.Item.SupplierDocumentNumber)
                 </CellTemplate>
             </PropertyColumn>
-            <PropertyColumn Property="x => x.LineCount" Title="Linhas"
+            <PropertyColumn Property="x => x.LineCount" Title="@L["GoodsReceipts_LinesColumn"]"
                             CellClass="erp-numeric" HeaderClass="erp-numeric" />
-            <PropertyColumn Property="x => x.TotalCost" Title="Custo" Format="N2"
+            <PropertyColumn Property="x => x.TotalCost" Title="@L["GoodsReceipts_CostColumn"]" Format="N2"
                             CellClass="erp-numeric" HeaderClass="erp-numeric" />
-            <PropertyColumn Property="x => x.Status" Title="Estado">
+            <PropertyColumn Property="x => x.Status" Title="@L["GoodsReceipts_StatusColumn"]">
                 <CellTemplate>
                     <MudChip T="string" Size="Size.Small" Variant="Variant.Text"
                              Color="@(context.Item.IsVoided ? Color.Error : Color.Success)">
-                        @(context.Item.IsVoided ? "Anulada" : "Recebida")
+                        @(context.Item.IsVoided ? L["GoodsReceipts_VoidedStatus"] : L["GoodsReceipts_ReceivedStatus"])
                     </MudChip>
                 </CellTemplate>
             </PropertyColumn>
@@ -64,7 +67,7 @@
                              AnchorOrigin="Origin.BottomRight" TransformOrigin="Origin.TopRight">
                         <MudMenuItem Icon="@Icons.Material.Filled.Visibility"
                                      OnClick="@(() => Navigation.NavigateTo($"goods-receipts/{context.Item.Id}"))">
-                            Abrir receção
+                            @L["GoodsReceipts_OpenAction"]
                         </MudMenuItem>
                     </MudMenu>
                 </CellTemplate>

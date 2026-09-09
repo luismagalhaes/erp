@@ -6,28 +6,30 @@
 @using MudBlazor
 @using Erp.Main.Models
 @using Erp.Main.Services
+@using Erp.Main.Resources
+@using Microsoft.Extensions.Localization
 @inject PurchasingApiClient Purchasing
 @inject CatalogApiClient Catalog
 @inject StockApiClient StockApi
 @inject CompanyState Company
 @inject NavigationManager Navigation
 @inject ISnackbar Snackbar
+@inject IStringLocalizer<MainResources> L
 
-<PageTitle>Receber mercadoria</PageTitle>
+<PageTitle>@L["NewGoodsReceipt_Title"]</PageTitle>
 
 <MudStack Spacing="4">
     <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center">
         <MudStack Spacing="0">
-            <MudText Typo="Typo.h4">Receber mercadoria</MudText>
+            <MudText Typo="Typo.h4">@L["NewGoodsReceipt_Title"]</MudText>
             <MudText Typo="Typo.body2" Color="Color.Secondary">
-                Escolha o fornecedor e o que chegou. O que está por receber vem das encomendas — não é
-                preciso copiar nada à mão.
+                @L["NewGoodsReceipt_Subtitle"]
             </MudText>
         </MudStack>
 
         <MudButton Variant="Variant.Text" StartIcon="@Icons.Material.Filled.ArrowBack"
                    OnClick="@(() => Navigation.NavigateTo("goods-receipts"))">
-            Voltar
+            @L["NewGoodsReceipt_BackButton"]
         </MudButton>
     </MudStack>
 
@@ -38,7 +40,7 @@
 
     @if (!Company.HasCompany)
     {
-        <MudAlert Severity="Severity.Info">Escolha uma empresa no cabeçalho.</MudAlert>
+        <MudAlert Severity="Severity.Info">@L["NewGoodsReceipt_NoCompanyWarning"]</MudAlert>
     }
     else
     {
@@ -46,7 +48,7 @@
             <MudGrid>
                 <MudItem xs="12" md="4">
                     <MudSelect T="Guid?" Value="_supplierId" ValueChanged="OnSupplierChangedAsync"
-                               Label="Fornecedor" Variant="Variant.Outlined" Required="true">
+                               Label="@L["NewGoodsReceipt_SupplierLabel"]" Variant="Variant.Outlined" Required="true">
                         @foreach (var supplier in _suppliers)
                         {
                             <MudSelectItem T="Guid?" Value="@supplier.Id">
@@ -56,9 +58,9 @@
                     </MudSelect>
                 </MudItem>
                 <MudItem xs="12" md="3">
-                    <MudSelect T="Guid?" @bind-Value="_warehouseId" Label="Armazém"
+                    <MudSelect T="Guid?" @bind-Value="_warehouseId" Label="@L["NewGoodsReceipt_WarehouseLabel"]"
                                Variant="Variant.Outlined" Required="true"
-                               HelperText="Onde a mercadoria entra">
+                               HelperText="@L["NewGoodsReceipt_WarehouseHelp"]">
                         @foreach (var warehouse in _warehouses)
                         {
                             <MudSelectItem T="Guid?" Value="@warehouse.Id">
@@ -68,13 +70,13 @@
                     </MudSelect>
                 </MudItem>
                 <MudItem xs="12" md="2">
-                    <MudDatePicker @bind-Date="_receiptDate" Label="Data" Variant="Variant.Outlined"
+                    <MudDatePicker @bind-Date="_receiptDate" Label="@L["NewGoodsReceipt_DateLabel"]" Variant="Variant.Outlined"
                                    DateFormat="yyyy-MM-dd" />
                 </MudItem>
                 <MudItem xs="12" md="3">
-                    <MudTextField @bind-Value="_supplierDocumentNumber" Label="Guia do fornecedor"
+                    <MudTextField @bind-Value="_supplierDocumentNumber" Label="@L["NewGoodsReceipt_SupplierDocumentLabel"]"
                                   Variant="Variant.Outlined"
-                                  HelperText="O número dele, como referência" />
+                                  HelperText="@L["NewGoodsReceipt_SupplierDocumentHelp"]" />
                 </MudItem>
             </MudGrid>
         </MudPaper>
@@ -84,9 +86,9 @@
             <MudPaper Elevation="1" Class="pa-4">
                 <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center" Class="mb-3">
                     <MudStack Spacing="0">
-                        <MudText Typo="Typo.h6">Por receber</MudText>
+                        <MudText Typo="Typo.h6">@L["NewGoodsReceipt_PendingTitle"]</MudText>
                         <MudText Typo="Typo.caption" Color="Color.Secondary">
-                            Das encomendas colocadas a este fornecedor. Ajuste a quantidade se chegou só parte.
+                            @L["NewGoodsReceipt_PendingHelp"]
                         </MudText>
                     </MudStack>
                     @if (_loadingPending)
@@ -98,8 +100,7 @@
                 @if (_pending.Count == 0)
                 {
                     <MudAlert Severity="Severity.Info" Dense="true">
-                        Este fornecedor não tem nada por receber. Pode receber mesmo assim, acrescentando
-                        linhas em baixo — mercadoria que chega sem encomenda é aceite.
+                        @L["NewGoodsReceipt_NoPendingInfo"]
                     </MudAlert>
                 }
                 else
@@ -107,11 +108,11 @@
                     <MudTable Items="_pending" Dense="true" Hover="true" Striped="true" Breakpoint="Breakpoint.Sm">
                         <HeaderContent>
                             <MudTh Style="width: 60px;"></MudTh>
-                            <MudTh>Encomenda</MudTh>
-                            <MudTh>Artigo</MudTh>
-                            <MudTh Style="text-align: right;">Por receber</MudTh>
-                            <MudTh Style="width: 140px;">A receber</MudTh>
-                            <MudTh Style="width: 140px;">Custo unit.</MudTh>
+                            <MudTh>@L["NewGoodsReceipt_OrderColumn"]</MudTh>
+                            <MudTh>@L["NewGoodsReceipt_ProductColumn"]</MudTh>
+                            <MudTh Style="text-align: right;">@L["NewGoodsReceipt_PendingColumn"]</MudTh>
+                            <MudTh Style="width: 140px;">@L["NewGoodsReceipt_ToReceiveColumn"]</MudTh>
+                            <MudTh Style="width: 140px;">@L["NewGoodsReceipt_UnitCostColumn"]</MudTh>
                         </HeaderContent>
                         <RowTemplate>
                             <MudTd>
@@ -119,17 +120,17 @@
                                              ValueChanged="@(chosen => ToggleAsync(context, chosen))"
                                              Color="Color.Primary" Dense="true" />
                             </MudTd>
-                            <MudTd DataLabel="Encomenda">
+                            <MudTd DataLabel="@L["NewGoodsReceipt_OrderColumn"]">
                                 <MudStack Spacing="0">
                                     <MudText Typo="Typo.body2" Style="font-family: monospace;">
                                         @context.OrderNumber
                                     </MudText>
                                     <MudText Typo="Typo.caption" Color="Color.Secondary">
-                                        Prevista @(context.ExpectedDate?.ToString("yyyy-MM-dd") ?? "—")
+                                        @L["NewGoodsReceipt_ExpectedPrefix"] @(context.ExpectedDate?.ToString("yyyy-MM-dd") ?? "—")
                                     </MudText>
                                 </MudStack>
                             </MudTd>
-                            <MudTd DataLabel="Artigo">
+                            <MudTd DataLabel="@L["NewGoodsReceipt_ProductColumn"]">
                                 <MudStack Spacing="0">
                                     <MudText Typo="Typo.body2">@context.ProductCode</MudText>
                                     <MudText Typo="Typo.caption" Color="Color.Secondary">
@@ -137,10 +138,10 @@
                                     </MudText>
                                 </MudStack>
                             </MudTd>
-                            <MudTd DataLabel="Por receber" Style="text-align: right;">
+                            <MudTd DataLabel="@L["NewGoodsReceipt_PendingColumn"]" Style="text-align: right;">
                                 @context.PendingQuantity.ToString("N3") @context.UnitOfMeasure
                             </MudTd>
-                            <MudTd DataLabel="A receber">
+                            <MudTd DataLabel="@L["NewGoodsReceipt_ToReceiveColumn"]">
                                 @if (Chosen(context) is { } chosen)
                                 {
                                     <MudNumericField T="decimal" Value="chosen.Quantity"
@@ -149,7 +150,7 @@
                                                      Max="@context.PendingQuantity" />
                                 }
                             </MudTd>
-                            <MudTd DataLabel="Custo unit.">
+                            <MudTd DataLabel="@L["NewGoodsReceipt_UnitCostColumn"]">
                                 @if (Chosen(context) is { } chosen)
                                 {
                                     <MudNumericField @bind-Value="chosen.UnitCost" @bind-Value:after="StateHasChanged"
@@ -164,14 +165,14 @@
             <MudPaper Elevation="1" Class="pa-4">
                 <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center" Class="mb-3">
                     <MudStack Spacing="0">
-                        <MudText Typo="Typo.h6">Sem encomenda</MudText>
+                        <MudText Typo="Typo.h6">@L["NewGoodsReceipt_NoOrderTitle"]</MudText>
                         <MudText Typo="Typo.caption" Color="Color.Secondary">
-                            Mercadoria que chegou sem estar encomendada.
+                            @L["NewGoodsReceipt_NoOrderHelp"]
                         </MudText>
                     </MudStack>
                     <MudButton Variant="Variant.Outlined" Color="Color.Primary" Size="Size.Small"
                                StartIcon="@Icons.Material.Filled.Add" OnClick="AddFreeLine">
-                        Adicionar linha
+                        @L["NewGoodsReceipt_AddLineButton"]
                     </MudButton>
                 </MudStack>
 
@@ -179,18 +180,18 @@
                 {
                     <MudTable Items="_freeLines" Dense="true" Hover="true" Breakpoint="Breakpoint.Sm">
                         <HeaderContent>
-                            <MudTh Style="width: 220px;">Artigo</MudTh>
-                            <MudTh>Descrição</MudTh>
-                            <MudTh Style="width: 120px;">Qtd.</MudTh>
-                            <MudTh Style="width: 90px;">Unid.</MudTh>
-                            <MudTh Style="width: 140px;">Custo unit.</MudTh>
-                            <MudTh Style="width: 70px; text-align: right;">Ações</MudTh>
+                            <MudTh Style="width: 220px;">@L["NewGoodsReceipt_ProductColumn"]</MudTh>
+                            <MudTh>@L["NewGoodsReceipt_DescriptionColumn"]</MudTh>
+                            <MudTh Style="width: 120px;">@L["NewGoodsReceipt_QuantityColumn"]</MudTh>
+                            <MudTh Style="width: 90px;">@L["NewGoodsReceipt_UnitColumn"]</MudTh>
+                            <MudTh Style="width: 140px;">@L["NewGoodsReceipt_UnitCostColumn"]</MudTh>
+                            <MudTh Style="width: 70px; text-align: right;">@L["NewGoodsReceipt_ActionsColumn"]</MudTh>
                         </HeaderContent>
                         <RowTemplate>
-                            <MudTd DataLabel="Artigo">
+                            <MudTd DataLabel="@L["NewGoodsReceipt_ProductColumn"]">
                                 <MudSelect T="Guid?" Value="context.ProductId"
                                            ValueChanged="@(productId => OnProductChanged(context, productId))"
-                                           Margin="Margin.Dense" Clearable="true" Placeholder="Livre">
+                                           Margin="Margin.Dense" Clearable="true" Placeholder="@L["NewGoodsReceipt_FreePlaceholder"]">
                                     @foreach (var product in _products)
                                     {
                                         <MudSelectItem T="Guid?" Value="@product.Id">
@@ -199,21 +200,21 @@
                                     }
                                 </MudSelect>
                             </MudTd>
-                            <MudTd DataLabel="Descrição">
+                            <MudTd DataLabel="@L["NewGoodsReceipt_DescriptionColumn"]">
                                 <MudTextField @bind-Value="context.ProductDescription" Margin="Margin.Dense" />
                             </MudTd>
-                            <MudTd DataLabel="Qtd.">
+                            <MudTd DataLabel="@L["NewGoodsReceipt_QuantityColumn"]">
                                 <MudNumericField @bind-Value="context.Quantity" @bind-Value:after="StateHasChanged"
                                                  Margin="Margin.Dense" Min="0" />
                             </MudTd>
-                            <MudTd DataLabel="Unid.">
+                            <MudTd DataLabel="@L["NewGoodsReceipt_UnitColumn"]">
                                 <MudTextField @bind-Value="context.UnitOfMeasure" Margin="Margin.Dense" />
                             </MudTd>
-                            <MudTd DataLabel="Custo unit.">
+                            <MudTd DataLabel="@L["NewGoodsReceipt_UnitCostColumn"]">
                                 <MudNumericField @bind-Value="context.UnitCost" @bind-Value:after="StateHasChanged"
                                                  Margin="Margin.Dense" Min="0" Format="N2" />
                             </MudTd>
-                            <MudTd DataLabel="Ações" Style="text-align: right;">
+                            <MudTd DataLabel="@L["NewGoodsReceipt_ActionsColumn"]" Style="text-align: right;">
                                 <MudIconButton Size="Size.Small" Icon="@Icons.Material.Filled.Delete"
                                                Color="Color.Error"
                                                OnClick="@(() => _freeLines.Remove(context))" />
@@ -223,28 +224,28 @@
                 }
                 else
                 {
-                    <MudText Typo="Typo.body2" Color="Color.Secondary">Nenhuma.</MudText>
+                    <MudText Typo="Typo.body2" Color="Color.Secondary">@L["NewGoodsReceipt_NoLines"]</MudText>
                 }
             </MudPaper>
 
             <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center">
                 <MudStack Spacing="0">
                     <MudText Typo="Typo.caption" Color="Color.Secondary">
-                        @LineCount @(LineCount == 1 ? "linha" : "linhas") a receber
+                        @LineCount @(LineCount == 1 ? L["NewGoodsReceipt_LineCountSingular"] : L["NewGoodsReceipt_LineCountPlural"]) @L["NewGoodsReceipt_LineCountSuffix"]
                     </MudText>
-                    <MudText Typo="Typo.h6">Custo total: @TotalCost.ToString("N2")</MudText>
+                    <MudText Typo="Typo.h6">@string.Format(L["NewGoodsReceipt_TotalCostLabel"], TotalCost.ToString("N2"))</MudText>
                 </MudStack>
 
                 <MudStack Row="true" Spacing="2">
                     <MudButton Variant="Variant.Text"
                                OnClick="@(() => Navigation.NavigateTo("goods-receipts"))">
-                        Cancelar
+                        @L["NewGoodsReceipt_CancelButton"]
                     </MudButton>
                     <MudButton Variant="Variant.Filled" Color="Color.Primary"
                                StartIcon="@Icons.Material.Filled.MoveToInbox"
                                Disabled="@(_saving || !CanSave)"
                                OnClick="SaveAsync">
-                        @(_saving ? "A receber..." : "Dar entrada")
+                        @(_saving ? L["NewGoodsReceipt_SavingButton"] : L["NewGoodsReceipt_SaveButton"])
                     </MudButton>
                 </MudStack>
             </MudStack>
@@ -324,7 +325,7 @@
         }
         catch (Exception ex)
         {
-            _error = $"Não foi possível preparar a receção: {ex.Message}";
+            _error = string.Format(L["NewGoodsReceipt_LoadError"], ex.Message);
         }
         finally
         {
@@ -359,7 +360,7 @@
         }
         catch (Exception ex)
         {
-            _error = $"Não foi possível carregar o que está por receber: {ex.Message}";
+            _error = string.Format(L["NewGoodsReceipt_PendingLoadError"], ex.Message);
         }
         finally
         {
@@ -460,16 +461,16 @@
 
             if (receipt is null)
             {
-                _error = error ?? "Não foi possível dar entrada da mercadoria.";
+                _error = error ?? L["NewGoodsReceipt_SaveFallbackError"];
                 return;
             }
 
-            Snackbar.Add($"Receção {receipt.Number} registada. O stock foi atualizado.", Severity.Success);
+            Snackbar.Add(string.Format(L["NewGoodsReceipt_SaveSuccess"], receipt.Number), Severity.Success);
             Navigation.NavigateTo($"goods-receipts/{receipt.Id}");
         }
         catch (Exception ex)
         {
-            _error = $"Não foi possível dar entrada da mercadoria: {ex.Message}";
+            _error = string.Format(L["NewGoodsReceipt_SaveError"], ex.Message);
         }
         finally
         {

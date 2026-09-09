@@ -6,19 +6,22 @@
 @using MudBlazor
 @using Erp.Main.Models
 @using Erp.Main.Services
+@using Erp.Main.Resources
+@using Microsoft.Extensions.Localization
 @inject StockApiClient StockApi
 @inject CompanyState Company
 @inject NavigationManager Navigation
 @inject ISnackbar Snackbar
+@inject IStringLocalizer<MainResources> Localizer
 
-<PageTitle>Existências</PageTitle>
+<PageTitle>@Localizer["StockBalances_PageTitle"]</PageTitle>
 
 <MudStack Spacing="4">
     <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center">
         <MudStack Spacing="0">
-            <MudText Typo="Typo.h4">Existências</MudText>
+            <MudText Typo="Typo.h4">@Localizer["StockBalances_PageTitle"]</MudText>
             <MudText Typo="Typo.body2" Color="Color.Secondary">
-                Saldo por armazém. Clique numa linha para ver os movimentos que lá chegaram.
+                @Localizer["StockBalances_Subtitle"]
             </MudText>
         </MudStack>
 
@@ -26,7 +29,7 @@
                    StartIcon="@Icons.Material.Filled.FactCheck"
                    Disabled="@(!Company.HasCompany)"
                    OnClick="@(() => Navigation.NavigateTo("stock/check"))">
-            Teste de stock
+            @Localizer["StockBalances_CheckButton"]
         </MudButton>
     </MudStack>
 
@@ -38,8 +41,7 @@
     @if (Company.HasCompany && _warehouses.Count == 0 && !_loading)
     {
         <MudAlert Severity="Severity.Warning">
-            Esta empresa ainda não tem armazéns, por isso não há onde guardar stock. Criam-se na ficha
-            da empresa, no separador <strong>Armazéns</strong>.
+            @Localizer["StockBalances_NoWarehousesWarning", Localizer["StockBalances_WarehousesTabName"]]
         </MudAlert>
     }
 
@@ -47,8 +49,8 @@
         <MudGrid>
             <MudItem xs="12" md="4">
                 <MudSelect T="Guid?" Value="_warehouseId" ValueChanged="OnWarehouseChangedAsync"
-                           Label="Armazém" Variant="Variant.Outlined" Clearable="true"
-                           Placeholder="Todos">
+                           Label="@Localizer["StockBalances_WarehouseLabel"]" Variant="Variant.Outlined" Clearable="true"
+                           Placeholder="@Localizer["StockBalances_AllPlaceholder"]">
                     @foreach (var warehouse in _warehouses)
                     {
                         <MudSelectItem T="Guid?" Value="@warehouse.Id">
@@ -59,13 +61,13 @@
             </MudItem>
             <MudItem xs="12" md="4">
                 <MudTextField @bind-Value="_search" @bind-Value:after="StateHasChanged" Immediate="true"
-                              Label="Filtrar" Variant="Variant.Outlined"
+                              Label="@Localizer["StockBalances_FilterLabel"]" Variant="Variant.Outlined"
                               Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.Search"
-                              HelperText="Código ou descrição do artigo" />
+                              HelperText="@Localizer["StockBalances_FilterHelperText"]" />
             </MudItem>
             <MudItem xs="12" md="4" Class="d-flex align-center">
                 <MudSwitch @bind-Value="_onlyWithStock" @bind-Value:after="StateHasChanged"
-                           Color="Color.Primary" Label="Só com existências" />
+                           Color="Color.Primary" Label="@Localizer["StockBalances_OnlyWithStockLabel"]" />
             </MudItem>
         </MudGrid>
     </MudPaper>
@@ -75,31 +77,31 @@
                   Breakpoint="Breakpoint.Sm" T="StockBalance"
                   OnRowClick="OnRowClickAsync">
             <HeaderContent>
-                <MudTh>Artigo</MudTh>
-                <MudTh>Descrição</MudTh>
-                <MudTh>Armazém</MudTh>
-                <MudTh Style="text-align: right;">Quantidade</MudTh>
-                <MudTh Style="text-align: right;">Custo médio</MudTh>
-                <MudTh Style="text-align: right;">Valor</MudTh>
-                <MudTh>Último movimento</MudTh>
-                <MudTh Style="text-align: right;">Ações</MudTh>
+                <MudTh>@Localizer["StockBalances_ProductColumn"]</MudTh>
+                <MudTh>@Localizer["StockBalances_DescriptionColumn"]</MudTh>
+                <MudTh>@Localizer["StockBalances_WarehouseColumn"]</MudTh>
+                <MudTh Style="text-align: right;">@Localizer["StockBalances_QuantityColumn"]</MudTh>
+                <MudTh Style="text-align: right;">@Localizer["StockBalances_AverageCostColumn"]</MudTh>
+                <MudTh Style="text-align: right;">@Localizer["StockBalances_ValueColumn"]</MudTh>
+                <MudTh>@Localizer["StockBalances_LastMovementColumn"]</MudTh>
+                <MudTh Style="text-align: right;">@Localizer["StockBalances_ActionsColumn"]</MudTh>
             </HeaderContent>
             <RowTemplate>
-                <MudTd DataLabel="Artigo">
+                <MudTd DataLabel="@Localizer["StockBalances_ProductColumn"]">
                     <MudText Typo="Typo.body2" Style="font-family: monospace;">@context.ProductCode</MudText>
                 </MudTd>
-                <MudTd DataLabel="Descrição">@context.ProductDescription</MudTd>
-                <MudTd DataLabel="Armazém">@WarehouseName(context.WarehouseId)</MudTd>
-                <MudTd DataLabel="Quantidade" Style="text-align: right;">
+                <MudTd DataLabel="@Localizer["StockBalances_DescriptionColumn"]">@context.ProductDescription</MudTd>
+                <MudTd DataLabel="@Localizer["StockBalances_WarehouseColumn"]">@WarehouseName(context.WarehouseId)</MudTd>
+                <MudTd DataLabel="@Localizer["StockBalances_QuantityColumn"]" Style="text-align: right;">
                     <MudText Typo="Typo.body2"
                              Color="@(context.Quantity < 0 ? Color.Error : Color.Default)">
                         <strong>@context.Quantity.ToString("N3")</strong>
                     </MudText>
                 </MudTd>
-                <MudTd DataLabel="Custo médio" Style="text-align: right;">
+                <MudTd DataLabel="@Localizer["StockBalances_AverageCostColumn"]" Style="text-align: right;">
                     @if (context.AverageCost == 0)
                     {
-                        <MudTooltip Text="Nada com custo entrou ainda por compra ou acerto de abertura">
+                        <MudTooltip Text="@Localizer["StockBalances_NoCostTooltip"]">
                             <MudText Typo="Typo.body2" Color="Color.Secondary">—</MudText>
                         </MudTooltip>
                     }
@@ -108,20 +110,20 @@
                         <MudText Typo="Typo.body2">@context.AverageCost.ToString("N4")</MudText>
                     }
                 </MudTd>
-                <MudTd DataLabel="Valor" Style="text-align: right;">
+                <MudTd DataLabel="@Localizer["StockBalances_ValueColumn"]" Style="text-align: right;">
                     <MudText Typo="Typo.body2">@context.StockValue.ToString("N2")</MudText>
                 </MudTd>
-                <MudTd DataLabel="Último movimento">
+                <MudTd DataLabel="@Localizer["StockBalances_LastMovementColumn"]">
                     @context.LastMovementUtc.ToString("yyyy-MM-dd HH:mm")
                 </MudTd>
-                <MudTd DataLabel="Ações" Style="text-align: right;">
+                <MudTd DataLabel="@Localizer["StockBalances_ActionsColumn"]" Style="text-align: right;">
                     <MudIconButton Icon="@Icons.Material.Filled.Tune" Size="Size.Small"
-                                   title="Acertar existências"
+                                   title="@Localizer["StockBalances_AdjustTooltip"]"
                                    OnClick="@(() => OpenAdjustment(context))" />
                 </MudTd>
             </RowTemplate>
             <NoRecordsContent>
-                <MudText Typo="Typo.body2" Color="Color.Secondary">Sem existências para mostrar.</MudText>
+                <MudText Typo="Typo.body2" Color="Color.Secondary">@Localizer["StockBalances_NoRecords"]</MudText>
             </NoRecordsContent>
         </MudTable>
     </MudPaper>
@@ -130,10 +132,10 @@
     {
         <MudStack Row="true" Spacing="6" Justify="Justify.FlexEnd">
             <MudStack Spacing="0" AlignItems="AlignItems.End">
-                <MudText Typo="Typo.caption" Color="Color.Secondary">Valor das existências</MudText>
+                <MudText Typo="Typo.caption" Color="Color.Secondary">@Localizer["StockBalances_TotalValueLabel"]</MudText>
                 <MudText Typo="Typo.h6" Color="Color.Primary">@TotalValue.ToString("N2")</MudText>
                 <MudText Typo="Typo.caption" Color="Color.Secondary">
-                    Ao custo médio ponderado do que foi comprado
+                    @Localizer["StockBalances_TotalValueCaption"]
                 </MudText>
             </MudStack>
         </MudStack>
@@ -142,17 +144,16 @@
     @if (_withoutCostCount > 0)
     {
         <MudAlert Severity="Severity.Info" Dense="true">
-            @_withoutCostCount @(_withoutCostCount == 1 ? "artigo tem" : "artigos têm") existências sem
-            custo conhecido: entraram por acerto, ou antes de haver custeio. Valem zero na valorização
-            até uma compra lhes dar um preço — ou até um acerto de abertura o declarar.
+            @string.Format(Localizer["StockBalances_WithoutCostNotice"], _withoutCostCount,
+                     _withoutCostCount == 1 ? Localizer["StockBalances_WithoutCostSingular"] : Localizer["StockBalances_WithoutCostPlural"])
         </MudAlert>
     }
 
     @if (_negativeCount > 0)
     {
         <MudAlert Severity="Severity.Warning" Dense="true">
-            @_negativeCount @(_negativeCount == 1 ? "artigo tem" : "artigos têm") existências negativas:
-            saiu mercadoria que nunca entrou. O teste de stock ajuda a perceber onde.
+            @string.Format(Localizer["StockBalances_NegativeNotice"], _negativeCount,
+                     _negativeCount == 1 ? Localizer["StockBalances_NegativeSingular"] : Localizer["StockBalances_NegativePlural"])
         </MudAlert>
     }
 </MudStack>
@@ -161,7 +162,7 @@
 <MudDialog @bind-Visible="_ledgerOpen" Options="_dialogOptions">
     <TitleContent>
         <MudText Typo="Typo.h6">
-            Movimentos de @_ledgerProductCode
+            @string.Format(Localizer["StockBalances_LedgerTitle"], _ledgerProductCode)
         </MudText>
     </TitleContent>
     <DialogContent>
@@ -173,96 +174,95 @@
         {
             <MudTable Items="_ledger" Dense="true" Striped="true" Breakpoint="Breakpoint.Sm">
                 <HeaderContent>
-                    <MudTh>Data</MudTh>
-                    <MudTh>Documento</MudTh>
-                    <MudTh>Motivo</MudTh>
-                    <MudTh Style="text-align: right;">Movimento</MudTh>
-                    <MudTh Style="text-align: right;">Saldo</MudTh>
+                    <MudTh>@Localizer["StockBalances_DateColumn"]</MudTh>
+                    <MudTh>@Localizer["StockBalances_DocumentColumn"]</MudTh>
+                    <MudTh>@Localizer["StockBalances_ReasonColumn"]</MudTh>
+                    <MudTh Style="text-align: right;">@Localizer["StockBalances_MovementColumn"]</MudTh>
+                    <MudTh Style="text-align: right;">@Localizer["StockBalances_BalanceColumn"]</MudTh>
                 </HeaderContent>
                 <RowTemplate>
-                    <MudTd DataLabel="Data">@context.MovementDate.ToString("yyyy-MM-dd")</MudTd>
-                    <MudTd DataLabel="Documento">
+                    <MudTd DataLabel="@Localizer["StockBalances_DateColumn"]">@context.MovementDate.ToString("yyyy-MM-dd")</MudTd>
+                    <MudTd DataLabel="@Localizer["StockBalances_DocumentColumn"]">
                         <MudText Typo="Typo.body2" Style="font-family: monospace;">
                             @(context.SourceDocumentNumber ?? "—")
                         </MudText>
                     </MudTd>
-                    <MudTd DataLabel="Motivo">@(context.Reason ?? "—")</MudTd>
-                    <MudTd DataLabel="Movimento" Style="text-align: right;">
+                    <MudTd DataLabel="@Localizer["StockBalances_ReasonColumn"]">@(context.Reason ?? "—")</MudTd>
+                    <MudTd DataLabel="@Localizer["StockBalances_MovementColumn"]" Style="text-align: right;">
                         <MudText Typo="Typo.body2"
                                  Color="@(context.Quantity < 0 ? Color.Error : Color.Success)">
                             @(context.Quantity > 0 ? "+" : string.Empty)@context.Quantity.ToString("N3")
                         </MudText>
                     </MudTd>
-                    <MudTd DataLabel="Saldo" Style="text-align: right;">
+                    <MudTd DataLabel="@Localizer["StockBalances_BalanceColumn"]" Style="text-align: right;">
                         <strong>@context.RunningBalance.ToString("N3")</strong>
                     </MudTd>
                 </RowTemplate>
                 <NoRecordsContent>
-                    <MudText Typo="Typo.body2" Color="Color.Secondary">Sem movimentos.</MudText>
+                    <MudText Typo="Typo.body2" Color="Color.Secondary">@Localizer["StockBalances_NoMovements"]</MudText>
                 </NoRecordsContent>
             </MudTable>
         }
     </DialogContent>
     <DialogActions>
-        <MudButton OnClick="@(() => _ledgerOpen = false)">Fechar</MudButton>
+        <MudButton OnClick="@(() => _ledgerOpen = false)">@Localizer["StockBalances_CloseButton"]</MudButton>
     </DialogActions>
 </MudDialog>
 
 @* --- Acerto manual --- *@
 <MudDialog @bind-Visible="_adjustOpen" Options="_dialogOptions">
     <TitleContent>
-        <MudText Typo="Typo.h6">Acertar existências</MudText>
+        <MudText Typo="Typo.h6">@Localizer["StockBalances_AdjustTitle"]</MudText>
     </TitleContent>
     <DialogContent>
         <MudText Typo="Typo.body2" Color="Color.Secondary" Class="mb-3">
-            O acerto não corrige o passado: escreve um movimento novo, e ambos ficam visíveis.
+            @Localizer["StockBalances_AdjustDescription"]
         </MudText>
 
         <MudGrid>
             <MudItem xs="12" md="6">
-                <MudTextField Value="@_adjustProductCode" Label="Artigo" Variant="Variant.Outlined"
+                <MudTextField Value="@_adjustProductCode" Label="@Localizer["StockBalances_ProductColumn"]" Variant="Variant.Outlined"
                               ReadOnly="true" />
             </MudItem>
             <MudItem xs="12" md="6">
-                <MudNumericField T="decimal" Value="_adjustCurrent" Label="Existência atual"
+                <MudNumericField T="decimal" Value="_adjustCurrent" Label="@Localizer["StockBalances_CurrentStockLabel"]"
                                  Variant="Variant.Outlined" ReadOnly="true" Format="N3" />
             </MudItem>
             <MudItem xs="12" md="6">
                 <MudNumericField T="decimal" Value="_adjustCounted" ValueChanged="OnCountedChanged"
-                                 Label="Quantidade contada" Variant="Variant.Outlined" Format="N3" />
+                                 Label="@Localizer["StockBalances_CountedQuantityLabel"]" Variant="Variant.Outlined" Format="N3" />
             </MudItem>
             <MudItem xs="12" md="6">
-                <MudNumericField T="decimal" Value="AdjustDifference" Label="Diferença"
+                <MudNumericField T="decimal" Value="AdjustDifference" Label="@Localizer["StockBalances_DifferenceLabel"]"
                                  Variant="Variant.Outlined" ReadOnly="true" Format="N3" />
             </MudItem>
             @if (AdjustDifference > 0)
             {
                 <MudItem xs="12" md="6">
                     <MudNumericField T="decimal?" @bind-Value="_adjustUnitCost"
-                                     Label="Custo unitário" Variant="Variant.Outlined" Format="N4"
+                                     Label="@Localizer["StockBalances_UnitCostLabel"]" Variant="Variant.Outlined" Format="N4"
                                      Clearable="true"
-                                     HelperText="Só para stock de abertura; em branco vale o custo médio atual" />
+                                     HelperText="@Localizer["StockBalances_UnitCostHelperText"]" />
                 </MudItem>
                 <MudItem xs="12" md="6" Class="d-flex align-center">
                     <MudText Typo="Typo.caption" Color="Color.Secondary">
-                        Uma contagem encontra mercadoria, não preços. Declare um custo apenas quando
-                        estiver a introduzir existências que nunca passaram por uma compra aqui.
+                        @Localizer["StockBalances_UnitCostNotice"]
                     </MudText>
                 </MudItem>
             }
             <MudItem xs="12">
                 <MudTextField @bind-Value="_adjustReason" @bind-Value:after="StateHasChanged" Immediate="true"
-                              Label="Motivo" Variant="Variant.Outlined" Required="true"
-                              HelperText="Fica no razão, e é o que explica o acerto mais tarde" />
+                              Label="@Localizer["StockBalances_ReasonLabel"]" Variant="Variant.Outlined" Required="true"
+                              HelperText="@Localizer["StockBalances_ReasonHelperText"]" />
             </MudItem>
         </MudGrid>
     </DialogContent>
     <DialogActions>
-        <MudButton OnClick="@(() => _adjustOpen = false)">Cancelar</MudButton>
+        <MudButton OnClick="@(() => _adjustOpen = false)">@Localizer["StockBalances_CancelButton"]</MudButton>
         <MudButton Variant="Variant.Filled" Color="Color.Primary"
                    Disabled="@(_adjusting || AdjustDifference == 0 || string.IsNullOrWhiteSpace(_adjustReason))"
                    OnClick="AdjustAsync">
-            Acertar
+            @Localizer["StockBalances_AdjustButton"]
         </MudButton>
     </DialogActions>
 </MudDialog>
@@ -353,7 +353,7 @@
         }
         catch (Exception ex)
         {
-            _error = $"Não foi possível carregar as existências: {ex.Message}";
+            _error = string.Format(Localizer["StockBalances_LoadError"], ex.Message);
         }
         finally
         {
@@ -397,7 +397,7 @@
         }
         catch (Exception ex)
         {
-            _error = $"Não foi possível carregar os movimentos: {ex.Message}";
+            _error = string.Format(Localizer["StockBalances_LoadLedgerError"], ex.Message);
         }
         finally
         {
@@ -443,13 +443,13 @@
                 return;
             }
 
-            Snackbar.Add($"Existências de {_adjustProductCode} acertadas.", Severity.Success);
+            Snackbar.Add(string.Format(Localizer["StockBalances_Adjusted"], _adjustProductCode), Severity.Success);
             _adjustOpen = false;
             await LoadAsync();
         }
         catch (Exception ex)
         {
-            _error = $"Não foi possível acertar as existências: {ex.Message}";
+            _error = string.Format(Localizer["StockBalances_AdjustError"], ex.Message);
         }
         finally
         {

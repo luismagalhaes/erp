@@ -6,53 +6,56 @@
 @using Erp.Main.Components.Common
 @using Erp.Main.Models
 @using Erp.Main.Services
+@using Erp.Main.Resources
+@using Microsoft.Extensions.Localization
 @inject PurchasingApiClient Purchasing
 @inject CompanyState Company
 @inject NavigationManager Navigation
+@inject IStringLocalizer<MainResources> L
 
-<PageTitle>Devoluções a fornecedores</PageTitle>
+<PageTitle>@L["SupplierReturns_Title"]</PageTitle>
 
 <MudStack Spacing="4">
-    <PageHeader Title="Devoluções a fornecedores">
+    <PageHeader Title="@L["SupplierReturns_Title"]">
         <Actions>
             <MudButton Variant="Variant.Filled" Color="Color.Primary"
                        StartIcon="@Icons.Material.Filled.Undo"
                        Disabled="@(!Company.HasCompany)"
                        OnClick="@(() => Navigation.NavigateTo("supplier-returns/new"))">
-                Devolver mercadoria
+                @L["SupplierReturns_NewButton"]
             </MudButton>
         </Actions>
     </PageHeader>
 
     <MudAlert Severity="Severity.Info" Dense="true">
-        Isto regista o <strong>movimento</strong>. Se a mercadoria viaja, o documento de transporte é
-        <strong>nosso e é fiscal</strong> — emita uma guia de devolução (GD) em
-        <MudLink Href="stock-movements/new">Guias de transporte</MudLink>.
+        @L["SupplierReturns_InfoAlertPrefix"] <strong>@L["SupplierReturns_InfoAlertMovement"]</strong>. @L["SupplierReturns_InfoAlertMiddle"]
+        <strong>@L["SupplierReturns_InfoAlertEmphasis"]</strong> @L["SupplierReturns_InfoAlertSuffix"]
+        <MudLink Href="stock-movements/new">@L["SupplierReturns_InfoAlertLink"]</MudLink>.
     </MudAlert>
 
     <DataGrid T="SupplierReturnListItem"
               LoadAsync="@((companyId, query, ct) => Purchasing.QueryReturnsAsync(companyId, query, ct))"
               SearchFields="SearchFields" DefaultOrderBy="ReturnDate desc,Number desc"
-              SearchPlaceholder="Procurar número, fornecedor ou motivo"
+              SearchPlaceholder="@L["SupplierReturns_SearchPlaceholder"]"
               EmptyIcon="@Icons.Material.Filled.Undo"
-              EmptyTitle="Sem devoluções para mostrar"
-              EmptyDescription="Ajuste os filtros ou registe a primeira devolução."
-              ItemsLabel="devoluções"
-              LoadErrorMessage="Não foi possível carregar as devoluções">
+              EmptyTitle="@L["SupplierReturns_EmptyTitle"]"
+              EmptyDescription="@L["SupplierReturns_EmptyDescription"]"
+              ItemsLabel="@L["SupplierReturns_ItemsLabel"]"
+              LoadErrorMessage="@L["SupplierReturns_LoadErrorMessage"]">
         <Columns>
-            <PropertyColumn Property="x => x.Number" Title="Número" CellClass="erp-mono" />
-            <PropertyColumn Property="x => x.ReturnDate" Title="Data" Format="yyyy-MM-dd" />
-            <PropertyColumn Property="x => x.SupplierName" Title="Fornecedor" />
-            <PropertyColumn Property="x => x.Reason" Title="Motivo" />
-            <PropertyColumn Property="x => x.LineCount" Title="Linhas"
+            <PropertyColumn Property="x => x.Number" Title="@L["SupplierReturns_NumberColumn"]" CellClass="erp-mono" />
+            <PropertyColumn Property="x => x.ReturnDate" Title="@L["SupplierReturns_DateColumn"]" Format="yyyy-MM-dd" />
+            <PropertyColumn Property="x => x.SupplierName" Title="@L["SupplierReturns_SupplierColumn"]" />
+            <PropertyColumn Property="x => x.Reason" Title="@L["SupplierReturns_ReasonColumn"]" />
+            <PropertyColumn Property="x => x.LineCount" Title="@L["SupplierReturns_LinesColumn"]"
                             CellClass="erp-numeric" HeaderClass="erp-numeric" />
-            <PropertyColumn Property="x => x.TotalCost" Title="Custo" Format="N2"
+            <PropertyColumn Property="x => x.TotalCost" Title="@L["SupplierReturns_CostColumn"]" Format="N2"
                             CellClass="erp-numeric" HeaderClass="erp-numeric" />
-            <PropertyColumn Property="x => x.Status" Title="Estado">
+            <PropertyColumn Property="x => x.Status" Title="@L["SupplierReturns_StatusColumn"]">
                 <CellTemplate>
                     <MudChip T="string" Size="Size.Small" Variant="Variant.Text"
                              Color="@(context.Item.IsVoided ? Color.Error : Color.Success)">
-                        @(context.Item.IsVoided ? "Anulada" : "Devolvida")
+                        @(context.Item.IsVoided ? L["SupplierReturns_StatusVoided"] : L["SupplierReturns_StatusReturned"])
                     </MudChip>
                 </CellTemplate>
             </PropertyColumn>
@@ -64,7 +67,7 @@
                              AnchorOrigin="Origin.BottomRight" TransformOrigin="Origin.TopRight">
                         <MudMenuItem Icon="@Icons.Material.Filled.Visibility"
                                      OnClick="@(() => Navigation.NavigateTo($"supplier-returns/{context.Item.Id}"))">
-                            Abrir devolução
+                            @L["SupplierReturns_OpenAction"]
                         </MudMenuItem>
                     </MudMenu>
                 </CellTemplate>

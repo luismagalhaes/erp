@@ -6,27 +6,29 @@
 @using MudBlazor
 @using Erp.Main.Models
 @using Erp.Main.Services
+@using Microsoft.Extensions.Localization
+@using Erp.Main.Resources
 @inject SalesApiClient SalesApi
 @inject SeriesApiClient SeriesApi
 @inject CompanyState Company
 @inject NavigationManager Navigation
 @inject ISnackbar Snackbar
+@inject IStringLocalizer<MainResources> L
 
-<PageTitle>Nova nota de crédito</PageTitle>
+<PageTitle>@Heading</PageTitle>
 
 <MudStack Spacing="4">
     <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center">
         <MudStack Spacing="0">
             <MudText Typo="Typo.h4">@Heading</MudText>
             <MudText Typo="Typo.body2" Color="Color.Secondary">
-                Escolha a fatura a corrigir: as linhas vêm dela. Credite tudo, ou ajuste as quantidades
-                para creditar só uma parte.
+                @L["NewCreditNote_Description"]
             </MudText>
         </MudStack>
 
         <MudButton Variant="Variant.Text" StartIcon="@Icons.Material.Filled.ArrowBack"
                    OnClick="@(() => Navigation.NavigateTo("credit-notes"))">
-            Voltar
+            @L["NewCreditNote_BackButton"]
         </MudButton>
     </MudStack>
 
@@ -42,14 +44,14 @@
     else if (_series.Count == 0)
     {
         <MudAlert Severity="Severity.Warning">
-            Não existe nenhuma série de notas comunicada à AT. Crie uma série do tipo NC ou ND.
-            <MudLink Href="series/new" Class="ml-2">Criar série</MudLink>
+            @L["NewCreditNote_NoSeriesWarning"]
+            <MudLink Href="series/new" Class="ml-2">@L["NewCreditNote_CreateSeriesLink"]</MudLink>
         </MudAlert>
     }
     else if (_rectifiable.Count == 0)
     {
         <MudAlert Severity="Severity.Info">
-            Não há faturas por corrigir nesta empresa.
+            @L["NewCreditNote_NoRectifiableInfo"]
         </MudAlert>
     }
     else
@@ -58,34 +60,34 @@
             <MudGrid>
                 <MudItem xs="12" md="5">
                     <MudSelect T="Guid?" Value="_rectifiedDocumentId" ValueChanged="OnDocumentChangedAsync"
-                               Label="Fatura a corrigir" Variant="Variant.Outlined" Required="true">
+                               Label="@L["NewCreditNote_InvoiceToCorrectLabel"]" Variant="Variant.Outlined" Required="true">
                         @foreach (var document in _rectifiable)
                         {
                             <MudSelectItem T="Guid?" Value="@document.Id">
-                                @document.DocumentNumber — @document.CustomerName (@document.GrossTotal.ToString("N2"))
+                                @L["NewCreditNote_InvoiceOption", document.DocumentNumber, document.CustomerName, document.GrossTotal.ToString("N2")]
                             </MudSelectItem>
                         }
                     </MudSelect>
                 </MudItem>
                 <MudItem xs="12" md="3">
-                    <MudSelect @bind-Value="_seriesId" Label="Série" Variant="Variant.Outlined" Required="true">
+                    <MudSelect @bind-Value="_seriesId" Label="@L["NewCreditNote_SeriesLabel"]" Variant="Variant.Outlined" Required="true">
                         @foreach (var series in _series)
                         {
                             <MudSelectItem T="Guid" Value="@series.Id">
-                                @series.DocumentType @series.SeriesCode (próximo n.º @(series.CurrentSequence + 1))
+                                @L["NewCreditNote_SeriesNextNumber", series.DocumentType, series.SeriesCode, series.CurrentSequence + 1]
                             </MudSelectItem>
                         }
                     </MudSelect>
                 </MudItem>
                 <MudItem xs="12" md="4">
-                    <MudDatePicker @bind-Date="_documentDate" Label="Data" Variant="Variant.Outlined"
+                    <MudDatePicker @bind-Date="_documentDate" Label="@L["NewCreditNote_DateLabel"]" Variant="Variant.Outlined"
                                    DateFormat="yyyy-MM-dd" />
                 </MudItem>
 
                 <MudItem xs="12">
                     <MudTextField @bind-Value="_reason" @bind-Value:after="StateHasChanged" Immediate="true"
-                                  Label="Motivo da correção" Variant="Variant.Outlined" Required="true"
-                                  HelperText="Menção obrigatória, vai no documento e no SAF-T" />
+                                  Label="@L["NewCreditNote_ReasonLabel"]" Variant="Variant.Outlined" Required="true"
+                                  HelperText="@L["NewCreditNote_ReasonHelpText"]" />
                 </MudItem>
             </MudGrid>
         </MudPaper>
@@ -95,12 +97,12 @@
             <MudPaper Elevation="1" Class="pa-4">
                 <MudGrid>
                     <MudItem xs="12" md="4">
-                        <MudText Typo="Typo.caption" Color="Color.Secondary">Cliente</MudText>
+                        <MudText Typo="Typo.caption" Color="Color.Secondary">@L["NewCreditNote_CustomerLabel"]</MudText>
                         <MudText>@_source.CustomerName</MudText>
-                        <MudText Typo="Typo.body2" Color="Color.Secondary">NIF @_source.CustomerTaxId</MudText>
+                        <MudText Typo="Typo.body2" Color="Color.Secondary">@L["NewCreditNote_CustomerTaxIdPrefix", _source.CustomerTaxId]</MudText>
                     </MudItem>
                     <MudItem xs="12" md="4">
-                        <MudText Typo="Typo.caption" Color="Color.Secondary">Documento corrigido</MudText>
+                        <MudText Typo="Typo.caption" Color="Color.Secondary">@L["NewCreditNote_CorrectedDocumentLabel"]</MudText>
                         <MudText Style="font-family: monospace;">@_source.DocumentNumber</MudText>
                         <MudText Typo="Typo.body2" Color="Color.Secondary">
                             @_source.DocumentDate.ToString("yyyy-MM-dd") · @_source.GrossTotal.ToString("N2")
@@ -108,32 +110,32 @@
                         @if (_source.CreditedAmount > 0)
                         {
                             <MudText Typo="Typo.body2" Color="Color.Warning">
-                                Já creditado @_source.CreditedAmount.ToString("N2") · resta @Creditable.ToString("N2")
+                                @L["NewCreditNote_AlreadyCredited", _source.CreditedAmount.ToString("N2"), Creditable.ToString("N2")]
                             </MudText>
                         }
                     </MudItem>
                     <MudItem xs="12" md="4" Class="d-flex align-center justify-end">
                         <MudButtonGroup Variant="Variant.Outlined" Size="Size.Small">
-                            <MudButton OnClick="CreditEverything">Creditar tudo</MudButton>
-                            <MudButton OnClick="CreditNothing">Limpar</MudButton>
+                            <MudButton OnClick="CreditEverything">@L["NewCreditNote_CreditAllButton"]</MudButton>
+                            <MudButton OnClick="CreditNothing">@L["NewCreditNote_ClearButton"]</MudButton>
                         </MudButtonGroup>
                     </MudItem>
                 </MudGrid>
             </MudPaper>
 
             <MudPaper Elevation="1" Class="pa-4">
-                <MudText Typo="Typo.h6" Class="mb-3">Linhas a creditar</MudText>
+                <MudText Typo="Typo.h6" Class="mb-3">@L["NewCreditNote_LinesSectionTitle"]</MudText>
 
                 <MudTable Items="_lines" Dense="true" Hover="true" Striped="true" Breakpoint="Breakpoint.Sm">
                     <HeaderContent>
                         <MudTh Style="width: 60px;"></MudTh>
-                        <MudTh style="width: 90px;">Código</MudTh>
-                        <MudTh>Descrição</MudTh>
-                        <MudTh Style="width: 110px;">Qtd. faturada</MudTh>
-                        <MudTh Style="width: 130px;">Qtd. a creditar</MudTh>
-                        <MudTh Style="width: 100px; text-align: right;">Preço</MudTh>
-                        <MudTh Style="width: 70px; text-align: right;">IVA</MudTh>
-                        <MudTh Style="width: 100px; text-align: right;">Total</MudTh>
+                        <MudTh style="width: 90px;">@L["NewCreditNote_CodeColumn"]</MudTh>
+                        <MudTh>@L["NewCreditNote_DescriptionColumn"]</MudTh>
+                        <MudTh Style="width: 110px;">@L["NewCreditNote_InvoicedQuantityColumn"]</MudTh>
+                        <MudTh Style="width: 130px;">@L["NewCreditNote_CreditQuantityColumn"]</MudTh>
+                        <MudTh Style="width: 100px; text-align: right;">@L["NewCreditNote_PriceColumn"]</MudTh>
+                        <MudTh Style="width: 70px; text-align: right;">@L["NewCreditNote_TaxColumn"]</MudTh>
+                        <MudTh Style="width: 100px; text-align: right;">@L["NewCreditNote_TotalColumn"]</MudTh>
                     </HeaderContent>
                     <RowTemplate>
                         <MudTd>
@@ -141,10 +143,10 @@
                                          ValueChanged="@(selected => ToggleLine(context, selected))"
                                          Color="Color.Primary" Dense="true" />
                         </MudTd>
-                        <MudTd DataLabel="Código">@context.ProductCode</MudTd>
-                        <MudTd DataLabel="Descrição">@context.ProductDescription</MudTd>
-                        <MudTd DataLabel="Qtd. faturada">@context.InvoicedQuantity.ToString("N3")</MudTd>
-                        <MudTd DataLabel="Qtd. a creditar">
+                        <MudTd DataLabel="@L["NewCreditNote_CodeColumn"]">@context.ProductCode</MudTd>
+                        <MudTd DataLabel="@L["NewCreditNote_DescriptionColumn"]">@context.ProductDescription</MudTd>
+                        <MudTd DataLabel="@L["NewCreditNote_InvoicedQuantityColumn"]">@context.InvoicedQuantity.ToString("N3")</MudTd>
+                        <MudTd DataLabel="@L["NewCreditNote_CreditQuantityColumn"]">
                             @if (context.Selected)
                             {
                                 <MudNumericField T="decimal" Value="@context.Quantity"
@@ -156,9 +158,9 @@
                                 <MudText Typo="Typo.body2" Color="Color.Secondary">—</MudText>
                             }
                         </MudTd>
-                        <MudTd DataLabel="Preço" Style="text-align: right;">@context.UnitPrice.ToString("N2")</MudTd>
-                        <MudTd DataLabel="IVA" Style="text-align: right;">@context.TaxPercentage.ToString("N0")%</MudTd>
-                        <MudTd DataLabel="Total" Style="text-align: right;">@LineTotal(context).ToString("N2")</MudTd>
+                        <MudTd DataLabel="@L["NewCreditNote_PriceColumn"]" Style="text-align: right;">@context.UnitPrice.ToString("N2")</MudTd>
+                        <MudTd DataLabel="@L["NewCreditNote_TaxColumn"]" Style="text-align: right;">@context.TaxPercentage.ToString("N0")%</MudTd>
+                        <MudTd DataLabel="@L["NewCreditNote_TotalColumn"]" Style="text-align: right;">@LineTotal(context).ToString("N2")</MudTd>
                     </RowTemplate>
                 </MudTable>
             </MudPaper>
@@ -167,15 +169,15 @@
                 <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center">
                     <MudStack Row="true" Spacing="6">
                         <MudStack Spacing="0">
-                            <MudText Typo="Typo.caption" Color="Color.Secondary">Base tributável</MudText>
+                            <MudText Typo="Typo.caption" Color="Color.Secondary">@L["NewCreditNote_NetTotalLabel"]</MudText>
                             <MudText Typo="Typo.h6">@NetTotal.ToString("N2")</MudText>
                         </MudStack>
                         <MudStack Spacing="0">
-                            <MudText Typo="Typo.caption" Color="Color.Secondary">IVA</MudText>
+                            <MudText Typo="Typo.caption" Color="Color.Secondary">@L["NewCreditNote_TaxTotalLabel"]</MudText>
                             <MudText Typo="Typo.h6">@TaxTotal.ToString("N2")</MudText>
                         </MudStack>
                         <MudStack Spacing="0">
-                            <MudText Typo="Typo.caption" Color="Color.Secondary">Total a creditar</MudText>
+                            <MudText Typo="Typo.caption" Color="Color.Secondary">@L["NewCreditNote_GrossTotalLabel"]</MudText>
                             <MudText Typo="Typo.h5" Color="Color.Primary">@GrossTotal.ToString("N2")</MudText>
                         </MudStack>
                     </MudStack>
@@ -184,22 +186,21 @@
                                StartIcon="@Icons.Material.Filled.CreditCard"
                                Disabled="@(_issuing || !CanIssue)"
                                OnClick="IssueAsync">
-                        @(_issuing ? "A emitir..." : $"Emitir {Designation.ToLowerInvariant()}")
+                        @(_issuing ? L["NewCreditNote_IssuingButton"] : L["NewCreditNote_IssueButton", Designation.ToLowerInvariant()])
                     </MudButton>
                 </MudStack>
 
                 @if (ExceedsCreditable)
                 {
                     <MudAlert Severity="Severity.Error" Dense="true" Class="mt-3">
-                        A fatura @_source.DocumentNumber só admite mais @Creditable.ToString("N2") de crédito
-                        @(_source.CreditedAmount > 0 ? $" (já foram creditados {_source.CreditedAmount:N2})" : string.Empty).
-                        Reduza as quantidades.
+                        @L["NewCreditNote_ExceedsCreditable", _source.DocumentNumber, Creditable.ToString("N2"),
+                            (_source.CreditedAmount > 0 ? L["NewCreditNote_ExceedsCreditableAlready", _source.CreditedAmount.ToString("N2")].Value : string.Empty)]
                     </MudAlert>
                 }
                 else if (IsFullCredit)
                 {
                     <MudAlert Severity="Severity.Info" Dense="true" Class="mt-3">
-                        Crédito total: a nota anula o valor da fatura @_source.DocumentNumber.
+                        @L["NewCreditNote_FullCreditInfo", _source.DocumentNumber]
                     </MudAlert>
                 }
             </MudPaper>
@@ -227,7 +228,7 @@
 
     private string Designation => InvoiceTypes.Describe(SelectedDocumentType);
 
-    private string Heading => $"Nova {Designation.ToLowerInvariant()}";
+    private string Heading => L["NewCreditNote_Heading", Designation.ToLowerInvariant()];
 
     private decimal NetTotal => _lines.Sum(LineTotal);
 
@@ -299,7 +300,7 @@
         }
         catch (Exception ex)
         {
-            _error = $"Não foi possível preparar a emissão: {ex.Message}";
+            _error = L["NewCreditNote_LoadError", ex.Message];
         }
         finally
         {
@@ -325,7 +326,7 @@
 
         if (_source is null)
         {
-            _error = "Não foi possível carregar a fatura escolhida.";
+            _error = L["NewCreditNote_LoadSourceInvoiceError"];
             return;
         }
 
@@ -405,16 +406,16 @@
 
             if (note is null)
             {
-                _error = error ?? "Não foi possível emitir a nota.";
+                _error = error ?? L["NewCreditNote_IssueFailed"];
                 return;
             }
 
-            Snackbar.Add($"{InvoiceTypes.Describe(note.DocumentType)} {note.DocumentNumber} emitida.", Severity.Success);
+            Snackbar.Add(L["NewCreditNote_IssuedSuccess", InvoiceTypes.Describe(note.DocumentType), note.DocumentNumber].Value, Severity.Success);
             Navigation.NavigateTo($"invoices/{note.Id}");
         }
         catch (Exception ex)
         {
-            _error = $"Não foi possível emitir a nota: {ex.Message}";
+            _error = L["NewCreditNote_IssueError", ex.Message];
         }
         finally
         {

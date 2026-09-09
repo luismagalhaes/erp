@@ -1,0 +1,151 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+	<xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+	<xsd:element name="root" msdata:IsDataSet="true">
+	  <xsd:complexType>
+		<xsd:choice maxOccurs="unbounded">
+		  <xsd:element name="metadata">
+			<xsd:complexType>
+			  <xsd:sequence>
+				<xsd:element name="value" type="xsd:string" minOccurs="0" />
+			  </xsd:sequence>
+			  <xsd:attribute name="name" use="required" type="xsd:string" />
+			  <xsd:attribute name="type" type="xsd:string" />
+			  <xsd:attribute name="mimetype" type="xsd:string" />
+			  <xsd:attribute ref="xml:space" />
+			</xsd:complexType>
+		  </xsd:element>
+		  <xsd:element name="assembly">
+			<xsd:complexType>
+			  <xsd:attribute name="alias" type="xsd:string" />
+			  <xsd:attribute name="name" type="xsd:string" />
+			</xsd:complexType>
+		  </xsd:element>
+		  <xsd:element name="data">
+			<xsd:complexType>
+			  <xsd:sequence>
+				<xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+				<xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+			  </xsd:sequence>
+			  <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+			  <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+			  <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+			  <xsd:attribute ref="xml:space" />
+			</xsd:complexType>
+		  </xsd:element>
+		  <xsd:element name="resheader">
+			<xsd:complexType>
+			  <xsd:sequence>
+				<xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+			  </xsd:sequence>
+			  <xsd:attribute name="name" type="xsd:string" use="required" />
+			</xsd:complexType>
+		  </xsd:element>
+		</xsd:choice>
+	  </xsd:complexType>
+	</xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+	<value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+	<value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+	<value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+	<value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="Common_Save" xml:space="preserve">
+	<value>Guardar</value>
+  </data>
+  <data name="Common_Cancel" xml:space="preserve">
+	<value>Cancelar</value>
+  </data>
+  <data name="Common_Delete" xml:space="preserve">
+	<value>Eliminar</value>
+  </data>
+  <data name="Common_Edit" xml:space="preserve">
+	<value>Editar</value>
+  </data>
+  <data name="Common_Create" xml:space="preserve">
+	<value>Novo</value>
+  </data>
+  <data name="Common_Search" xml:space="preserve">
+	<value>Pesquisar</value>
+  </data>
+  <data name="Common_Yes" xml:space="preserve">
+	<value>Sim</value>
+  </data>
+  <data name="Common_No" xml:space="preserve">
+	<value>Não</value>
+  </data>
+  <data name="Common_Close" xml:space="preserve">
+	<value>Fechar</value>
+  </data>
+  <data name="Common_Back" xml:space="preserve">
+	<value>Voltar</value>
+  </data>
+  <data name="Common_Actions" xml:space="preserve">
+	<value>Ações</value>
+  </data>
+  <data name="Common_Loading" xml:space="preserve">
+	<value>A carregar...</value>
+  </data>
+  <data name="Common_NoRecords" xml:space="preserve">
+	<value>Sem registos.</value>
+  </data>
+  <data name="Common_Refresh" xml:space="preserve">
+	<value>Atualizar</value>
+  </data>
+  <data name="Common_ConfirmDeleteTitle" xml:space="preserve">
+	<value>Confirmar eliminação</value>
+  </data>
+  <data name="Common_ConfirmDeleteMessage" xml:space="preserve">
+	<value>Tem a certeza que pretende eliminar este registo?</value>
+  </data>
+  <data name="Validation_Required" xml:space="preserve">
+	<value>Campo obrigatório.</value>
+  </data>
+  <data name="Validation_InvalidEmail" xml:space="preserve">
+	<value>Endereço de email inválido.</value>
+  </data>
+  <data name="Validation_MaxLength" xml:space="preserve">
+	<value>O valor não pode ter mais de {0} caracteres.</value>
+  </data>
+  <data name="Validation_MinLength" xml:space="preserve">
+	<value>O valor deve ter pelo menos {0} caracteres.</value>
+  </data>
+  <data name="Validation_InvalidValue" xml:space="preserve">
+	<value>Valor inválido.</value>
+  </data>
+  <data name="Validation_PasswordsDoNotMatch" xml:space="preserve">
+	<value>As palavras-passe não coincidem.</value>
+  </data>
+  <data name="Error_Generic" xml:space="preserve">
+	<value>Ocorreu um erro inesperado. Tente novamente.</value>
+  </data>
+  <data name="Error_NotFound" xml:space="preserve">
+	<value>Registo não encontrado.</value>
+  </data>
+  <data name="Error_Unauthorized" xml:space="preserve">
+	<value>Não tem permissão para aceder a este recurso.</value>
+  </data>
+  <data name="Error_Forbidden" xml:space="preserve">
+	<value>Acesso negado.</value>
+  </data>
+  <data name="Error_SaveFailed" xml:space="preserve">
+	<value>Não foi possível guardar as alterações.</value>
+  </data>
+  <data name="Error_DeleteFailed" xml:space="preserve">
+	<value>Não foi possível eliminar o registo.</value>
+  </data>
+  <data name="Error_LoadFailed" xml:space="preserve">
+	<value>Não foi possível carregar os dados.</value>
+  </data>
+  <data name="Error_NetworkFailure" xml:space="preserve">
+	<value>Falha de comunicação com o servidor. Verifique a sua ligação.</value>
+  </data>
+</root>

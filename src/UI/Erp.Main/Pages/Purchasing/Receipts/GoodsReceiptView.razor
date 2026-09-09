@@ -5,16 +5,19 @@
 @using MudBlazor
 @using Erp.Main.Models
 @using Erp.Main.Services
+@using Erp.Main.Resources
+@using Microsoft.Extensions.Localization
 @inject PurchasingApiClient Purchasing
 @inject NavigationManager Navigation
 @inject ISnackbar Snackbar
+@inject IStringLocalizer<MainResources> L
 
-<PageTitle>@(_receipt?.Number ?? "Receção")</PageTitle>
+<PageTitle>@(_receipt?.Number ?? L["GoodsReceiptView_DefaultTitle"])</PageTitle>
 
 <MudStack Spacing="4">
     <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center">
         <MudStack Spacing="0">
-            <MudText Typo="Typo.h4">@(_receipt?.Number ?? "Receção")</MudText>
+            <MudText Typo="Typo.h4">@(_receipt?.Number ?? L["GoodsReceiptView_DefaultTitle"])</MudText>
             @if (_receipt is not null)
             {
                 <MudText Typo="Typo.body2" Color="Color.Secondary">
@@ -25,7 +28,7 @@
 
         <MudButton Variant="Variant.Text" StartIcon="@Icons.Material.Filled.ArrowBack"
                    OnClick="@(() => Navigation.NavigateTo("goods-receipts"))">
-            Voltar
+            @L["GoodsReceiptView_BackButton"]
         </MudButton>
     </MudStack>
 
@@ -40,26 +43,25 @@
     }
     else if (_receipt is null)
     {
-        <MudAlert Severity="Severity.Warning">Receção não encontrada.</MudAlert>
+        <MudAlert Severity="Severity.Warning">@L["GoodsReceiptView_NotFound"]</MudAlert>
     }
     else
     {
         @if (_receipt.IsVoided)
         {
             <MudAlert Severity="Severity.Error">
-                Anulada em @_receipt.VoidedAtUtc?.ToString("yyyy-MM-dd HH:mm"): @_receipt.VoidReason.
-                O stock que esta receção deu entrada foi retirado.
+                @string.Format(L["GoodsReceiptView_VoidedAlert"], _receipt.VoidedAtUtc?.ToString("yyyy-MM-dd HH:mm"), _receipt.VoidReason)
             </MudAlert>
         }
 
         <MudPaper Elevation="1" Class="pa-4">
             <MudGrid>
                 <MudItem xs="6" md="3">
-                    <MudText Typo="Typo.caption" Color="Color.Secondary">Contribuinte</MudText>
+                    <MudText Typo="Typo.caption" Color="Color.Secondary">@L["GoodsReceiptView_TaxIdLabel"]</MudText>
                     <MudText Typo="Typo.body1">@_receipt.Supplier.TaxId</MudText>
                 </MudItem>
                 <MudItem xs="6" md="3">
-                    <MudText Typo="Typo.caption" Color="Color.Secondary">Guia do fornecedor</MudText>
+                    <MudText Typo="Typo.caption" Color="Color.Secondary">@L["GoodsReceiptView_SupplierDocumentLabel"]</MudText>
                     <MudText Typo="Typo.body1">
                         @(string.IsNullOrWhiteSpace(_receipt.SupplierDocumentNumber)
                             ? "—"
@@ -67,11 +69,11 @@
                     </MudText>
                 </MudItem>
                 <MudItem xs="6" md="3">
-                    <MudText Typo="Typo.caption" Color="Color.Secondary">Linhas</MudText>
+                    <MudText Typo="Typo.caption" Color="Color.Secondary">@L["GoodsReceiptView_LinesLabel"]</MudText>
                     <MudText Typo="Typo.body1">@_receipt.Lines.Count</MudText>
                 </MudItem>
                 <MudItem xs="6" md="3">
-                    <MudText Typo="Typo.caption" Color="Color.Secondary">Custo total</MudText>
+                    <MudText Typo="Typo.caption" Color="Color.Secondary">@L["GoodsReceiptView_TotalCostLabel"]</MudText>
                     <MudText Typo="Typo.h6" Color="Color.Primary">@_receipt.TotalCost.ToString("N2")</MudText>
                 </MudItem>
             </MudGrid>
@@ -80,40 +82,40 @@
         <MudPaper Elevation="1" Class="pa-2">
             <MudTable Items="_receipt.Lines" Hover="true" Striped="true" Dense="true" Breakpoint="Breakpoint.Sm">
                 <ToolBarContent>
-                    <MudText Typo="Typo.h6">O que chegou</MudText>
+                    <MudText Typo="Typo.h6">@L["GoodsReceiptView_ArrivedTitle"]</MudText>
                 </ToolBarContent>
                 <HeaderContent>
-                    <MudTh Style="width: 50px;">#</MudTh>
-                    <MudTh>Artigo</MudTh>
-                    <MudTh>Descrição</MudTh>
-                    <MudTh>Origem</MudTh>
-                    <MudTh Style="text-align: right;">Quantidade</MudTh>
-                    <MudTh Style="text-align: right;">Custo unit.</MudTh>
-                    <MudTh Style="text-align: right;">Total</MudTh>
+                    <MudTh Style="width: 50px;">@L["GoodsReceiptView_NumberColumn"]</MudTh>
+                    <MudTh>@L["GoodsReceiptView_ProductColumn"]</MudTh>
+                    <MudTh>@L["GoodsReceiptView_DescriptionColumn"]</MudTh>
+                    <MudTh>@L["GoodsReceiptView_OriginColumn"]</MudTh>
+                    <MudTh Style="text-align: right;">@L["GoodsReceiptView_QuantityColumn"]</MudTh>
+                    <MudTh Style="text-align: right;">@L["GoodsReceiptView_UnitCostColumn"]</MudTh>
+                    <MudTh Style="text-align: right;">@L["GoodsReceiptView_TotalColumn"]</MudTh>
                 </HeaderContent>
                 <RowTemplate>
-                    <MudTd DataLabel="#">@context.LineNumber</MudTd>
-                    <MudTd DataLabel="Artigo">
+                    <MudTd DataLabel="@L["GoodsReceiptView_NumberColumn"]">@context.LineNumber</MudTd>
+                    <MudTd DataLabel="@L["GoodsReceiptView_ProductColumn"]">
                         <MudText Typo="Typo.body2" Style="font-family: monospace;">@context.ProductCode</MudText>
                     </MudTd>
-                    <MudTd DataLabel="Descrição">@context.ProductDescription</MudTd>
-                    <MudTd DataLabel="Origem">
+                    <MudTd DataLabel="@L["GoodsReceiptView_DescriptionColumn"]">@context.ProductDescription</MudTd>
+                    <MudTd DataLabel="@L["GoodsReceiptView_OriginColumn"]">
                         @if (context.OrderId is { } orderId)
                         {
-                            <MudLink Href="@($"purchase-orders/{orderId}")">Encomenda</MudLink>
+                            <MudLink Href="@($"purchase-orders/{orderId}")">@L["GoodsReceiptView_OrderLink"]</MudLink>
                         }
                         else
                         {
-                            <MudText Typo="Typo.caption" Color="Color.Secondary">Sem encomenda</MudText>
+                            <MudText Typo="Typo.caption" Color="Color.Secondary">@L["GoodsReceiptView_NoOrder"]</MudText>
                         }
                     </MudTd>
-                    <MudTd DataLabel="Quantidade" Style="text-align: right;">
+                    <MudTd DataLabel="@L["GoodsReceiptView_QuantityColumn"]" Style="text-align: right;">
                         @context.Quantity.ToString("N3") @context.UnitOfMeasure
                     </MudTd>
-                    <MudTd DataLabel="Custo unit." Style="text-align: right;">
+                    <MudTd DataLabel="@L["GoodsReceiptView_UnitCostColumn"]" Style="text-align: right;">
                         @context.UnitCost.ToString("N2")
                     </MudTd>
-                    <MudTd DataLabel="Total" Style="text-align: right;">@context.LineAmount.ToString("N2")</MudTd>
+                    <MudTd DataLabel="@L["GoodsReceiptView_TotalColumn"]" Style="text-align: right;">@context.LineAmount.ToString("N2")</MudTd>
                 </RowTemplate>
             </MudTable>
         </MudPaper>
@@ -121,22 +123,20 @@
         @if (!_receipt.IsVoided)
         {
             <MudExpansionPanels>
-                <MudExpansionPanel Text="Anular receção">
+                <MudExpansionPanel Text="@L["GoodsReceiptView_VoidPanelTitle"]">
                     <MudText Typo="Typo.body2" Color="Color.Secondary" Class="mb-3">
-                        Anular retira do armazém o stock que esta receção deu entrada e devolve a
-                        quantidade às encomendas. Nada é apagado: a receção fica com o motivo, e o
-                        movimento contrário fica no razão ao lado do original.
+                        @L["GoodsReceiptView_VoidHelp"]
                     </MudText>
 
                     <MudStack Row="true" Spacing="2" AlignItems="AlignItems.Center">
                         <MudTextField @bind-Value="_reason" @bind-Value:after="StateHasChanged" Immediate="true"
-                                      Label="Motivo" Variant="Variant.Outlined" Margin="Margin.Dense"
+                                      Label="@L["GoodsReceiptView_ReasonLabel"]" Variant="Variant.Outlined" Margin="Margin.Dense"
                                       Style="max-width: 480px;" />
                         <MudButton Variant="Variant.Filled" Color="Color.Error"
                                    StartIcon="@Icons.Material.Filled.Cancel"
                                    Disabled="@(_working || string.IsNullOrWhiteSpace(_reason))"
                                    OnClick="VoidAsync">
-                            Anular
+                            @L["GoodsReceiptView_VoidButton"]
                         </MudButton>
                     </MudStack>
                 </MudExpansionPanel>
@@ -169,7 +169,7 @@
         }
         catch (Exception ex)
         {
-            _error = $"Não foi possível carregar a receção: {ex.Message}";
+            _error = string.Format(L["GoodsReceiptView_LoadError"], ex.Message);
         }
         finally
         {
@@ -188,17 +188,17 @@
 
             if (receipt is null)
             {
-                _error = error ?? "Não foi possível anular a receção.";
+                _error = error ?? L["GoodsReceiptView_VoidFallbackError"];
                 return;
             }
 
             _receipt = receipt;
             _reason = string.Empty;
-            Snackbar.Add("Receção anulada. O stock foi retirado.", Severity.Success);
+            Snackbar.Add(L["GoodsReceiptView_VoidSuccess"], Severity.Success);
         }
         catch (Exception ex)
         {
-            _error = $"Não foi possível anular a receção: {ex.Message}";
+            _error = string.Format(L["GoodsReceiptView_VoidError"], ex.Message);
         }
         finally
         {

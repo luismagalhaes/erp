@@ -4,6 +4,8 @@ using Erp.Main.Models.Notification;
 using Erp.Main.Models.Purchasing;
 using Erp.Main.Models.Sales;
 using Erp.Main.Models.SeriesRegistry;
+using Erp.Main.Resources;
+using Microsoft.Extensions.Localization;
 
 namespace Erp.Main.Services;
 
@@ -11,7 +13,7 @@ namespace Erp.Main.Services;
 /// Company the user is working on. Scoped to the circuit, loaded once and shared by every page,
 /// so the selection in the header drives the whole application.
 /// </summary>
-public sealed class CompanyState(CoreApiClient coreApi)
+public sealed class CompanyState(CoreApiClient coreApi, IStringLocalizer<MainResources> localizer)
 {
     private readonly SemaphoreSlim _loadGate = new(1, 1);
 
@@ -52,7 +54,7 @@ public sealed class CompanyState(CoreApiClient coreApi)
             {
                 Companies = await coreApi.GetMyCompaniesAsync(cancellationToken);
                 SelectedCompanyId = Companies.FirstOrDefault()?.CompanyId ?? Guid.Empty;
-                LoadError = Companies.Count == 0 ? "A sua conta não tem nenhuma empresa associada." : null;
+                LoadError = Companies.Count == 0 ? localizer["CompanyState_NoCompanyAssociated"] : null;
             }
             catch (Exception ex)
             {
@@ -60,7 +62,7 @@ public sealed class CompanyState(CoreApiClient coreApi)
                 // tear down the circuit and freeze the whole UI instead of showing the problem.
                 Companies = [];
                 SelectedCompanyId = Guid.Empty;
-                LoadError = $"Não foi possível carregar as empresas: {ex.Message}";
+                LoadError = localizer["CompanyState_LoadError", ex.Message];
             }
 
             IsLoaded = true;

@@ -5,16 +5,19 @@
 @using MudBlazor
 @using Erp.Main.Models
 @using Erp.Main.Services
+@using Microsoft.Extensions.Localization
+@using Erp.Main.Resources
 @inject SalesApiClient SalesApi
 @inject NavigationManager Navigation
 @inject ISnackbar Snackbar
+@inject IStringLocalizer<MainResources> L
 
-<PageTitle>@(_movement?.DocumentNumber ?? "Guia")</PageTitle>
+<PageTitle>@(_movement?.DocumentNumber ?? L["StockMovementView_DefaultTitle"])</PageTitle>
 
 <MudStack Spacing="4">
     <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center">
         <MudStack Spacing="0">
-            <MudText Typo="Typo.h4">@(_movement?.DocumentNumber ?? "Guia")</MudText>
+            <MudText Typo="Typo.h4">@(_movement?.DocumentNumber ?? L["StockMovementView_DefaultTitle"])</MudText>
             @if (_movement is not null)
             {
                 <MudText Typo="Typo.body2" Color="Color.Secondary">
@@ -29,11 +32,11 @@
                        StartIcon="@Icons.Material.Filled.Print"
                        Disabled="@(_movement is null)"
                        OnClick="@(() => Navigation.NavigateTo($"stock-movements/{Id}/print"))">
-                Imprimir
+                @L["StockMovementView_PrintButton"]
             </MudButton>
             <MudButton Variant="Variant.Text" StartIcon="@Icons.Material.Filled.ArrowBack"
                        OnClick="@(() => Navigation.NavigateTo("stock-movements"))">
-                Voltar
+                @L["StockMovementView_BackButton"]
             </MudButton>
         </MudStack>
     </MudStack>
@@ -52,13 +55,13 @@
         @if (_movement.Status == "A")
         {
             <MudAlert Severity="Severity.Warning" Dense="true">
-                Guia anulada. O registo original é preservado, como exige a certificação.
+                @L["StockMovementView_VoidedNotice"]
             </MudAlert>
         }
         else if (string.IsNullOrWhiteSpace(_movement.AtDocCodeId))
         {
             <MudAlert Severity="Severity.Warning" Dense="true">
-                Por comunicar à AT. O transporte só pode começar depois de comunicado e com o código atribuído.
+                @L["StockMovementView_ToCommunicateNotice"]
             </MudAlert>
         }
 
@@ -66,53 +69,53 @@
             <MudGrid>
                 <MudItem xs="12" md="3">
                     <MudText Typo="Typo.caption" Color="Color.Secondary">
-                        @(_movement.PartyIsSupplier ? "Fornecedor" : "Cliente")
+                        @(_movement.PartyIsSupplier ? L["StockMovementView_SupplierLabel"] : L["StockMovementView_CustomerLabel"])
                     </MudText>
                     <MudText>@_movement.PartyName</MudText>
-                    <MudText Typo="Typo.body2" Color="Color.Secondary">NIF @_movement.PartyTaxId</MudText>
+                    <MudText Typo="Typo.body2" Color="Color.Secondary">@L["StockMovementView_TaxIdPrefix", _movement.PartyTaxId]</MudText>
                 </MudItem>
                 <MudItem xs="12" md="3">
-                    <MudText Typo="Typo.caption" Color="Color.Secondary">Data do documento</MudText>
+                    <MudText Typo="Typo.caption" Color="Color.Secondary">@L["StockMovementView_DocumentDateLabel"]</MudText>
                     <MudText>@_movement.MovementDate.ToString("yyyy-MM-dd")</MudText>
                 </MudItem>
                 <MudItem xs="12" md="3">
-                    <MudText Typo="Typo.caption" Color="Color.Secondary">Registo no sistema</MudText>
+                    <MudText Typo="Typo.caption" Color="Color.Secondary">@L["StockMovementView_SystemEntryLabel"]</MudText>
                     <MudText>@_movement.SystemEntryDateUtc.ToString("yyyy-MM-dd HH:mm:ss") UTC</MudText>
                 </MudItem>
                 <MudItem xs="12" md="3">
-                    <MudText Typo="Typo.caption" Color="Color.Secondary">Assinatura</MudText>
+                    <MudText Typo="Typo.caption" Color="Color.Secondary">@L["StockMovementView_SignatureLabel"]</MudText>
                     <MudText Style="font-family: monospace;">@_movement.PrintableHash</MudText>
-                    <MudText Typo="Typo.body2" Color="Color.Secondary">Processado por programa certificado</MudText>
+                    <MudText Typo="Typo.body2" Color="Color.Secondary">@L["StockMovementView_CertifiedSoftwareNote"]</MudText>
                 </MudItem>
             </MudGrid>
         </MudPaper>
 
         <MudPaper Elevation="1" Class="pa-4">
-            <MudText Typo="Typo.h6" Class="mb-3">Transporte</MudText>
+            <MudText Typo="Typo.h6" Class="mb-3">@L["StockMovementView_TransportTitle"]</MudText>
             <MudGrid>
                 <MudItem xs="12" md="4">
-                    <MudText Typo="Typo.caption" Color="Color.Secondary">Local de carga</MudText>
+                    <MudText Typo="Typo.caption" Color="Color.Secondary">@L["StockMovementView_LoadLocationLabel"]</MudText>
                     <MudText>@_movement.ShipFrom.Address</MudText>
                     <MudText Typo="Typo.body2" Color="Color.Secondary">@FormatCity(_movement.ShipFrom)</MudText>
                 </MudItem>
                 <MudItem xs="12" md="4">
-                    <MudText Typo="Typo.caption" Color="Color.Secondary">Local de descarga</MudText>
+                    <MudText Typo="Typo.caption" Color="Color.Secondary">@L["StockMovementView_UnloadLocationLabel"]</MudText>
                     <MudText>@_movement.ShipTo.Address</MudText>
                     <MudText Typo="Typo.body2" Color="Color.Secondary">@FormatCity(_movement.ShipTo)</MudText>
                 </MudItem>
                 <MudItem xs="12" md="2">
-                    <MudText Typo="Typo.caption" Color="Color.Secondary">Início do transporte</MudText>
+                    <MudText Typo="Typo.caption" Color="Color.Secondary">@L["StockMovementView_TransportStartLabel"]</MudText>
                     <MudText>@_movement.MovementStartAtUtc.ToString("yyyy-MM-dd HH:mm")</MudText>
                 </MudItem>
                 <MudItem xs="12" md="2">
-                    <MudText Typo="Typo.caption" Color="Color.Secondary">Matrícula</MudText>
+                    <MudText Typo="Typo.caption" Color="Color.Secondary">@L["StockMovementView_VehiclePlateLabel"]</MudText>
                     <MudText>@(_movement.VehiclePlate ?? "—")</MudText>
                 </MudItem>
 
                 @if (!string.IsNullOrWhiteSpace(_movement.Comments))
                 {
                     <MudItem xs="12">
-                        <MudText Typo="Typo.caption" Color="Color.Secondary">Observações</MudText>
+                        <MudText Typo="Typo.caption" Color="Color.Secondary">@L["StockMovementView_NotesLabel"]</MudText>
                         <MudText>@_movement.Comments</MudText>
                     </MudItem>
                 }
@@ -122,22 +125,22 @@
         <MudPaper Elevation="1" Class="pa-2">
             <MudTable Items="_movement.Lines" Dense="true" Hover="true" Striped="true" Breakpoint="Breakpoint.Sm">
                 <HeaderContent>
-                    <MudTh>#</MudTh>
-                    <MudTh>Código</MudTh>
-                    <MudTh>Descrição</MudTh>
-                    <MudTh Style="text-align: right;">Qtd.</MudTh>
-                    <MudTh Style="text-align: right;">Preço unit.</MudTh>
-                    <MudTh Style="text-align: right;">Base</MudTh>
-                    <MudTh Style="text-align: right;">IVA</MudTh>
+                    <MudTh>@L["StockMovementView_NumberColumn"]</MudTh>
+                    <MudTh>@L["StockMovementView_CodeColumn"]</MudTh>
+                    <MudTh>@L["StockMovementView_DescriptionColumn"]</MudTh>
+                    <MudTh Style="text-align: right;">@L["StockMovementView_QuantityColumn"]</MudTh>
+                    <MudTh Style="text-align: right;">@L["StockMovementView_UnitPriceColumn"]</MudTh>
+                    <MudTh Style="text-align: right;">@L["StockMovementView_BaseColumn"]</MudTh>
+                    <MudTh Style="text-align: right;">@L["StockMovementView_TaxColumn"]</MudTh>
                 </HeaderContent>
                 <RowTemplate>
-                    <MudTd DataLabel="#">@context.LineNumber</MudTd>
-                    <MudTd DataLabel="Código">@context.ProductCode</MudTd>
-                    <MudTd DataLabel="Descrição">@context.ProductDescription</MudTd>
-                    <MudTd DataLabel="Qtd." Style="text-align: right;">@context.Quantity.ToString("N3")</MudTd>
-                    <MudTd DataLabel="Preço unit." Style="text-align: right;">@context.UnitPrice.ToString("N2")</MudTd>
-                    <MudTd DataLabel="Base" Style="text-align: right;">@context.LineAmount.ToString("N2")</MudTd>
-                    <MudTd DataLabel="IVA" Style="text-align: right;">@context.TaxAmount.ToString("N2")</MudTd>
+                    <MudTd DataLabel="@L["StockMovementView_NumberColumn"]">@context.LineNumber</MudTd>
+                    <MudTd DataLabel="@L["StockMovementView_CodeColumn"]">@context.ProductCode</MudTd>
+                    <MudTd DataLabel="@L["StockMovementView_DescriptionColumn"]">@context.ProductDescription</MudTd>
+                    <MudTd DataLabel="@L["StockMovementView_QuantityColumn"]" Style="text-align: right;">@context.Quantity.ToString("N3")</MudTd>
+                    <MudTd DataLabel="@L["StockMovementView_UnitPriceColumn"]" Style="text-align: right;">@context.UnitPrice.ToString("N2")</MudTd>
+                    <MudTd DataLabel="@L["StockMovementView_BaseColumn"]" Style="text-align: right;">@context.LineAmount.ToString("N2")</MudTd>
+                    <MudTd DataLabel="@L["StockMovementView_TaxColumn"]" Style="text-align: right;">@context.TaxAmount.ToString("N2")</MudTd>
                 </RowTemplate>
             </MudTable>
         </MudPaper>
@@ -146,20 +149,20 @@
             <MudPaper Elevation="1" Class="pa-4" Style="min-width: 300px;">
                 <MudStack Spacing="2">
                     <MudStack Row="true" Justify="Justify.SpaceBetween">
-                        <MudText Typo="Typo.body2">Quantidade total</MudText>
+                        <MudText Typo="Typo.body2">@L["StockMovementView_TotalQuantityLabel"]</MudText>
                         <MudText Typo="Typo.body2">@_movement.TotalQuantity.ToString("N3")</MudText>
                     </MudStack>
                     <MudStack Row="true" Justify="Justify.SpaceBetween">
-                        <MudText Typo="Typo.body2">Base tributável</MudText>
+                        <MudText Typo="Typo.body2">@L["StockMovementView_NetTotalLabel"]</MudText>
                         <MudText Typo="Typo.body2">@_movement.NetTotal.ToString("N2")</MudText>
                     </MudStack>
                     <MudStack Row="true" Justify="Justify.SpaceBetween">
-                        <MudText Typo="Typo.body2">IVA</MudText>
+                        <MudText Typo="Typo.body2">@L["StockMovementView_TaxLabel"]</MudText>
                         <MudText Typo="Typo.body2">@_movement.TaxPayable.ToString("N2")</MudText>
                     </MudStack>
                     <MudDivider />
                     <MudStack Row="true" Justify="Justify.SpaceBetween">
-                        <MudText Typo="Typo.h6">Total</MudText>
+                        <MudText Typo="Typo.h6">@L["StockMovementView_TotalLabel"]</MudText>
                         <MudText Typo="Typo.h6" Color="Color.Primary">@_movement.GrossTotal.ToString("N2")</MudText>
                     </MudStack>
                 </MudStack>
@@ -167,34 +170,33 @@
         </MudStack>
 
         <MudExpansionPanels Elevation="1">
-            <MudExpansionPanel Text="Comunicação à AT" Expanded="@string.IsNullOrWhiteSpace(_movement.AtDocCodeId)">
+            <MudExpansionPanel Text="@L["StockMovementView_CommunicationTitle"]" Expanded="@string.IsNullOrWhiteSpace(_movement.AtDocCodeId)">
                 @if (string.IsNullOrWhiteSpace(_movement.AtDocCodeId))
                 {
                     <MudText Typo="Typo.body2" Color="Color.Secondary" Class="mb-3">
-                        Registe aqui o código que a AT devolve ao comunicar o documento de transporte. Enquanto não
-                        existir, a mercadoria não pode circular.
+                        @L["StockMovementView_CommunicationHelp"]
                     </MudText>
                     <MudStack Row="true" Spacing="2" AlignItems="AlignItems.Center">
-                        <MudTextField @bind-Value="_atDocCodeId" Label="Código atribuído pela AT"
+                        <MudTextField @bind-Value="_atDocCodeId" Label="@L["StockMovementView_AtCodeLabel"]"
                                       Variant="Variant.Outlined" Margin="Margin.Dense" Style="max-width: 360px;" />
                         <MudButton Variant="Variant.Filled" Color="Color.Primary"
                                    StartIcon="@Icons.Material.Filled.CloudDone"
                                    Disabled="@(_working || string.IsNullOrWhiteSpace(_atDocCodeId))"
                                    OnClick="CommunicateAsync">
-                            Registar código
+                            @L["StockMovementView_RegisterCodeButton"]
                         </MudButton>
                     </MudStack>
                 }
                 else
                 {
                     <MudAlert Severity="Severity.Success" Dense="true">
-                        Comunicada em @_movement.CommunicatedAtUtc?.ToString("yyyy-MM-dd HH:mm") UTC com o código
+                        @L["StockMovementView_CommunicatedNotice", _movement.CommunicatedAtUtc?.ToString("yyyy-MM-dd HH:mm")]
                         <strong>@_movement.AtDocCodeId</strong>.
                     </MudAlert>
                 }
             </MudExpansionPanel>
 
-            <MudExpansionPanel Text="Dados do código QR">
+            <MudExpansionPanel Text="@L["StockMovementView_QrDataTitle"]">
                 <MudPaper Elevation="0" Class="pa-3" Style="overflow-x: auto;">
                     <MudText Style="font-family: monospace; font-size: 0.8rem; white-space: nowrap;">
                         @_movement.QrCodePayload
@@ -204,19 +206,18 @@
 
             @if (_movement.Status != "A")
             {
-                <MudExpansionPanel Text="Anular guia">
+                <MudExpansionPanel Text="@L["StockMovementView_VoidMovementTitle"]">
                     <MudText Typo="Typo.body2" Color="Color.Secondary" Class="mb-3">
-                        A anulação não apaga nem altera o documento: regista o novo estado e o motivo,
-                        mantendo o registo original e o seu lugar na cadeia de assinatura.
+                        @L["StockMovementView_VoidHelp"]
                     </MudText>
                     <MudStack Row="true" Spacing="2" AlignItems="AlignItems.Center">
-                        <MudTextField @bind-Value="_voidReason" Label="Motivo" Variant="Variant.Outlined"
+                        <MudTextField @bind-Value="_voidReason" Label="@L["StockMovementView_ReasonLabel"]" Variant="Variant.Outlined"
                                       Margin="Margin.Dense" Style="max-width: 480px;" />
                         <MudButton Variant="Variant.Filled" Color="Color.Error"
                                    StartIcon="@Icons.Material.Filled.Cancel"
                                    Disabled="@(_working || string.IsNullOrWhiteSpace(_voidReason))"
                                    OnClick="VoidAsync">
-                            Anular
+                            @L["StockMovementView_VoidButton"]
                         </MudButton>
                     </MudStack>
                 </MudExpansionPanel>
@@ -256,11 +257,11 @@
         {
             _movement = await SalesApi.GetStockMovementAsync(Id);
             if (_movement is null)
-                _error = "Guia não encontrada.";
+                _error = L["StockMovementView_MovementNotFound"];
         }
         catch (Exception ex)
         {
-            _error = $"Não foi possível carregar a guia: {ex.Message}";
+            _error = L["StockMovementView_LoadError", ex.Message];
         }
         finally
         {
@@ -283,13 +284,13 @@
                 return;
             }
 
-            Snackbar.Add("Código da AT registado. A mercadoria já pode circular.", Severity.Success);
+            Snackbar.Add(L["StockMovementView_CommunicateSuccess"], Severity.Success);
             _atDocCodeId = string.Empty;
             await LoadAsync();
         }
         catch (Exception ex)
         {
-            _error = $"Não foi possível registar o código: {ex.Message}";
+            _error = L["StockMovementView_CommunicateError", ex.Message];
         }
         finally
         {
@@ -312,13 +313,13 @@
                 return;
             }
 
-            Snackbar.Add("Guia anulada.", Severity.Success);
+            Snackbar.Add(L["StockMovementView_VoidedSuccess"], Severity.Success);
             _voidReason = string.Empty;
             await LoadAsync();
         }
         catch (Exception ex)
         {
-            _error = $"Não foi possível anular a guia: {ex.Message}";
+            _error = L["StockMovementView_VoidError", ex.Message];
         }
         finally
         {

@@ -24,8 +24,8 @@
 - In Identity Backoffice listings, represent Create/Edit/Delete actions with icon buttons and keep the Actions column as the final table column.
 - Use Controllers instead of Minimal APIs to organize endpoints.
 - All page routes and navigation links in Main must be in English (`/invoices`, `/companies`, `/products`), even though the UI text shown to users stays in Portuguese.
-- The business modules (Core, Sales, Notification, and future ones) run in a single host, `src/Api`, with controllers grouped per module in `Controllers/<Module>/`. Only Identity, Notification.Worker and Main are separate processes. Each module keeps its own Domain/Infrastructure/Application/Storage projects, schema and database: the boundary is the project, not the process. Do not create a new host without an explicit reason such as independent scaling or deployment.
-- All business modules share the `api` audience; access between modules is separated by scope, not by audience.
+- The business modules (Core, SeriesRegistry, Sales, Inventory, Purchasing, Notification, and future ones) run in a single host, `src/Erp.Api`, with controllers grouped per module in `Controllers/<Module>/`. Only Erp.Identity, Erp.Notification.Worker and Erp.Main are separate processes. Each module is one project with its layers in folders (Domain/Infrastructure/Application/Storage), and they all share one database and one `AppDbContext`, each declaring its own tables through `IModuleModelConfiguration`: the boundary is the project, not the process. Do not create a new host without an explicit reason such as independent scaling or deployment.
+- All business modules share the `erp-api` audience; access between modules is separated by scope, not by audience.
 - Every host must expose a health endpoint through a `HealthController` and publish OpenAPI, with the Scalar reference available in development.
 - Blazor pages are organized one folder per feature under `Pages` (for example `Pages/Backoffice/Companies`, `Pages/Sales/Invoices`), keeping the listing and its create/edit pages together. Never leave pages loose at the root of an area.
 - In Main Blazor pages, PageHeaders must only display the title without description/subtitle. For detail/create/edit pages, use breadcrumbs in the format "<Listagem> / <Ação>" (e.g., "Artigos / Editar artigo", "Artigos / Novo artigo"), where the first level links to the listing and the last is disabled.
@@ -39,5 +39,5 @@
 - The Home page should display only authenticated user information.
 
 ## Copilot Usage Preferences
-- Write all code in English, but provide Copilot explanations and responses in Portuguese. Responder em português nas respostas do Copilot, mantendo o código em inglês.
+- Write all code in English, but provide Copilot explanations and responses in Portuguese. Responder sempre em português (pt-PT) nas mensagens/explicações do Copilot, mas manter todo o código escrito em inglês.
 - Persist recurring project preferences in .github/copilot-instructions.md to avoid repeating requests.

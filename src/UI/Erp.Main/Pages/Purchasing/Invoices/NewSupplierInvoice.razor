@@ -6,27 +6,30 @@
 @using MudBlazor
 @using Erp.Main.Models
 @using Erp.Main.Services
+@using Erp.Main.Resources
+@using Microsoft.Extensions.Localization
 @inject PurchasingApiClient Purchasing
 @inject CatalogApiClient Catalog
 @inject StockApiClient StockApi
 @inject CompanyState Company
 @inject NavigationManager Navigation
 @inject ISnackbar Snackbar
+@inject IStringLocalizer<MainResources> L
 
-<PageTitle>Registar fatura de fornecedor</PageTitle>
+<PageTitle>@L["NewSupplierInvoice_Title"]</PageTitle>
 
 <MudStack Spacing="4">
     <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center">
         <MudStack Spacing="0">
-            <MudText Typo="Typo.h4">Registar fatura de fornecedor</MudText>
+            <MudText Typo="Typo.h4">@L["NewSupplierInvoice_Title"]</MudText>
             <MudText Typo="Typo.body2" Color="Color.Secondary">
-                Escriture o documento tal como veio. O número e a data são dele; nós não emitimos nada.
+                @L["NewSupplierInvoice_Subtitle"]
             </MudText>
         </MudStack>
 
         <MudButton Variant="Variant.Text" StartIcon="@Icons.Material.Filled.ArrowBack"
                    OnClick="@(() => Navigation.NavigateTo("supplier-invoices"))">
-            Voltar
+            @L["NewSupplierInvoice_BackButton"]
         </MudButton>
     </MudStack>
 
@@ -37,16 +40,16 @@
 
     @if (!Company.HasCompany)
     {
-        <MudAlert Severity="Severity.Info">Escolha uma empresa no cabeçalho.</MudAlert>
+        <MudAlert Severity="Severity.Info">@L["NewSupplierInvoice_NoCompanyWarning"]</MudAlert>
     }
     else
     {
         <MudPaper Elevation="1" Class="pa-4">
-            <MudText Typo="Typo.h6" Class="mb-3">O documento dele</MudText>
+            <MudText Typo="Typo.h6" Class="mb-3">@L["NewSupplierInvoice_DocumentTitle"]</MudText>
             <MudGrid>
                 <MudItem xs="12" md="4">
                     <MudSelect T="Guid?" Value="_supplierId" ValueChanged="OnSupplierChangedAsync"
-                               Label="Fornecedor" Variant="Variant.Outlined" Required="true">
+                               Label="@L["NewSupplierInvoice_SupplierLabel"]" Variant="Variant.Outlined" Required="true">
                         @foreach (var supplier in _suppliers)
                         {
                             <MudSelectItem T="Guid?" Value="@supplier.Id">
@@ -57,7 +60,7 @@
                 </MudItem>
                 <MudItem xs="12" md="2">
                     <MudSelect T="string" Value="_documentType" ValueChanged="OnDocumentTypeChanged"
-                               Label="Tipo" Variant="Variant.Outlined">
+                               Label="@L["NewSupplierInvoice_TypeLabel"]" Variant="Variant.Outlined">
                         @foreach (var type in PurchaseDocumentTypes.All)
                         {
                             <MudSelectItem T="string" Value="@type.Code">@type.Label</MudSelectItem>
@@ -66,38 +69,37 @@
                 </MudItem>
                 <MudItem xs="12" md="3">
                     <MudTextField @bind-Value="_documentNumber" @bind-Value:after="StateHasChanged" Immediate="true"
-                                  Label="Número do documento" Variant="Variant.Outlined" Required="true"
-                                  HelperText="Como vem no papel" />
+                                  Label="@L["NewSupplierInvoice_DocumentNumberLabel"]" Variant="Variant.Outlined" Required="true"
+                                  HelperText="@L["NewSupplierInvoice_DocumentNumberHelp"]" />
                 </MudItem>
                 <MudItem xs="12" md="3">
-                    <MudTextField @bind-Value="_atcud" Label="ATCUD do fornecedor" Variant="Variant.Outlined"
-                                  HelperText="Se o documento trouxer" />
+                    <MudTextField @bind-Value="_atcud" Label="@L["NewSupplierInvoice_AtcudLabel"]" Variant="Variant.Outlined"
+                                  HelperText="@L["NewSupplierInvoice_AtcudHelp"]" />
                 </MudItem>
 
                 <MudItem xs="12" md="3">
-                    <MudDatePicker @bind-Date="_documentDate" Label="Data do documento"
+                    <MudDatePicker @bind-Date="_documentDate" Label="@L["NewSupplierInvoice_DocumentDateLabel"]"
                                    Variant="Variant.Outlined" DateFormat="yyyy-MM-dd" />
                 </MudItem>
                 <MudItem xs="12" md="3">
-                    <MudDatePicker @bind-Date="_receivedDate" Label="Data de receção"
+                    <MudDatePicker @bind-Date="_receivedDate" Label="@L["NewSupplierInvoice_ReceivedDateLabel"]"
                                    Variant="Variant.Outlined" DateFormat="yyyy-MM-dd"
-                                   HelperText="Quando chegou até nós" />
+                                   HelperText="@L["NewSupplierInvoice_ReceivedDateHelp"]" />
                 </MudItem>
                 <MudItem xs="12" md="3">
-                    <MudDatePicker @bind-Date="_dueDate" Label="Vencimento" Variant="Variant.Outlined"
+                    <MudDatePicker @bind-Date="_dueDate" Label="@L["NewSupplierInvoice_DueDateLabel"]" Variant="Variant.Outlined"
                                    DateFormat="yyyy-MM-dd" Clearable="true" />
                 </MudItem>
                 <MudItem xs="12" md="3" Class="d-flex align-center">
                     <MudSwitch @bind-Value="_reverseCharge" @bind-Value:after="StateHasChanged"
-                               Color="Color.Warning" Label="Autoliquidação" />
+                               Color="Color.Warning" Label="@L["NewSupplierInvoice_ReverseChargeLabel"]" />
                 </MudItem>
 
                 @if (_reverseCharge)
                 {
                     <MudItem xs="12">
                         <MudAlert Severity="Severity.Info" Dense="true">
-                            O documento vem sem IVA e somos nós a liquidá-lo e a deduzi-lo — aquisições
-                            intracomunitárias e o artigo 2.º n.º 1 j).
+                            @L["NewSupplierInvoice_ReverseChargeInfo"]
                         </MudAlert>
                     </MudItem>
                 }
@@ -109,30 +111,29 @@
             @if (IsCredit)
             {
                 <MudAlert Severity="Severity.Info">
-                    Uma nota de crédito <strong>nunca dá entrada em stock</strong>. Se houve devolução
-                    de mercadoria, foi aí que o stock saiu — aqui acerta-se o dinheiro e o IVA.
-                    <MudLink Href="supplier-returns" Class="ml-2">Ver devoluções</MudLink>
+                    @L["NewSupplierInvoice_CreditNoteInfo"]
+                    <MudLink Href="supplier-returns" Class="ml-2">@L["NewSupplierInvoice_ViewReturnsLink"]</MudLink>
                 </MudAlert>
             }
             else if (_uninvoiced.Count > 0)
             {
                 <MudPaper Elevation="1" Class="pa-4">
                     <MudStack Spacing="0" Class="mb-3">
-                        <MudText Typo="Typo.h6">Recebido por faturar</MudText>
+                        <MudText Typo="Typo.h6">@L["NewSupplierInvoice_UnbilledTitle"]</MudText>
                         <MudText Typo="Typo.caption" Color="Color.Secondary">
-                            Estas linhas já deram entrada em stock na receção, por isso a fatura
-                            <strong>não volta a movimentar</strong>.
+                            @L["NewSupplierInvoice_UnbilledHelpPrefix"]
+                            <strong>@L["NewSupplierInvoice_UnbilledHelpStrong"]</strong>@L["NewSupplierInvoice_UnbilledHelpSuffix"]
                         </MudText>
                     </MudStack>
 
                     <MudTable Items="_uninvoiced" Dense="true" Hover="true" Striped="true" Breakpoint="Breakpoint.Sm">
                         <HeaderContent>
                             <MudTh Style="width: 60px;"></MudTh>
-                            <MudTh>Receção</MudTh>
-                            <MudTh>Artigo</MudTh>
-                            <MudTh Style="text-align: right;">Por faturar</MudTh>
-                            <MudTh Style="width: 140px;">A faturar</MudTh>
-                            <MudTh Style="width: 140px;">Preço unit.</MudTh>
+                            <MudTh>@L["NewSupplierInvoice_ReceiptColumn"]</MudTh>
+                            <MudTh>@L["NewSupplierInvoice_ProductColumn"]</MudTh>
+                            <MudTh Style="text-align: right;">@L["NewSupplierInvoice_PendingColumn"]</MudTh>
+                            <MudTh Style="width: 140px;">@L["NewSupplierInvoice_ToInvoiceColumn"]</MudTh>
+                            <MudTh Style="width: 140px;">@L["NewSupplierInvoice_UnitPriceColumn"]</MudTh>
                         </HeaderContent>
                         <RowTemplate>
                             <MudTd>
@@ -140,7 +141,7 @@
                                              ValueChanged="@(chosen => Toggle(context, chosen))"
                                              Color="Color.Primary" Dense="true" />
                             </MudTd>
-                            <MudTd DataLabel="Receção">
+                            <MudTd DataLabel="@L["NewSupplierInvoice_ReceiptColumn"]">
                                 <MudStack Spacing="0">
                                     <MudText Typo="Typo.body2" Style="font-family: monospace;">
                                         @context.ReceiptNumber
@@ -150,7 +151,7 @@
                                     </MudText>
                                 </MudStack>
                             </MudTd>
-                            <MudTd DataLabel="Artigo">
+                            <MudTd DataLabel="@L["NewSupplierInvoice_ProductColumn"]">
                                 <MudStack Spacing="0">
                                     <MudText Typo="Typo.body2">@context.ProductCode</MudText>
                                     <MudText Typo="Typo.caption" Color="Color.Secondary">
@@ -158,10 +159,10 @@
                                     </MudText>
                                 </MudStack>
                             </MudTd>
-                            <MudTd DataLabel="Por faturar" Style="text-align: right;">
+                            <MudTd DataLabel="@L["NewSupplierInvoice_PendingColumn"]" Style="text-align: right;">
                                 @context.PendingQuantity.ToString("N3") @context.UnitOfMeasure
                             </MudTd>
-                            <MudTd DataLabel="A faturar">
+                            <MudTd DataLabel="@L["NewSupplierInvoice_ToInvoiceColumn"]">
                                 @if (Chosen(context) is { } chosen)
                                 {
                                     <MudNumericField T="decimal" Value="chosen.Quantity"
@@ -170,7 +171,7 @@
                                                      Max="@context.PendingQuantity" />
                                 }
                             </MudTd>
-                            <MudTd DataLabel="Preço unit.">
+                            <MudTd DataLabel="@L["NewSupplierInvoice_UnitPriceColumn"]">
                                 @if (Chosen(context) is { } chosen)
                                 {
                                     <MudNumericField @bind-Value="chosen.UnitPrice" @bind-Value:after="StateHasChanged"
@@ -185,24 +186,24 @@
             <MudPaper Elevation="1" Class="pa-4">
                 <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center" Class="mb-3">
                     <MudStack Spacing="0">
-                        <MudText Typo="Typo.h6">@(IsCredit ? "Linhas" : "Outras linhas")</MudText>
+                        <MudText Typo="Typo.h6">@(IsCredit ? L["NewSupplierInvoice_LinesTitle"] : L["NewSupplierInvoice_OtherLinesTitle"])</MudText>
                         <MudText Typo="Typo.caption" Color="Color.Secondary">
                             @if (IsCredit)
                             {
-                                <text>O que o fornecedor está a creditar.</text>
+                                <text>@L["NewSupplierInvoice_CreditLinesHelp"]</text>
                             }
                             else
                             {
                                 <text>
-                                    Serviços, e mercadoria que veio com a fatura sem receção — essa
-                                    <strong>dá entrada em stock aqui</strong>.
+                                    @L["NewSupplierInvoice_OtherLinesHelpPrefix"]
+                                    <strong>@L["NewSupplierInvoice_OtherLinesHelpStrong"]</strong>@L["NewSupplierInvoice_OtherLinesHelpSuffix"]
                                 </text>
                             }
                         </MudText>
                     </MudStack>
                     <MudButton Variant="Variant.Outlined" Color="Color.Primary" Size="Size.Small"
                                StartIcon="@Icons.Material.Filled.Add" OnClick="AddLine">
-                        Adicionar linha
+                        @L["NewSupplierInvoice_AddLineButton"]
                     </MudButton>
                 </MudStack>
 
@@ -210,19 +211,19 @@
                 {
                     <MudTable Items="_lines" Dense="true" Hover="true" Breakpoint="Breakpoint.Sm">
                         <HeaderContent>
-                            <MudTh Style="width: 190px;">Artigo</MudTh>
-                            <MudTh>Descrição</MudTh>
-                            <MudTh Style="width: 180px;">Natureza</MudTh>
-                            <MudTh Style="width: 100px;">Qtd.</MudTh>
-                            <MudTh Style="width: 130px;">Preço unit.</MudTh>
-                            <MudTh Style="width: 140px;">IVA</MudTh>
-                            <MudTh Style="width: 70px; text-align: right;">Ações</MudTh>
+                            <MudTh Style="width: 190px;">@L["NewSupplierInvoice_ProductColumn"]</MudTh>
+                            <MudTh>@L["NewSupplierInvoice_DescriptionColumn"]</MudTh>
+                            <MudTh Style="width: 180px;">@L["NewSupplierInvoice_NatureColumn"]</MudTh>
+                            <MudTh Style="width: 100px;">@L["NewSupplierInvoice_QuantityColumn"]</MudTh>
+                            <MudTh Style="width: 130px;">@L["NewSupplierInvoice_UnitPriceColumn"]</MudTh>
+                            <MudTh Style="width: 140px;">@L["NewSupplierInvoice_TaxColumn"]</MudTh>
+                            <MudTh Style="width: 70px; text-align: right;">@L["NewSupplierInvoice_ActionsColumn"]</MudTh>
                         </HeaderContent>
                         <RowTemplate>
-                            <MudTd DataLabel="Artigo">
+                            <MudTd DataLabel="@L["NewSupplierInvoice_ProductColumn"]">
                                 <MudSelect T="Guid?" Value="context.ProductId"
                                            ValueChanged="@(productId => OnProductChanged(context, productId))"
-                                           Margin="Margin.Dense" Clearable="true" Placeholder="Livre">
+                                           Margin="Margin.Dense" Clearable="true" Placeholder="@L["NewSupplierInvoice_FreePlaceholder"]">
                                     @foreach (var product in _products)
                                     {
                                         <MudSelectItem T="Guid?" Value="@product.Id">
@@ -231,10 +232,10 @@
                                     }
                                 </MudSelect>
                             </MudTd>
-                            <MudTd DataLabel="Descrição">
+                            <MudTd DataLabel="@L["NewSupplierInvoice_DescriptionColumn"]">
                                 <MudTextField @bind-Value="context.ProductDescription" Margin="Margin.Dense" />
                             </MudTd>
-                            <MudTd DataLabel="Natureza">
+                            <MudTd DataLabel="@L["NewSupplierInvoice_NatureColumn"]">
                                 <MudSelect T="string" @bind-Value="context.DeductionNature"
                                            @bind-Value:after="StateHasChanged" Margin="Margin.Dense">
                                     @foreach (var nature in DeductionNatures.All)
@@ -243,15 +244,15 @@
                                     }
                                 </MudSelect>
                             </MudTd>
-                            <MudTd DataLabel="Qtd.">
+                            <MudTd DataLabel="@L["NewSupplierInvoice_QuantityColumn"]">
                                 <MudNumericField @bind-Value="context.Quantity" @bind-Value:after="StateHasChanged"
                                                  Margin="Margin.Dense" Min="0" />
                             </MudTd>
-                            <MudTd DataLabel="Preço unit.">
+                            <MudTd DataLabel="@L["NewSupplierInvoice_UnitPriceColumn"]">
                                 <MudNumericField @bind-Value="context.UnitPrice" @bind-Value:after="StateHasChanged"
                                                  Margin="Margin.Dense" Min="0" Format="N2" />
                             </MudTd>
-                            <MudTd DataLabel="IVA">
+                            <MudTd DataLabel="@L["NewSupplierInvoice_TaxColumn"]">
                                 <MudSelect T="string" Value="context.TaxCode"
                                            ValueChanged="@(code => OnTaxCodeChanged(context, code))"
                                            Margin="Margin.Dense">
@@ -261,7 +262,7 @@
                                     }
                                 </MudSelect>
                             </MudTd>
-                            <MudTd DataLabel="Ações" Style="text-align: right;">
+                            <MudTd DataLabel="@L["NewSupplierInvoice_ActionsColumn"]" Style="text-align: right;">
                                 <MudIconButton Size="Size.Small" Icon="@Icons.Material.Filled.Delete"
                                                Color="Color.Error" OnClick="@(() => _lines.Remove(context))" />
                             </MudTd>
@@ -270,16 +271,16 @@
                 }
                 else
                 {
-                    <MudText Typo="Typo.body2" Color="Color.Secondary">Nenhuma.</MudText>
+                    <MudText Typo="Typo.body2" Color="Color.Secondary">@L["NewSupplierInvoice_NoLines"]</MudText>
                 }
 
                 @if (NeedsWarehouse)
                 {
                     <MudGrid Class="mt-3">
                         <MudItem xs="12" md="4">
-                            <MudSelect T="Guid?" @bind-Value="_warehouseId" Label="Armazém"
+                            <MudSelect T="Guid?" @bind-Value="_warehouseId" Label="@L["NewSupplierInvoice_WarehouseLabel"]"
                                        Variant="Variant.Outlined" Required="true"
-                                       HelperText="Onde entram as existências desta fatura">
+                                       HelperText="@L["NewSupplierInvoice_WarehouseHelp"]">
                                 @foreach (var warehouse in _warehouses)
                                 {
                                     <MudSelectItem T="Guid?" Value="@warehouse.Id">
@@ -295,15 +296,15 @@
             <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center">
                 <MudStack Row="true" Spacing="6">
                     <MudStack Spacing="0">
-                        <MudText Typo="Typo.caption" Color="Color.Secondary">Base</MudText>
+                        <MudText Typo="Typo.caption" Color="Color.Secondary">@L["NewSupplierInvoice_NetTotalLabel"]</MudText>
                         <MudText Typo="Typo.body1">@NetTotal.ToString("N2")</MudText>
                     </MudStack>
                     <MudStack Spacing="0">
-                        <MudText Typo="Typo.caption" Color="Color.Secondary">IVA</MudText>
+                        <MudText Typo="Typo.caption" Color="Color.Secondary">@L["NewSupplierInvoice_TaxTotalLabel"]</MudText>
                         <MudText Typo="Typo.body1">@TaxTotal.ToString("N2")</MudText>
                     </MudStack>
                     <MudStack Spacing="0">
-                        <MudText Typo="Typo.caption" Color="Color.Secondary">Total</MudText>
+                        <MudText Typo="Typo.caption" Color="Color.Secondary">@L["NewSupplierInvoice_TotalLabel"]</MudText>
                         <MudText Typo="Typo.h6" Color="Color.Primary">@GrossTotal.ToString("N2")</MudText>
                     </MudStack>
                 </MudStack>
@@ -311,13 +312,13 @@
                 <MudStack Row="true" Spacing="2">
                     <MudButton Variant="Variant.Text"
                                OnClick="@(() => Navigation.NavigateTo("supplier-invoices"))">
-                        Cancelar
+                        @L["NewSupplierInvoice_CancelButton"]
                     </MudButton>
                     <MudButton Variant="Variant.Filled" Color="Color.Primary"
                                StartIcon="@Icons.Material.Filled.Save"
                                Disabled="@(_saving || !CanSave)"
                                OnClick="SaveAsync">
-                        @(_saving ? "A registar..." : "Registar")
+                        @(_saving ? L["NewSupplierInvoice_SavingButton"] : L["NewSupplierInvoice_SaveButton"])
                     </MudButton>
                 </MudStack>
             </MudStack>
@@ -326,12 +327,11 @@
 </MudStack>
 
 @code {
-    private static readonly TaxRateOption[] TaxRates =
-    [
-        new("NOR", 23m, "Normal - 23%"),
-        new("INT", 13m, "Intermédia - 13%"),
-        new("RED", 6m, "Reduzida - 6%"),
-        new("ISE", 0m, "Isento")
+    private TaxRateOption[] TaxRates => [
+        new("NOR", 23m, L["NewSupplierInvoice_TaxRateNormal"]),
+        new("INT", 13m, L["NewSupplierInvoice_TaxRateIntermediate"]),
+        new("RED", 6m, L["NewSupplierInvoice_TaxRateReduced"]),
+        new("ISE", 0m, L["NewSupplierInvoice_TaxRateExempt"])
     ];
 
     private bool _saving;
@@ -427,7 +427,7 @@
         }
         catch (Exception ex)
         {
-            _error = $"Não foi possível preparar o registo: {ex.Message}";
+            _error = string.Format(L["NewSupplierInvoice_LoadError"], ex.Message);
         }
         finally
         {
@@ -457,7 +457,7 @@
         }
         catch (Exception ex)
         {
-            _error = $"Não foi possível carregar o que está por faturar: {ex.Message}";
+            _error = string.Format(L["NewSupplierInvoice_UnbilledLoadError"], ex.Message);
         }
         finally
         {
@@ -587,16 +587,16 @@
 
             if (invoice is null)
             {
-                _error = error ?? "Não foi possível registar a fatura.";
+                _error = error ?? L["NewSupplierInvoice_SaveFallbackError"];
                 return;
             }
 
-            Snackbar.Add($"Fatura {invoice.SupplierDocumentNumber} registada.", Severity.Success);
+            Snackbar.Add(string.Format(L["NewSupplierInvoice_SaveSuccess"], invoice.SupplierDocumentNumber), Severity.Success);
             Navigation.NavigateTo($"supplier-invoices/{invoice.Id}");
         }
         catch (Exception ex)
         {
-            _error = $"Não foi possível registar a fatura: {ex.Message}";
+            _error = string.Format(L["NewSupplierInvoice_SaveError"], ex.Message);
         }
         finally
         {

@@ -6,27 +6,29 @@
 @using MudBlazor
 @using Erp.Main.Models
 @using Erp.Main.Services
+@using Microsoft.Extensions.Localization
+@using Erp.Main.Resources
 @inject SalesApiClient SalesApi
 @inject SeriesApiClient SeriesApi
 @inject CompanyState Company
 @inject NavigationManager Navigation
 @inject ISnackbar Snackbar
+@inject IStringLocalizer<MainResources> L
 
-<PageTitle>Faturar guias</PageTitle>
+<PageTitle>@L["InvoiceFromMovements_PageTitle"]</PageTitle>
 
 <MudStack Spacing="4">
     <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center">
         <MudStack Spacing="0">
-            <MudText Typo="Typo.h4">Faturar guias</MudText>
+            <MudText Typo="Typo.h4">@L["InvoiceFromMovements_HeaderTitle"]</MudText>
             <MudText Typo="Typo.body2" Color="Color.Secondary">
-                Escolha o cliente e as guias a faturar: as linhas vêm delas. Uma guia pode ser faturada
-                em várias vezes.
+                @L["InvoiceFromMovements_Description"]
             </MudText>
         </MudStack>
 
         <MudButton Variant="Variant.Text" StartIcon="@Icons.Material.Filled.ArrowBack"
                    OnClick="@(() => Navigation.NavigateTo("invoices"))">
-            Voltar
+            @L["InvoiceFromMovements_BackButton"]
         </MudButton>
     </MudStack>
 
@@ -42,14 +44,14 @@
     else if (_series.Count == 0)
     {
         <MudAlert Severity="Severity.Warning">
-            Não existe nenhuma série de faturação comunicada à AT.
-            <MudLink Href="series/new" Class="ml-2">Criar série</MudLink>
+            @L["InvoiceFromMovements_NoSeriesWarning"]
+            <MudLink Href="series/new" Class="ml-2">@L["InvoiceFromMovements_CreateSeriesLink"]</MudLink>
         </MudAlert>
     }
     else if (_customers.Count == 0)
     {
         <MudAlert Severity="Severity.Info">
-            Não há guias por faturar. As guias de ativos próprios e de devolução nunca são faturadas.
+            @L["InvoiceFromMovements_NoPendingInfo"]
         </MudAlert>
     }
     else
@@ -58,28 +60,28 @@
             <MudGrid>
                 <MudItem xs="12" md="5">
                     <MudSelect T="string" Value="_partyTaxId" ValueChanged="OnCustomerChanged"
-                               Label="Cliente" Variant="Variant.Outlined" Required="true"
-                               HelperText="Uma fatura agrupa guias de um só cliente">
+                               Label="@L["InvoiceFromMovements_CustomerLabel"]" Variant="Variant.Outlined" Required="true"
+                               HelperText="@L["InvoiceFromMovements_CustomerHelpText"]">
                         @foreach (var customer in _customers)
                         {
                             <MudSelectItem T="string" Value="@customer.TaxId">
-                                @customer.Name (@customer.TaxId)
+                                @L["InvoiceFromMovements_CustomerOption", customer.Name, customer.TaxId]
                             </MudSelectItem>
                         }
                     </MudSelect>
                 </MudItem>
                 <MudItem xs="12" md="4">
-                    <MudSelect @bind-Value="_seriesId" Label="Série" Variant="Variant.Outlined" Required="true">
+                    <MudSelect @bind-Value="_seriesId" Label="@L["InvoiceFromMovements_SeriesLabel"]" Variant="Variant.Outlined" Required="true">
                         @foreach (var series in _series)
                         {
                             <MudSelectItem T="Guid" Value="@series.Id">
-                                @series.DocumentType @series.SeriesCode (próximo n.º @(series.CurrentSequence + 1))
+                                @L["InvoiceFromMovements_SeriesNextNumber", series.DocumentType, series.SeriesCode, series.CurrentSequence + 1]
                             </MudSelectItem>
                         }
                     </MudSelect>
                 </MudItem>
                 <MudItem xs="12" md="3">
-                    <MudDatePicker @bind-Date="_documentDate" Label="Data" Variant="Variant.Outlined"
+                    <MudDatePicker @bind-Date="_documentDate" Label="@L["InvoiceFromMovements_DateLabel"]" Variant="Variant.Outlined"
                                    DateFormat="yyyy-MM-dd" />
                 </MudItem>
             </MudGrid>
@@ -87,10 +89,10 @@
 
         <MudPaper Elevation="1" Class="pa-4">
             <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center" Class="mb-3">
-                <MudText Typo="Typo.h6">Linhas por faturar</MudText>
+                <MudText Typo="Typo.h6">@L["InvoiceFromMovements_LinesSectionTitle"]</MudText>
                 <MudButtonGroup Variant="Variant.Outlined" Size="Size.Small">
-                    <MudButton OnClick="SelectEverything">Faturar tudo</MudButton>
-                    <MudButton OnClick="SelectNothing">Limpar</MudButton>
+                    <MudButton OnClick="SelectEverything">@L["InvoiceFromMovements_SelectAllButton"]</MudButton>
+                    <MudButton OnClick="SelectNothing">@L["InvoiceFromMovements_SelectNoneButton"]</MudButton>
                 </MudButtonGroup>
             </MudStack>
 
@@ -98,14 +100,14 @@
                       GroupBy="_groupBy" T="PendingLine">
                 <HeaderContent>
                     <MudTh Style="width: 60px;"></MudTh>
-                    <MudTh Style="width: 90px;">Artigo</MudTh>
-                    <MudTh>Descrição</MudTh>
-                    <MudTh Style="width: 100px; text-align: right;">Guia</MudTh>
-                    <MudTh Style="width: 110px; text-align: right;">Já faturado</MudTh>
-                    <MudTh Style="width: 130px;">A faturar</MudTh>
-                    <MudTh Style="width: 100px; text-align: right;">Preço</MudTh>
-                    <MudTh Style="width: 70px; text-align: right;">IVA</MudTh>
-                    <MudTh Style="width: 100px; text-align: right;">Total</MudTh>
+                    <MudTh Style="width: 90px;">@L["InvoiceFromMovements_ProductCodeHeader"]</MudTh>
+                    <MudTh>@L["InvoiceFromMovements_DescriptionHeader"]</MudTh>
+                    <MudTh Style="width: 100px; text-align: right;">@L["InvoiceFromMovements_MovementHeader"]</MudTh>
+                    <MudTh Style="width: 110px; text-align: right;">@L["InvoiceFromMovements_AlreadyInvoicedHeader"]</MudTh>
+                    <MudTh Style="width: 130px;">@L["InvoiceFromMovements_ToInvoiceHeader"]</MudTh>
+                    <MudTh Style="width: 100px; text-align: right;">@L["InvoiceFromMovements_PriceHeader"]</MudTh>
+                    <MudTh Style="width: 70px; text-align: right;">@L["InvoiceFromMovements_TaxHeader"]</MudTh>
+                    <MudTh Style="width: 100px; text-align: right;">@L["InvoiceFromMovements_TotalHeader"]</MudTh>
                 </HeaderContent>
                 <GroupHeaderTemplate>
                     <MudTh Class="mud-table-cell-custom-group" colspan="9">
@@ -120,15 +122,15 @@
                                      ValueChanged="@(selected => ToggleLine(context, selected))"
                                      Color="Color.Primary" Dense="true" />
                     </MudTd>
-                    <MudTd DataLabel="Artigo">@context.Source.ProductCode</MudTd>
-                    <MudTd DataLabel="Descrição">@context.Source.ProductDescription</MudTd>
-                    <MudTd DataLabel="Guia" Style="text-align: right;">
+                    <MudTd DataLabel="@L["InvoiceFromMovements_ProductCodeHeader"]">@context.Source.ProductCode</MudTd>
+                    <MudTd DataLabel="@L["InvoiceFromMovements_DescriptionHeader"]">@context.Source.ProductDescription</MudTd>
+                    <MudTd DataLabel="@L["InvoiceFromMovements_MovementHeader"]" Style="text-align: right;">
                         @context.Source.PendingQuantity.ToString("N3")
                     </MudTd>
-                    <MudTd DataLabel="Já faturado" Style="text-align: right;">
+                    <MudTd DataLabel="@L["InvoiceFromMovements_AlreadyInvoicedHeader"]" Style="text-align: right;">
                         @(context.Source.InvoicedQuantity > 0 ? context.Source.InvoicedQuantity.ToString("N3") : "—")
                     </MudTd>
-                    <MudTd DataLabel="A faturar">
+                    <MudTd DataLabel="@L["InvoiceFromMovements_ToInvoiceHeader"]">
                         @if (context.Selected)
                         {
                             <MudNumericField T="decimal" Value="@context.Quantity"
@@ -140,13 +142,13 @@
                             <MudText Typo="Typo.body2" Color="Color.Secondary">—</MudText>
                         }
                     </MudTd>
-                    <MudTd DataLabel="Preço" Style="text-align: right;">@context.Source.UnitPrice.ToString("N2")</MudTd>
-                    <MudTd DataLabel="IVA" Style="text-align: right;">@context.Source.TaxPercentage.ToString("N0")%</MudTd>
-                    <MudTd DataLabel="Total" Style="text-align: right;">@LineTotal(context).ToString("N2")</MudTd>
+                    <MudTd DataLabel="@L["InvoiceFromMovements_PriceHeader"]" Style="text-align: right;">@context.Source.UnitPrice.ToString("N2")</MudTd>
+                    <MudTd DataLabel="@L["InvoiceFromMovements_TaxHeader"]" Style="text-align: right;">@context.Source.TaxPercentage.ToString("N0")%</MudTd>
+                    <MudTd DataLabel="@L["InvoiceFromMovements_TotalHeader"]" Style="text-align: right;">@LineTotal(context).ToString("N2")</MudTd>
                 </RowTemplate>
                 <NoRecordsContent>
                     <MudText Typo="Typo.body2" Color="Color.Secondary">
-                        Este cliente não tem guias por faturar.
+                        @L["InvoiceFromMovements_NoRecords"]
                     </MudText>
                 </NoRecordsContent>
             </MudTable>
@@ -156,19 +158,19 @@
             <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center">
                 <MudStack Row="true" Spacing="6">
                     <MudStack Spacing="0">
-                        <MudText Typo="Typo.caption" Color="Color.Secondary">Guias</MudText>
+                        <MudText Typo="Typo.caption" Color="Color.Secondary">@L["InvoiceFromMovements_MovementsCountLabel"]</MudText>
                         <MudText Typo="Typo.h6">@SelectedMovementCount</MudText>
                     </MudStack>
                     <MudStack Spacing="0">
-                        <MudText Typo="Typo.caption" Color="Color.Secondary">Base tributável</MudText>
+                        <MudText Typo="Typo.caption" Color="Color.Secondary">@L["InvoiceFromMovements_NetTotalLabel"]</MudText>
                         <MudText Typo="Typo.h6">@NetTotal.ToString("N2")</MudText>
                     </MudStack>
                     <MudStack Spacing="0">
-                        <MudText Typo="Typo.caption" Color="Color.Secondary">IVA</MudText>
+                        <MudText Typo="Typo.caption" Color="Color.Secondary">@L["InvoiceFromMovements_TaxTotalLabel"]</MudText>
                         <MudText Typo="Typo.h6">@TaxTotal.ToString("N2")</MudText>
                     </MudStack>
                     <MudStack Spacing="0">
-                        <MudText Typo="Typo.caption" Color="Color.Secondary">Total</MudText>
+                        <MudText Typo="Typo.caption" Color="Color.Secondary">@L["InvoiceFromMovements_TotalLabel"]</MudText>
                         <MudText Typo="Typo.h5" Color="Color.Primary">@GrossTotal.ToString("N2")</MudText>
                     </MudStack>
                 </MudStack>
@@ -177,7 +179,7 @@
                            StartIcon="@Icons.Material.Filled.ReceiptLong"
                            Disabled="@(_issuing || !CanIssue)"
                            OnClick="IssueAsync">
-                    @(_issuing ? "A emitir..." : "Emitir fatura")
+                    @(_issuing ? L["InvoiceFromMovements_IssuingButton"] : L["InvoiceFromMovements_IssueButton"])
                 </MudButton>
             </MudStack>
         </MudPaper>
@@ -268,7 +270,7 @@
         }
         catch (Exception ex)
         {
-            _error = $"Não foi possível preparar a faturação: {ex.Message}";
+            _error = L["InvoiceFromMovements_LoadError", ex.Message];
         }
         finally
         {
@@ -353,16 +355,16 @@
 
             if (invoice is null)
             {
-                _error = error ?? "Não foi possível emitir a fatura.";
+                _error = error ?? L["InvoiceFromMovements_IssueFailed"];
                 return;
             }
 
-            Snackbar.Add($"{InvoiceTypes.Describe(invoice.DocumentType)} {invoice.DocumentNumber} emitida.", Severity.Success);
+            Snackbar.Add(L["InvoiceFromMovements_IssuedSuccess", InvoiceTypes.Describe(invoice.DocumentType), invoice.DocumentNumber].Value, Severity.Success);
             Navigation.NavigateTo($"invoices/{invoice.Id}");
         }
         catch (Exception ex)
         {
-            _error = $"Não foi possível emitir a fatura: {ex.Message}";
+            _error = L["InvoiceFromMovements_IssueError", ex.Message];
         }
         finally
         {

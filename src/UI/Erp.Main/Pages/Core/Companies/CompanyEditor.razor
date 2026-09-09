@@ -3,9 +3,11 @@
 @attribute [Authorize]
 @using Microsoft.AspNetCore.Authorization
 @using Microsoft.AspNetCore.Components.Web
+@using Microsoft.Extensions.Localization
 @using MudBlazor
 @using Erp.Common
 @using Erp.Main.Models
+@using Erp.Main.Resources
 @using Erp.Main.Services
 @inject CoreApiClient CoreApi
 @inject IdentityApiClient IdentityApi
@@ -13,21 +15,22 @@
 @inject CompanyState Company
 @inject NavigationManager Navigation
 @inject ISnackbar Snackbar
+@inject IStringLocalizer<MainResources> Localizer
 
-<PageTitle>@(IsNew ? "Nova empresa" : "Editar empresa")</PageTitle>
+<PageTitle>@(IsNew ? Localizer["CompanyEditor_NewTitle"] : Localizer["CompanyEditor_EditTitle"])</PageTitle>
 
 <MudStack Spacing="4">
     <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center">
         <MudStack Spacing="0">
-            <MudText Typo="Typo.h4">@(IsNew ? "Nova empresa" : _name)</MudText>
+            <MudText Typo="Typo.h4">@(IsNew ? Localizer["CompanyEditor_NewTitle"] : _name)</MudText>
             <MudText Typo="Typo.body2" Color="Color.Secondary">
-                O NIF identifica a empresa perante a AT e não pode repetir-se.
+                @Localizer["CompanyEditor_TaxIdHelperText"]
             </MudText>
         </MudStack>
 
         <MudButton Variant="Variant.Text" StartIcon="@Icons.Material.Filled.ArrowBack"
                    OnClick="@(() => Navigation.NavigateTo("companies"))">
-            Voltar
+            @Localizer["Common_Back"]
         </MudButton>
     </MudStack>
 
@@ -44,47 +47,47 @@
     {
         <MudPaper Elevation="1">
             <MudTabs Elevation="0" ApplyEffectsToContainer="true" PanelClass="pa-4">
-                <MudTabPanel Text="Dados" Icon="@Icons.Material.Filled.Domain">
+                <MudTabPanel Text="@Localizer["CompanyEditor_DataTab"]" Icon="@Icons.Material.Filled.Domain">
                     <MudGrid>
                         <MudItem xs="12" md="6">
-                            <MudTextField @bind-Value="_name" Label="Nome" Variant="Variant.Outlined" Required="true" />
+                            <MudTextField @bind-Value="_name" Label="@Localizer["Common_NameColumn"]" Variant="Variant.Outlined" Required="true" />
                         </MudItem>
                         <MudItem xs="12" md="6">
-                            <MudTextField @bind-Value="_legalName" Label="Designação legal" Variant="Variant.Outlined" />
+                            <MudTextField @bind-Value="_legalName" Label="@Localizer["CompanyEditor_LegalNameLabel"]" Variant="Variant.Outlined" />
                         </MudItem>
                         <MudItem xs="12" md="4">
-                            <MudTextField @bind-Value="_taxId" Label="NIF" Variant="Variant.Outlined" Required="true" />
+                            <MudTextField @bind-Value="_taxId" Label="@Localizer["Companies_TaxIdColumn"]" Variant="Variant.Outlined" Required="true" />
                         </MudItem>
                         <MudItem xs="12" md="4">
-                            <MudTextField @bind-Value="_email" Label="Email" Variant="Variant.Outlined" InputType="InputType.Email" />
+                            <MudTextField @bind-Value="_email" Label="@Localizer["CompanyEditor_EmailColumn"]" Variant="Variant.Outlined" InputType="InputType.Email" />
                         </MudItem>
                         <MudItem xs="12" md="4">
-                            <MudTextField @bind-Value="_phone" Label="Telefone" Variant="Variant.Outlined" />
+                            <MudTextField @bind-Value="_phone" Label="@Localizer["PartnerForm_PhoneLabel"]" Variant="Variant.Outlined" />
                         </MudItem>
 
                         <MudItem xs="12">
                             <MudText Typo="Typo.subtitle2" Color="Color.Secondary">
-                                Sede — o cabeçalho do SAF-T exige a morada, por isso sem ela o ficheiro sai incompleto.
+                                @Localizer["CompanyEditor_AddressSectionHint"]
                             </MudText>
                         </MudItem>
                         <MudItem xs="12" md="6">
-                            <MudTextField @bind-Value="_address" Label="Morada" Variant="Variant.Outlined" />
+                            <MudTextField @bind-Value="_address" Label="@Localizer["PartnerForm_AddressLabel"]" Variant="Variant.Outlined" />
                         </MudItem>
                         <MudItem xs="12" md="2">
-                            <MudTextField @bind-Value="_postalCode" Label="Código postal" Variant="Variant.Outlined" />
+                            <MudTextField @bind-Value="_postalCode" Label="@Localizer["PartnerForm_PostalCodeLabel"]" Variant="Variant.Outlined" />
                         </MudItem>
                         <MudItem xs="12" md="2">
-                            <MudTextField @bind-Value="_city" Label="Localidade" Variant="Variant.Outlined" />
+                            <MudTextField @bind-Value="_city" Label="@Localizer["CompanyEditor_CityColumn"]" Variant="Variant.Outlined" />
                         </MudItem>
                         <MudItem xs="12" md="2">
-                            <MudTextField @bind-Value="_country" Label="País" Variant="Variant.Outlined"
-                                          HelperText="Código de 2 letras" />
+                            <MudTextField @bind-Value="_country" Label="@Localizer["PartnerForm_CountryLabel"]" Variant="Variant.Outlined"
+                                          HelperText="@Localizer["CompanyEditor_CountryHelperText"]" />
                         </MudItem>
 
                         @if (!IsNew)
                         {
                             <MudItem xs="12">
-                                <MudSwitch @bind-Value="_isActive" Color="Color.Primary" Label="Empresa ativa" />
+                                <MudSwitch @bind-Value="_isActive" Color="Color.Primary" Label="@Localizer["CompanyEditor_ActiveLabel"]" />
                             </MudItem>
                         }
                     </MudGrid>
@@ -94,21 +97,21 @@
                                    StartIcon="@Icons.Material.Filled.Save"
                                    Disabled="@(_saving || !CanSave)"
                                    OnClick="SaveAsync">
-                            Guardar
+                            @Localizer["Common_SaveButton"]
                         </MudButton>
                     </MudStack>
                 </MudTabPanel>
 
-                <MudTabPanel Text="Utilizadores" Icon="@Icons.Material.Filled.Group" Disabled="IsNew"
-                             ToolTip="@(IsNew ? "Guarde a empresa antes de associar utilizadores" : null)">
+                <MudTabPanel Text="@Localizer["CompanyEditor_UsersTab"]" Icon="@Icons.Material.Filled.Group" Disabled="IsNew"
+                             ToolTip="@(IsNew ? Localizer["CompanyEditor_UsersTabDisabledHint"].Value : null)">
                     <MudText Typo="Typo.body2" Color="Color.Secondary" Class="mb-4">
-                        Quem tem acesso a esta empresa. É esta lista que alimenta o seletor de empresa no cabeçalho.
+                        @Localizer["CompanyEditor_UsersTabDescription"]
                     </MudText>
 
                     <MudPaper Elevation="0" Outlined="true" Class="pa-4 mb-4">
                         <MudGrid>
                             <MudItem xs="12" md="5">
-                                <MudSelect @bind-Value="_newUserId" Label="Utilizador" Variant="Variant.Outlined"
+                                <MudSelect @bind-Value="_newUserId" Label="@Localizer["CompanyEditor_UserLabel"]" Variant="Variant.Outlined"
                                            Dense="true" Disabled="@(_availableUsers.Count == 0)">
                                     @foreach (var user in _availableUsers)
                                     {
@@ -119,7 +122,7 @@
                                 </MudSelect>
                             </MudItem>
                             <MudItem xs="12" md="4">
-                                <MudSelect @bind-Value="_newRole" Label="Papel na empresa" Variant="Variant.Outlined" Dense="true">
+                                <MudSelect @bind-Value="_newRole" Label="@Localizer["CompanyEditor_RoleLabel"]" Variant="Variant.Outlined" Dense="true">
                                     @foreach (var role in CompanyRoles)
                                     {
                                         <MudSelectItem T="string" Value="@role">@role</MudSelectItem>
@@ -131,7 +134,7 @@
                                            StartIcon="@Icons.Material.Filled.PersonAdd"
                                            Disabled="@(_working || string.IsNullOrWhiteSpace(_newUserId))"
                                            OnClick="AssignAsync">
-                                    Associar
+                                    @Localizer["CompanyEditor_AssignButton"]
                                 </MudButton>
                             </MudItem>
                         </MudGrid>
@@ -139,7 +142,7 @@
                         @if (_availableUsers.Count == 0 && _users.Count > 0)
                         {
                             <MudText Typo="Typo.caption" Color="Color.Secondary">
-                                Todos os utilizadores ativos já estão associados a esta empresa.
+                                @Localizer["CompanyEditor_AllUsersAssignedHint"]
                             </MudText>
                         }
                     </MudPaper>
@@ -147,18 +150,18 @@
                     <MudTable Items="_memberships" Hover="true" Striped="true" Dense="true" Loading="_workingUsers"
                               Breakpoint="Breakpoint.Sm">
                         <HeaderContent>
-                            <MudTh>Utilizador</MudTh>
-                            <MudTh>Email</MudTh>
-                            <MudTh Style="width: 200px;">Papel na empresa</MudTh>
-                            <MudTh Style="width: 140px;">Estado</MudTh>
-                            <MudTh Style="text-align: right;">Ações</MudTh>
+                            <MudTh>@Localizer["CompanyEditor_UserColumn"]</MudTh>
+                            <MudTh>@Localizer["CompanyEditor_EmailColumn"]</MudTh>
+                            <MudTh Style="width: 200px;">@Localizer["CompanyEditor_RoleLabel"]</MudTh>
+                            <MudTh Style="width: 140px;">@Localizer["Common_StatusColumn"]</MudTh>
+                            <MudTh Style="text-align: right;">@Localizer["CompanyEditor_ActionsColumn"]</MudTh>
                         </HeaderContent>
                         <RowTemplate>
-                            <MudTd DataLabel="Utilizador">@DescribeUser(context.UserId)</MudTd>
-                            <MudTd DataLabel="Email">
+                            <MudTd DataLabel="@Localizer["CompanyEditor_UserColumn"]">@DescribeUser(context.UserId)</MudTd>
+                            <MudTd DataLabel="@Localizer["CompanyEditor_EmailColumn"]">
                                 <MudText Typo="Typo.caption" Color="Color.Secondary">@DescribeEmail(context.UserId)</MudText>
                             </MudTd>
-                            <MudTd DataLabel="Papel na empresa">
+                            <MudTd DataLabel="@Localizer["CompanyEditor_RoleLabel"]">
                                 <MudSelect T="string" Value="context.Role" Dense="true" Margin="Margin.Dense"
                                            ValueChanged="@(role => ChangeRoleAsync(context, role))">
                                     @foreach (var role in CompanyRoles)
@@ -167,86 +170,85 @@
                                     }
                                 </MudSelect>
                             </MudTd>
-                            <MudTd DataLabel="Estado">
+                            <MudTd DataLabel="@Localizer["Common_StatusColumn"]">
                                 <MudSwitch T="bool" Value="context.IsActive" Color="Color.Primary" Size="Size.Small"
                                            ValueChanged="@(active => ChangeActiveAsync(context, active))" />
                             </MudTd>
-                            <MudTd DataLabel="Ações" Style="text-align: right;">
+                            <MudTd DataLabel="@Localizer["CompanyEditor_ActionsColumn"]" Style="text-align: right;">
                                 <MudIconButton Icon="@Icons.Material.Filled.Delete" Size="Size.Small" Color="Color.Error"
-                                               title="Remover acesso"
+                                               title="@Localizer["CompanyEditor_RemoveAccessTitle"]"
                                                Disabled="_working"
                                                OnClick="@(() => RemoveAsync(context))" />
                             </MudTd>
                         </RowTemplate>
                         <NoRecordsContent>
                             <MudText Typo="Typo.body2" Color="Color.Secondary">
-                                Nenhum utilizador tem acesso a esta empresa.
+                                @Localizer["CompanyEditor_NoUsersMessage"]
                             </MudText>
                         </NoRecordsContent>
                     </MudTable>
                 </MudTabPanel>
 
-                <MudTabPanel Text="Armazéns" Icon="@Icons.Material.Filled.Warehouse" Disabled="IsNew"
-                             ToolTip="@(IsNew ? "Guarde a empresa antes de criar armazéns" : null)">
+                <MudTabPanel Text="@Localizer["CompanyEditor_WarehousesTab"]" Icon="@Icons.Material.Filled.Warehouse" Disabled="IsNew"
+                             ToolTip="@(IsNew ? Localizer["CompanyEditor_WarehousesTabDisabledHint"].Value : null)">
                     <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center" Class="mb-4">
                         <MudText Typo="Typo.body2" Color="Color.Secondary">
-                            Onde esta empresa guarda existências. O predefinido é o que os documentos
-                            assumem quando não indicam outro.
+                            @Localizer["CompanyEditor_WarehousesTabDescription"]
                         </MudText>
                         <MudButton Variant="Variant.Filled" Color="Color.Primary"
                                    StartIcon="@Icons.Material.Filled.Add"
                                    OnClick="@(() => OpenWarehouse(null))">
-                            Novo armazém
+                            @Localizer["CompanyEditor_NewWarehouse"]
                         </MudButton>
                     </MudStack>
 
                     <MudTable Items="_warehouses" Hover="true" Striped="true" Dense="true"
                               Loading="_workingWarehouses" Breakpoint="Breakpoint.Sm">
                         <HeaderContent>
-                            <MudTh>Código</MudTh>
-                            <MudTh>Nome</MudTh>
-                            <MudTh>Localidade</MudTh>
-                            <MudTh Style="width: 140px;">Predefinido</MudTh>
-                            <MudTh Style="width: 120px;">Estado</MudTh>
-                            <MudTh Style="text-align: right;">Ações</MudTh>
+                            <MudTh>@Localizer["Common_CodeColumn"]</MudTh>
+                            <MudTh>@Localizer["Common_NameColumn"]</MudTh>
+                            <MudTh>@Localizer["CompanyEditor_CityColumn"]</MudTh>
+                            <MudTh Style="width: 140px;">@Localizer["CompanyEditor_DefaultColumn"]</MudTh>
+                            <MudTh Style="width: 120px;">@Localizer["Common_StatusColumn"]</MudTh>
+                            <MudTh Style="text-align: right;">@Localizer["CompanyEditor_ActionsColumn"]</MudTh>
                         </HeaderContent>
                         <RowTemplate>
-                            <MudTd DataLabel="Código">
+                            <MudTd DataLabel="@Localizer["Common_CodeColumn"]">
                                 <MudText Typo="Typo.body2" Style="font-family: monospace;">@context.Code</MudText>
                             </MudTd>
-                            <MudTd DataLabel="Nome">@context.Name</MudTd>
-                            <MudTd DataLabel="Localidade">@DescribeCity(context)</MudTd>
-                            <MudTd DataLabel="Predefinido">
+                            <MudTd DataLabel="@Localizer["Common_NameColumn"]">@context.Name</MudTd>
+                            <MudTd DataLabel="@Localizer["CompanyEditor_CityColumn"]">@DescribeCity(context)</MudTd>
+                            <MudTd DataLabel="@Localizer["CompanyEditor_DefaultColumn"]">
                                 @if (context.IsDefault)
                                 {
                                     <MudChip T="string" Size="Size.Small" Color="Color.Primary" Variant="Variant.Outlined">
-                                        Predefinido
+                                        @Localizer["CompanyEditor_DefaultChip"]
                                     </MudChip>
                                 }
                             </MudTd>
-                            <MudTd DataLabel="Estado">
+                            <MudTd DataLabel="@Localizer["Common_StatusColumn"]">
                                 @if (context.IsActive)
                                 {
                                     <MudChip T="string" Size="Size.Small" Color="Color.Success" Variant="Variant.Text">
-                                        Ativo
+                                        @Localizer["Common_Active"]
                                     </MudChip>
                                 }
                                 else
                                 {
                                     <MudChip T="string" Size="Size.Small" Color="Color.Default" Variant="Variant.Text">
-                                        Inativo
+                                        @Localizer["Common_Inactive"]
                                     </MudChip>
                                 }
                             </MudTd>
-                            <MudTd DataLabel="Ações" Style="text-align: right;">
+                            <MudTd DataLabel="@Localizer["CompanyEditor_ActionsColumn"]" Style="text-align: right;">
                                 <MudIconButton Icon="@Icons.Material.Filled.Edit" Size="Size.Small"
-                                               title="Editar armazém"
+                                               title="@Localizer["CompanyEditor_EditWarehouseTitle"]"
                                                OnClick="@(() => OpenWarehouse(context))" />
                             </MudTd>
                         </RowTemplate>
                         <NoRecordsContent>
                             <MudText Typo="Typo.body2" Color="Color.Secondary">
-                                Esta empresa ainda não tem armazéns, por isso não há onde guardar stock.
+                                @Localizer["CompanyEditor_NoWarehousesMessage"]
                             </MudText>
                         </NoRecordsContent>
                     </MudTable>
@@ -259,57 +261,57 @@
 @* --- Armazém --- *@
 <MudDialog @bind-Visible="_warehouseOpen" Options="_dialogOptions">
     <TitleContent>
-        <MudText Typo="Typo.h6">@(_warehouseId is null ? "Novo armazém" : "Editar armazém")</MudText>
+        <MudText Typo="Typo.h6">@(_warehouseId is null ? Localizer["CompanyEditor_NewWarehouseTitle"] : Localizer["CompanyEditor_EditWarehouseTitle"])</MudText>
     </TitleContent>
     <DialogContent>
         <MudGrid>
             <MudItem xs="12" md="3">
                 <MudTextField @bind-Value="_warehouseCode" @bind-Value:after="StateHasChanged" Immediate="true"
-                              Label="Código" Variant="Variant.Outlined" Required="true"
+                              Label="@Localizer["Common_CodeColumn"]" Variant="Variant.Outlined" Required="true"
                               Disabled="@(_warehouseId is not null)"
-                              HelperText="@(_warehouseId is null ? "Único na empresa" : "O código não pode ser alterado")" />
+                              HelperText="@(_warehouseId is null ? Localizer["CompanyEditor_WarehouseCodeUniqueHint"].Value : Localizer["CompanyEditor_WarehouseCodeHelperText"].Value)" />
             </MudItem>
             <MudItem xs="12" md="9">
                 <MudTextField @bind-Value="_warehouseName" @bind-Value:after="StateHasChanged" Immediate="true"
-                              Label="Nome" Variant="Variant.Outlined" Required="true" />
+                              Label="@Localizer["Common_NameColumn"]" Variant="Variant.Outlined" Required="true" />
             </MudItem>
 
             <MudItem xs="12" md="6">
-                <MudTextField @bind-Value="_warehouseAddress" Label="Morada" Variant="Variant.Outlined" />
+                <MudTextField @bind-Value="_warehouseAddress" Label="@Localizer["PartnerForm_AddressLabel"]" Variant="Variant.Outlined" />
             </MudItem>
             <MudItem xs="12" md="2">
-                <MudTextField @bind-Value="_warehousePostalCode" Label="Código postal" Variant="Variant.Outlined" />
+                <MudTextField @bind-Value="_warehousePostalCode" Label="@Localizer["PartnerForm_PostalCodeLabel"]" Variant="Variant.Outlined" />
             </MudItem>
             <MudItem xs="12" md="2">
-                <MudTextField @bind-Value="_warehouseCity" Label="Localidade" Variant="Variant.Outlined" />
+                <MudTextField @bind-Value="_warehouseCity" Label="@Localizer["CompanyEditor_CityColumn"]" Variant="Variant.Outlined" />
             </MudItem>
             <MudItem xs="12" md="2">
-                <MudTextField @bind-Value="_warehouseCountry" Label="País" Variant="Variant.Outlined"
-                              HelperText="Código de 2 letras" />
+                <MudTextField @bind-Value="_warehouseCountry" Label="@Localizer["PartnerForm_CountryLabel"]" Variant="Variant.Outlined"
+                              HelperText="@Localizer["CompanyEditor_CountryHelperText"]" />
             </MudItem>
 
             <MudItem xs="12" md="6">
-                <MudSwitch @bind-Value="_warehouseIsDefault" Color="Color.Primary" Label="Armazém predefinido" />
+                <MudSwitch @bind-Value="_warehouseIsDefault" Color="Color.Primary" Label="@Localizer["CompanyEditor_WarehouseIsDefaultLabel"]" />
                 <MudText Typo="Typo.caption" Color="Color.Secondary">
-                    É o que os documentos assumem quando não indicam outro. Só pode haver um por empresa.
+                    @Localizer["CompanyEditor_WarehouseIsDefaultHint"]
                 </MudText>
             </MudItem>
 
             @if (_warehouseId is not null)
             {
                 <MudItem xs="12" md="6">
-                    <MudSwitch @bind-Value="_warehouseIsActive" Color="Color.Primary" Label="Armazém ativo" />
+                    <MudSwitch @bind-Value="_warehouseIsActive" Color="Color.Primary" Label="@Localizer["CompanyEditor_WarehouseActiveLabel"]" />
                 </MudItem>
             }
         </MudGrid>
     </DialogContent>
     <DialogActions>
-        <MudButton OnClick="@(() => _warehouseOpen = false)">Cancelar</MudButton>
+        <MudButton OnClick="@(() => _warehouseOpen = false)">@Localizer["Common_CancelButton"]</MudButton>
         <MudButton Variant="Variant.Filled" Color="Color.Primary"
                    StartIcon="@Icons.Material.Filled.Save"
                    Disabled="@(_working || !CanSaveWarehouse)"
                    OnClick="SaveWarehouseAsync">
-            Guardar
+            @Localizer["Common_SaveButton"]
         </MudButton>
     </DialogActions>
 </MudDialog>
@@ -393,7 +395,7 @@
 
             if (company is null)
             {
-                _error = "Empresa não encontrada.";
+                _error = Localizer["CompanyEditor_NotFound"];
                 return;
             }
 
@@ -413,7 +415,7 @@
         }
         catch (Exception ex)
         {
-            _error = $"Não foi possível carregar a empresa: {ex.Message}";
+            _error = string.Format(Localizer["CompanyEditor_LoadError"], ex.Message);
         }
         finally
         {
@@ -439,7 +441,7 @@
         }
         catch (Exception ex)
         {
-            problems.Add($"Não foi possível carregar os acessos: {ex.Message}");
+            problems.Add(string.Format(Localizer["CompanyEditor_LoadAccessesError"], ex.Message));
         }
 
         try
@@ -448,11 +450,11 @@
             _users = [.. users.Where(user => user.IsActive).OrderBy(user => user.Email)];
 
             if (error is not null)
-                problems.Add($"Não foi possível carregar os utilizadores: {error}");
+                problems.Add(string.Format(Localizer["CompanyEditor_LoadUsersError"], error));
         }
         catch (Exception ex)
         {
-            problems.Add($"Não foi possível carregar os utilizadores: {ex.Message}");
+            problems.Add(string.Format(Localizer["CompanyEditor_LoadUsersError"], ex.Message));
         }
 
         _newUserId = _availableUsers.FirstOrDefault()?.Id ?? string.Empty;
@@ -474,7 +476,7 @@
         }
         catch (Exception ex)
         {
-            _error = $"Não foi possível carregar os armazéns: {ex.Message}";
+            _error = string.Format(Localizer["CompanyEditor_LoadWarehousesError"], ex.Message);
         }
         finally
         {
@@ -523,13 +525,13 @@
                 return;
             }
 
-            Snackbar.Add($"Armazém {_warehouseCode} guardado.", Severity.Success);
+            Snackbar.Add(string.Format(Localizer["CompanyEditor_WarehouseSaved"], _warehouseCode), Severity.Success);
             _warehouseOpen = false;
             await LoadWarehousesAsync();
         }
         catch (Exception ex)
         {
-            _error = $"Não foi possível guardar o armazém: {ex.Message}";
+            _error = string.Format(Localizer["CompanyEditor_SaveWarehouseError"], ex.Message);
         }
         finally
         {
@@ -574,7 +576,7 @@
                 }
 
                 await Company.RefreshAsync();
-                Snackbar.Add("Empresa criada. Associe agora os utilizadores.", Severity.Success);
+                Snackbar.Add(Localizer["CompanyEditor_Created"].Value, Severity.Success);
 
                 // Straight into the users tab of the company that was just created.
                 Navigation.NavigateTo($"companies/{created!.Id}");
@@ -594,12 +596,12 @@
             }
 
             await Company.RefreshAsync();
-            Snackbar.Add("Empresa atualizada.", Severity.Success);
+            Snackbar.Add(Localizer["CompanyEditor_Updated"].Value, Severity.Success);
             Navigation.NavigateTo("companies");
         }
         catch (Exception ex)
         {
-            _error = $"Não foi possível guardar a empresa: {ex.Message}";
+            _error = string.Format(Localizer["CompanyEditor_SaveError"], ex.Message);
         }
         finally
         {
@@ -611,28 +613,28 @@
     {
         await RunAsync(
             () => CoreApi.CreateUserCompanyAsync(new CreateUserCompanyRequest(_newUserId, Id!.Value, _newRole)),
-            $"{DescribeEmail(_newUserId)} passou a ter acesso a esta empresa.");
+            string.Format(Localizer["CompanyEditor_UserGainedAccess"], DescribeEmail(_newUserId)));
     }
 
     private async Task ChangeRoleAsync(UserCompanyAdmin membership, string role)
     {
         await RunAsync(
             () => CoreApi.UpdateUserCompanyAsync(membership.Id, new UpdateUserCompanyRequest(role, membership.IsActive)),
-            "Papel atualizado.");
+            Localizer["CompanyEditor_RoleUpdated"]);
     }
 
     private async Task ChangeActiveAsync(UserCompanyAdmin membership, bool isActive)
     {
         await RunAsync(
             () => CoreApi.UpdateUserCompanyAsync(membership.Id, new UpdateUserCompanyRequest(membership.Role, isActive)),
-            isActive ? "Acesso reativado." : "Acesso desativado.");
+            isActive ? Localizer["CompanyEditor_AccessReactivated"] : Localizer["CompanyEditor_AccessDeactivated"]);
     }
 
     private async Task RemoveAsync(UserCompanyAdmin membership)
     {
         await RunAsync(
             () => CoreApi.DeleteUserCompanyAsync(membership.Id),
-            $"{DescribeUser(membership.UserId)} deixou de ter acesso a esta empresa.");
+            string.Format(Localizer["CompanyEditor_UserLostAccess"], DescribeUser(membership.UserId)));
     }
 
     /// <summary>Runs an operation on the memberships and refreshes what depends on them.</summary>
@@ -659,7 +661,7 @@
         }
         catch (Exception ex)
         {
-            _error = $"Não foi possível concluir a operação: {ex.Message}";
+            _error = string.Format(Localizer["CompanyEditor_OperationError"], ex.Message);
         }
         finally
         {

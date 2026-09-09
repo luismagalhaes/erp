@@ -6,20 +6,23 @@
 @using Erp.Main.Components.Common
 @using Erp.Main.Models
 @using Erp.Main.Services
+@using Microsoft.Extensions.Localization
+@using Erp.Main.Resources
 @inject SalesApiClient SalesApi
 @inject CompanyState Company
 @inject NavigationManager Navigation
+@inject IStringLocalizer<MainResources> L
 
-<PageTitle>Movimentação de mercadorias</PageTitle>
+<PageTitle>@L["StockMovements_Title"]</PageTitle>
 
 <MudStack Spacing="4">
-    <PageHeader Title="Movimentação de mercadorias">
+    <PageHeader Title="@L["StockMovements_Title"]">
         <Actions>
             <MudButton Variant="Variant.Filled" Color="Color.Primary"
                        StartIcon="@Icons.Material.Filled.Add"
                        Disabled="@(!Company.HasCompany)"
                        OnClick="@(() => Navigation.NavigateTo("stock-movements/new"))">
-                Nova guia
+                @L["StockMovements_NewButton"]
             </MudButton>
         </Actions>
     </PageHeader>
@@ -27,32 +30,32 @@
     <DataGrid T="StockMovementListItem"
               LoadAsync="@((companyId, query, ct) => SalesApi.QueryStockMovementsAsync(companyId, query, ct))"
               SearchFields="SearchFields" DefaultOrderBy="MovementDate desc,DocumentNumber desc"
-              SearchPlaceholder="Procurar por documento, destinatário ou NIF"
+              SearchPlaceholder="@L["StockMovements_SearchPlaceholder"]"
               EmptyIcon="@Icons.Material.Filled.LocalShipping"
-              EmptyTitle="Sem guias para mostrar"
-              EmptyDescription="Ajuste os filtros ou emita a primeira guia."
-              ItemsLabel="guias"
-              LoadErrorMessage="Não foi possível carregar as guias">
+              EmptyTitle="@L["StockMovements_EmptyTitle"]"
+              EmptyDescription="@L["StockMovements_EmptyDescription"]"
+              ItemsLabel="@L["StockMovements_ItemsLabel"]"
+              LoadErrorMessage="@L["StockMovements_LoadError"]">
         <Columns>
-            <PropertyColumn Property="x => x.DocumentNumber" Title="Documento" CellClass="erp-mono" />
-            <PropertyColumn Property="x => x.MovementType" Title="Tipo">
+            <PropertyColumn Property="x => x.DocumentNumber" Title="@L["StockMovements_DocumentColumn"]" CellClass="erp-mono" />
+            <PropertyColumn Property="x => x.MovementType" Title="@L["StockMovements_TypeColumn"]">
                 <CellTemplate>
                     <MudChip T="string" Size="Size.Small" Variant="Variant.Text">@context.Item.MovementType</MudChip>
                 </CellTemplate>
             </PropertyColumn>
-            <PropertyColumn Property="x => x.Atcud" Title="ATCUD" CellClass="erp-mono" />
-            <PropertyColumn Property="x => x.MovementDate" Title="Data" Format="yyyy-MM-dd" />
-            <PropertyColumn Property="x => x.PartyName" Title="Destinatário" />
-            <PropertyColumn Property="x => x.PartyTaxId" Title="NIF" />
-            <PropertyColumn Property="x => x.MovementStartAtUtc" Title="Início do transporte" Format="yyyy-MM-dd HH:mm" />
-            <PropertyColumn Property="x => x.TotalQuantity" Title="Quantidade" Format="N3"
+            <PropertyColumn Property="x => x.Atcud" Title="@L["StockMovements_AtcudColumn"]" CellClass="erp-mono" />
+            <PropertyColumn Property="x => x.MovementDate" Title="@L["StockMovements_DateColumn"]" Format="yyyy-MM-dd" />
+            <PropertyColumn Property="x => x.PartyName" Title="@L["StockMovements_RecipientColumn"]" />
+            <PropertyColumn Property="x => x.PartyTaxId" Title="@L["StockMovements_TaxIdColumn"]" />
+            <PropertyColumn Property="x => x.MovementStartAtUtc" Title="@L["StockMovements_TransportStartColumn"]" Format="yyyy-MM-dd HH:mm" />
+            <PropertyColumn Property="x => x.TotalQuantity" Title="@L["StockMovements_QuantityColumn"]" Format="N3"
                             CellClass="erp-numeric" HeaderClass="erp-numeric" />
-            <PropertyColumn Property="x => x.AtDocCodeId" Title="Comunicação">
+            <PropertyColumn Property="x => x.AtDocCodeId" Title="@L["StockMovements_CommunicationColumn"]">
                 <CellTemplate>
                     @if (string.IsNullOrWhiteSpace(context.Item.AtDocCodeId))
                     {
                         <MudChip T="string" Size="Size.Small" Variant="Variant.Text" Color="Color.Warning">
-                            Por comunicar
+                            @L["StockMovements_ToCommunicate"]
                         </MudChip>
                     }
                     else
@@ -61,11 +64,11 @@
                     }
                 </CellTemplate>
             </PropertyColumn>
-            <PropertyColumn Property="x => x.Status" Title="Estado">
+            <PropertyColumn Property="x => x.Status" Title="@L["StockMovements_StatusColumn"]">
                 <CellTemplate>
                     <MudChip T="string" Size="Size.Small" Variant="Variant.Text"
                              Color="@(context.Item.Status == "A" ? Color.Error : Color.Success)">
-                        @(context.Item.Status == "A" ? "Anulada" : "Normal")
+                        @(context.Item.Status == "A" ? L["StockMovements_StatusVoided"] : L["StockMovements_StatusNormal"])
                     </MudChip>
                 </CellTemplate>
             </PropertyColumn>
@@ -77,7 +80,7 @@
                              AnchorOrigin="Origin.BottomRight" TransformOrigin="Origin.TopRight">
                         <MudMenuItem Icon="@Icons.Material.Filled.Visibility"
                                      OnClick="@(() => Navigation.NavigateTo($"stock-movements/{context.Item.Id}"))">
-                            Ver guia
+                            @L["StockMovements_ViewAction"]
                         </MudMenuItem>
                     </MudMenu>
                 </CellTemplate>

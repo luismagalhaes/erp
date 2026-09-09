@@ -1,4 +1,7 @@
 @using Erp.Main.Models
+@using Microsoft.Extensions.Localization
+@using Erp.Main.Resources
+@inject IStringLocalizer<MainResources> Localizer
 
 @*
     Emitter block and document identification. The designation has to be spelled out in full and
@@ -18,7 +21,7 @@
             <div>NIF @Company.TaxId</div>
             @if (!string.IsNullOrWhiteSpace(Company.Phone))
             {
-                <div>Tel. @Company.Phone</div>
+                <div>@Localizer["Print_PhoneLabel"] @Company.Phone</div>
             }
             @if (!string.IsNullOrWhiteSpace(Company.Email))
             {
@@ -30,7 +33,7 @@
     <div class="print-doc-id">
         <div class="designation">@Designation</div>
         <div class="number">@DocumentNumber</div>
-        <div>Data: @DocumentDate.ToString("yyyy-MM-dd")</div>
+        <div>@Localizer["Print_DateLabel"]: @DocumentDate.ToString("yyyy-MM-dd")</div>
         <div>@Copy</div>
     </div>
 </div>

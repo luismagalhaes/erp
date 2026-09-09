@@ -3,25 +3,28 @@
 @using Microsoft.AspNetCore.Authorization
 @using Microsoft.AspNetCore.Components.Web
 @using MudBlazor
+@using Microsoft.Extensions.Localization
 @using Erp.Main.Components.Common
 @using Erp.Main.Models
+@using Erp.Main.Resources
 @using Erp.Main.Services
 @inject PurchasingApiClient Purchasing
 @inject CompanyState Company
 @inject NavigationManager Navigation
+@inject IStringLocalizer<MainResources> L
 
-<PageTitle>Encomendas a fornecedores</PageTitle>
+<PageTitle>@L["PurchaseOrders_PageTitle"]</PageTitle>
 
 <MudStack Spacing="4">
-    <PageHeader Title="Encomendas">
+    <PageHeader Title="@L["PurchaseOrders_HeaderTitle"]">
         <Actions>
             <MudSwitch T="bool" Value="_openOnly" ValueChanged="OnOpenOnlyChangedAsync"
-                       Color="Color.Primary" Label="Só por receber" />
+                       Color="Color.Primary" Label="@L["PurchaseOrders_OpenOnlySwitch"]" />
             <MudButton Variant="Variant.Filled" Color="Color.Primary"
                        StartIcon="@Icons.Material.Filled.Add"
                        Disabled="@(!Company.HasCompany)"
                        OnClick="@(() => Navigation.NavigateTo("purchase-orders/new"))">
-                Nova encomenda
+                @L["PurchaseOrders_NewOrderButton"]
             </MudButton>
         </Actions>
     </PageHeader>
@@ -29,25 +32,25 @@
     <DataGrid @ref="_grid" T="PurchaseOrderListItem"
               LoadAsync="LoadAsync"
               SearchFields="SearchFields" DefaultOrderBy="OrderDate desc,Number desc"
-              SearchPlaceholder="Procurar número ou fornecedor"
+              SearchPlaceholder="@L["PurchaseOrders_SearchPlaceholder"]"
               EmptyIcon="@Icons.Material.Filled.ShoppingCart"
-              EmptyTitle="Sem encomendas para mostrar"
-              EmptyDescription="Ajuste os filtros ou crie a primeira encomenda."
-              ItemsLabel="encomendas"
-              LoadErrorMessage="Não foi possível carregar as encomendas">
+              EmptyTitle="@L["PurchaseOrders_EmptyTitle"]"
+              EmptyDescription="@L["PurchaseOrders_EmptyDescription"]"
+              ItemsLabel="@L["PurchaseOrders_ItemsLabel"]"
+              LoadErrorMessage="@L["PurchaseOrders_LoadErrorMessage"]">
         <Columns>
-            <PropertyColumn Property="x => x.Number" Title="Número" CellClass="erp-mono" />
-            <PropertyColumn Property="x => x.OrderDate" Title="Data" Format="yyyy-MM-dd" />
-            <PropertyColumn Property="x => x.ExpectedDate" Title="Prevista">
+            <PropertyColumn Property="x => x.Number" Title="@L["PurchaseOrders_NumberColumn"]" CellClass="erp-mono" />
+            <PropertyColumn Property="x => x.OrderDate" Title="@L["PurchaseOrders_DateColumn"]" Format="yyyy-MM-dd" />
+            <PropertyColumn Property="x => x.ExpectedDate" Title="@L["PurchaseOrders_ExpectedColumn"]">
                 <CellTemplate>
                     <MudText Typo="Typo.body2" Color="@ExpectedColor(context.Item)">
                         @(context.Item.ExpectedDate?.ToString("yyyy-MM-dd") ?? "—")
                     </MudText>
                 </CellTemplate>
             </PropertyColumn>
-            <PropertyColumn Property="x => x.SupplierName" Title="Fornecedor" />
-            <PropertyColumn Property="x => x.SupplierTaxId" Title="NIF" />
-            <PropertyColumn Property="x => x.Status" Title="Estado">
+            <PropertyColumn Property="x => x.SupplierName" Title="@L["PurchaseOrders_SupplierColumn"]" />
+            <PropertyColumn Property="x => x.SupplierTaxId" Title="@L["PurchaseOrders_TaxIdColumn"]" />
+            <PropertyColumn Property="x => x.Status" Title="@L["PurchaseOrders_StatusColumn"]">
                 <CellTemplate>
                     <MudChip T="string" Size="Size.Small" Variant="Variant.Text"
                              Color="@StatusColor(context.Item.Status)">
@@ -55,9 +58,9 @@
                     </MudChip>
                 </CellTemplate>
             </PropertyColumn>
-            <PropertyColumn Property="x => x.LineCount" Title="Linhas"
+            <PropertyColumn Property="x => x.LineCount" Title="@L["PurchaseOrders_LinesColumn"]"
                             CellClass="erp-numeric" HeaderClass="erp-numeric" />
-            <PropertyColumn Property="x => x.GrossTotal" Title="Total" Format="N2"
+            <PropertyColumn Property="x => x.GrossTotal" Title="@L["PurchaseOrders_TotalColumn"]" Format="N2"
                             CellClass="erp-numeric" HeaderClass="erp-numeric" />
             <TemplateColumn Title="" Sortable="false" Filterable="false" Hideable="false"
                             StickyRight="true"
@@ -67,7 +70,7 @@
                              AnchorOrigin="Origin.BottomRight" TransformOrigin="Origin.TopRight">
                         <MudMenuItem Icon="@Icons.Material.Filled.Visibility"
                                      OnClick="@(() => Navigation.NavigateTo($"purchase-orders/{context.Item.Id}"))">
-                            Abrir encomenda
+                            @L["PurchaseOrders_OpenOrderAction"]
                         </MudMenuItem>
                     </MudMenu>
                 </CellTemplate>

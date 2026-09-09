@@ -1,18 +1,21 @@
 @page "/Backoffice"
 @using Microsoft.AspNetCore.Components.Web
+@using Microsoft.Extensions.Localization
+@using IdentityResourcesType = Erp.Identity.Resources.IdentityResources
 @attribute [Authorize]
+@inject IStringLocalizer<IdentityResourcesType> Localizer
 
-<PageTitle>Backoffice</PageTitle>
+<PageTitle>@Localizer["Backoffice_Index_PageTitle"]</PageTitle>
 
 <div class="content-card mud-elevation-1">
-    <h2>Backoffice</h2>
+    <h2>@Localizer["Backoffice_Index_Heading"]</h2>
     <ul>
-        <li><a href="/Backoffice/Users">Users</a></li>
-        <li><a href="/Backoffice/Roles">Roles</a></li>
-        <li><a href="/Backoffice/Clients">Clients</a></li>
-        <li><a href="/Backoffice/ApiScopes">API Scopes</a></li>
-        <li><a href="/Backoffice/ApiResources">API Resources</a></li>
-        <li><a href="/Backoffice/IdentityResources">Identity Resources</a></li>
-        <li><a href="/Backoffice/IdentityProviders">Identity Providers</a></li>
+        <li><a href="/Backoffice/Users">@Localizer["NavMenu_Users"]</a></li>
+        <li><a href="/Backoffice/Roles">@Localizer["NavMenu_Roles"]</a></li>
+        <li><a href="/Backoffice/Clients">@Localizer["NavMenu_Clients"]</a></li>
+        <li><a href="/Backoffice/ApiScopes">@Localizer["NavMenu_ApiScopes"]</a></li>
+        <li><a href="/Backoffice/ApiResources">@Localizer["NavMenu_ApiResources"]</a></li>
+        <li><a href="/Backoffice/IdentityResources">@Localizer["NavMenu_IdentityResources"]</a></li>
+        <li><a href="/Backoffice/IdentityProviders">@Localizer["NavMenu_IdentityProviders"]</a></li>
     </ul>
 </div>

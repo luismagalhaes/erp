@@ -3,23 +3,26 @@
 @attribute [Authorize]
 @using Microsoft.AspNetCore.Authorization
 @using Microsoft.AspNetCore.Components.Web
+@using Microsoft.Extensions.Localization
 @using MudBlazor
 @using Erp.Main.Models
+@using Erp.Main.Resources
 @using Erp.Main.Services
 @inject CatalogApiClient Catalog
 @inject CompanyState Company
 @inject NavigationManager Navigation
 @inject ISnackbar Snackbar
+@inject IStringLocalizer<MainResources> Localizer
 
-<PageTitle>@(IsNew ? "Nova marca" : "Editar marca")</PageTitle>
+<PageTitle>@(IsNew ? Localizer["BrandEditor_NewTitle"] : Localizer["BrandEditor_EditTitle"])</PageTitle>
 
 <MudStack Spacing="4">
     <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center">
-        <MudText Typo="Typo.h4">@(IsNew ? "Nova marca" : "Editar marca")</MudText>
+        <MudText Typo="Typo.h4">@(IsNew ? Localizer["BrandEditor_NewTitle"] : Localizer["BrandEditor_EditTitle"])</MudText>
 
         <MudButton Variant="Variant.Text" StartIcon="@Icons.Material.Filled.ArrowBack"
                    OnClick="@(() => Navigation.NavigateTo("brands"))">
-            Voltar
+            @Localizer["Common_Back"]
         </MudButton>
     </MudStack>
 
@@ -37,18 +40,18 @@
         <MudPaper Elevation="1" Class="pa-4">
             <MudGrid>
                 <MudItem xs="12" md="3">
-                    <MudTextField @bind-Value="_code" Label="Código" Variant="Variant.Outlined"
+                    <MudTextField @bind-Value="_code" Label="@Localizer["Common_CodeColumn"]" Variant="Variant.Outlined"
                                   Required="true" Disabled="@(!IsNew)"
-                                  HelperText="@(IsNew ? null : "O código não pode ser alterado")" />
+                                  HelperText="@(IsNew ? null : Localizer["BrandEditor_CodeHelperText"])" />
                 </MudItem>
                 <MudItem xs="12" md="9">
-                    <MudTextField @bind-Value="_name" Label="Nome" Variant="Variant.Outlined" Required="true" />
+                    <MudTextField @bind-Value="_name" Label="@Localizer["Common_NameColumn"]" Variant="Variant.Outlined" Required="true" />
                 </MudItem>
 
                 @if (!IsNew)
                 {
                     <MudItem xs="12">
-                        <MudSwitch @bind-Value="_isActive" Color="Color.Primary" Label="Marca ativa" />
+                        <MudSwitch @bind-Value="_isActive" Color="Color.Primary" Label="@Localizer["BrandEditor_ActiveLabel"]" />
                     </MudItem>
                 }
             </MudGrid>
@@ -58,7 +61,7 @@
                            StartIcon="@Icons.Material.Filled.Save"
                            Disabled="@(_saving || !CanSave)"
                            OnClick="SaveAsync">
-                    Guardar
+                    @Localizer["Common_SaveButton"]
                 </MudButton>
             </MudStack>
         </MudPaper>
@@ -107,7 +110,7 @@
 
             if (brand is null)
             {
-                _error = "Marca não encontrada.";
+                _error = Localizer["BrandEditor_NotFound"];
                 return;
             }
 
@@ -117,7 +120,7 @@
         }
         catch (Exception ex)
         {
-            _error = $"Não foi possível carregar a marca: {ex.Message}";
+            _error = string.Format(Localizer["BrandEditor_LoadError"], ex.Message);
         }
         finally
         {
@@ -143,12 +146,12 @@
                 return;
             }
 
-            Snackbar.Add(IsNew ? "Marca criada." : "Marca atualizada.", Severity.Success);
+            Snackbar.Add(IsNew ? Localizer["BrandEditor_Created"].Value : Localizer["BrandEditor_Updated"].Value, Severity.Success);
             Navigation.NavigateTo("brands");
         }
         catch (Exception ex)
         {
-            _error = $"Não foi possível guardar a marca: {ex.Message}";
+            _error = string.Format(Localizer["BrandEditor_SaveError"], ex.Message);
         }
         finally
         {

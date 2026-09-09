@@ -1,39 +1,42 @@
 @page "/Backoffice/ApiScopes"
 @page "/Backoffice/ApiScopes/{Mode}"
 @using Microsoft.AspNetCore.Components.Web
+@using Microsoft.Extensions.Localization
+@using IdentityResourcesType = Erp.Identity.Resources.IdentityResources
 @attribute [Authorize(Roles = "SuperAdmin")]
 @inject IApiScopeService ApiScopeService
 @inject NavigationManager Navigation
+@inject IStringLocalizer<IdentityResourcesType> Localizer
 
-<PageTitle>Backoffice - API Scopes</PageTitle>
+<PageTitle>@Localizer["Backoffice_ApiScopes_PageTitle"]</PageTitle>
 
 @if (IsCreateMode || IsEditMode)
 {
     <div class="content-card mud-elevation-1">
-        <h2>@(IsCreateMode ? "Create API Scope" : "Edit API Scope")</h2>
+        <h2>@(IsCreateMode ? Localizer["Backoffice_ApiScopes_CreateHeading"] : Localizer["Backoffice_ApiScopes_EditHeading"])</h2>
         @if (!string.IsNullOrWhiteSpace(ErrorMessage)) { <div class="auth-error">@ErrorMessage</div> }
 
         <EditForm Model="Form" OnSubmit="SaveAsync" FormName="api-scopes-form">
             <div class="tab-strip">
-                <button type="button" class="tab-btn @(ActiveTab == "MainInfo" ? "active" : null)" @onclick='() => SelectTab("MainInfo")'>Main Info</button>
-                <button type="button" class="tab-btn @(ActiveTab == "UserClaims" ? "active" : null)" @onclick='() => SelectTab("UserClaims")'>User Claims</button>
+                <button type="button" class="tab-btn @(ActiveTab == "MainInfo" ? "active" : null)" @onclick='() => SelectTab("MainInfo")'>@Localizer["Backoffice_ApiScopes_Tab_MainInfo"]</button>
+                <button type="button" class="tab-btn @(ActiveTab == "UserClaims" ? "active" : null)" @onclick='() => SelectTab("UserClaims")'>@Localizer["Backoffice_ApiScopes_Tab_UserClaims"]</button>
             </div>
 
             <div class="tab-panel @(ActiveTab == "MainInfo" ? "active" : null)">
-                <div class="auth-field"><label>Name</label><InputText @bind-Value="Form.Name" /></div>
-                <div class="auth-field"><label>DisplayName</label><InputText @bind-Value="Form.DisplayName" /></div>
-                <div class="auth-field"><label>Description</label><InputTextArea @bind-Value="Form.Description" /></div>
-                <div class="auth-field"><label><InputCheckbox @bind-Value="Form.Enabled" /> Enabled</label></div>
-                <div class="auth-field"><label><InputCheckbox @bind-Value="Form.Required" /> Required</label></div>
-                <div class="auth-field"><label><InputCheckbox @bind-Value="Form.Emphasize" /> Emphasize</label></div>
-                <div class="auth-field"><label><InputCheckbox @bind-Value="Form.ShowInDiscoveryDocument" /> ShowInDiscoveryDocument</label></div>
+                <div class="auth-field"><label>@Localizer["Backoffice_Common_NameLabel"]</label><InputText @bind-Value="Form.Name" /></div>
+                <div class="auth-field"><label>@Localizer["Backoffice_Common_DisplayNameLabel"]</label><InputText @bind-Value="Form.DisplayName" /></div>
+                <div class="auth-field"><label>@Localizer["Backoffice_Common_DescriptionLabel"]</label><InputTextArea @bind-Value="Form.Description" /></div>
+                <div class="auth-field"><label><InputCheckbox @bind-Value="Form.Enabled" /> @Localizer["Backoffice_Common_EnabledLabel"]</label></div>
+                <div class="auth-field"><label><InputCheckbox @bind-Value="Form.Required" /> @Localizer["Backoffice_Common_RequiredLabel"]</label></div>
+                <div class="auth-field"><label><InputCheckbox @bind-Value="Form.Emphasize" /> @Localizer["Backoffice_Common_EmphasizeLabel"]</label></div>
+                <div class="auth-field"><label><InputCheckbox @bind-Value="Form.ShowInDiscoveryDocument" /> @Localizer["Backoffice_Common_ShowInDiscoveryDocumentLabel"]</label></div>
             </div>
 
             <div class="tab-panel @(ActiveTab == "UserClaims" ? "active" : null)">
                 <div class="auth-field">
-                    <label>UserClaims</label>
+                    <label>@Localizer["Backoffice_ApiScopes_UserClaimsLabel"]</label>
                     <table class="backoffice-table">
-                        <thead><tr><th>Claim</th><th class="actions-col">Actions</th></tr></thead>
+                        <thead><tr><th>@Localizer["Backoffice_ApiScopes_ClaimColumn"]</th><th class="actions-col">@Localizer["Backoffice_Common_ActionsColumn"]</th></tr></thead>
                         <tbody>
                         @for (var i = 0; i < Form.UserClaims.Count; i++)
                         {
@@ -41,19 +44,19 @@
                             <tr>
                                 <td><InputText @bind-Value="Form.UserClaims[index]" /></td>
                                 <td class="actions-col">
-                                    <button type="button" class="action-btn danger" @onclick="() => RemoveListItem(Form.UserClaims, index)">Remove</button>
+                                    <button type="button" class="action-btn danger" @onclick="() => RemoveListItem(Form.UserClaims, index)">@Localizer["Backoffice_Common_RemoveButton"]</button>
                                 </td>
                             </tr>
                         }
                         </tbody>
                     </table>
-                    <button type="button" class="action-btn" @onclick="() => AddListItem(Form.UserClaims)">Add claim</button>
+                    <button type="button" class="action-btn" @onclick="() => AddListItem(Form.UserClaims)">@Localizer["Backoffice_ApiScopes_AddClaimButton"]</button>
                 </div>
             </div>
 
             <div class="form-actions">
-                <button type="submit" class="action-btn primary">Save</button>
-                <a class="action-btn" href="/Backoffice/ApiScopes">Cancel</a>
+                <button type="submit" class="action-btn primary">@Localizer["Backoffice_Common_SaveButton"]</button>
+                <a class="action-btn" href="/Backoffice/ApiScopes">@Localizer["Backoffice_Common_CancelButton"]</a>
             </div>
         </EditForm>
     </div>
@@ -61,11 +64,11 @@
 else if (IsDeleteMode)
 {
     <div class="content-card mud-elevation-1">
-        <h2>Delete API Scope</h2>
-        <p>Are you sure you want to delete <strong>@Name</strong>?</p>
+        <h2>@Localizer["Backoffice_ApiScopes_DeleteHeading"]</h2>
+        <p>@Localizer["Backoffice_Common_DeleteConfirm", Name]</p>
         <div class="form-actions">
-            <button class="action-btn danger" @onclick="DeleteAsync">Delete</button>
-            <a class="action-btn" href="/Backoffice/ApiScopes">Cancel</a>
+            <button class="action-btn danger" @onclick="DeleteAsync">@Localizer["Backoffice_Common_DeleteButton"]</button>
+            <a class="action-btn" href="/Backoffice/ApiScopes">@Localizer["Backoffice_Common_CancelButton"]</a>
         </div>
     </div>
 }
@@ -73,24 +76,24 @@ else
 {
     <div class="content-card mud-elevation-1">
         <div class="list-header">
-            <h2>API Scopes (@Items.Count)</h2>
+            <h2>@Localizer["Backoffice_ApiScopes_ListHeading", Items.Count]</h2>
             <div class="list-actions">
-                <MudIconButton Icon="@Icons.Material.Filled.AddCircle" Href="/Backoffice/ApiScopes/Create" Color="Color.Primary" Size="Size.Small" title="Create API Scope" aria-label="Create API Scope" />
+                <MudIconButton Icon="@Icons.Material.Filled.AddCircle" Href="/Backoffice/ApiScopes/Create" Color="Color.Primary" Size="Size.Small" title="@Localizer["Backoffice_ApiScopes_CreateAction"]" aria-label="@Localizer["Backoffice_ApiScopes_CreateAction"]" />
             </div>
         </div>
         <table class="backoffice-table">
-            <thead><tr><th>Name</th><th>Display name</th><th>Enabled</th><th>Claims</th><th class="actions-col">Actions</th></tr></thead>
+            <thead><tr><th>@Localizer["Backoffice_Common_NameColumn"]</th><th>@Localizer["Backoffice_Common_DisplayNameColumn"]</th><th>@Localizer["Backoffice_Common_EnabledColumn"]</th><th>@Localizer["Backoffice_ApiScopes_ClaimsColumn"]</th><th class="actions-col">@Localizer["Backoffice_Common_ActionsColumn"]</th></tr></thead>
             <tbody>
             @foreach (var item in Items)
             {
                 <tr>
                     <td>@item.Name</td><td>@item.DisplayName</td>
-                    <td><span class="@(item.Enabled ? "ok" : "off")">@(item.Enabled ? "Yes" : "No")</span></td>
+                    <td><span class="@(item.Enabled ? "ok" : "off")">@(item.Enabled ? Localizer["Backoffice_Common_Yes"] : Localizer["Backoffice_Common_No"])</span></td>
                     <td>@string.Join(", ", item.UserClaims)</td>
                     <td class="actions-col">
                         <div class="table-actions">
-                            <MudIconButton Icon="@Icons.Material.Filled.Edit" Href="@($"/Backoffice/ApiScopes/Edit?name={Uri.EscapeDataString(item.Name)}")" Color="Color.Primary" Size="Size.Small" title="Edit" aria-label="Edit" />
-                            <MudIconButton Icon="@Icons.Material.Filled.Delete" Href="@($"/Backoffice/ApiScopes/Delete?name={Uri.EscapeDataString(item.Name)}")" Color="Color.Error" Size="Size.Small" title="Delete" aria-label="Delete" />
+                            <MudIconButton Icon="@Icons.Material.Filled.Edit" Href="@($"/Backoffice/ApiScopes/Edit?name={Uri.EscapeDataString(item.Name)}")" Color="Color.Primary" Size="Size.Small" title="@Localizer["Backoffice_Common_EditAction"]" aria-label="@Localizer["Backoffice_Common_EditAction"]" />
+                            <MudIconButton Icon="@Icons.Material.Filled.Delete" Href="@($"/Backoffice/ApiScopes/Delete?name={Uri.EscapeDataString(item.Name)}")" Color="Color.Error" Size="Size.Small" title="@Localizer["Backoffice_Common_DeleteAction"]" aria-label="@Localizer["Backoffice_Common_DeleteAction"]" />
                         </div>
                     </td>
                 </tr>
@@ -132,7 +135,7 @@ else
 
     private async Task SaveAsync(EditContext _)
     {
-        if (string.IsNullOrWhiteSpace(Form.Name)) { ErrorMessage = "Name is required."; return; }
+        if (string.IsNullOrWhiteSpace(Form.Name)) { ErrorMessage = Localizer["Backoffice_Common_ErrorNameRequired"]; return; }
 
         var request = new ApiScopeUpsertRequest(
             Form.Name.Trim(),

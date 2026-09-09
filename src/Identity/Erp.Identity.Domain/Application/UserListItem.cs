@@ -6,4 +6,5 @@ public sealed record UserListItem(
     string FullName,
     bool IsActive,
     DateTime CreatedAt,
-    IReadOnlyList<string> Roles);
+    IReadOnlyList<string> Roles,
+    string PreferredLanguage);

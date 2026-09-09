@@ -24,6 +24,28 @@ public static class Constants
         public const string Name = "name";
         public const string Subject = "sub";
         public const string Scope = "scope";
+
+        /// <summary>
+        /// The user's preferred UI culture (e.g. "pt-PT", "en-US"), issued into the id_token so
+        /// every UI can localize without a round trip to the Identity host.
+        /// </summary>
+        public const string Locale = "locale";
+    }
+
+    /// <summary>
+    /// Supported UI cultures and the default one, shared by every Blazor front end so the
+    /// localization setup (RequestLocalizationOptions, culture cookie fallback) stays consistent.
+    /// </summary>
+    public static class Localization
+    {
+        public const string DefaultCulture = "pt-PT";
+        public const string PtPt = "pt-PT";
+        public const string EnUs = "en-US";
+
+        public static readonly string[] SupportedCultures = [PtPt, EnUs];
+
+        /// <summary>Name of the cookie used to remember the culture of an unauthenticated visitor.</summary>
+        public const string CultureCookieName = ".Erp.Culture";
     }
 
     /// <summary>

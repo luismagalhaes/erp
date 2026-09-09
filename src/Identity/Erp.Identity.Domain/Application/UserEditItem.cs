@@ -5,4 +5,5 @@ public sealed record UserEditItem(
     string Email,
     string FullName,
     bool IsActive,
-    IReadOnlyList<string> Roles);
+    IReadOnlyList<string> Roles,
+    string PreferredLanguage);

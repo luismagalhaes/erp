@@ -8,11 +8,14 @@
 @using Erp.Main.Layout
 @using Erp.Main.Models
 @using Erp.Main.Services
+@using Erp.Main.Resources
+@using Microsoft.Extensions.Localization
 @inject SalesApiClient SalesApi
 @inject CoreApiClient CoreApi
 @inject CompanyState Company
+@inject IStringLocalizer<MainResources> L
 
-<PageTitle>@(_movement?.DocumentNumber ?? "Guia")</PageTitle>
+<PageTitle>@(_movement?.DocumentNumber ?? L["StockMovementPrint_DefaultTitle"])</PageTitle>
 
 <PrintToolbar Copy="_copy" CopyChanged="@(copy => _copy = copy)" BackUrl="@($"stock-movements/{Id}")" />
 
@@ -22,7 +25,7 @@
 }
 else if (_movement is null)
 {
-    <MudAlert Severity="Severity.Error">@(_error ?? "Guia não encontrada.")</MudAlert>
+    <MudAlert Severity="Severity.Error">@(_error ?? L["StockMovementPrint_MovementNotFound"])</MudAlert>
 }
 else
 {
@@ -34,28 +37,28 @@ else
 
     @if (_movement.Status == "A")
     {
-        <div class="print-voided">Guia anulada</div>
+        <div class="print-voided">@L["StockMovementPrint_VoidedNotice"]</div>
     }
     else if (string.IsNullOrWhiteSpace(_movement.AtDocCodeId))
     {
-        <div class="print-voided">Documento por comunicar à AT — a mercadoria não pode circular</div>
+        <div class="print-voided">@L["StockMovementPrint_ToCommunicateNotice"]</div>
     }
 
     <div class="print-parties">
         <div class="print-box">
-            <div class="label">@(_movement.PartyIsSupplier ? "Fornecedor" : "Adquirente")</div>
+            <div class="label">@(_movement.PartyIsSupplier ? L["StockMovementPrint_SupplierLabel"] : L["StockMovementPrint_CustomerLabel"])</div>
             <div><strong>@_movement.PartyName</strong></div>
-            <div>NIF @_movement.PartyTaxId</div>
+            <div>@string.Format(L["StockMovementPrint_TaxIdPrefix"], _movement.PartyTaxId)</div>
         </div>
 
         <div class="print-box">
-            <div class="label">Local de carga</div>
+            <div class="label">@L["StockMovementPrint_LoadLocationLabel"]</div>
             <div>@_movement.ShipFrom.Address</div>
             <div>@FormatCity(_movement.ShipFrom)</div>
         </div>
 
         <div class="print-box">
-            <div class="label">Local de descarga</div>
+            <div class="label">@L["StockMovementPrint_UnloadLocationLabel"]</div>
             <div>@_movement.ShipTo.Address</div>
             <div>@FormatCity(_movement.ShipTo)</div>
         </div>
@@ -63,15 +66,15 @@ else
 
     <div class="print-parties">
         <div class="print-box">
-            <div class="label">Início do transporte</div>
+            <div class="label">@L["StockMovementPrint_TransportStartLabel"]</div>
             <div>@_movement.MovementStartAtUtc.ToString("yyyy-MM-dd HH:mm")</div>
         </div>
         <div class="print-box">
-            <div class="label">Matrícula</div>
+            <div class="label">@L["StockMovementPrint_VehiclePlateLabel"]</div>
             <div>@(_movement.VehiclePlate ?? "—")</div>
         </div>
         <div class="print-box">
-            <div class="label">Código atribuído pela AT</div>
+            <div class="label">@L["StockMovementPrint_AtCodeLabel"]</div>
             <div>@(_movement.AtDocCodeId ?? "—")</div>
         </div>
     </div>
@@ -79,13 +82,13 @@ else
     <table class="print-table">
         <thead>
             <tr>
-                <th style="width: 24px;">#</th>
-                <th style="width: 70px;">Código</th>
-                <th>Descrição</th>
-                <th class="num" style="width: 60px;">Qtd.</th>
-                <th style="width: 34px;">Un.</th>
-                <th class="num" style="width: 70px;">Preço</th>
-                <th class="num" style="width: 76px;">Valor</th>
+                <th style="width: 24px;">@L["StockMovementPrint_NumberColumn"]</th>
+                <th style="width: 70px;">@L["StockMovementPrint_CodeColumn"]</th>
+                <th>@L["StockMovementPrint_DescriptionColumn"]</th>
+                <th class="num" style="width: 60px;">@L["StockMovementPrint_QuantityColumn"]</th>
+                <th style="width: 34px;">@L["StockMovementPrint_UnitColumn"]</th>
+                <th class="num" style="width: 70px;">@L["StockMovementPrint_PriceColumn"]</th>
+                <th class="num" style="width: 76px;">@L["StockMovementPrint_ValueColumn"]</th>
             </tr>
         </thead>
         <tbody>
@@ -107,22 +110,22 @@ else
     <div class="print-summary">
         <div></div>
         <div class="print-totals">
-            <div class="row"><span>Quantidade total</span><span>@_movement.TotalQuantity.ToString("N3")</span></div>
-            <div class="row"><span>Base tributável</span><span>@_movement.NetTotal.ToString("N2")</span></div>
-            <div class="row"><span>IVA</span><span>@_movement.TaxPayable.ToString("N2")</span></div>
-            <div class="row grand"><span>Total</span><span>@_movement.GrossTotal.ToString("N2") EUR</span></div>
+            <div class="row"><span>@L["StockMovementPrint_TotalQuantityLabel"]</span><span>@_movement.TotalQuantity.ToString("N3")</span></div>
+            <div class="row"><span>@L["StockMovementPrint_NetTotalLabel"]</span><span>@_movement.NetTotal.ToString("N2")</span></div>
+            <div class="row"><span>@L["StockMovementPrint_TaxLabel"]</span><span>@_movement.TaxPayable.ToString("N2")</span></div>
+            <div class="row grand"><span>@L["StockMovementPrint_TotalLabel"]</span><span>@_movement.GrossTotal.ToString("N2") EUR</span></div>
         </div>
     </div>
 
     @if (!string.IsNullOrWhiteSpace(_movement.Comments))
     {
-        <div class="print-exemptions">Observações: @_movement.Comments</div>
+        <div class="print-exemptions">@string.Format(L["StockMovementPrint_NotesPrefix"], _movement.Comments)</div>
     }
 
     <PrintFiscalFooter PrintableHash="@_movement.PrintableHash"
                        Atcud="@_movement.Atcud"
                        QrCodePayload="@_movement.QrCodePayload">
-        <div>Emitido em @_movement.SystemEntryDateUtc.ToString("yyyy-MM-dd HH:mm:ss") UTC</div>
+        <div>@string.Format(L["StockMovementPrint_IssuedOn"], _movement.SystemEntryDateUtc.ToString("yyyy-MM-dd HH:mm:ss"))</div>
     </PrintFiscalFooter>
 }
 
@@ -160,7 +163,7 @@ else
 
             if (_movement is null)
             {
-                _error = "Guia não encontrada.";
+                _error = L["StockMovementPrint_MovementNotFound"];
                 return;
             }
 
@@ -169,7 +172,7 @@ else
         }
         catch (Exception ex)
         {
-            _error = $"Não foi possível carregar a guia: {ex.Message}";
+            _error = string.Format(L["StockMovementPrint_LoadError"], ex.Message);
         }
         finally
         {

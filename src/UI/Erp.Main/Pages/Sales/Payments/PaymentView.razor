@@ -5,16 +5,19 @@
 @using MudBlazor
 @using Erp.Main.Models
 @using Erp.Main.Services
+@using Microsoft.Extensions.Localization
+@using Erp.Main.Resources
 @inject SalesApiClient SalesApi
 @inject NavigationManager Navigation
 @inject ISnackbar Snackbar
+@inject IStringLocalizer<MainResources> L
 
-<PageTitle>@(_payment?.PaymentRefNo ?? "Recibo")</PageTitle>
+<PageTitle>@(_payment?.PaymentRefNo ?? L["PaymentView_DefaultTitle"])</PageTitle>
 
 <MudStack Spacing="4">
     <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center">
         <MudStack Spacing="0">
-            <MudText Typo="Typo.h4">@(_payment?.PaymentRefNo ?? "Recibo")</MudText>
+            <MudText Typo="Typo.h4">@(_payment?.PaymentRefNo ?? L["PaymentView_DefaultTitle"])</MudText>
             @if (_payment is not null)
             {
                 <MudText Typo="Typo.body2" Color="Color.Secondary">
@@ -29,11 +32,11 @@
                        StartIcon="@Icons.Material.Filled.Print"
                        Disabled="@(_payment is null)"
                        OnClick="@(() => Navigation.NavigateTo($"payments/{Id}/print"))">
-                Imprimir
+                @L["PaymentView_PrintButton"]
             </MudButton>
             <MudButton Variant="Variant.Text" StartIcon="@Icons.Material.Filled.ArrowBack"
                        OnClick="@(() => Navigation.NavigateTo("payments"))">
-                Voltar
+                @L["PaymentView_BackButton"]
             </MudButton>
         </MudStack>
     </MudStack>
@@ -52,35 +55,35 @@
         @if (_payment.Status == "A")
         {
             <MudAlert Severity="Severity.Warning" Dense="true">
-                Recibo anulado. O registo original é preservado e as faturas voltaram a ficar em dívida.
+                @L["PaymentView_VoidedNotice"]
             </MudAlert>
         }
 
         <MudPaper Elevation="1" Class="pa-4">
             <MudGrid>
                 <MudItem xs="12" md="3">
-                    <MudText Typo="Typo.caption" Color="Color.Secondary">Cliente</MudText>
+                    <MudText Typo="Typo.caption" Color="Color.Secondary">@L["PaymentView_CustomerLabel"]</MudText>
                     <MudText>@_payment.PartyName</MudText>
-                    <MudText Typo="Typo.body2" Color="Color.Secondary">NIF @_payment.PartyTaxId</MudText>
+                    <MudText Typo="Typo.body2" Color="Color.Secondary">@L["PaymentView_TaxIdPrefix", _payment.PartyTaxId]</MudText>
                 </MudItem>
                 <MudItem xs="12" md="3">
-                    <MudText Typo="Typo.caption" Color="Color.Secondary">Data do recibo</MudText>
+                    <MudText Typo="Typo.caption" Color="Color.Secondary">@L["PaymentView_DateLabel"]</MudText>
                     <MudText>@_payment.TransactionDate.ToString("yyyy-MM-dd")</MudText>
                 </MudItem>
                 <MudItem xs="12" md="3">
-                    <MudText Typo="Typo.caption" Color="Color.Secondary">Registo no sistema</MudText>
+                    <MudText Typo="Typo.caption" Color="Color.Secondary">@L["PaymentView_SystemEntryLabel"]</MudText>
                     <MudText>@_payment.SystemEntryDateUtc.ToString("yyyy-MM-dd HH:mm:ss") UTC</MudText>
                 </MudItem>
                 <MudItem xs="12" md="3">
-                    <MudText Typo="Typo.caption" Color="Color.Secondary">Assinatura</MudText>
+                    <MudText Typo="Typo.caption" Color="Color.Secondary">@L["PaymentView_SignatureLabel"]</MudText>
                     <MudText Style="font-family: monospace;">@_payment.PrintableHash</MudText>
-                    <MudText Typo="Typo.body2" Color="Color.Secondary">Processado por programa certificado</MudText>
+                    <MudText Typo="Typo.body2" Color="Color.Secondary">@L["PaymentView_CertifiedSoftwareNote"]</MudText>
                 </MudItem>
 
                 @if (!string.IsNullOrWhiteSpace(_payment.Description))
                 {
                     <MudItem xs="12">
-                        <MudText Typo="Typo.caption" Color="Color.Secondary">Observações</MudText>
+                        <MudText Typo="Typo.caption" Color="Color.Secondary">@L["PaymentView_NotesLabel"]</MudText>
                         <MudText>@_payment.Description</MudText>
                     </MudItem>
                 }
@@ -88,25 +91,25 @@
         </MudPaper>
 
         <MudPaper Elevation="1" Class="pa-2">
-            <MudText Typo="Typo.h6" Class="pa-2">Faturas liquidadas</MudText>
+            <MudText Typo="Typo.h6" Class="pa-2">@L["PaymentView_SettledInvoicesTitle"]</MudText>
             <MudTable Items="_payment.Lines" Dense="true" Hover="true" Striped="true" Breakpoint="Breakpoint.Sm">
                 <HeaderContent>
-                    <MudTh>#</MudTh>
-                    <MudTh>Fatura</MudTh>
-                    <MudTh>Data da fatura</MudTh>
-                    <MudTh Style="text-align: right;">Valor liquidado</MudTh>
-                    <MudTh Style="width: 70px; text-align: right;">Ações</MudTh>
+                    <MudTh>@L["PaymentView_NumberColumn"]</MudTh>
+                    <MudTh>@L["PaymentView_InvoiceColumn"]</MudTh>
+                    <MudTh>@L["PaymentView_InvoiceDateColumn"]</MudTh>
+                    <MudTh Style="text-align: right;">@L["PaymentView_SettledAmountColumn"]</MudTh>
+                    <MudTh Style="width: 70px; text-align: right;">@L["PaymentView_ActionsColumn"]</MudTh>
                 </HeaderContent>
                 <RowTemplate>
-                    <MudTd DataLabel="#">@context.LineNumber</MudTd>
-                    <MudTd DataLabel="Fatura">
+                    <MudTd DataLabel="@L["PaymentView_NumberColumn"]">@context.LineNumber</MudTd>
+                    <MudTd DataLabel="@L["PaymentView_InvoiceColumn"]">
                         <MudText Typo="Typo.body2" Style="font-family: monospace;">@context.OriginatingNumber</MudText>
                     </MudTd>
-                    <MudTd DataLabel="Data da fatura">@context.OriginatingDate.ToString("yyyy-MM-dd")</MudTd>
-                    <MudTd DataLabel="Valor liquidado" Style="text-align: right;">@context.AppliedAmount.ToString("N2")</MudTd>
-                    <MudTd DataLabel="Ações" Style="text-align: right;">
+                    <MudTd DataLabel="@L["PaymentView_InvoiceDateColumn"]">@context.OriginatingDate.ToString("yyyy-MM-dd")</MudTd>
+                    <MudTd DataLabel="@L["PaymentView_SettledAmountColumn"]" Style="text-align: right;">@context.AppliedAmount.ToString("N2")</MudTd>
+                    <MudTd DataLabel="@L["PaymentView_ActionsColumn"]" Style="text-align: right;">
                         <MudIconButton Icon="@Icons.Material.Filled.Visibility" Size="Size.Small"
-                                       title="Ver fatura"
+                                       title="@L["PaymentView_ViewInvoiceTitle"]"
                                        OnClick="@(() => Navigation.NavigateTo($"invoices/{context.OriginatingDocumentId}"))" />
                     </MudTd>
                 </RowTemplate>
@@ -114,17 +117,17 @@
         </MudPaper>
 
         <MudPaper Elevation="1" Class="pa-2">
-            <MudText Typo="Typo.h6" Class="pa-2">Meios de pagamento</MudText>
+            <MudText Typo="Typo.h6" Class="pa-2">@L["PaymentView_MethodsTitle"]</MudText>
             <MudTable Items="_payment.Methods" Dense="true" Hover="true" Striped="true" Breakpoint="Breakpoint.Sm">
                 <HeaderContent>
-                    <MudTh>Meio</MudTh>
-                    <MudTh>Data</MudTh>
-                    <MudTh Style="text-align: right;">Valor</MudTh>
+                    <MudTh>@L["PaymentView_MethodColumn"]</MudTh>
+                    <MudTh>@L["PaymentView_DateColumn"]</MudTh>
+                    <MudTh Style="text-align: right;">@L["PaymentView_ValueColumn"]</MudTh>
                 </HeaderContent>
                 <RowTemplate>
-                    <MudTd DataLabel="Meio">@PaymentMechanismOptions.Describe(context.Mechanism)</MudTd>
-                    <MudTd DataLabel="Data">@context.PaymentDate.ToString("yyyy-MM-dd")</MudTd>
-                    <MudTd DataLabel="Valor" Style="text-align: right;">@context.Amount.ToString("N2")</MudTd>
+                    <MudTd DataLabel="@L["PaymentView_MethodColumn"]">@PaymentMechanismOptions.Describe(context.Mechanism)</MudTd>
+                    <MudTd DataLabel="@L["PaymentView_DateColumn"]">@context.PaymentDate.ToString("yyyy-MM-dd")</MudTd>
+                    <MudTd DataLabel="@L["PaymentView_ValueColumn"]" Style="text-align: right;">@context.Amount.ToString("N2")</MudTd>
                 </RowTemplate>
             </MudTable>
         </MudPaper>
@@ -133,16 +136,16 @@
             <MudPaper Elevation="1" Class="pa-4" Style="min-width: 300px;">
                 <MudStack Spacing="2">
                     <MudStack Row="true" Justify="Justify.SpaceBetween">
-                        <MudText Typo="Typo.body2">Valor liquidado</MudText>
+                        <MudText Typo="Typo.body2">@L["PaymentView_SettledAmountLabel"]</MudText>
                         <MudText Typo="Typo.body2">@_payment.NetTotal.ToString("N2")</MudText>
                     </MudStack>
                     <MudStack Row="true" Justify="Justify.SpaceBetween">
-                        <MudText Typo="Typo.body2">IVA</MudText>
+                        <MudText Typo="Typo.body2">@L["PaymentView_TaxLabel"]</MudText>
                         <MudText Typo="Typo.body2">@_payment.TaxPayable.ToString("N2")</MudText>
                     </MudStack>
                     <MudDivider />
                     <MudStack Row="true" Justify="Justify.SpaceBetween">
-                        <MudText Typo="Typo.h6">Total recebido</MudText>
+                        <MudText Typo="Typo.h6">@L["PaymentView_TotalReceivedLabel"]</MudText>
                         <MudText Typo="Typo.h6" Color="Color.Primary">@_payment.GrossTotal.ToString("N2")</MudText>
                     </MudStack>
                 </MudStack>
@@ -150,7 +153,7 @@
         </MudStack>
 
         <MudExpansionPanels Elevation="1">
-            <MudExpansionPanel Text="Dados do código QR">
+            <MudExpansionPanel Text="@L["PaymentView_QrDataTitle"]">
                 <MudPaper Elevation="0" Class="pa-3" Style="overflow-x: auto;">
                     <MudText Style="font-family: monospace; font-size: 0.8rem; white-space: nowrap;">
                         @_payment.QrCodePayload
@@ -160,19 +163,18 @@
 
             @if (_payment.Status != "A")
             {
-                <MudExpansionPanel Text="Anular recibo">
+                <MudExpansionPanel Text="@L["PaymentView_VoidPaymentTitle"]">
                     <MudText Typo="Typo.body2" Color="Color.Secondary" Class="mb-3">
-                        A anulação não apaga nem altera o documento: regista o novo estado e o motivo, mantendo o
-                        registo original e o seu lugar na cadeia de assinatura. As faturas voltam a ficar em dívida.
+                        @L["PaymentView_VoidHelpText"]
                     </MudText>
                     <MudStack Row="true" Spacing="2" AlignItems="AlignItems.Center">
-                        <MudTextField @bind-Value="_voidReason" Label="Motivo" Variant="Variant.Outlined"
+                        <MudTextField @bind-Value="_voidReason" Label="@L["PaymentView_ReasonLabel"]" Variant="Variant.Outlined"
                                       Margin="Margin.Dense" Style="max-width: 480px;" />
                         <MudButton Variant="Variant.Filled" Color="Color.Error"
                                    StartIcon="@Icons.Material.Filled.Cancel"
                                    Disabled="@(_working || string.IsNullOrWhiteSpace(_voidReason))"
                                    OnClick="VoidAsync">
-                            Anular
+                            @L["PaymentView_VoidButton"]
                         </MudButton>
                     </MudStack>
                 </MudExpansionPanel>
@@ -211,11 +213,11 @@
         {
             _payment = await SalesApi.GetPaymentAsync(Id);
             if (_payment is null)
-                _error = "Recibo não encontrado.";
+                _error = L["PaymentView_PaymentNotFound"];
         }
         catch (Exception ex)
         {
-            _error = $"Não foi possível carregar o recibo: {ex.Message}";
+            _error = L["PaymentView_LoadError", ex.Message];
         }
         finally
         {
@@ -238,13 +240,13 @@
                 return;
             }
 
-            Snackbar.Add("Recibo anulado.", Severity.Success);
+            Snackbar.Add(L["PaymentView_VoidedSuccess"].Value, Severity.Success);
             _voidReason = string.Empty;
             await LoadAsync();
         }
         catch (Exception ex)
         {
-            _error = $"Não foi possível anular o recibo: {ex.Message}";
+            _error = L["PaymentView_VoidError", ex.Message];
         }
         finally
         {

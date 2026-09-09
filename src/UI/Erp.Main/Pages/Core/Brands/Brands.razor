@@ -2,24 +2,27 @@
 @attribute [Authorize]
 @using Microsoft.AspNetCore.Authorization
 @using Microsoft.AspNetCore.Components.Web
+@using Microsoft.Extensions.Localization
 @using MudBlazor
 @using Erp.Main.Components.Common
 @using Erp.Main.Models
+@using Erp.Main.Resources
 @using Erp.Main.Services
 @inject CatalogApiClient Catalog
 @inject CompanyState Company
 @inject NavigationManager Navigation
+@inject IStringLocalizer<MainResources> Localizer
 
-<PageTitle>Marcas</PageTitle>
+<PageTitle>@Localizer["Brands_PageTitle"]</PageTitle>
 
 <MudStack Spacing="4">
-    <PageHeader Title="Marcas">
+    <PageHeader Title="@Localizer["Brands_PageTitle"]">
         <Actions>
             <MudButton Variant="Variant.Filled" Color="Color.Primary"
                        StartIcon="@Icons.Material.Filled.Add"
                        Disabled="@(!Company.HasCompany)"
                        OnClick="@(() => Navigation.NavigateTo("brands/new"))">
-                Nova marca
+                @Localizer["Brands_NewBrand"]
             </MudButton>
         </Actions>
     </PageHeader>
@@ -27,20 +30,20 @@
     <DataGrid T="Brand"
               LoadAsync="@((companyId, query, ct) => Catalog.QueryBrandsAsync(companyId, query, ct))"
               SearchFields="SearchFields" DefaultOrderBy="Code"
-              SearchPlaceholder="Procurar por cÃ³digo ou nome"
+              SearchPlaceholder="@Localizer["Brands_SearchPlaceholder"]"
               EmptyIcon="@Icons.Material.Filled.Loyalty"
-              EmptyTitle="Sem marcas para mostrar"
-              EmptyDescription="Ajuste os filtros ou crie a primeira marca."
-              ItemsLabel="marcas"
-              LoadErrorMessage="NÃ£o foi possÃ­vel carregar as marcas">
+              EmptyTitle="@Localizer["Brands_EmptyTitle"]"
+              EmptyDescription="@Localizer["Brands_EmptyDescription"]"
+              ItemsLabel="@Localizer["Brands_ItemsLabel"]"
+              LoadErrorMessage="@Localizer["Brands_LoadErrorMessage"]">
         <Columns>
-            <PropertyColumn Property="x => x.Code" Title="CÃ³digo" />
-            <PropertyColumn Property="x => x.Name" Title="Nome" />
-            <PropertyColumn Property="x => x.IsActive" Title="Estado">
+            <PropertyColumn Property="x => x.Code" Title="@Localizer["Common_CodeColumn"]" />
+            <PropertyColumn Property="x => x.Name" Title="@Localizer["Common_NameColumn"]" />
+            <PropertyColumn Property="x => x.IsActive" Title="@Localizer["Common_StatusColumn"]">
                 <CellTemplate>
                     <MudChip T="string" Size="Size.Small" Variant="Variant.Text"
                              Color="@(context.Item.IsActive ? Color.Success : Color.Default)">
-                        @(context.Item.IsActive ? "Ativa" : "Inativa")
+                        @(context.Item.IsActive ? Localizer["Brands_Active"] : Localizer["Brands_Inactive"])
                     </MudChip>
                 </CellTemplate>
             </PropertyColumn>
@@ -52,7 +55,7 @@
                              AnchorOrigin="Origin.BottomRight" TransformOrigin="Origin.TopRight">
                         <MudMenuItem Icon="@Icons.Material.Filled.Edit"
                                      OnClick="@(() => Navigation.NavigateTo($"brands/{context.Item.Id}"))">
-                            Editar
+                            @Localizer["Common_EditAction"]
                         </MudMenuItem>
                     </MudMenu>
                 </CellTemplate>

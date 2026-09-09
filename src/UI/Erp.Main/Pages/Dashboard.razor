@@ -2,11 +2,14 @@
 @attribute [Authorize]
 @using Microsoft.AspNetCore.Authorization
 @using Microsoft.AspNetCore.Components.Web
+@using Microsoft.Extensions.Localization
 @using MudBlazor
+@using Erp.Main.Resources
+@inject IStringLocalizer<MainResources> Localizer
 
-<PageTitle>Dashboard — ERP</PageTitle>
+<PageTitle>@Localizer["Dashboard_PageTitle"]</PageTitle>
 
-<MudText Typo="Typo.h4" Class="mb-4">Dashboard</MudText>
+<MudText Typo="Typo.h4" Class="mb-4">@Localizer["Dashboard_Heading"]</MudText>
 
 <MudGrid>
     <MudItem xs="12" sm="6" md="3">
@@ -15,7 +18,7 @@
                 <MudIcon Icon="@Icons.Material.Filled.Receipt" Color="Color.Primary" Size="Size.Large" />
                 <MudStack Spacing="0">
                     <MudText Typo="Typo.h5">0</MudText>
-                    <MudText Typo="Typo.body2" Color="Color.Secondary">Invoices this month</MudText>
+                    <MudText Typo="Typo.body2" Color="Color.Secondary">@Localizer["Dashboard_InvoicesThisMonth"]</MudText>
                 </MudStack>
             </MudStack>
         </MudPaper>
@@ -26,7 +29,7 @@
                 <MudIcon Icon="@Icons.Material.Filled.People" Color="Color.Success" Size="Size.Large" />
                 <MudStack Spacing="0">
                     <MudText Typo="Typo.h5">0</MudText>
-                    <MudText Typo="Typo.body2" Color="Color.Secondary">Active customers</MudText>
+                    <MudText Typo="Typo.body2" Color="Color.Secondary">@Localizer["Dashboard_ActiveCustomers"]</MudText>
                 </MudStack>
             </MudStack>
         </MudPaper>
@@ -37,7 +40,7 @@
                 <MudIcon Icon="@Icons.Material.Filled.Inventory" Color="Color.Warning" Size="Size.Large" />
                 <MudStack Spacing="0">
                     <MudText Typo="Typo.h5">0</MudText>
-                    <MudText Typo="Typo.body2" Color="Color.Secondary">Items in stock</MudText>
+                    <MudText Typo="Typo.body2" Color="Color.Secondary">@Localizer["Dashboard_ItemsInStock"]</MudText>
                 </MudStack>
             </MudStack>
         </MudPaper>
@@ -48,7 +51,7 @@
                 <MudIcon Icon="@Icons.Material.Filled.Euro" Color="Color.Info" Size="Size.Large" />
                 <MudStack Spacing="0">
                     <MudText Typo="Typo.h5">0,00 €</MudText>
-                    <MudText Typo="Typo.body2" Color="Color.Secondary">Sales volume</MudText>
+                    <MudText Typo="Typo.body2" Color="Color.Secondary">@Localizer["Dashboard_SalesVolume"]</MudText>
                 </MudStack>
             </MudStack>
         </MudPaper>

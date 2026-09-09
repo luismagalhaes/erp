@@ -1,5 +1,8 @@
 @using MudBlazor
 @using Erp.Main.Models
+@using Microsoft.Extensions.Localization
+@using Erp.Main.Resources
+@inject IStringLocalizer<MainResources> Localizer
 
 @*
     Customers and suppliers are filled in the same way, so they share these fields.
@@ -14,52 +17,52 @@
 <MudGrid>
     <MudItem xs="12" md="3">
         <MudTextField @bind-Value="Model.Code" @bind-Value:after="NotifyChangedAsync" Immediate="true"
-                      Label="Código" Variant="Variant.Outlined"
+                      Label="@Localizer["PartnerForm_CodeLabel"]" Variant="Variant.Outlined"
                       Required="true" Disabled="@(!AllowCodeEdit)"
-                      HelperText="@(AllowCodeEdit ? null : "O código não pode ser alterado")" />
+                      HelperText="@(AllowCodeEdit ? null : Localizer["PartnerForm_CodeHelperText"].Value)" />
     </MudItem>
     <MudItem xs="12" md="6">
         <MudTextField @bind-Value="Model.Name" @bind-Value:after="NotifyChangedAsync" Immediate="true"
-                      Label="Nome" Variant="Variant.Outlined" Required="true" />
+                      Label="@Localizer["PartnerForm_NameLabel"]" Variant="Variant.Outlined" Required="true" />
     </MudItem>
     <MudItem xs="12" md="3">
         <MudTextField @bind-Value="Model.TaxId" @bind-Value:after="NotifyChangedAsync" Immediate="true"
-                      Label="NIF" Variant="Variant.Outlined" Required="true"
-                      HelperText="999999990 para consumidor final" />
+                      Label="@Localizer["PartnerForm_TaxIdLabel"]" Variant="Variant.Outlined" Required="true"
+                      HelperText="@Localizer["PartnerForm_TaxIdHelperText"]" />
     </MudItem>
 
     <MudItem xs="12" md="6">
         <MudTextField @bind-Value="Model.Address" @bind-Value:after="NotifyChangedAsync"
-                      Label="Morada" Variant="Variant.Outlined" />
+                      Label="@Localizer["PartnerForm_AddressLabel"]" Variant="Variant.Outlined" />
     </MudItem>
     <MudItem xs="12" md="2">
         <MudTextField @bind-Value="Model.PostalCode" @bind-Value:after="NotifyChangedAsync"
-                      Label="Código postal" Variant="Variant.Outlined" />
+                      Label="@Localizer["PartnerForm_PostalCodeLabel"]" Variant="Variant.Outlined" />
     </MudItem>
     <MudItem xs="12" md="2">
         <MudTextField @bind-Value="Model.City" @bind-Value:after="NotifyChangedAsync"
-                      Label="Localidade" Variant="Variant.Outlined" />
+                      Label="@Localizer["PartnerForm_CityLabel"]" Variant="Variant.Outlined" />
     </MudItem>
     <MudItem xs="12" md="2">
         <MudTextField @bind-Value="Model.Country" @bind-Value:after="NotifyChangedAsync"
-                      Label="País" Variant="Variant.Outlined"
-                      HelperText="Código ISO, ex. PT" />
+                      Label="@Localizer["PartnerForm_CountryLabel"]" Variant="Variant.Outlined"
+                      HelperText="@Localizer["PartnerForm_CountryHelperText"]" />
     </MudItem>
 
     <MudItem xs="12" md="6">
         <MudTextField @bind-Value="Model.Email" @bind-Value:after="NotifyChangedAsync"
-                      Label="Email" Variant="Variant.Outlined" InputType="InputType.Email" />
+                      Label="@Localizer["PartnerForm_EmailLabel"]" Variant="Variant.Outlined" InputType="InputType.Email" />
     </MudItem>
     <MudItem xs="12" md="6">
         <MudTextField @bind-Value="Model.Phone" @bind-Value:after="NotifyChangedAsync"
-                      Label="Telefone" Variant="Variant.Outlined" />
+                      Label="@Localizer["PartnerForm_PhoneLabel"]" Variant="Variant.Outlined" />
     </MudItem>
 
     @if (ShowActive)
     {
         <MudItem xs="12">
             <MudSwitch @bind-Value="Model.IsActive" @bind-Value:after="NotifyChangedAsync"
-                       Color="Color.Primary" Label="@ActiveLabel" />
+                       Color="Color.Primary" Label="@(ActiveLabel ?? Localizer["PartnerForm_ActiveLabel"])" />
         </MudItem>
     }
 </MudGrid>
@@ -82,7 +85,7 @@
     public bool ShowActive { get; set; }
 
     [Parameter]
-    public string ActiveLabel { get; set; } = "Ativo";
+    public string? ActiveLabel { get; set; }
 
     private Task NotifyChangedAsync() => ModelChanged.InvokeAsync(Model);
 }

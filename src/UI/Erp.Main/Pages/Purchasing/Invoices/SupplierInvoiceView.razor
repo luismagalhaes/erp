@@ -5,16 +5,19 @@
 @using MudBlazor
 @using Erp.Main.Models
 @using Erp.Main.Services
+@using Erp.Main.Resources
+@using Microsoft.Extensions.Localization
 @inject PurchasingApiClient Purchasing
 @inject NavigationManager Navigation
 @inject ISnackbar Snackbar
+@inject IStringLocalizer<MainResources> L
 
-<PageTitle>@(_invoice?.SupplierDocumentNumber ?? "Fatura de fornecedor")</PageTitle>
+<PageTitle>@(_invoice?.SupplierDocumentNumber ?? L["SupplierInvoiceView_DefaultTitle"])</PageTitle>
 
 <MudStack Spacing="4">
     <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center">
         <MudStack Spacing="0">
-            <MudText Typo="Typo.h4">@(_invoice?.SupplierDocumentNumber ?? "Fatura de fornecedor")</MudText>
+            <MudText Typo="Typo.h4">@(_invoice?.SupplierDocumentNumber ?? L["SupplierInvoiceView_DefaultTitle"])</MudText>
             @if (_invoice is not null)
             {
                 <MudText Typo="Typo.body2" Color="Color.Secondary">
@@ -26,7 +29,7 @@
 
         <MudButton Variant="Variant.Text" StartIcon="@Icons.Material.Filled.ArrowBack"
                    OnClick="@(() => Navigation.NavigateTo("supplier-invoices"))">
-            Voltar
+            @L["SupplierInvoiceView_BackButton"]
         </MudButton>
     </MudStack>
 
@@ -41,36 +44,35 @@
     }
     else if (_invoice is null)
     {
-        <MudAlert Severity="Severity.Warning">Fatura não encontrada.</MudAlert>
+        <MudAlert Severity="Severity.Warning">@L["SupplierInvoiceView_NotFound"]</MudAlert>
     }
     else
     {
         @if (_invoice.IsVoided)
         {
             <MudAlert Severity="Severity.Error">
-                Registo anulado em @_invoice.VoidedAtUtc?.ToString("yyyy-MM-dd HH:mm"): @_invoice.VoidReason.
-                O documento do fornecedor não é afetado — nunca foi nosso para anular.
+                @string.Format(L["SupplierInvoiceView_VoidedAlert"], _invoice.VoidedAtUtc?.ToString("yyyy-MM-dd HH:mm"), _invoice.VoidReason)
             </MudAlert>
         }
 
         <MudPaper Elevation="1" Class="pa-4">
             <MudGrid>
                 <MudItem xs="6" md="3">
-                    <MudText Typo="Typo.caption" Color="Color.Secondary">Contribuinte</MudText>
+                    <MudText Typo="Typo.caption" Color="Color.Secondary">@L["SupplierInvoiceView_TaxIdLabel"]</MudText>
                     <MudText Typo="Typo.body1">@_invoice.Supplier.TaxId</MudText>
                 </MudItem>
                 <MudItem xs="6" md="3">
-                    <MudText Typo="Typo.caption" Color="Color.Secondary">ATCUD do fornecedor</MudText>
+                    <MudText Typo="Typo.caption" Color="Color.Secondary">@L["SupplierInvoiceView_AtcudLabel"]</MudText>
                     <MudText Typo="Typo.body1">
                         @(string.IsNullOrWhiteSpace(_invoice.SupplierAtcud) ? "—" : _invoice.SupplierAtcud)
                     </MudText>
                 </MudItem>
                 <MudItem xs="6" md="3">
-                    <MudText Typo="Typo.caption" Color="Color.Secondary">Recebida em</MudText>
+                    <MudText Typo="Typo.caption" Color="Color.Secondary">@L["SupplierInvoiceView_ReceivedLabel"]</MudText>
                     <MudText Typo="Typo.body1">@_invoice.ReceivedDate.ToString("yyyy-MM-dd")</MudText>
                 </MudItem>
                 <MudItem xs="6" md="3">
-                    <MudText Typo="Typo.caption" Color="Color.Secondary">Vencimento</MudText>
+                    <MudText Typo="Typo.caption" Color="Color.Secondary">@L["SupplierInvoiceView_DueDateLabel"]</MudText>
                     <MudText Typo="Typo.body1">@(_invoice.DueDate?.ToString("yyyy-MM-dd") ?? "—")</MudText>
                 </MudItem>
             </MudGrid>
@@ -78,16 +80,14 @@
             @if (_invoice.ReverseCharge)
             {
                 <MudAlert Severity="Severity.Info" Dense="true" Class="mt-3">
-                    <strong>Autoliquidação.</strong> O documento veio sem IVA e somos nós a liquidá-lo
-                    e a deduzi-lo.
+                    <strong>@L["SupplierInvoiceView_ReverseChargeStrong"]</strong> @L["SupplierInvoiceView_ReverseChargeInfo"]
                 </MudAlert>
             }
 
             @if (_invoice.MovedStock)
             {
                 <MudAlert Severity="Severity.Info" Dense="true" Class="mt-3">
-                    Esta fatura <strong>deu entrada em stock</strong>: trouxe mercadoria que nenhuma
-                    receção tinha dado entrada. Por isso não pode ser corrigida — só anulada.
+                    @L["SupplierInvoiceView_MovedStockPrefix"] <strong>@L["SupplierInvoiceView_MovedStockStrong"]</strong>@L["SupplierInvoiceView_MovedStockSuffix"]
                 </MudAlert>
             }
         </MudPaper>
@@ -95,39 +95,39 @@
         <MudPaper Elevation="1" Class="pa-2">
             <MudTable Items="_invoice.Lines" Hover="true" Striped="true" Dense="true" Breakpoint="Breakpoint.Sm">
                 <ToolBarContent>
-                    <MudText Typo="Typo.h6">Linhas</MudText>
+                    <MudText Typo="Typo.h6">@L["SupplierInvoiceView_LinesTitle"]</MudText>
                 </ToolBarContent>
                 <HeaderContent>
-                    <MudTh Style="width: 50px;">#</MudTh>
-                    <MudTh>Artigo</MudTh>
-                    <MudTh>Descrição</MudTh>
-                    <MudTh>Natureza</MudTh>
-                    <MudTh>Stock</MudTh>
-                    <MudTh Style="text-align: right;">Qtd.</MudTh>
-                    <MudTh Style="text-align: right;">Preço unit.</MudTh>
-                    <MudTh Style="text-align: right;">IVA</MudTh>
-                    <MudTh Style="text-align: right;">Total</MudTh>
+                    <MudTh Style="width: 50px;">@L["SupplierInvoiceView_NumberColumn"]</MudTh>
+                    <MudTh>@L["SupplierInvoiceView_ProductColumn"]</MudTh>
+                    <MudTh>@L["SupplierInvoiceView_DescriptionColumn"]</MudTh>
+                    <MudTh>@L["SupplierInvoiceView_NatureColumn"]</MudTh>
+                    <MudTh>@L["SupplierInvoiceView_StockColumn"]</MudTh>
+                    <MudTh Style="text-align: right;">@L["SupplierInvoiceView_QuantityColumn"]</MudTh>
+                    <MudTh Style="text-align: right;">@L["SupplierInvoiceView_UnitPriceColumn"]</MudTh>
+                    <MudTh Style="text-align: right;">@L["SupplierInvoiceView_TaxColumn"]</MudTh>
+                    <MudTh Style="text-align: right;">@L["SupplierInvoiceView_TotalColumn"]</MudTh>
                 </HeaderContent>
                 <RowTemplate>
-                    <MudTd DataLabel="#">@context.LineNumber</MudTd>
-                    <MudTd DataLabel="Artigo">
+                    <MudTd DataLabel="@L["SupplierInvoiceView_NumberColumn"]">@context.LineNumber</MudTd>
+                    <MudTd DataLabel="@L["SupplierInvoiceView_ProductColumn"]">
                         <MudText Typo="Typo.body2" Style="font-family: monospace;">@context.ProductCode</MudText>
                     </MudTd>
-                    <MudTd DataLabel="Descrição">@context.ProductDescription</MudTd>
-                    <MudTd DataLabel="Natureza">
+                    <MudTd DataLabel="@L["SupplierInvoiceView_DescriptionColumn"]">@context.ProductDescription</MudTd>
+                    <MudTd DataLabel="@L["SupplierInvoiceView_NatureColumn"]">
                         <MudText Typo="Typo.caption">@DeductionNatures.Describe(context.DeductionNature)</MudText>
                     </MudTd>
-                    <MudTd DataLabel="Stock">
+                    <MudTd DataLabel="@L["SupplierInvoiceView_StockColumn"]">
                         @if (context.ReceiptId is { } receiptId)
                         {
-                            <MudTooltip Text="A mercadoria já entrou na receção">
-                                <MudLink Href="@($"goods-receipts/{receiptId}")">Da receção</MudLink>
+                            <MudTooltip Text="@L["SupplierInvoiceView_ReceiptTooltip"]">
+                                <MudLink Href="@($"goods-receipts/{receiptId}")">@L["SupplierInvoiceView_FromReceiptLink"]</MudLink>
                             </MudTooltip>
                         }
                         else if (context.MovesStock)
                         {
                             <MudChip T="string" Size="Size.Small" Color="Color.Success" Variant="Variant.Text">
-                                Deu entrada
+                                @L["SupplierInvoiceView_EnteredChip"]
                             </MudChip>
                         }
                         else
@@ -135,28 +135,28 @@
                             <MudText Typo="Typo.caption" Color="Color.Secondary">—</MudText>
                         }
                     </MudTd>
-                    <MudTd DataLabel="Qtd." Style="text-align: right;">
+                    <MudTd DataLabel="@L["SupplierInvoiceView_QuantityColumn"]" Style="text-align: right;">
                         @context.Quantity.ToString("N3") @context.UnitOfMeasure
                     </MudTd>
-                    <MudTd DataLabel="Preço unit." Style="text-align: right;">
+                    <MudTd DataLabel="@L["SupplierInvoiceView_UnitPriceColumn"]" Style="text-align: right;">
                         @context.UnitPrice.ToString("N2")
                     </MudTd>
-                    <MudTd DataLabel="IVA" Style="text-align: right;">
+                    <MudTd DataLabel="@L["SupplierInvoiceView_TaxColumn"]" Style="text-align: right;">
                         @context.TaxPercentage.ToString("N0")%
                     </MudTd>
-                    <MudTd DataLabel="Total" Style="text-align: right;">@context.LineAmount.ToString("N2")</MudTd>
+                    <MudTd DataLabel="@L["SupplierInvoiceView_TotalColumn"]" Style="text-align: right;">@context.LineAmount.ToString("N2")</MudTd>
                 </RowTemplate>
             </MudTable>
         </MudPaper>
 
         <MudPaper Elevation="1" Class="pa-4">
-            <MudText Typo="Typo.h6" Class="mb-3">IVA</MudText>
+            <MudText Typo="Typo.h6" Class="mb-3">@L["SupplierInvoiceView_TaxSummaryTitle"]</MudText>
             <MudSimpleTable Dense="true" Hover="true" Style="max-width: 620px;">
                 <thead>
                     <tr>
-                        <th>Taxa</th>
-                        <th style="text-align: right;">Base tributável</th>
-                        <th style="text-align: right;">Imposto</th>
+                        <th>@L["SupplierInvoiceView_RateColumn"]</th>
+                        <th style="text-align: right;">@L["SupplierInvoiceView_TaxableBaseColumn"]</th>
+                        <th style="text-align: right;">@L["SupplierInvoiceView_TaxAmountColumn"]</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -169,7 +169,7 @@
                         </tr>
                     }
                     <tr>
-                        <td><strong>Total</strong></td>
+                        <td><strong>@L["SupplierInvoiceView_TotalRowLabel"]</strong></td>
                         <td style="text-align: right;"><strong>@_invoice.NetTotal.ToString("N2")</strong></td>
                         <td style="text-align: right;"><strong>@_invoice.TaxTotal.ToString("N2")</strong></td>
                     </tr>
@@ -177,29 +177,27 @@
             </MudSimpleTable>
 
             <MudText Typo="Typo.h5" Color="Color.Primary" Class="mt-4">
-                Total: @_invoice.GrossTotal.ToString("N2")
+                @string.Format(L["SupplierInvoiceView_GrandTotalLabel"], _invoice.GrossTotal.ToString("N2"))
             </MudText>
         </MudPaper>
 
         @if (!_invoice.IsVoided)
         {
             <MudExpansionPanels>
-                <MudExpansionPanel Text="Anular registo">
+                <MudExpansionPanel Text="@L["SupplierInvoiceView_VoidPanelTitle"]">
                     <MudText Typo="Typo.body2" Color="Color.Secondary" Class="mb-3">
-                        Anular o <strong>registo</strong>, não o documento: este nunca foi nosso. Deixa
-                        de contar para o IVA dedutível, e o stock que esta fatura tenha dado entrada é
-                        retirado. Mercadoria que veio por receção fica — essa receção continua de pé.
+                        @L["SupplierInvoiceView_VoidHelpPrefix"] <strong>@L["SupplierInvoiceView_VoidHelpStrong"]</strong>@L["SupplierInvoiceView_VoidHelpSuffix"]
                     </MudText>
 
                     <MudStack Row="true" Spacing="2" AlignItems="AlignItems.Center">
                         <MudTextField @bind-Value="_reason" @bind-Value:after="StateHasChanged" Immediate="true"
-                                      Label="Motivo" Variant="Variant.Outlined" Margin="Margin.Dense"
+                                      Label="@L["SupplierInvoiceView_ReasonLabel"]" Variant="Variant.Outlined" Margin="Margin.Dense"
                                       Style="max-width: 480px;" />
                         <MudButton Variant="Variant.Filled" Color="Color.Error"
                                    StartIcon="@Icons.Material.Filled.Cancel"
                                    Disabled="@(_working || string.IsNullOrWhiteSpace(_reason))"
                                    OnClick="VoidAsync">
-                            Anular
+                            @L["SupplierInvoiceView_VoidButton"]
                         </MudButton>
                     </MudStack>
                 </MudExpansionPanel>
@@ -232,7 +230,7 @@
         }
         catch (Exception ex)
         {
-            _error = $"Não foi possível carregar a fatura: {ex.Message}";
+            _error = string.Format(L["SupplierInvoiceView_LoadError"], ex.Message);
         }
         finally
         {
@@ -251,17 +249,17 @@
 
             if (invoice is null)
             {
-                _error = error ?? "Não foi possível anular o registo.";
+                _error = error ?? L["SupplierInvoiceView_VoidFallbackError"];
                 return;
             }
 
             _invoice = invoice;
             _reason = string.Empty;
-            Snackbar.Add("Registo anulado.", Severity.Success);
+            Snackbar.Add(L["SupplierInvoiceView_VoidSuccess"], Severity.Success);
         }
         catch (Exception ex)
         {
-            _error = $"Não foi possível anular o registo: {ex.Message}";
+            _error = string.Format(L["SupplierInvoiceView_VoidError"], ex.Message);
         }
         finally
         {

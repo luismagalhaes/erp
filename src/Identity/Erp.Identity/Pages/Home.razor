@@ -2,13 +2,16 @@
 @attribute [Authorize]
 @using Microsoft.AspNetCore.Components.Authorization
 @using MudBlazor
+@using Microsoft.Extensions.Localization
+@using Erp.Identity.Resources
+@inject IStringLocalizer<IdentityResources> Localizer
 
 <MudPaper Class="pa-6">
 
     <AuthorizeView>
         <Authorized>
-            <MudText Typo="Typo.body1">Authenticated user: <strong>@context.User.Identity?.Name</strong></MudText>
-            <MudText Typo="Typo.body2" Class="mt-2">Status: <strong>Authenticated</strong></MudText>
+            <MudText Typo="Typo.body1">@Localizer["Home_AuthenticatedUser", context.User.Identity?.Name ?? string.Empty]</MudText>
+            <MudText Typo="Typo.body2" Class="mt-2">@Localizer["Home_Status", Localizer["Home_StatusAuthenticated"]]</MudText>
         </Authorized>
     </AuthorizeView>
 </MudPaper>

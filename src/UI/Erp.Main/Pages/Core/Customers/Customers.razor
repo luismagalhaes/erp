@@ -6,20 +6,23 @@
 @using Erp.Main.Components.Common
 @using Erp.Main.Models
 @using Erp.Main.Services
+@using Erp.Main.Resources
+@using Microsoft.Extensions.Localization
 @inject CatalogApiClient Catalog
 @inject CompanyState Company
 @inject NavigationManager Navigation
+@inject IStringLocalizer<MainResources> Localizer
 
-<PageTitle>Clientes</PageTitle>
+<PageTitle>@Localizer["Customers_PageTitle"]</PageTitle>
 
 <MudStack Spacing="4">
-    <PageHeader Title="Clientes">
+    <PageHeader Title="@Localizer["Customers_PageTitle"]">
         <Actions>
             <MudButton Variant="Variant.Filled" Color="Color.Primary"
                        StartIcon="@Icons.Material.Filled.Add"
                        Disabled="@(!Company.HasCompany)"
                        OnClick="@(() => Navigation.NavigateTo("customers/new"))">
-                Novo cliente
+                @Localizer["Customers_NewButton"]
             </MudButton>
         </Actions>
     </PageHeader>
@@ -27,26 +30,26 @@
     <DataGrid T="Partner"
               LoadAsync="@((companyId, query, ct) => Catalog.QueryCustomersAsync(companyId, query, ct))"
               SearchFields="SearchFields" DefaultOrderBy="Code"
-              SearchPlaceholder="Procurar por código, nome ou NIF"
+              SearchPlaceholder="@Localizer["Customers_SearchPlaceholder"]"
               EmptyIcon="@Icons.Material.Filled.People"
-              EmptyTitle="Sem clientes para mostrar"
-              EmptyDescription="Ajuste os filtros ou crie o primeiro cliente."
-              ItemsLabel="clientes"
-              LoadErrorMessage="Não foi possível carregar os clientes">
+              EmptyTitle="@Localizer["Customers_EmptyTitle"]"
+              EmptyDescription="@Localizer["Customers_EmptyDescription"]"
+              ItemsLabel="@Localizer["Customers_ItemsLabel"]"
+              LoadErrorMessage="@Localizer["Customers_LoadError"]">
         <Columns>
-            <PropertyColumn Property="x => x.Code" Title="Código" />
-            <PropertyColumn Property="x => x.Name" Title="Nome" />
-            <PropertyColumn Property="x => x.TaxId" Title="NIF" />
-            <PropertyColumn Property="x => x.City" Title="Localidade" />
-            <PropertyColumn Property="x => x.PostalCode" Title="Código postal" Hidden="true" />
-            <PropertyColumn Property="x => x.Country" Title="País" Hidden="true" />
-            <PropertyColumn Property="x => x.Email" Title="Email" />
-            <PropertyColumn Property="x => x.Phone" Title="Telefone" Hidden="true" />
-            <PropertyColumn Property="x => x.IsActive" Title="Estado">
+            <PropertyColumn Property="x => x.Code" Title="@Localizer["Customers_CodeColumn"]" />
+            <PropertyColumn Property="x => x.Name" Title="@Localizer["Customers_NameColumn"]" />
+            <PropertyColumn Property="x => x.TaxId" Title="@Localizer["Customers_TaxIdColumn"]" />
+            <PropertyColumn Property="x => x.City" Title="@Localizer["Customers_CityColumn"]" />
+            <PropertyColumn Property="x => x.PostalCode" Title="@Localizer["Customers_PostalCodeColumn"]" Hidden="true" />
+            <PropertyColumn Property="x => x.Country" Title="@Localizer["Customers_CountryColumn"]" Hidden="true" />
+            <PropertyColumn Property="x => x.Email" Title="@Localizer["Customers_EmailColumn"]" />
+            <PropertyColumn Property="x => x.Phone" Title="@Localizer["Customers_PhoneColumn"]" Hidden="true" />
+            <PropertyColumn Property="x => x.IsActive" Title="@Localizer["Customers_StatusColumn"]">
                 <CellTemplate>
                     <MudChip T="string" Size="Size.Small" Variant="Variant.Text"
                              Color="@(context.Item.IsActive ? Color.Success : Color.Default)">
-                        @(context.Item.IsActive ? "Ativo" : "Inativo")
+                        @(context.Item.IsActive ? Localizer["Common_Active"] : Localizer["Common_Inactive"])
                     </MudChip>
                 </CellTemplate>
             </PropertyColumn>
@@ -58,7 +61,7 @@
                              AnchorOrigin="Origin.BottomRight" TransformOrigin="Origin.TopRight">
                         <MudMenuItem Icon="@Icons.Material.Filled.Edit"
                                      OnClick="@(() => Navigation.NavigateTo($"customers/{context.Item.Id}"))">
-                            Editar
+                            @Localizer["Customers_EditAction"]
                         </MudMenuItem>
                     </MudMenu>
                 </CellTemplate>

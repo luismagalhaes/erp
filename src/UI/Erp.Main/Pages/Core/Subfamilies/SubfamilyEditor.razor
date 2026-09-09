@@ -6,20 +6,23 @@
 @using MudBlazor
 @using Erp.Main.Models
 @using Erp.Main.Services
+@using Erp.Main.Resources
+@using Microsoft.Extensions.Localization
 @inject CatalogApiClient Catalog
 @inject CompanyState Company
 @inject NavigationManager Navigation
 @inject ISnackbar Snackbar
+@inject IStringLocalizer<MainResources> Localizer
 
-<PageTitle>@(IsNew ? "Nova subfamília" : "Editar subfamília")</PageTitle>
+<PageTitle>@(IsNew ? Localizer["SubfamilyEditor_NewTitle"] : Localizer["SubfamilyEditor_EditTitle"])</PageTitle>
 
 <MudStack Spacing="4">
     <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center">
-        <MudText Typo="Typo.h4">@(IsNew ? "Nova subfamília" : "Editar subfamília")</MudText>
+        <MudText Typo="Typo.h4">@(IsNew ? Localizer["SubfamilyEditor_NewTitle"] : Localizer["SubfamilyEditor_EditTitle"])</MudText>
 
         <MudButton Variant="Variant.Text" StartIcon="@Icons.Material.Filled.ArrowBack"
                    OnClick="@(() => Navigation.NavigateTo("product-subfamilies"))">
-            Voltar
+            @Localizer["Common_Back"]
         </MudButton>
     </MudStack>
 
@@ -35,8 +38,8 @@
     else if (_families.Count == 0)
     {
         <MudAlert Severity="Severity.Warning">
-            Não existe nenhuma família ativa. Uma subfamília vive sempre dentro de uma família.
-            <MudLink Href="product-families/new" Class="ml-2">Criar família</MudLink>
+            @Localizer["SubfamilyEditor_NoFamiliesWarning"]
+            <MudLink Href="product-families/new" Class="ml-2">@Localizer["SubfamilyEditor_CreateFamilyLink"]</MudLink>
         </MudAlert>
     }
     else
@@ -44,7 +47,7 @@
         <MudPaper Elevation="1" Class="pa-4">
             <MudGrid>
                 <MudItem xs="12" md="4">
-                    <MudSelect @bind-Value="_familyId" Label="Família" Variant="Variant.Outlined" Required="true">
+                    <MudSelect @bind-Value="_familyId" Label="@Localizer["SubfamilyEditor_FamilyLabel"]" Variant="Variant.Outlined" Required="true">
                         @foreach (var family in _families)
                         {
                             <MudSelectItem T="Guid" Value="@family.Id">@family.Name</MudSelectItem>
@@ -52,18 +55,18 @@
                     </MudSelect>
                 </MudItem>
                 <MudItem xs="12" md="3">
-                    <MudTextField @bind-Value="_code" Label="Código" Variant="Variant.Outlined"
+                    <MudTextField @bind-Value="_code" Label="@Localizer["SubfamilyEditor_CodeLabel"]" Variant="Variant.Outlined"
                                   Required="true" Disabled="@(!IsNew)"
-                                  HelperText="@(IsNew ? null : "O código não pode ser alterado")" />
+                                  HelperText="@(IsNew ? null : Localizer["SubfamilyEditor_CodeHelperText"].Value)" />
                 </MudItem>
                 <MudItem xs="12" md="5">
-                    <MudTextField @bind-Value="_name" Label="Nome" Variant="Variant.Outlined" Required="true" />
+                    <MudTextField @bind-Value="_name" Label="@Localizer["SubfamilyEditor_NameLabel"]" Variant="Variant.Outlined" Required="true" />
                 </MudItem>
 
                 @if (!IsNew)
                 {
                     <MudItem xs="12">
-                        <MudSwitch @bind-Value="_isActive" Color="Color.Primary" Label="Subfamília ativa" />
+                        <MudSwitch @bind-Value="_isActive" Color="Color.Primary" Label="@Localizer["SubfamilyEditor_ActiveLabel"]" />
                     </MudItem>
                 }
             </MudGrid>
@@ -73,7 +76,7 @@
                            StartIcon="@Icons.Material.Filled.Save"
                            Disabled="@(_saving || !CanSave)"
                            OnClick="SaveAsync">
-                    Guardar
+                    @Localizer["Common_SaveButton"]
                 </MudButton>
             </MudStack>
         </MudPaper>
@@ -137,7 +140,7 @@
 
             if (subfamily is null)
             {
-                _error = "Subfamília não encontrada.";
+                _error = Localizer["SubfamilyEditor_NotFound"];
                 return;
             }
 
@@ -148,7 +151,7 @@
         }
         catch (Exception ex)
         {
-            _error = $"Não foi possível carregar a subfamília: {ex.Message}";
+            _error = string.Format(Localizer["SubfamilyEditor_LoadError"], ex.Message);
         }
         finally
         {
@@ -175,12 +178,12 @@
                 return;
             }
 
-            Snackbar.Add(IsNew ? "Subfamília criada." : "Subfamília atualizada.", Severity.Success);
+            Snackbar.Add(IsNew ? Localizer["SubfamilyEditor_Created"].Value : Localizer["SubfamilyEditor_Updated"].Value, Severity.Success);
             Navigation.NavigateTo("product-subfamilies");
         }
         catch (Exception ex)
         {
-            _error = $"Não foi possível guardar a subfamília: {ex.Message}";
+            _error = string.Format(Localizer["SubfamilyEditor_SaveError"], ex.Message);
         }
         finally
         {

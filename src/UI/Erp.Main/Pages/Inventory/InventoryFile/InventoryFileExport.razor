@@ -4,24 +4,24 @@
 @using Microsoft.AspNetCore.Authorization
 @using Microsoft.AspNetCore.Components.Web
 @using Microsoft.JSInterop
+@using Microsoft.Extensions.Localization
 @using MudBlazor
 @using Erp.Main.Models
+@using Erp.Main.Resources
 @using Erp.Main.Services
 @inject StockApiClient StockApi
 @inject CompanyState Company
 @inject IJSRuntime JS
 @inject ISnackbar Snackbar
+@inject IStringLocalizer<MainResources> L
 
-<PageTitle>Comunicação de inventários</PageTitle>
+<PageTitle>@L["InventoryFileExport_PageTitle"]</PageTitle>
 
 <MudStack Spacing="4">
     <MudStack Spacing="0">
-        <MudText Typo="Typo.h4">Comunicação de inventários</MudText>
+        <MudText Typo="Typo.h4">@L["InventoryFileExport_PageTitle"]</MudText>
         <MudText Typo="Typo.body2" Color="Color.Secondary">
-            Ficheiro das existências à data de referência, para comunicar à AT, valorizadas ao
-            <strong>custo médio ponderado das compras</strong> à mesma data. Para períodos de 2021 em
-            diante o formato é o valorizado (2_01); o anterior, só com quantidades (1_02), fica
-            disponível para períodos mais antigos.
+            @L["InventoryFileExport_Subtitle", L["InventoryFileExport_WeightedCostTerm"]]
         </MudText>
     </MudStack>
 
@@ -32,7 +32,7 @@
 
     @if (!Company.HasCompany)
     {
-        <MudAlert Severity="Severity.Info">Escolha uma empresa no cabeçalho para gerar o ficheiro.</MudAlert>
+        <MudAlert Severity="Severity.Info">@L["InventoryFileExport_ChooseCompanyNotice"]</MudAlert>
     }
     else
     {
@@ -40,19 +40,19 @@
             <MudGrid>
                 <MudItem xs="12" md="3">
                     <MudNumericField T="int" Value="_fiscalYear" ValueChanged="OnYearChangedAsync"
-                                     Label="Período" Variant="Variant.Outlined" Min="2000" Max="2100" />
+                                     Label="@L["InventoryFileExport_PeriodLabel"]" Variant="Variant.Outlined" Min="2000" Max="2100" />
                 </MudItem>
                 <MudItem xs="12" md="4">
                     <MudDatePicker Date="_endDate" DateChanged="OnEndDateChangedAsync"
-                                   Label="Data de referência" Variant="Variant.Outlined"
+                                   Label="@L["InventoryFileExport_ReferenceDateLabel"]" Variant="Variant.Outlined"
                                    DateFormat="yyyy-MM-dd"
-                                   HelperText="Último dia do período; as existências são as desse dia" />
+                                   HelperText="@L["InventoryFileExport_ReferenceDateHelperText"]" />
                 </MudItem>
                 <MudItem xs="12" md="4">
                     <MudSelect T="bool" Value="_valued" ValueChanged="OnValuedChangedAsync"
-                               Label="Tipo de comunicação" Variant="Variant.Outlined">
-                        <MudSelectItem T="bool" Value="true">Valorizado (2_01)</MudSelectItem>
-                        <MudSelectItem T="bool" Value="false">Só quantidades (1_02)</MudSelectItem>
+                               Label="@L["InventoryFileExport_TypeLabel"]" Variant="Variant.Outlined">
+                        <MudSelectItem T="bool" Value="true">@L["InventoryFileExport_ValuedOption"]</MudSelectItem>
+                        <MudSelectItem T="bool" Value="false">@L["InventoryFileExport_QuantitiesOnlyOption"]</MudSelectItem>
                     </MudSelect>
                 </MudItem>
                 <MudItem xs="12" md="1" Class="d-flex align-center">
@@ -66,8 +66,7 @@
                 {
                     <MudItem xs="12">
                         <MudAlert Severity="Severity.Warning" Dense="true">
-                            O formato só com quantidades é anterior a 2021. Para o período @_fiscalYear a AT
-                            exige a comunicação valorizada.
+                            @L["InventoryFileExport_OldFormatWarning", _fiscalYear]
                         </MudAlert>
                     </MudItem>
                 }
@@ -75,29 +74,29 @@
         </MudPaper>
 
         <MudPaper Elevation="1" Class="pa-4">
-            <MudText Typo="Typo.h6" Class="mb-3">Conteúdo do ficheiro</MudText>
+            <MudText Typo="Typo.h6" Class="mb-3">@L["InventoryFileExport_FileContentTitle"]</MudText>
 
             @if (_summary is null)
             {
-                <MudText Typo="Typo.body2" Color="Color.Secondary">Sem dados para a data escolhida.</MudText>
+                <MudText Typo="Typo.body2" Color="Color.Secondary">@L["InventoryFileExport_NoDataNotice"]</MudText>
             }
             else
             {
                 <MudGrid>
                     <MudItem xs="6" md="3">
-                        <MudText Typo="Typo.caption" Color="Color.Secondary">Artigos</MudText>
+                        <MudText Typo="Typo.caption" Color="Color.Secondary">@L["InventoryFileExport_ProductsLabel"]</MudText>
                         <MudText Typo="Typo.h5">@_summary.LineCount</MudText>
                     </MudItem>
                     <MudItem xs="6" md="3">
-                        <MudText Typo="Typo.caption" Color="Color.Secondary">Quantidade total</MudText>
+                        <MudText Typo="Typo.caption" Color="Color.Secondary">@L["InventoryFileExport_TotalQuantityLabel"]</MudText>
                         <MudText Typo="Typo.h5">@_summary.TotalQuantity.ToString("N3")</MudText>
                     </MudItem>
                     <MudItem xs="6" md="3">
                         <MudText Typo="Typo.caption" Color="Color.Secondary">
-                            Valor total@(_valued ? string.Empty : " (não vai no ficheiro)")
+                            @L["InventoryFileExport_TotalValueLabel"]@(_valued ? string.Empty : L["InventoryFileExport_TotalValueNotInFile"])
                         </MudText>
                         <MudText Typo="Typo.caption" Color="Color.Secondary">
-                            Custo médio ponderado
+                            @L["InventoryFileExport_WeightedCostLabel"]
                         </MudText>
                         <MudText Typo="Typo.h5" Color="@(_valued ? Color.Primary : Color.Secondary)">
                             @_summary.TotalValue.ToString("N2")
@@ -108,7 +107,7 @@
                                    StartIcon="@Icons.Material.Filled.Download"
                                    Disabled="@(_downloading || _summary.LineCount == 0)"
                                    OnClick="DownloadAsync">
-                            @(_downloading ? "A gerar..." : "Gerar ficheiro")
+                            @(_downloading ? L["InventoryFileExport_Generating"] : L["InventoryFileExport_GenerateButton"])
                         </MudButton>
                     </MudItem>
                 </MudGrid>
@@ -116,8 +115,7 @@
                 @if (_summary.LineCount == 0)
                 {
                     <MudAlert Severity="Severity.Info" Dense="true" Class="mt-3">
-                        Não havia existências nesta data. A comunicação continua a ser devida — nesse caso
-                        é feita como "sem existências" no Portal das Finanças, não por este ficheiro.
+                        @L["InventoryFileExport_NoStockNotice"]
                     </MudAlert>
                 }
                 else
@@ -125,45 +123,36 @@
                     @if (_summary.ValidationErrors > 0)
                     {
                         <MudAlert Severity="Severity.Error" Class="mt-3">
-                            O ficheiro não cumpre o esquema oficial em @_summary.ValidationErrors
-                            @(_summary.ValidationErrors == 1 ? "ponto" : "pontos"). Os detalhes ficam no
-                            log do servidor — não submeta assim.
+                            @L["InventoryFileExport_ValidationErrorsNotice", _summary.ValidationErrors,
+                                (_summary.ValidationErrors == 1 ? L["InventoryFileExport_ValidationErrorSingular"] : L["InventoryFileExport_ValidationErrorPlural"])]
                         </MudAlert>
                     }
 
                     @if (_summary.ProductsWithNegativeStock > 0)
                     {
                         <MudAlert Severity="Severity.Warning" Class="mt-3">
-                            @_summary.ProductsWithNegativeStock
-                            @(_summary.ProductsWithNegativeStock == 1 ? "artigo tem" : "artigos têm")
-                            existências negativas nesta data. O esquema não aceita quantidades abaixo de
-                            zero, por isso o ficheiro não passa enquanto isso não for corrigido — há
-                            saídas registadas sem a entrada correspondente.
-                            <MudLink Href="stock/check" Class="mr-2">Correr o teste de stocks</MudLink>
-                            <MudLink Href="inventory-counts">Fazer uma contagem</MudLink>
+                            @L["InventoryFileExport_NegativeStockNotice", _summary.ProductsWithNegativeStock,
+                                (_summary.ProductsWithNegativeStock == 1 ? L["InventoryFileExport_NegativeStockSingular"] : L["InventoryFileExport_NegativeStockPlural"])]
+                            <MudLink Href="stock/check" Class="mr-2">@L["InventoryFileExport_RunStockCheckLink"]</MudLink>
+                            <MudLink Href="inventory-counts">@L["InventoryFileExport_DoCountLink"]</MudLink>
                         </MudAlert>
                     }
 
                     @if (_valued && _summary.ProductsWithoutCost > 0)
                     {
                         <MudAlert Severity="Severity.Warning" Class="mt-3">
-                            @_summary.ProductsWithoutCost de @_summary.LineCount
-                            @(_summary.ProductsWithoutCost == 1 ? "artigo vai" : "artigos vão") com valor zero:
-                            nem as compras lhes deram um custo, nem a ficha o tem. A comunicação valorizada
-                            exige a valorização — registe a compra, declare o custo num acerto de abertura,
-                            ou preencha o custo na ficha.
-                            <MudLink Href="stock" Class="ml-2">Ver existências</MudLink>
+                            @L["InventoryFileExport_WithoutCostNotice", _summary.ProductsWithoutCost, _summary.LineCount,
+                                (_summary.ProductsWithoutCost == 1 ? L["InventoryFileExport_WithoutCostSingularVerb"] : L["InventoryFileExport_WithoutCostPluralVerb"])]
+                            <MudLink Href="stock" Class="ml-2">@L["InventoryFileExport_ViewStockLink"]</MudLink>
                         </MudAlert>
                     }
 
                     @if (_valued && _summary.ProductsCostedFromFile > 0)
                     {
                         <MudAlert Severity="Severity.Info" Class="mt-3">
-                            @_summary.ProductsCostedFromFile
-                            @(_summary.ProductsCostedFromFile == 1 ? "artigo foi valorizado" : "artigos foram valorizados")
-                            ao <strong>custo da ficha</strong>, por o razão nunca ter observado o que
-                            custaram. É o esperado em stock de abertura; fora disso, indica compras que não
-                            chegaram a ser registadas.
+                            @L["InventoryFileExport_CostedFromFileNotice", _summary.ProductsCostedFromFile,
+                                (_summary.ProductsCostedFromFile == 1 ? L["InventoryFileExport_CostedFromFileSingularVerb"] : L["InventoryFileExport_CostedFromFilePluralVerb"]),
+                                L["InventoryFileExport_FileCostTerm"]]
                         </MudAlert>
                     }
                 }
@@ -171,9 +160,7 @@
         </MudPaper>
 
         <MudAlert Severity="Severity.Info">
-            O ficheiro é validado contra o XSD oficial da versão escolhida antes de ser entregue. Passar
-            na validação diz que a estrutura está certa, não que os valores estão — a conferência das
-            existências continua a ser sua.
+            @L["InventoryFileExport_ValidationNotice"]
         </MudAlert>
     }
 </MudStack>
@@ -224,7 +211,7 @@
         }
         catch (Exception ex)
         {
-            _error = $"Não foi possível ler as existências: {ex.Message}";
+            _error = L["InventoryFileExport_LoadError", ex.Message];
         }
         finally
         {
@@ -269,7 +256,7 @@
 
             if (file is null)
             {
-                _error = error ?? "Não foi possível gerar o ficheiro.";
+                _error = error ?? L["InventoryFileExport_GenerateFailed"];
                 return;
             }
 
@@ -281,23 +268,23 @@
             if (file.ValidationErrors > 0)
             {
                 Snackbar.Add(
-                    $"{file.FileName} gerado, mas com {file.ValidationErrors} erros face ao esquema oficial. Não submeta assim.",
+                    L["InventoryFileExport_GeneratedWithErrors", file.FileName, file.ValidationErrors].Value,
                     Severity.Error);
             }
             else if (_valued && file.ProductsWithoutCost > 0)
             {
                 Snackbar.Add(
-                    $"{file.FileName} gerado, mas com {file.ProductsWithoutCost} artigos sem custo.",
+                    L["InventoryFileExport_GeneratedWithoutCost", file.FileName, file.ProductsWithoutCost].Value,
                     Severity.Warning);
             }
             else
             {
-                Snackbar.Add($"{file.FileName} gerado.", Severity.Success);
+                Snackbar.Add(L["InventoryFileExport_Generated", file.FileName].Value, Severity.Success);
             }
         }
         catch (Exception ex)
         {
-            _error = $"Não foi possível gerar o ficheiro: {ex.Message}";
+            _error = L["InventoryFileExport_GenerateError", ex.Message];
         }
         finally
         {

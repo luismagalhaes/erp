@@ -1,16 +1,19 @@
 @page "/Backoffice/Clients"
 @page "/Backoffice/Clients/{Mode}"
 @using Microsoft.AspNetCore.Components.Web
+@using Microsoft.Extensions.Localization
+@using IdentityResourcesType = Erp.Identity.Resources.IdentityResources
 @attribute [Authorize(Roles = "SuperAdmin")]
 @inject IClientService ClientService
 @inject NavigationManager Navigation
+@inject IStringLocalizer<IdentityResourcesType> Localizer
 
-<PageTitle>Backoffice - Clients</PageTitle>
+<PageTitle>@Localizer["Backoffice_Clients_PageTitle"]</PageTitle>
 
 @if (IsEditMode)
 {
     <div class="content-card mud-elevation-1">
-        <h2>Edit Client</h2>
+        <h2>@Localizer["Backoffice_Clients_EditHeading"]</h2>
 
         @if (!string.IsNullOrWhiteSpace(ErrorMessage))
         {
@@ -19,140 +22,140 @@
 
         @if (Form is null)
         {
-            <p>Loading...</p>
+            <p>@Localizer["Backoffice_Clients_Loading"]</p>
         }
         else
         {
             <EditForm Model="Form" OnSubmit="SaveAsync" FormName="clients-edit-form">
                 <div class="tab-strip">
-                    <button type="button" class="tab-btn @(ActiveTab == "MainInfo" ? "active" : null)" @onclick='() => SelectTab("MainInfo")'>Main Info</button>
-                    <button type="button" class="tab-btn @(ActiveTab == "AllowedGrantTypes" ? "active" : null)" @onclick='() => SelectTab("AllowedGrantTypes")'>Allowed Grant Types</button>
-                    <button type="button" class="tab-btn @(ActiveTab == "RedirectUris" ? "active" : null)" @onclick='() => SelectTab("RedirectUris")'>Redirect Uris</button>
-                    <button type="button" class="tab-btn @(ActiveTab == "PostLogoutRedirectUris" ? "active" : null)" @onclick='() => SelectTab("PostLogoutRedirectUris")'>Post Logout Redirect Uris</button>
-                    <button type="button" class="tab-btn @(ActiveTab == "AllowedCorsOrigins" ? "active" : null)" @onclick='() => SelectTab("AllowedCorsOrigins")'>Allowed Cors Origins</button>
-                    <button type="button" class="tab-btn @(ActiveTab == "AllowedScopes" ? "active" : null)" @onclick='() => SelectTab("AllowedScopes")'>Allowed Scopes</button>
-                    <button type="button" class="tab-btn @(ActiveTab == "ClientSecrets" ? "active" : null)" @onclick='() => SelectTab("ClientSecrets")'>Client Secrets</button>
+                    <button type="button" class="tab-btn @(ActiveTab == "MainInfo" ? "active" : null)" @onclick='() => SelectTab("MainInfo")'>@Localizer["Backoffice_Clients_Tab_MainInfo"]</button>
+                    <button type="button" class="tab-btn @(ActiveTab == "AllowedGrantTypes" ? "active" : null)" @onclick='() => SelectTab("AllowedGrantTypes")'>@Localizer["Backoffice_Clients_Tab_AllowedGrantTypes"]</button>
+                    <button type="button" class="tab-btn @(ActiveTab == "RedirectUris" ? "active" : null)" @onclick='() => SelectTab("RedirectUris")'>@Localizer["Backoffice_Clients_Tab_RedirectUris"]</button>
+                    <button type="button" class="tab-btn @(ActiveTab == "PostLogoutRedirectUris" ? "active" : null)" @onclick='() => SelectTab("PostLogoutRedirectUris")'>@Localizer["Backoffice_Clients_Tab_PostLogoutRedirectUris"]</button>
+                    <button type="button" class="tab-btn @(ActiveTab == "AllowedCorsOrigins" ? "active" : null)" @onclick='() => SelectTab("AllowedCorsOrigins")'>@Localizer["Backoffice_Clients_Tab_AllowedCorsOrigins"]</button>
+                    <button type="button" class="tab-btn @(ActiveTab == "AllowedScopes" ? "active" : null)" @onclick='() => SelectTab("AllowedScopes")'>@Localizer["Backoffice_Clients_Tab_AllowedScopes"]</button>
+                    <button type="button" class="tab-btn @(ActiveTab == "ClientSecrets" ? "active" : null)" @onclick='() => SelectTab("ClientSecrets")'>@Localizer["Backoffice_Clients_Tab_ClientSecrets"]</button>
                 </div>
 
                 <div class="tab-panel @(ActiveTab == "MainInfo" ? "active" : null)">
-                    <div class="auth-field"><label>ClientId</label><InputText @bind-Value="Form.ClientId" disabled /></div>
-                    <div class="auth-field"><label>ClientName</label><InputText @bind-Value="Form.ClientName" /></div>
-                    <div class="auth-field"><label><InputCheckbox @bind-Value="Form.Enabled" /> Enabled</label></div>
-                    <div class="auth-field"><label><InputCheckbox @bind-Value="Form.RequirePkce" /> RequirePkce</label></div>
-                    <div class="auth-field"><label><InputCheckbox @bind-Value="Form.RequireClientSecret" /> RequireClientSecret</label></div>
-                    <div class="auth-field"><label><InputCheckbox @bind-Value="Form.AllowOfflineAccess" /> AllowOfflineAccess</label></div>
-                    <div class="auth-field"><label>AccessTokenLifetime</label><InputNumber @bind-Value="Form.AccessTokenLifetime" /></div>
-                    <div class="auth-field"><label>SlidingRefreshTokenLifetime</label><InputNumber @bind-Value="Form.SlidingRefreshTokenLifetime" /></div>
-                    <div class="auth-field"><label>AbsoluteRefreshTokenLifetime</label><InputNumber @bind-Value="Form.AbsoluteRefreshTokenLifetime" /></div>
-                    <div class="auth-field"><label>RefreshTokenUsage</label><InputText @bind-Value="Form.RefreshTokenUsage" /></div>
-                    <div class="auth-field"><label>RefreshTokenExpiration</label><InputText @bind-Value="Form.RefreshTokenExpiration" /></div>
+                    <div class="auth-field"><label>@Localizer["Backoffice_Clients_ClientIdLabel"]</label><InputText @bind-Value="Form.ClientId" disabled /></div>
+                    <div class="auth-field"><label>@Localizer["Backoffice_Clients_ClientNameLabel"]</label><InputText @bind-Value="Form.ClientName" /></div>
+                    <div class="auth-field"><label><InputCheckbox @bind-Value="Form.Enabled" /> @Localizer["Backoffice_Common_EnabledLabel"]</label></div>
+                    <div class="auth-field"><label><InputCheckbox @bind-Value="Form.RequirePkce" /> @Localizer["Backoffice_Clients_RequirePkceLabel"]</label></div>
+                    <div class="auth-field"><label><InputCheckbox @bind-Value="Form.RequireClientSecret" /> @Localizer["Backoffice_Clients_RequireClientSecretLabel"]</label></div>
+                    <div class="auth-field"><label><InputCheckbox @bind-Value="Form.AllowOfflineAccess" /> @Localizer["Backoffice_Clients_AllowOfflineAccessLabel"]</label></div>
+                    <div class="auth-field"><label>@Localizer["Backoffice_Clients_AccessTokenLifetimeLabel"]</label><InputNumber @bind-Value="Form.AccessTokenLifetime" /></div>
+                    <div class="auth-field"><label>@Localizer["Backoffice_Clients_SlidingRefreshTokenLifetimeLabel"]</label><InputNumber @bind-Value="Form.SlidingRefreshTokenLifetime" /></div>
+                    <div class="auth-field"><label>@Localizer["Backoffice_Clients_AbsoluteRefreshTokenLifetimeLabel"]</label><InputNumber @bind-Value="Form.AbsoluteRefreshTokenLifetime" /></div>
+                    <div class="auth-field"><label>@Localizer["Backoffice_Clients_RefreshTokenUsageLabel"]</label><InputText @bind-Value="Form.RefreshTokenUsage" /></div>
+                    <div class="auth-field"><label>@Localizer["Backoffice_Clients_RefreshTokenExpirationLabel"]</label><InputText @bind-Value="Form.RefreshTokenExpiration" /></div>
                 </div>
 
                 <div class="tab-panel @(ActiveTab == "AllowedGrantTypes" ? "active" : null)">
                     <div class="auth-field">
-                        <label>AllowedGrantTypes</label>
+                        <label>@Localizer["Backoffice_Clients_AllowedGrantTypesLabel"]</label>
                         <table class="backoffice-table">
-                            <thead><tr><th>Grant Type</th><th class="actions-col">Actions</th></tr></thead>
+                            <thead><tr><th>@Localizer["Backoffice_Clients_GrantTypeColumn"]</th><th class="actions-col">@Localizer["Backoffice_Common_ActionsColumn"]</th></tr></thead>
                             <tbody>
                             @for (var i = 0; i < Form.AllowedGrantTypes.Count; i++)
                             {
                                 var index = i;
                                 <tr>
                                     <td><InputText @bind-Value="Form.AllowedGrantTypes[index]" /></td>
-                                    <td class="actions-col"><button type="button" class="action-btn danger" @onclick="() => RemoveListItem(Form.AllowedGrantTypes, index)">Remove</button></td>
+                                    <td class="actions-col"><button type="button" class="action-btn danger" @onclick="() => RemoveListItem(Form.AllowedGrantTypes, index)">@Localizer["Backoffice_Common_RemoveButton"]</button></td>
                                 </tr>
                             }
                             </tbody>
                         </table>
-                        <button type="button" class="action-btn" @onclick="() => AddListItem(Form.AllowedGrantTypes)">Add grant type</button>
+                        <button type="button" class="action-btn" @onclick="() => AddListItem(Form.AllowedGrantTypes)">@Localizer["Backoffice_Clients_AddGrantTypeButton"]</button>
                     </div>
                 </div>
 
                 <div class="tab-panel @(ActiveTab == "RedirectUris" ? "active" : null)">
                     <div class="auth-field">
-                        <label>RedirectUris</label>
+                        <label>@Localizer["Backoffice_Clients_RedirectUrisLabel"]</label>
                         <table class="backoffice-table">
-                            <thead><tr><th>Redirect Uri</th><th class="actions-col">Actions</th></tr></thead>
+                            <thead><tr><th>@Localizer["Backoffice_Clients_RedirectUriColumn"]</th><th class="actions-col">@Localizer["Backoffice_Common_ActionsColumn"]</th></tr></thead>
                             <tbody>
                             @for (var i = 0; i < Form.RedirectUris.Count; i++)
                             {
                                 var index = i;
                                 <tr>
                                     <td><InputText @bind-Value="Form.RedirectUris[index]" /></td>
-                                    <td class="actions-col"><button type="button" class="action-btn danger" @onclick="() => RemoveListItem(Form.RedirectUris, index)">Remove</button></td>
+                                    <td class="actions-col"><button type="button" class="action-btn danger" @onclick="() => RemoveListItem(Form.RedirectUris, index)">@Localizer["Backoffice_Common_RemoveButton"]</button></td>
                                 </tr>
                             }
                             </tbody>
                         </table>
-                        <button type="button" class="action-btn" @onclick="() => AddListItem(Form.RedirectUris)">Add redirect uri</button>
+                        <button type="button" class="action-btn" @onclick="() => AddListItem(Form.RedirectUris)">@Localizer["Backoffice_Clients_AddRedirectUriButton"]</button>
                     </div>
                 </div>
 
                 <div class="tab-panel @(ActiveTab == "PostLogoutRedirectUris" ? "active" : null)">
                     <div class="auth-field">
-                        <label>PostLogoutRedirectUris</label>
+                        <label>@Localizer["Backoffice_Clients_PostLogoutRedirectUrisLabel"]</label>
                         <table class="backoffice-table">
-                            <thead><tr><th>Post Logout Redirect Uri</th><th class="actions-col">Actions</th></tr></thead>
+                            <thead><tr><th>@Localizer["Backoffice_Clients_PostLogoutRedirectUriColumn"]</th><th class="actions-col">@Localizer["Backoffice_Common_ActionsColumn"]</th></tr></thead>
                             <tbody>
                             @for (var i = 0; i < Form.PostLogoutRedirectUris.Count; i++)
                             {
                                 var index = i;
                                 <tr>
                                     <td><InputText @bind-Value="Form.PostLogoutRedirectUris[index]" /></td>
-                                    <td class="actions-col"><button type="button" class="action-btn danger" @onclick="() => RemoveListItem(Form.PostLogoutRedirectUris, index)">Remove</button></td>
+                                    <td class="actions-col"><button type="button" class="action-btn danger" @onclick="() => RemoveListItem(Form.PostLogoutRedirectUris, index)">@Localizer["Backoffice_Common_RemoveButton"]</button></td>
                                 </tr>
                             }
                             </tbody>
                         </table>
-                        <button type="button" class="action-btn" @onclick="() => AddListItem(Form.PostLogoutRedirectUris)">Add post logout redirect uri</button>
+                        <button type="button" class="action-btn" @onclick="() => AddListItem(Form.PostLogoutRedirectUris)">@Localizer["Backoffice_Clients_AddPostLogoutRedirectUriButton"]</button>
                     </div>
                 </div>
 
                 <div class="tab-panel @(ActiveTab == "AllowedCorsOrigins" ? "active" : null)">
                     <div class="auth-field">
-                        <label>AllowedCorsOrigins</label>
+                        <label>@Localizer["Backoffice_Clients_AllowedCorsOriginsLabel"]</label>
                         <table class="backoffice-table">
-                            <thead><tr><th>Origin</th><th class="actions-col">Actions</th></tr></thead>
+                            <thead><tr><th>@Localizer["Backoffice_Clients_OriginColumn"]</th><th class="actions-col">@Localizer["Backoffice_Common_ActionsColumn"]</th></tr></thead>
                             <tbody>
                             @for (var i = 0; i < Form.AllowedCorsOrigins.Count; i++)
                             {
                                 var index = i;
                                 <tr>
                                     <td><InputText @bind-Value="Form.AllowedCorsOrigins[index]" /></td>
-                                    <td class="actions-col"><button type="button" class="action-btn danger" @onclick="() => RemoveListItem(Form.AllowedCorsOrigins, index)">Remove</button></td>
+                                    <td class="actions-col"><button type="button" class="action-btn danger" @onclick="() => RemoveListItem(Form.AllowedCorsOrigins, index)">@Localizer["Backoffice_Common_RemoveButton"]</button></td>
                                 </tr>
                             }
                             </tbody>
                         </table>
-                        <button type="button" class="action-btn" @onclick="() => AddListItem(Form.AllowedCorsOrigins)">Add origin</button>
+                        <button type="button" class="action-btn" @onclick="() => AddListItem(Form.AllowedCorsOrigins)">@Localizer["Backoffice_Clients_AddOriginButton"]</button>
                     </div>
                 </div>
 
                 <div class="tab-panel @(ActiveTab == "AllowedScopes" ? "active" : null)">
                     <div class="auth-field">
-                        <label>AllowedScopes</label>
+                        <label>@Localizer["Backoffice_Clients_AllowedScopesLabel"]</label>
                         <table class="backoffice-table">
-                            <thead><tr><th>Scope</th><th class="actions-col">Actions</th></tr></thead>
+                            <thead><tr><th>@Localizer["Backoffice_Clients_ScopeColumn"]</th><th class="actions-col">@Localizer["Backoffice_Common_ActionsColumn"]</th></tr></thead>
                             <tbody>
                             @for (var i = 0; i < Form.AllowedScopes.Count; i++)
                             {
                                 var index = i;
                                 <tr>
                                     <td><InputText @bind-Value="Form.AllowedScopes[index]" /></td>
-                                    <td class="actions-col"><button type="button" class="action-btn danger" @onclick="() => RemoveListItem(Form.AllowedScopes, index)">Remove</button></td>
+                                    <td class="actions-col"><button type="button" class="action-btn danger" @onclick="() => RemoveListItem(Form.AllowedScopes, index)">@Localizer["Backoffice_Common_RemoveButton"]</button></td>
                                 </tr>
                             }
                             </tbody>
                         </table>
-                        <button type="button" class="action-btn" @onclick="() => AddListItem(Form.AllowedScopes)">Add scope</button>
+                        <button type="button" class="action-btn" @onclick="() => AddListItem(Form.AllowedScopes)">@Localizer["Backoffice_Clients_AddScopeButton"]</button>
                     </div>
                 </div>
 
                 <div class="tab-panel @(ActiveTab == "ClientSecrets" ? "active" : null)">
                     <div class="auth-field">
-                        <label>ClientSecrets</label>
+                        <label>@Localizer["Backoffice_Clients_ClientSecretsLabel"]</label>
                         <table class="backoffice-table">
-                            <thead><tr><th>Value</th><th>Description</th><th>IsHashed</th><th class="actions-col">Actions</th></tr></thead>
+                            <thead><tr><th>@Localizer["Backoffice_Clients_ValueColumn"]</th><th>@Localizer["Backoffice_Common_DescriptionLabel"]</th><th>@Localizer["Backoffice_Clients_IsHashedColumn"]</th><th class="actions-col">@Localizer["Backoffice_Common_ActionsColumn"]</th></tr></thead>
                             <tbody>
                             @for (var i = 0; i < Form.ClientSecrets.Count; i++)
                             {
@@ -161,18 +164,18 @@
                                     <td><InputText @bind-Value="Form.ClientSecrets[index].Value" /></td>
                                     <td><InputText @bind-Value="Form.ClientSecrets[index].Description" /></td>
                                     <td><InputCheckbox @bind-Value="Form.ClientSecrets[index].IsHashed" /></td>
-                                    <td class="actions-col"><button type="button" class="action-btn danger" @onclick="() => RemoveSecret(index)">Remove</button></td>
+                                    <td class="actions-col"><button type="button" class="action-btn danger" @onclick="() => RemoveSecret(index)">@Localizer["Backoffice_Common_RemoveButton"]</button></td>
                                 </tr>
                             }
                             </tbody>
                         </table>
-                        <button type="button" class="action-btn" @onclick="AddSecret">Add secret</button>
+                        <button type="button" class="action-btn" @onclick="AddSecret">@Localizer["Backoffice_Clients_AddSecretButton"]</button>
                     </div>
                 </div>
 
                 <div class="form-actions">
-                    <button class="action-btn primary" type="submit">Save</button>
-                    <a class="action-btn" href="/Backoffice/Clients">Cancel</a>
+                    <button class="action-btn primary" type="submit">@Localizer["Backoffice_Common_SaveButton"]</button>
+                    <a class="action-btn" href="/Backoffice/Clients">@Localizer["Backoffice_Common_CancelButton"]</a>
                 </div>
             </EditForm>
         }
@@ -181,11 +184,11 @@
 else if (IsDeleteMode)
 {
     <div class="content-card mud-elevation-1">
-        <h2>Delete Client</h2>
-        <p>Are you sure you want to delete client <strong>@ClientId</strong>?</p>
+        <h2>@Localizer["Backoffice_Clients_DeleteHeading"]</h2>
+        <p>@string.Format(Localizer["Backoffice_Clients_DeleteConfirm"].Value, ClientId)</p>
         <div class="form-actions">
-            <button class="action-btn danger" @onclick="DeleteAsync">Delete</button>
-            <a class="action-btn" href="/Backoffice/Clients">Cancel</a>
+            <button class="action-btn danger" @onclick="DeleteAsync">@Localizer["Backoffice_Common_DeleteButton"]</button>
+            <a class="action-btn" href="/Backoffice/Clients">@Localizer["Backoffice_Common_CancelButton"]</a>
         </div>
     </div>
 }
@@ -193,23 +196,23 @@ else
 {
     <div class="content-card mud-elevation-1">
         <div class="list-header">
-            <h2>Clients (@ClientItems.Count)</h2>
+            <h2>@string.Format(Localizer["Backoffice_Clients_ListHeading"].Value, ClientItems.Count)</h2>
         </div>
         <table class="backoffice-table">
-            <thead><tr><th>ClientId</th><th>Name</th><th>Active</th><th>Redirect URIs</th><th>Scopes</th><th class="actions-col">Actions</th></tr></thead>
+            <thead><tr><th>@Localizer["Backoffice_Clients_ClientIdColumn"]</th><th>@Localizer["Backoffice_Common_NameColumn"]</th><th>@Localizer["Backoffice_Clients_ActiveColumn"]</th><th>@Localizer["Backoffice_Clients_RedirectUrisColumn"]</th><th>@Localizer["Backoffice_Clients_ScopesColumn"]</th><th class="actions-col">@Localizer["Backoffice_Common_ActionsColumn"]</th></tr></thead>
             <tbody>
             @foreach (var client in ClientItems)
             {
                 <tr>
                     <td>@client.ClientId</td>
                     <td>@client.ClientName</td>
-                    <td><span class="@(client.Enabled ? "ok" : "off")">@(client.Enabled ? "Yes" : "No")</span></td>
+                    <td><span class="@(client.Enabled ? "ok" : "off")">@(client.Enabled ? Localizer["Backoffice_Common_Yes"] : Localizer["Backoffice_Common_No"])</span></td>
                     <td>@string.Join(", ", client.RedirectUris)</td>
                     <td>@string.Join(", ", client.AllowedScopes)</td>
                     <td class="actions-col">
                         <div class="table-actions">
-                            <MudIconButton Icon="@Icons.Material.Filled.Edit" Href="@($"/Backoffice/Clients/Edit?clientId={Uri.EscapeDataString(client.ClientId)}")" Color="Color.Primary" Size="Size.Small" title="Edit" aria-label="Edit" />
-                            <MudIconButton Icon="@Icons.Material.Filled.Delete" Href="@($"/Backoffice/Clients/Delete?clientId={Uri.EscapeDataString(client.ClientId)}")" Color="Color.Error" Size="Size.Small" title="Delete" aria-label="Delete" />
+                            <MudIconButton Icon="@Icons.Material.Filled.Edit" Href="@($"/Backoffice/Clients/Edit?clientId={Uri.EscapeDataString(client.ClientId)}")" Color="Color.Primary" Size="Size.Small" title="@Localizer["Backoffice_Common_EditAction"]" aria-label="@Localizer["Backoffice_Common_EditAction"]" />
+                            <MudIconButton Icon="@Icons.Material.Filled.Delete" Href="@($"/Backoffice/Clients/Delete?clientId={Uri.EscapeDataString(client.ClientId)}")" Color="Color.Error" Size="Size.Small" title="@Localizer["Backoffice_Common_DeleteAction"]" aria-label="@Localizer["Backoffice_Common_DeleteAction"]" />
                         </div>
                     </td>
                 </tr>
@@ -264,7 +267,7 @@ else
     {
         if (string.IsNullOrWhiteSpace(ClientId) || Form is null)
         {
-            ErrorMessage = "Invalid client.";
+            ErrorMessage = Localizer["Backoffice_Clients_ErrorInvalidClient"];
             return;
         }
 

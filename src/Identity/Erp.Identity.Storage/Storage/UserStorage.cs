@@ -44,7 +44,8 @@ public sealed class UserStorage(IDbContextFactory<ApplicationDbContext> dbContex
                 user.FullName,
                 user.IsActive,
                 user.CreatedAt,
-                rolesByUserId.TryGetValue(user.Id, out var roles) ? roles.ToList() : []));
+                rolesByUserId.TryGetValue(user.Id, out var roles) ? roles.ToList() : [],
+                user.PreferredLanguage));
         }
 
         return result;
@@ -73,7 +74,19 @@ public sealed class UserStorage(IDbContextFactory<ApplicationDbContext> dbContex
             user.Email ?? string.Empty,
             user.FullName,
             user.IsActive,
-            roles);
+            roles,
+            user.PreferredLanguage);
+    }
+
+    public async Task UpdateUserLanguageAsync(string userId, string preferredLanguage, CancellationToken cancellationToken = default)
+    {
+        await using var dbContext = await dbContextFactory.CreateDbContextAsync(cancellationToken);
+
+        var user = await dbContext.Users.FirstOrDefaultAsync(x => x.Id == userId, cancellationToken)
+            ?? throw new InvalidOperationException("User not found.");
+
+        user.PreferredLanguage = preferredLanguage;
+        await dbContext.SaveChangesAsync(cancellationToken);
     }
 
     public async Task UpdateUserRolesAsync(string userId, IReadOnlyCollection<string> roles, CancellationToken cancellationToken = default)

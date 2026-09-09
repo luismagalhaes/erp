@@ -3,18 +3,21 @@
 @using Microsoft.AspNetCore.Authorization
 @using Microsoft.AspNetCore.Components.Web
 @using MudBlazor
+@using Microsoft.Extensions.Localization
 @using Erp.Main.Models
+@using Erp.Main.Resources
 @using Erp.Main.Services
 @inject PurchasingApiClient Purchasing
 @inject NavigationManager Navigation
 @inject ISnackbar Snackbar
+@inject IStringLocalizer<MainResources> L
 
-<PageTitle>@(_order?.Number ?? "Encomenda")</PageTitle>
+<PageTitle>@(_order?.Number ?? L["PurchaseOrderView_DefaultTitle"])</PageTitle>
 
 <MudStack Spacing="4">
     <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center">
         <MudStack Spacing="0">
-            <MudText Typo="Typo.h4">@(_order?.Number ?? "Encomenda")</MudText>
+            <MudText Typo="Typo.h4">@(_order?.Number ?? L["PurchaseOrderView_DefaultTitle"])</MudText>
             @if (_order is not null)
             {
                 <MudText Typo="Typo.body2" Color="Color.Secondary">
@@ -29,7 +32,7 @@
                 <MudButton Variant="Variant.Outlined" Color="Color.Primary"
                            StartIcon="@Icons.Material.Filled.Edit"
                            OnClick="@(() => Navigation.NavigateTo($"purchase-orders/{Id}/edit"))">
-                    Editar
+                    @L["PurchaseOrderView_EditButton"]
                 </MudButton>
             }
 
@@ -38,13 +41,13 @@
                 <MudButton Variant="Variant.Filled" Color="Color.Primary"
                            StartIcon="@Icons.Material.Filled.Send"
                            Disabled="_working" OnClick="PlaceAsync">
-                    Colocar
+                    @L["PurchaseOrderView_PlaceButton"]
                 </MudButton>
             }
 
             <MudButton Variant="Variant.Text" StartIcon="@Icons.Material.Filled.ArrowBack"
                        OnClick="@(() => Navigation.NavigateTo("purchase-orders"))">
-                Voltar
+                @L["PurchaseOrderView_BackButton"]
             </MudButton>
         </MudStack>
     </MudStack>
@@ -60,37 +63,37 @@
     }
     else if (_order is null)
     {
-        <MudAlert Severity="Severity.Warning">Encomenda não encontrada.</MudAlert>
+        <MudAlert Severity="Severity.Warning">@L["PurchaseOrderView_OrderNotFound"]</MudAlert>
     }
     else
     {
         <MudPaper Elevation="1" Class="pa-4">
             <MudGrid>
                 <MudItem xs="12" md="3">
-                    <MudText Typo="Typo.caption" Color="Color.Secondary">Estado</MudText>
+                    <MudText Typo="Typo.caption" Color="Color.Secondary">@L["PurchaseOrderView_StatusLabel"]</MudText>
                     <MudChip T="string" Size="Size.Small" Variant="Variant.Text" Color="@StatusColor">
                         @PurchaseOrderStatuses.Describe(_order.Status)
                     </MudChip>
                 </MudItem>
                 <MudItem xs="6" md="3">
-                    <MudText Typo="Typo.caption" Color="Color.Secondary">Entrega prevista</MudText>
+                    <MudText Typo="Typo.caption" Color="Color.Secondary">@L["PurchaseOrderView_ExpectedDeliveryLabel"]</MudText>
                     <MudText Typo="Typo.body1">
                         @(_order.ExpectedDate?.ToString("yyyy-MM-dd") ?? "—")
                     </MudText>
                 </MudItem>
                 <MudItem xs="6" md="3">
-                    <MudText Typo="Typo.caption" Color="Color.Secondary">Contribuinte</MudText>
+                    <MudText Typo="Typo.caption" Color="Color.Secondary">@L["PurchaseOrderView_TaxIdLabel"]</MudText>
                     <MudText Typo="Typo.body1">@_order.Supplier.TaxId</MudText>
                 </MudItem>
                 <MudItem xs="6" md="3">
-                    <MudText Typo="Typo.caption" Color="Color.Secondary">Total</MudText>
+                    <MudText Typo="Typo.caption" Color="Color.Secondary">@L["PurchaseOrderView_TotalLabel"]</MudText>
                     <MudText Typo="Typo.h6" Color="Color.Primary">@_order.GrossTotal.ToString("N2")</MudText>
                 </MudItem>
 
                 @if (!string.IsNullOrWhiteSpace(_order.Notes))
                 {
                     <MudItem xs="12">
-                        <MudText Typo="Typo.caption" Color="Color.Secondary">Observações</MudText>
+                        <MudText Typo="Typo.caption" Color="Color.Secondary">@L["PurchaseOrderView_NotesLabel"]</MudText>
                         <MudText Typo="Typo.body2">@_order.Notes</MudText>
                     </MudItem>
                 }
@@ -100,48 +103,48 @@
         @if (_order.IsFinished && !string.IsNullOrWhiteSpace(_order.ClosedReason))
         {
             <MudAlert Severity="Severity.Info">
-                @(_order.Status == "Cancelled" ? "Anulada" : "Fechada")
-                em @_order.ClosedAtUtc?.ToString("yyyy-MM-dd HH:mm"): @_order.ClosedReason
+                @(_order.Status == "Cancelled" ? L["PurchaseOrderView_CancelledStatus"] : L["PurchaseOrderView_ClosedStatus"])
+                @string.Format(L["PurchaseOrderView_ClosedAtMessage"], _order.ClosedAtUtc?.ToString("yyyy-MM-dd HH:mm"), _order.ClosedReason)
             </MudAlert>
         }
 
         <MudPaper Elevation="1" Class="pa-2">
             <MudTable Items="_order.Lines" Hover="true" Striped="true" Dense="true" Breakpoint="Breakpoint.Sm">
                 <ToolBarContent>
-                    <MudText Typo="Typo.h6">Linhas</MudText>
+                    <MudText Typo="Typo.h6">@L["PurchaseOrderView_LinesSectionTitle"]</MudText>
                 </ToolBarContent>
                 <HeaderContent>
-                    <MudTh Style="width: 50px;">#</MudTh>
-                    <MudTh>Artigo</MudTh>
-                    <MudTh>Descrição</MudTh>
-                    <MudTh Style="text-align: right;">Encomendado</MudTh>
-                    <MudTh Style="text-align: right;">Recebido</MudTh>
-                    <MudTh Style="text-align: right;">Por receber</MudTh>
-                    <MudTh Style="text-align: right;">Custo unit.</MudTh>
-                    <MudTh Style="text-align: right;">Total</MudTh>
+                    <MudTh Style="width: 50px;">@L["PurchaseOrderView_LineNumberColumn"]</MudTh>
+                    <MudTh>@L["PurchaseOrderView_ProductColumn"]</MudTh>
+                    <MudTh>@L["PurchaseOrderView_DescriptionColumn"]</MudTh>
+                    <MudTh Style="text-align: right;">@L["PurchaseOrderView_OrderedColumn"]</MudTh>
+                    <MudTh Style="text-align: right;">@L["PurchaseOrderView_ReceivedColumn"]</MudTh>
+                    <MudTh Style="text-align: right;">@L["PurchaseOrderView_PendingColumn"]</MudTh>
+                    <MudTh Style="text-align: right;">@L["PurchaseOrderView_UnitCostColumn"]</MudTh>
+                    <MudTh Style="text-align: right;">@L["PurchaseOrderView_TotalColumn"]</MudTh>
                 </HeaderContent>
                 <RowTemplate>
-                    <MudTd DataLabel="#">@context.LineNumber</MudTd>
-                    <MudTd DataLabel="Artigo">
+                    <MudTd DataLabel="@L["PurchaseOrderView_LineNumberColumn"]">@context.LineNumber</MudTd>
+                    <MudTd DataLabel="@L["PurchaseOrderView_ProductColumn"]">
                         <MudText Typo="Typo.body2" Style="font-family: monospace;">@context.ProductCode</MudText>
                     </MudTd>
-                    <MudTd DataLabel="Descrição">@context.ProductDescription</MudTd>
-                    <MudTd DataLabel="Encomendado" Style="text-align: right;">
+                    <MudTd DataLabel="@L["PurchaseOrderView_DescriptionColumn"]">@context.ProductDescription</MudTd>
+                    <MudTd DataLabel="@L["PurchaseOrderView_OrderedColumn"]" Style="text-align: right;">
                         @context.Quantity.ToString("N3") @context.UnitOfMeasure
                     </MudTd>
-                    <MudTd DataLabel="Recebido" Style="text-align: right;">
+                    <MudTd DataLabel="@L["PurchaseOrderView_ReceivedColumn"]" Style="text-align: right;">
                         @context.ReceivedQuantity.ToString("N3")
                     </MudTd>
-                    <MudTd DataLabel="Por receber" Style="text-align: right;">
+                    <MudTd DataLabel="@L["PurchaseOrderView_PendingColumn"]" Style="text-align: right;">
                         <MudText Typo="Typo.body2"
                                  Color="@(context.PendingQuantity > 0 ? Color.Warning : Color.Success)">
                             <strong>@context.PendingQuantity.ToString("N3")</strong>
                         </MudText>
                     </MudTd>
-                    <MudTd DataLabel="Custo unit." Style="text-align: right;">
+                    <MudTd DataLabel="@L["PurchaseOrderView_UnitCostColumn"]" Style="text-align: right;">
                         @context.UnitPrice.ToString("N2")
                     </MudTd>
-                    <MudTd DataLabel="Total" Style="text-align: right;">@context.LineAmount.ToString("N2")</MudTd>
+                    <MudTd DataLabel="@L["PurchaseOrderView_TotalColumn"]" Style="text-align: right;">@context.LineAmount.ToString("N2")</MudTd>
                 </RowTemplate>
             </MudTable>
         </MudPaper>
@@ -149,33 +152,31 @@
         @if (!_order.IsFinished && !_order.IsDraft)
         {
             <MudExpansionPanels>
-                <MudExpansionPanel Text="@(_order.HasReceipts ? "Fechar encomenda" : "Anular encomenda")">
+                <MudExpansionPanel Text="@(_order.HasReceipts ? L["PurchaseOrderView_CloseOrderTitle"] : L["PurchaseOrderView_CancelOrderTitle"])">
                     <MudText Typo="Typo.body2" Color="Color.Secondary" Class="mb-3">
                         @if (_order.HasReceipts)
                         {
                             <text>
-                                Parte da mercadoria já chegou, por isso a encomenda fecha-se em vez de se
-                                anular: o que falta é dado como não vindo, e o que chegou fica registado.
+                                @L["PurchaseOrderView_CloseHelpText"]
                             </text>
                         }
                         else
                         {
                             <text>
-                                Nada chegou ainda, por isso a encomenda pode ser anulada. A partir do momento
-                                em que houver receções, só é possível fechá-la.
+                                @L["PurchaseOrderView_CancelHelpText"]
                             </text>
                         }
                     </MudText>
 
                     <MudStack Row="true" Spacing="2" AlignItems="AlignItems.Center">
                         <MudTextField @bind-Value="_reason" @bind-Value:after="StateHasChanged" Immediate="true"
-                                      Label="Motivo" Variant="Variant.Outlined" Margin="Margin.Dense"
+                                      Label="@L["PurchaseOrderView_ReasonLabel"]" Variant="Variant.Outlined" Margin="Margin.Dense"
                                       Style="max-width: 480px;" />
                         <MudButton Variant="Variant.Filled" Color="Color.Error"
                                    StartIcon="@Icons.Material.Filled.Cancel"
                                    Disabled="@(_working || string.IsNullOrWhiteSpace(_reason))"
                                    OnClick="FinishAsync">
-                            @(_order.HasReceipts ? "Fechar" : "Anular")
+                            @(_order.HasReceipts ? L["PurchaseOrderView_CloseButton"] : L["PurchaseOrderView_CancelButton"])
                         </MudButton>
                     </MudStack>
                 </MudExpansionPanel>
@@ -218,7 +219,7 @@
         }
         catch (Exception ex)
         {
-            _error = $"Não foi possível carregar a encomenda: {ex.Message}";
+            _error = string.Format(L["PurchaseOrderView_LoadError"], ex.Message);
         }
         finally
         {
@@ -237,16 +238,16 @@
 
             if (order is null)
             {
-                _error = error ?? "Não foi possível colocar a encomenda.";
+                _error = error ?? L["PurchaseOrderView_PlaceFailed"];
                 return;
             }
 
             _order = order;
-            Snackbar.Add($"Encomenda {order.Number} colocada.", Severity.Success);
+            Snackbar.Add(string.Format(L["PurchaseOrderView_PlacedSuccess"], order.Number), Severity.Success);
         }
         catch (Exception ex)
         {
-            _error = $"Não foi possível colocar a encomenda: {ex.Message}";
+            _error = string.Format(L["PurchaseOrderView_PlaceError"], ex.Message);
         }
         finally
         {
@@ -276,17 +277,17 @@
 
             if (order is null)
             {
-                _error = error ?? "Não foi possível terminar a encomenda.";
+                _error = error ?? L["PurchaseOrderView_FinishFailed"];
                 return;
             }
 
             _order = order;
             _reason = string.Empty;
-            Snackbar.Add(hadReceipts ? "Encomenda fechada." : "Encomenda anulada.", Severity.Success);
+            Snackbar.Add(hadReceipts ? L["PurchaseOrderView_ClosedSuccess"] : L["PurchaseOrderView_CancelledSuccess"], Severity.Success);
         }
         catch (Exception ex)
         {
-            _error = $"Não foi possível terminar a encomenda: {ex.Message}";
+            _error = string.Format(L["PurchaseOrderView_FinishError"], ex.Message);
         }
         finally
         {

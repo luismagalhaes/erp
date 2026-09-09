@@ -8,11 +8,14 @@
 @using Erp.Main.Layout
 @using Erp.Main.Models
 @using Erp.Main.Services
+@using Erp.Main.Resources
+@using Microsoft.Extensions.Localization
 @inject PurchasingApiClient Purchasing
 @inject CoreApiClient CoreApi
 @inject CompanyState Company
+@inject IStringLocalizer<MainResources> L
 
-<PageTitle>@(_invoice?.DocumentNumber ?? "Autofatura")</PageTitle>
+<PageTitle>@(_invoice?.DocumentNumber ?? L["SelfBilledInvoicePrint_DefaultTitle"])</PageTitle>
 
 <PrintToolbar Copy="_copy" CopyChanged="@(copy => _copy = copy)"
               BackUrl="@($"self-billed-invoices/{Id}")" />
@@ -23,40 +26,40 @@
 }
 else if (_invoice is null)
 {
-    <MudAlert Severity="Severity.Error">@(_error ?? "Documento não encontrado.")</MudAlert>
+    <MudAlert Severity="Severity.Error">@(_error ?? L["SelfBilledInvoicePrint_DocumentNotFound"])</MudAlert>
 }
 else
 {
     @* The designation the law requires on the paper: it says how the document came to exist. *@
     <PrintDocumentHeader Company="_company"
-                         Designation="Autofaturação"
+                         Designation="@L["SelfBilledInvoicePrint_Designation"]"
                          DocumentNumber="@_invoice.DocumentNumber"
                          DocumentDate="_invoice.IssueDate"
                          Copy="@_copy" />
 
     @if (_invoice.IsVoided)
     {
-        <div class="print-voided">Documento anulado</div>
+        <div class="print-voided">@L["SelfBilledInvoicePrint_VoidedNotice"]</div>
     }
 
     <div class="print-parties">
         <div class="print-box">
             @* On a self-billed invoice the roles are the other way round: the supplier sold. *@
-            <div class="label">Fornecedor (autofaturado)</div>
+            <div class="label">@L["SelfBilledInvoicePrint_SupplierLabel"]</div>
             <div><strong>@_invoice.Supplier.Name</strong></div>
             @if (!string.IsNullOrWhiteSpace(_invoice.Supplier.Address))
             {
                 <div>@_invoice.Supplier.Address</div>
             }
-            <div>NIF @_invoice.Supplier.TaxId</div>
+            <div>@string.Format(L["SelfBilledInvoicePrint_TaxIdPrefix"], _invoice.Supplier.TaxId)</div>
         </div>
 
         @if (_company is not null)
         {
             <div class="print-box">
-                <div class="label">Adquirente (emitente)</div>
+                <div class="label">@L["SelfBilledInvoicePrint_AcquirerLabel"]</div>
                 <div><strong>@_company.Name</strong></div>
-                <div>NIF @_company.TaxId</div>
+                <div>@string.Format(L["SelfBilledInvoicePrint_TaxIdPrefix"], _company.TaxId)</div>
             </div>
         }
     </div>
@@ -64,14 +67,14 @@ else
     <table class="print-table">
         <thead>
             <tr>
-                <th style="width: 24px;">#</th>
-                <th style="width: 70px;">Código</th>
-                <th>Descrição</th>
-                <th class="num" style="width: 60px;">Qtd.</th>
-                <th style="width: 34px;">Un.</th>
-                <th class="num" style="width: 70px;">Preço</th>
-                <th class="num" style="width: 44px;">IVA</th>
-                <th class="num" style="width: 76px;">Valor</th>
+                <th style="width: 24px;">@L["SelfBilledInvoicePrint_NumberColumn"]</th>
+                <th style="width: 70px;">@L["SelfBilledInvoicePrint_CodeColumn"]</th>
+                <th>@L["SelfBilledInvoicePrint_DescriptionColumn"]</th>
+                <th class="num" style="width: 60px;">@L["SelfBilledInvoicePrint_QuantityColumn"]</th>
+                <th style="width: 34px;">@L["SelfBilledInvoicePrint_UnitColumn"]</th>
+                <th class="num" style="width: 70px;">@L["SelfBilledInvoicePrint_PriceColumn"]</th>
+                <th class="num" style="width: 44px;">@L["SelfBilledInvoicePrint_TaxColumn"]</th>
+                <th class="num" style="width: 76px;">@L["SelfBilledInvoicePrint_ValueColumn"]</th>
             </tr>
         </thead>
         <tbody>
@@ -102,10 +105,10 @@ else
             <table class="print-table" style="width: auto;">
                 <thead>
                     <tr>
-                        <th>Espaço fiscal</th>
-                        <th>Taxa</th>
-                        <th class="num">Incidência</th>
-                        <th class="num">IVA</th>
+                        <th>@L["SelfBilledInvoicePrint_TaxSpaceColumn"]</th>
+                        <th>@L["SelfBilledInvoicePrint_RateColumn"]</th>
+                        <th class="num">@L["SelfBilledInvoicePrint_TaxableBaseColumn"]</th>
+                        <th class="num">@L["SelfBilledInvoicePrint_TaxColumn"]</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -123,9 +126,9 @@ else
         </div>
 
         <div class="print-totals">
-            <div class="row"><span>Base tributável</span><span>@_invoice.NetTotal.ToString("N2")</span></div>
-            <div class="row"><span>IVA</span><span>@_invoice.TaxPayable.ToString("N2")</span></div>
-            <div class="row grand"><span>Total</span><span>@_invoice.GrossTotal.ToString("N2") EUR</span></div>
+            <div class="row"><span>@L["SelfBilledInvoicePrint_NetTotalLabel"]</span><span>@_invoice.NetTotal.ToString("N2")</span></div>
+            <div class="row"><span>@L["SelfBilledInvoicePrint_TaxLabel"]</span><span>@_invoice.TaxPayable.ToString("N2")</span></div>
+            <div class="row grand"><span>@L["SelfBilledInvoicePrint_TotalLabel"]</span><span>@_invoice.GrossTotal.ToString("N2") EUR</span></div>
         </div>
     </div>
 
@@ -134,7 +137,7 @@ else
         <div class="print-exemptions">
             @foreach (var reason in _exemptionReasons)
             {
-                <div>Isenção: @reason</div>
+                <div>@string.Format(L["SelfBilledInvoicePrint_ExemptionPrefix"], reason)</div>
             }
         </div>
     }
@@ -142,8 +145,8 @@ else
     <PrintFiscalFooter PrintableHash="@_invoice.PrintableHash"
                        Atcud="@_invoice.Atcud"
                        QrCodePayload="@_invoice.QrCodePayload">
-        <div>Emitido em @_invoice.SystemEntryDateUtc.ToString("yyyy-MM-dd HH:mm:ss") UTC</div>
-        <div>Autofaturação ao abrigo do artigo 36.º n.º 11 do CIVA</div>
+        <div>@string.Format(L["SelfBilledInvoicePrint_IssuedOn"], _invoice.SystemEntryDateUtc.ToString("yyyy-MM-dd HH:mm:ss"))</div>
+        <div>@L["SelfBilledInvoicePrint_LegalNotice"]</div>
     </PrintFiscalFooter>
 }
 
@@ -182,7 +185,7 @@ else
 
             if (_invoice is null)
             {
-                _error = "Documento não encontrado.";
+                _error = L["SelfBilledInvoicePrint_DocumentNotFound"];
                 return;
             }
 
@@ -198,7 +201,7 @@ else
         }
         catch (Exception ex)
         {
-            _error = $"Não foi possível carregar o documento: {ex.Message}";
+            _error = string.Format(L["SelfBilledInvoicePrint_LoadError"], ex.Message);
         }
         finally
         {

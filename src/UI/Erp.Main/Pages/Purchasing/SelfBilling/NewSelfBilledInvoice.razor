@@ -6,6 +6,8 @@
 @using MudBlazor
 @using Erp.Main.Models
 @using Erp.Main.Services
+@using Erp.Main.Resources
+@using Microsoft.Extensions.Localization
 @inject PurchasingApiClient Purchasing
 @inject CatalogApiClient Catalog
 @inject SalesApiClient Sales
@@ -13,22 +15,22 @@
 @inject CompanyState Company
 @inject NavigationManager Navigation
 @inject ISnackbar Snackbar
+@inject IStringLocalizer<MainResources> L
 
-<PageTitle>Emitir autofatura</PageTitle>
+<PageTitle>@L["NewSelfBilledInvoice_Title"]</PageTitle>
 
 <MudStack Spacing="4">
     <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center">
         <MudStack Spacing="0">
-            <MudText Typo="Typo.h4">Emitir autofatura</MudText>
+            <MudText Typo="Typo.h4">@L["NewSelfBilledInvoice_Title"]</MudText>
             <MudText Typo="Typo.body2" Color="Color.Secondary">
-                Nós emitimos, em nome do fornecedor. O documento fica numerado, assinado e imutável —
-                como qualquer fatura nossa.
+                @L["NewSelfBilledInvoice_Subtitle"]
             </MudText>
         </MudStack>
 
         <MudButton Variant="Variant.Text" StartIcon="@Icons.Material.Filled.ArrowBack"
                    OnClick="@(() => Navigation.NavigateTo("self-billed-invoices"))">
-            Voltar
+            @L["NewSelfBilledInvoice_BackButton"]
         </MudButton>
     </MudStack>
 
@@ -39,25 +41,24 @@
 
     @if (!Company.HasCompany)
     {
-        <MudAlert Severity="Severity.Info">Escolha uma empresa no cabeçalho.</MudAlert>
+        <MudAlert Severity="Severity.Info">@L["NewSelfBilledInvoice_NoCompanyWarning"]</MudAlert>
     }
     else if (_series.Count == 0)
     {
         <MudAlert Severity="Severity.Warning">
-            Não há nenhuma série de autofaturação comunicada à AT. Crie uma em
-            <MudLink Href="series" Class="ml-1">Séries</MudLink>, marcada como autofaturação, e
-            comunique-a antes de emitir.
+            @L["NewSelfBilledInvoice_NoSeriesWarningPrefix"]
+            <MudLink Href="series" Class="ml-1">@L["NewSelfBilledInvoice_SeriesLinkText"]</MudLink>@L["NewSelfBilledInvoice_NoSeriesWarningSuffix"]
         </MudAlert>
     }
     else
     {
         <MudPaper Elevation="1" Class="pa-4">
-            <MudText Typo="Typo.h6" Class="mb-3">O documento</MudText>
+            <MudText Typo="Typo.h6" Class="mb-3">@L["NewSelfBilledInvoice_DocumentTitle"]</MudText>
             <MudGrid>
                 <MudItem xs="12" md="4">
                     <MudSelect T="Guid?" Value="_supplierId" ValueChanged="OnSupplierChangedAsync"
-                               Label="Fornecedor" Variant="Variant.Outlined" Required="true"
-                               HelperText="O NIF dele é o cabeçalho do SAF-T que sai daqui">
+                               Label="@L["NewSelfBilledInvoice_SupplierLabel"]" Variant="Variant.Outlined" Required="true"
+                               HelperText="@L["NewSelfBilledInvoice_SupplierHelp"]">
                         @foreach (var supplier in _suppliers)
                         {
                             <MudSelectItem T="Guid?" Value="@supplier.Id">
@@ -68,8 +69,8 @@
                 </MudItem>
                 <MudItem xs="12" md="3">
                     <MudSelect T="Guid?" @bind-Value="_seriesId" @bind-Value:after="StateHasChanged"
-                               Label="Série" Variant="Variant.Outlined" Required="true"
-                               HelperText="Só séries de autofaturação">
+                               Label="@L["NewSelfBilledInvoice_SeriesLabel"]" Variant="Variant.Outlined" Required="true"
+                               HelperText="@L["NewSelfBilledInvoice_SeriesHelp"]">
                         @foreach (var series in _series)
                         {
                             <MudSelectItem T="Guid?" Value="@series.Id">
@@ -79,13 +80,13 @@
                     </MudSelect>
                 </MudItem>
                 <MudItem xs="12" md="2">
-                    <MudDatePicker @bind-Date="_issueDate" Label="Data" Variant="Variant.Outlined"
+                    <MudDatePicker @bind-Date="_issueDate" Label="@L["NewSelfBilledInvoice_DateLabel"]" Variant="Variant.Outlined"
                                    DateFormat="yyyy-MM-dd" />
                 </MudItem>
                 <MudItem xs="12" md="3">
-                    <MudTextField @bind-Value="_agreementReference" Label="Acordo prévio"
+                    <MudTextField @bind-Value="_agreementReference" Label="@L["NewSelfBilledInvoice_AgreementLabel"]"
                                   Variant="Variant.Outlined"
-                                  HelperText="O que autoriza a autofaturação" />
+                                  HelperText="@L["NewSelfBilledInvoice_AgreementHelp"]" />
                 </MudItem>
             </MudGrid>
         </MudPaper>
@@ -96,21 +97,21 @@
             {
                 <MudPaper Elevation="1" Class="pa-4">
                     <MudStack Spacing="0" Class="mb-3">
-                        <MudText Typo="Typo.h6">Recebido por faturar</MudText>
+                        <MudText Typo="Typo.h6">@L["NewSelfBilledInvoice_UnbilledTitle"]</MudText>
                         <MudText Typo="Typo.caption" Color="Color.Secondary">
-                            Estas linhas já deram entrada em stock na receção — a autofatura
-                            <strong>não movimenta stock nenhum</strong>, só acerta o dinheiro.
+                            @L["NewSelfBilledInvoice_UnbilledHelpPrefix"]
+                            <strong>@L["NewSelfBilledInvoice_UnbilledHelpStrong"]</strong>@L["NewSelfBilledInvoice_UnbilledHelpSuffix"]
                         </MudText>
                     </MudStack>
 
                     <MudTable Items="_unbilled" Dense="true" Hover="true" Striped="true" Breakpoint="Breakpoint.Sm">
                         <HeaderContent>
                             <MudTh Style="width: 60px;"></MudTh>
-                            <MudTh>Receção</MudTh>
-                            <MudTh>Artigo</MudTh>
-                            <MudTh Style="text-align: right;">Por faturar</MudTh>
-                            <MudTh Style="width: 140px;">A faturar</MudTh>
-                            <MudTh Style="width: 140px;">Preço unit.</MudTh>
+                            <MudTh>@L["NewSelfBilledInvoice_ReceiptColumn"]</MudTh>
+                            <MudTh>@L["NewSelfBilledInvoice_ProductColumn"]</MudTh>
+                            <MudTh Style="text-align: right;">@L["NewSelfBilledInvoice_PendingColumn"]</MudTh>
+                            <MudTh Style="width: 140px;">@L["NewSelfBilledInvoice_ToInvoiceColumn"]</MudTh>
+                            <MudTh Style="width: 140px;">@L["NewSelfBilledInvoice_UnitPriceColumn"]</MudTh>
                         </HeaderContent>
                         <RowTemplate>
                             <MudTd>
@@ -118,7 +119,7 @@
                                              ValueChanged="@(chosen => Toggle(context, chosen))"
                                              Color="Color.Primary" Dense="true" />
                             </MudTd>
-                            <MudTd DataLabel="Receção">
+                            <MudTd DataLabel="@L["NewSelfBilledInvoice_ReceiptColumn"]">
                                 <MudStack Spacing="0">
                                     <MudText Typo="Typo.body2" Style="font-family: monospace;">
                                         @context.ReceiptNumber
@@ -128,7 +129,7 @@
                                     </MudText>
                                 </MudStack>
                             </MudTd>
-                            <MudTd DataLabel="Artigo">
+                            <MudTd DataLabel="@L["NewSelfBilledInvoice_ProductColumn"]">
                                 <MudStack Spacing="0">
                                     <MudText Typo="Typo.body2">@context.ProductCode</MudText>
                                     <MudText Typo="Typo.caption" Color="Color.Secondary">
@@ -136,10 +137,10 @@
                                     </MudText>
                                 </MudStack>
                             </MudTd>
-                            <MudTd DataLabel="Por faturar" Style="text-align: right;">
+                            <MudTd DataLabel="@L["NewSelfBilledInvoice_PendingColumn"]" Style="text-align: right;">
                                 @context.PendingQuantity.ToString("N3") @context.UnitOfMeasure
                             </MudTd>
-                            <MudTd DataLabel="A faturar">
+                            <MudTd DataLabel="@L["NewSelfBilledInvoice_ToInvoiceColumn"]">
                                 @if (Chosen(context) is { } chosen)
                                 {
                                     <MudNumericField T="decimal" Value="chosen.Quantity"
@@ -148,7 +149,7 @@
                                                      Max="@context.PendingQuantity" />
                                 }
                             </MudTd>
-                            <MudTd DataLabel="Preço unit.">
+                            <MudTd DataLabel="@L["NewSelfBilledInvoice_UnitPriceColumn"]">
                                 @if (Chosen(context) is { } chosen)
                                 {
                                     <MudNumericField @bind-Value="chosen.UnitPrice" @bind-Value:after="StateHasChanged"
@@ -163,14 +164,14 @@
             <MudPaper Elevation="1" Class="pa-4">
                 <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center" Class="mb-3">
                     <MudStack Spacing="0">
-                        <MudText Typo="Typo.h6">Outras linhas</MudText>
+                        <MudText Typo="Typo.h6">@L["NewSelfBilledInvoice_OtherLinesTitle"]</MudText>
                         <MudText Typo="Typo.caption" Color="Color.Secondary">
-                            Serviços e tudo o que não veio de uma receção.
+                            @L["NewSelfBilledInvoice_OtherLinesHelp"]
                         </MudText>
                     </MudStack>
                     <MudButton Variant="Variant.Outlined" Color="Color.Primary" Size="Size.Small"
                                StartIcon="@Icons.Material.Filled.Add" OnClick="AddLine">
-                        Adicionar linha
+                        @L["NewSelfBilledInvoice_AddLineButton"]
                     </MudButton>
                 </MudStack>
 
@@ -178,18 +179,18 @@
                 {
                     <MudTable Items="_lines" Dense="true" Hover="true" Breakpoint="Breakpoint.Sm">
                         <HeaderContent>
-                            <MudTh Style="width: 190px;">Artigo</MudTh>
-                            <MudTh>Descrição</MudTh>
-                            <MudTh Style="width: 100px;">Qtd.</MudTh>
-                            <MudTh Style="width: 130px;">Preço unit.</MudTh>
-                            <MudTh Style="width: 140px;">IVA</MudTh>
-                            <MudTh Style="width: 70px; text-align: right;">Ações</MudTh>
+                            <MudTh Style="width: 190px;">@L["NewSelfBilledInvoice_ProductColumn"]</MudTh>
+                            <MudTh>@L["NewSelfBilledInvoice_DescriptionColumn"]</MudTh>
+                            <MudTh Style="width: 100px;">@L["NewSelfBilledInvoice_QuantityColumn"]</MudTh>
+                            <MudTh Style="width: 130px;">@L["NewSelfBilledInvoice_UnitPriceColumn"]</MudTh>
+                            <MudTh Style="width: 140px;">@L["NewSelfBilledInvoice_TaxColumn"]</MudTh>
+                            <MudTh Style="width: 70px; text-align: right;">@L["NewSelfBilledInvoice_ActionsColumn"]</MudTh>
                         </HeaderContent>
                         <RowTemplate>
-                            <MudTd DataLabel="Artigo">
+                            <MudTd DataLabel="@L["NewSelfBilledInvoice_ProductColumn"]">
                                 <MudSelect T="Guid?" Value="context.ProductId"
                                            ValueChanged="@(productId => OnProductChanged(context, productId))"
-                                           Margin="Margin.Dense" Clearable="true" Placeholder="Livre">
+                                           Margin="Margin.Dense" Clearable="true" Placeholder="@L["NewSelfBilledInvoice_FreePlaceholder"]">
                                     @foreach (var product in _products)
                                     {
                                         <MudSelectItem T="Guid?" Value="@product.Id">
@@ -198,18 +199,18 @@
                                     }
                                 </MudSelect>
                             </MudTd>
-                            <MudTd DataLabel="Descrição">
+                            <MudTd DataLabel="@L["NewSelfBilledInvoice_DescriptionColumn"]">
                                 <MudTextField @bind-Value="context.ProductDescription" Margin="Margin.Dense" />
                             </MudTd>
-                            <MudTd DataLabel="Qtd.">
+                            <MudTd DataLabel="@L["NewSelfBilledInvoice_QuantityColumn"]">
                                 <MudNumericField @bind-Value="context.Quantity" @bind-Value:after="StateHasChanged"
                                                  Margin="Margin.Dense" Min="0" />
                             </MudTd>
-                            <MudTd DataLabel="Preço unit.">
+                            <MudTd DataLabel="@L["NewSelfBilledInvoice_UnitPriceColumn"]">
                                 <MudNumericField @bind-Value="context.UnitPrice" @bind-Value:after="StateHasChanged"
                                                  Margin="Margin.Dense" Min="0" Format="N2" />
                             </MudTd>
-                            <MudTd DataLabel="IVA">
+                            <MudTd DataLabel="@L["NewSelfBilledInvoice_TaxColumn"]">
                                 <MudSelect T="string" Value="context.TaxCode"
                                            ValueChanged="@(code => OnTaxCodeChanged(context, code))"
                                            Margin="Margin.Dense">
@@ -219,7 +220,7 @@
                                     }
                                 </MudSelect>
                             </MudTd>
-                            <MudTd DataLabel="Ações" Style="text-align: right;">
+                            <MudTd DataLabel="@L["NewSelfBilledInvoice_ActionsColumn"]" Style="text-align: right;">
                                 <MudIconButton Size="Size.Small" Icon="@Icons.Material.Filled.Delete"
                                                Color="Color.Error" OnClick="@(() => _lines.Remove(context))" />
                             </MudTd>
@@ -228,7 +229,7 @@
                 }
                 else
                 {
-                    <MudText Typo="Typo.body2" Color="Color.Secondary">Nenhuma.</MudText>
+                    <MudText Typo="Typo.body2" Color="Color.Secondary">@L["NewSelfBilledInvoice_NoLines"]</MudText>
                 }
 
                 @if (_lines.Any(line => line.TaxCode == "ISE"))
@@ -236,8 +237,8 @@
                     <MudGrid Class="mt-3">
                         <MudItem xs="12" md="6">
                             <MudTextField @bind-Value="_exemptionReason" @bind-Value:after="StateHasChanged"
-                                          Label="Motivo de isenção" Variant="Variant.Outlined" Required="true"
-                                          HelperText="Exigido em qualquer linha isenta" />
+                                          Label="@L["NewSelfBilledInvoice_ExemptionReasonLabel"]" Variant="Variant.Outlined" Required="true"
+                                          HelperText="@L["NewSelfBilledInvoice_ExemptionReasonHelp"]" />
                         </MudItem>
                     </MudGrid>
                 }
@@ -246,15 +247,15 @@
             <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center">
                 <MudStack Row="true" Spacing="6">
                     <MudStack Spacing="0">
-                        <MudText Typo="Typo.caption" Color="Color.Secondary">Base</MudText>
+                        <MudText Typo="Typo.caption" Color="Color.Secondary">@L["NewSelfBilledInvoice_NetTotalLabel"]</MudText>
                         <MudText Typo="Typo.body1">@NetTotal.ToString("N2")</MudText>
                     </MudStack>
                     <MudStack Spacing="0">
-                        <MudText Typo="Typo.caption" Color="Color.Secondary">IVA</MudText>
+                        <MudText Typo="Typo.caption" Color="Color.Secondary">@L["NewSelfBilledInvoice_TaxTotalLabel"]</MudText>
                         <MudText Typo="Typo.body1">@TaxTotal.ToString("N2")</MudText>
                     </MudStack>
                     <MudStack Spacing="0">
-                        <MudText Typo="Typo.caption" Color="Color.Secondary">Total</MudText>
+                        <MudText Typo="Typo.caption" Color="Color.Secondary">@L["NewSelfBilledInvoice_TotalLabel"]</MudText>
                         <MudText Typo="Typo.h6" Color="Color.Primary">@GrossTotal.ToString("N2")</MudText>
                     </MudStack>
                 </MudStack>
@@ -262,13 +263,13 @@
                 <MudStack Row="true" Spacing="2">
                     <MudButton Variant="Variant.Text"
                                OnClick="@(() => Navigation.NavigateTo("self-billed-invoices"))">
-                        Cancelar
+                        @L["NewSelfBilledInvoice_CancelButton"]
                     </MudButton>
                     <MudButton Variant="Variant.Filled" Color="Color.Primary"
                                StartIcon="@Icons.Material.Filled.Receipt"
                                Disabled="@(_saving || !CanIssue)"
                                OnClick="IssueAsync">
-                        @(_saving ? "A emitir..." : "Emitir")
+                        @(_saving ? L["NewSelfBilledInvoice_IssuingButton"] : L["NewSelfBilledInvoice_IssueButton"])
                     </MudButton>
                 </MudStack>
             </MudStack>
@@ -277,12 +278,11 @@
 </MudStack>
 
 @code {
-    private static readonly TaxRateOption[] TaxRates =
-    [
-        new("NOR", 23m, "Normal - 23%"),
-        new("INT", 13m, "Intermédia - 13%"),
-        new("RED", 6m, "Reduzida - 6%"),
-        new("ISE", 0m, "Isento")
+    private TaxRateOption[] TaxRates => [
+        new("NOR", 23m, L["NewSelfBilledInvoice_TaxRateNormal"]),
+        new("INT", 13m, L["NewSelfBilledInvoice_TaxRateIntermediate"]),
+        new("RED", 6m, L["NewSelfBilledInvoice_TaxRateReduced"]),
+        new("ISE", 0m, L["NewSelfBilledInvoice_TaxRateExempt"])
     ];
 
     private bool _saving;
@@ -368,7 +368,7 @@
         }
         catch (Exception ex)
         {
-            _error = $"Não foi possível preparar a emissão: {ex.Message}";
+            _error = string.Format(L["NewSelfBilledInvoice_LoadError"], ex.Message);
         }
         finally
         {
@@ -398,7 +398,7 @@
         }
         catch (Exception ex)
         {
-            _error = $"Não foi possível carregar o que está por faturar: {ex.Message}";
+            _error = string.Format(L["NewSelfBilledInvoice_UnbilledLoadError"], ex.Message);
         }
         finally
         {
@@ -511,16 +511,16 @@
 
             if (invoice is null)
             {
-                _error = error ?? "Não foi possível emitir a autofatura.";
+                _error = error ?? L["NewSelfBilledInvoice_IssueFallbackError"];
                 return;
             }
 
-            Snackbar.Add($"Autofatura {invoice.DocumentNumber} emitida.", Severity.Success);
+            Snackbar.Add(string.Format(L["NewSelfBilledInvoice_IssueSuccess"], invoice.DocumentNumber), Severity.Success);
             Navigation.NavigateTo($"self-billed-invoices/{invoice.Id}");
         }
         catch (Exception ex)
         {
-            _error = $"Não foi possível emitir a autofatura: {ex.Message}";
+            _error = string.Format(L["NewSelfBilledInvoice_IssueError"], ex.Message);
         }
         finally
         {

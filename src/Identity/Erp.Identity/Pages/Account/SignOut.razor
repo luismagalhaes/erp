@@ -2,14 +2,17 @@
 @page "/Account/Logout"
 @layout Layout.AuthLayout
 @using Microsoft.AspNetCore.Components.Web
+@using Microsoft.Extensions.Localization
+@using Erp.Identity.Resources
 @attribute [AllowAnonymous]
 @inject NavigationManager Navigation
+@inject IStringLocalizer<IdentityResources> Localizer
 
-<PageTitle>Signed Out</PageTitle>
+<PageTitle>@Localizer["Account_SignOut_PageTitle"]</PageTitle>
 
 <div class="content-card mud-elevation-1">
-    <h2>You have successfully signed out.</h2>
-    <p><a href="/">Back to home</a></p>
+    <h2>@Localizer["Account_SignOut_Heading"]</h2>
+    <p><a href="/">@Localizer["Account_SignOut_BackToHomeLink"]</a></p>
 </div>
 
 @code {

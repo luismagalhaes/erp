@@ -1,68 +1,71 @@
 @using MudBlazor
 @using Microsoft.AspNetCore.Components.Routing
 @using Microsoft.AspNetCore.Components.Authorization
+@using Microsoft.Extensions.Localization
 @using Erp.Common
+@using Erp.Main.Resources
+@inject IStringLocalizer<MainResources> Localizer
 
 <MudNavMenu>
-    <MudNavLink Href="" Match="NavLinkMatch.All" Icon="@Icons.Material.Filled.Dashboard">Dashboard</MudNavLink>
+    <MudNavLink Href="" Match="NavLinkMatch.All" Icon="@Icons.Material.Filled.Dashboard">@Localizer["NavMenu_Dashboard"]</MudNavLink>
 
-    <MudNavGroup Title="Clientes e Fornecedores" Icon="@Icons.Material.Filled.People" Expanded="false">
-        <MudNavLink Href="customers" Icon="@Icons.Material.Filled.PersonOutline">Clientes</MudNavLink>
-        <MudNavLink Href="suppliers" Icon="@Icons.Material.Filled.Business">Fornecedores</MudNavLink>
+    <MudNavGroup Title="@Localizer["NavMenu_PartnersGroup"]" Icon="@Icons.Material.Filled.People" Expanded="false">
+        <MudNavLink Href="customers" Icon="@Icons.Material.Filled.PersonOutline">@Localizer["NavMenu_Customers"]</MudNavLink>
+        <MudNavLink Href="suppliers" Icon="@Icons.Material.Filled.Business">@Localizer["NavMenu_Suppliers"]</MudNavLink>
     </MudNavGroup>
 
-    <MudNavGroup Title="Faturação" Icon="@Icons.Material.Filled.Receipt" Expanded="false">
-        <MudNavLink Href="invoices" Icon="@Icons.Material.Filled.ReceiptLong">Faturas</MudNavLink>
-        <MudNavLink Href="credit-notes" Icon="@Icons.Material.Filled.CreditCard">Notas de crédito</MudNavLink>
-        <MudNavLink Href="payments" Icon="@Icons.Material.Filled.Payments">Recibos</MudNavLink>
+    <MudNavGroup Title="@Localizer["NavMenu_InvoicingGroup"]" Icon="@Icons.Material.Filled.Receipt" Expanded="false">
+        <MudNavLink Href="invoices" Icon="@Icons.Material.Filled.ReceiptLong">@Localizer["NavMenu_Invoices"]</MudNavLink>
+        <MudNavLink Href="credit-notes" Icon="@Icons.Material.Filled.CreditCard">@Localizer["NavMenu_CreditNotes"]</MudNavLink>
+        <MudNavLink Href="payments" Icon="@Icons.Material.Filled.Payments">@Localizer["NavMenu_Payments"]</MudNavLink>
         @* GR, GT, GA, GC e GD: documentos fiscais emitidos pelo módulo de vendas, não movimentos de existências. *@
-        <MudNavLink Href="stock-movements" Icon="@Icons.Material.Filled.LocalShipping">Guias de movimentação</MudNavLink>
+        <MudNavLink Href="stock-movements" Icon="@Icons.Material.Filled.LocalShipping">@Localizer["NavMenu_StockMovements"]</MudNavLink>
     </MudNavGroup>
 
-    <MudNavGroup Title="Artigos" Icon="@Icons.Material.Filled.Inventory" Expanded="false">
-        <MudNavLink Href="products" Icon="@Icons.Material.Filled.Category">Artigos</MudNavLink>
-        <MudNavLink Href="product-families" Icon="@Icons.Material.Filled.AccountTree">Famílias</MudNavLink>
-        <MudNavLink Href="product-subfamilies" Icon="@Icons.Material.Filled.Segment">Subfamílias</MudNavLink>
-        <MudNavLink Href="brands" Icon="@Icons.Material.Filled.Sell">Marcas</MudNavLink>
+    <MudNavGroup Title="@Localizer["NavMenu_ProductsGroup"]" Icon="@Icons.Material.Filled.Inventory" Expanded="false">
+        <MudNavLink Href="products" Icon="@Icons.Material.Filled.Category">@Localizer["NavMenu_Products"]</MudNavLink>
+        <MudNavLink Href="product-families" Icon="@Icons.Material.Filled.AccountTree">@Localizer["NavMenu_Families"]</MudNavLink>
+        <MudNavLink Href="product-subfamilies" Icon="@Icons.Material.Filled.Segment">@Localizer["NavMenu_Subfamilies"]</MudNavLink>
+        <MudNavLink Href="brands" Icon="@Icons.Material.Filled.Sell">@Localizer["NavMenu_Brands"]</MudNavLink>
     </MudNavGroup>
 
-    <MudNavGroup Title="Stock" Icon="@Icons.Material.Filled.Warehouse" Expanded="false">
+    <MudNavGroup Title="@Localizer["NavMenu_StockGroup"]" Icon="@Icons.Material.Filled.Warehouse" Expanded="false">
         @* Armazéns vivem na ficha da empresa, como os utilizadores: são a estrutura dela. *@
-        <MudNavLink Href="stock" Icon="@Icons.Material.Filled.Inventory2">Existências</MudNavLink>
-        <MudNavLink Href="inventory-counts" Icon="@Icons.Material.Filled.PlaylistAddCheck">Inventários</MudNavLink>
-        <MudNavLink Href="stock/check" Icon="@Icons.Material.Filled.FactCheck">Teste de stock</MudNavLink>
+        <MudNavLink Href="stock" Icon="@Icons.Material.Filled.Inventory2">@Localizer["NavMenu_StockBalances"]</MudNavLink>
+        <MudNavLink Href="inventory-counts" Icon="@Icons.Material.Filled.PlaylistAddCheck">@Localizer["NavMenu_InventoryCounts"]</MudNavLink>
+        <MudNavLink Href="stock/check" Icon="@Icons.Material.Filled.FactCheck">@Localizer["NavMenu_StockCheck"]</MudNavLink>
     </MudNavGroup>
 
-    <MudNavGroup Title="Compras" Icon="@Icons.Material.Filled.ShoppingCart" Expanded="false">
-        <MudNavLink Href="purchase-orders" Icon="@Icons.Material.Filled.ShoppingBag">Encomendas</MudNavLink>
-        <MudNavLink Href="goods-receipts" Icon="@Icons.Material.Filled.MoveToInbox">Receções</MudNavLink>
-        <MudNavLink Href="supplier-returns" Icon="@Icons.Material.Filled.Undo">Devoluções</MudNavLink>
-        <MudNavLink Href="supplier-invoices" Icon="@Icons.Material.Filled.RequestPage">Faturas de fornecedor</MudNavLink>
-        <MudNavLink Href="self-billed-invoices" Icon="@Icons.Material.Filled.Gavel">Autofaturação</MudNavLink>
+    <MudNavGroup Title="@Localizer["NavMenu_PurchasingGroup"]" Icon="@Icons.Material.Filled.ShoppingCart" Expanded="false">
+        <MudNavLink Href="purchase-orders" Icon="@Icons.Material.Filled.ShoppingBag">@Localizer["NavMenu_PurchaseOrders"]</MudNavLink>
+        <MudNavLink Href="goods-receipts" Icon="@Icons.Material.Filled.MoveToInbox">@Localizer["NavMenu_GoodsReceipts"]</MudNavLink>
+        <MudNavLink Href="supplier-returns" Icon="@Icons.Material.Filled.Undo">@Localizer["NavMenu_SupplierReturns"]</MudNavLink>
+        <MudNavLink Href="supplier-invoices" Icon="@Icons.Material.Filled.RequestPage">@Localizer["NavMenu_SupplierInvoices"]</MudNavLink>
+        <MudNavLink Href="self-billed-invoices" Icon="@Icons.Material.Filled.Gavel">@Localizer["NavMenu_SelfBilledInvoices"]</MudNavLink>
     </MudNavGroup>
 
-    <MudNavGroup Title="Contabilidade" Icon="@Icons.Material.Filled.AccountBalance" Expanded="false">
-        <MudNavLink Href="journal-entries" Icon="@Icons.Material.Filled.BookmarkAdd">Lançamentos</MudNavLink>
-        <MudNavLink Href="chart-of-accounts" Icon="@Icons.Material.Filled.AccountTree">Plano de contas</MudNavLink>
-        <MudNavLink Href="trial-balance" Icon="@Icons.Material.Filled.TableChart">Balancete</MudNavLink>
+    <MudNavGroup Title="@Localizer["NavMenu_AccountingGroup"]" Icon="@Icons.Material.Filled.AccountBalance" Expanded="false">
+        <MudNavLink Href="journal-entries" Icon="@Icons.Material.Filled.BookmarkAdd">@Localizer["NavMenu_JournalEntries"]</MudNavLink>
+        <MudNavLink Href="chart-of-accounts" Icon="@Icons.Material.Filled.AccountTree">@Localizer["NavMenu_ChartOfAccounts"]</MudNavLink>
+        <MudNavLink Href="trial-balance" Icon="@Icons.Material.Filled.TableChart">@Localizer["NavMenu_TrialBalance"]</MudNavLink>
     </MudNavGroup>
 
-    <MudNavGroup Title="Relatórios e AT" Icon="@Icons.Material.Filled.Assessment" Expanded="false">
-        <MudNavLink Href="saft" Icon="@Icons.Material.Filled.FileDownload">SAF-T (PT)</MudNavLink>
-        <MudNavLink Href="inventory-file" Icon="@Icons.Material.Filled.Inventory">Comunicação de inventários</MudNavLink>
-        <MudNavLink Href="reports/vat" Icon="@Icons.Material.Filled.Percent">Declaração de IVA</MudNavLink>
-        <MudNavLink Href="reports" Icon="@Icons.Material.Filled.BarChart">Relatórios</MudNavLink>
+    <MudNavGroup Title="@Localizer["NavMenu_ReportsGroup"]" Icon="@Icons.Material.Filled.Assessment" Expanded="false">
+        <MudNavLink Href="saft" Icon="@Icons.Material.Filled.FileDownload">@Localizer["NavMenu_Saft"]</MudNavLink>
+        <MudNavLink Href="inventory-file" Icon="@Icons.Material.Filled.Inventory">@Localizer["NavMenu_InventoryFile"]</MudNavLink>
+        <MudNavLink Href="reports/vat" Icon="@Icons.Material.Filled.Percent">@Localizer["NavMenu_VatReport"]</MudNavLink>
+        <MudNavLink Href="reports" Icon="@Icons.Material.Filled.BarChart">@Localizer["NavMenu_Reports"]</MudNavLink>
     </MudNavGroup>
 
-    <MudNavGroup Title="Configuração" Icon="@Icons.Material.Filled.Settings" Expanded="false">
-        <MudNavLink Href="series" Icon="@Icons.Material.Filled.FormatListNumbered">Séries de faturação</MudNavLink>
-        <MudNavLink Href="vat-rates" Icon="@Icons.Material.Filled.TableView">Taxas de IVA</MudNavLink>
+    <MudNavGroup Title="@Localizer["NavMenu_SettingsGroup"]" Icon="@Icons.Material.Filled.Settings" Expanded="false">
+        <MudNavLink Href="series" Icon="@Icons.Material.Filled.FormatListNumbered">@Localizer["NavMenu_Series"]</MudNavLink>
+        <MudNavLink Href="vat-rates" Icon="@Icons.Material.Filled.TableView">@Localizer["NavMenu_VatRates"]</MudNavLink>
     </MudNavGroup>
 
     <AuthorizeView Roles="@Constants.Roles.SuperAdmin">
-        <MudNavGroup Title="Backoffice" Icon="@Icons.Material.Filled.AdminPanelSettings" Expanded="false">
-            <MudNavLink Href="companies" Icon="@Icons.Material.Filled.Domain">Empresas</MudNavLink>
-            <MudNavLink Href="notifications" Icon="@Icons.Material.Filled.Email">Notificações</MudNavLink>
+        <MudNavGroup Title="@Localizer["NavMenu_BackofficeGroup"]" Icon="@Icons.Material.Filled.AdminPanelSettings" Expanded="false">
+            <MudNavLink Href="companies" Icon="@Icons.Material.Filled.Domain">@Localizer["NavMenu_Companies"]</MudNavLink>
+            <MudNavLink Href="notifications" Icon="@Icons.Material.Filled.Email">@Localizer["NavMenu_Notifications"]</MudNavLink>
         </MudNavGroup>
     </AuthorizeView>
 </MudNavMenu>

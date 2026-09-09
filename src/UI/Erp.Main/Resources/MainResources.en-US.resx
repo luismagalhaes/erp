@@ -1,0 +1,1795 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+	<xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+	<xsd:element name="root" msdata:IsDataSet="true">
+	  <xsd:complexType>
+		<xsd:choice maxOccurs="unbounded">
+		  <xsd:element name="metadata">
+			<xsd:complexType>
+			  <xsd:sequence>
+				<xsd:element name="value" type="xsd:string" minOccurs="0" />
+			  </xsd:sequence>
+			  <xsd:attribute name="name" use="required" type="xsd:string" />
+			  <xsd:attribute name="type" type="xsd:string" />
+			  <xsd:attribute name="mimetype" type="xsd:string" />
+			  <xsd:attribute ref="xml:space" />
+			</xsd:complexType>
+		  </xsd:element>
+		  <xsd:element name="assembly">
+			<xsd:complexType>
+			  <xsd:attribute name="alias" type="xsd:string" />
+			  <xsd:attribute name="name" type="xsd:string" />
+			</xsd:complexType>
+		  </xsd:element>
+		  <xsd:element name="data">
+			<xsd:complexType>
+			  <xsd:sequence>
+				<xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+				<xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+			  </xsd:sequence>
+			  <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+			  <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+			  <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+			  <xsd:attribute ref="xml:space" />
+			</xsd:complexType>
+		  </xsd:element>
+		  <xsd:element name="resheader">
+			<xsd:complexType>
+			  <xsd:sequence>
+				<xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+			  </xsd:sequence>
+			  <xsd:attribute name="name" type="xsd:string" use="required" />
+			</xsd:complexType>
+		  </xsd:element>
+		</xsd:choice>
+	  </xsd:complexType>
+	</xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+	<value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+	<value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+	<value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+	<value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="Common_SaveButton" xml:space="preserve"><value>Save</value></data>
+  <data name="Common_CancelButton" xml:space="preserve"><value>Cancel</value></data>
+  <data name="Common_DeleteButton" xml:space="preserve"><value>Delete</value></data>
+  <data name="Common_EditAction" xml:space="preserve"><value>Edit</value></data>
+  <data name="Common_DeleteAction" xml:space="preserve"><value>Delete</value></data>
+  <data name="Common_CreateAction" xml:space="preserve"><value>Create</value></data>
+  <data name="Common_ViewAction" xml:space="preserve"><value>View</value></data>
+  <data name="Common_ActionsColumn" xml:space="preserve"><value>Actions</value></data>
+  <data name="Common_NameColumn" xml:space="preserve"><value>Name</value></data>
+  <data name="Common_DescriptionColumn" xml:space="preserve"><value>Description</value></data>
+  <data name="Common_CodeColumn" xml:space="preserve"><value>Code</value></data>
+  <data name="Common_StatusColumn" xml:space="preserve"><value>Status</value></data>
+  <data name="Common_DateColumn" xml:space="preserve"><value>Date</value></data>
+  <data name="Common_TotalColumn" xml:space="preserve"><value>Total</value></data>
+  <data name="Common_Yes" xml:space="preserve"><value>Yes</value></data>
+  <data name="Common_No" xml:space="preserve"><value>No</value></data>
+  <data name="Common_Loading" xml:space="preserve"><value>Loading...</value></data>
+  <data name="Common_Search" xml:space="preserve"><value>Search</value></data>
+  <data name="Common_NoRecordsFound" xml:space="preserve"><value>No records found.</value></data>
+  <data name="Common_ErrorGeneric" xml:space="preserve"><value>An error occurred. Please try again.</value></data>
+  <data name="Common_ConfirmDeleteHeading" xml:space="preserve"><value>Confirm deletion</value></data>
+  <data name="Common_ConfirmDeleteMessage" xml:space="preserve"><value>Are you sure you want to delete this record?</value></data>
+  <data name="Common_RequiredField" xml:space="preserve"><value>This field is required.</value></data>
+  <data name="Common_DuplicateCode" xml:space="preserve"><value>A record with this code already exists.</value></data>
+  <data name="Common_Active" xml:space="preserve"><value>Active</value></data>
+  <data name="Common_Inactive" xml:space="preserve"><value>Inactive</value></data>
+  <data name="Common_Close" xml:space="preserve"><value>Close</value></data>
+  <data name="Common_Print" xml:space="preserve"><value>Print</value></data>
+  <data name="Common_Back" xml:space="preserve"><value>Back</value></data>
+
+  <data name="DataGrid_EmptyTitle" xml:space="preserve"><value>No records to display</value></data>
+  <data name="DataGrid_EmptyDescription" xml:space="preserve"><value>Adjust the filters or create the first record.</value></data>
+  <data name="DataGrid_ItemsLabel" xml:space="preserve"><value>records</value></data>
+  <data name="DataGrid_RefreshAction" xml:space="preserve"><value>Refresh</value></data>
+  <data name="DataGrid_LoadErrorMessage" xml:space="preserve"><value>Unable to load records</value></data>
+
+  <data name="PartnerForm_CodeLabel" xml:space="preserve"><value>Code</value></data>
+  <data name="PartnerForm_CodeHelperText" xml:space="preserve"><value>Code cannot be changed</value></data>
+  <data name="PartnerForm_NameLabel" xml:space="preserve"><value>Name</value></data>
+  <data name="PartnerForm_TaxIdLabel" xml:space="preserve"><value>Tax ID</value></data>
+  <data name="PartnerForm_TaxIdHelperText" xml:space="preserve"><value>999999990 for final consumer</value></data>
+  <data name="PartnerForm_AddressLabel" xml:space="preserve"><value>Address</value></data>
+  <data name="PartnerForm_PostalCodeLabel" xml:space="preserve"><value>Postal Code</value></data>
+  <data name="PartnerForm_CityLabel" xml:space="preserve"><value>City</value></data>
+  <data name="PartnerForm_CountryLabel" xml:space="preserve"><value>Country</value></data>
+  <data name="PartnerForm_CountryHelperText" xml:space="preserve"><value>ISO code, e.g. PT</value></data>
+  <data name="PartnerForm_EmailLabel" xml:space="preserve"><value>Email</value></data>
+  <data name="PartnerForm_PhoneLabel" xml:space="preserve"><value>Phone</value></data>
+  <data name="PartnerForm_ActiveLabel" xml:space="preserve"><value>Active</value></data>
+
+  <data name="Print_TaxIdLabel" xml:space="preserve"><value>Tax ID</value></data>
+  <data name="Print_PhoneLabel" xml:space="preserve"><value>Tel.</value></data>
+  <data name="Print_DateLabel" xml:space="preserve"><value>Date</value></data>
+  <data name="Print_QrCodeAlt" xml:space="preserve"><value>Document QR code</value></data>
+  <data name="Print_CertifiedProgramNotice" xml:space="preserve"><value>Processed by certified software no. {0}/AT</value></data>
+  <data name="Print_BackButton" xml:space="preserve"><value>Back</value></data>
+  <data name="Print_PrintButton" xml:space="preserve"><value>Print</value></data>
+
+  <data name="Layout_LightMode" xml:space="preserve"><value>Light mode</value></data>
+  <data name="Layout_DarkMode" xml:space="preserve"><value>Dark mode</value></data>
+  <data name="Layout_Logout" xml:space="preserve"><value>Log out</value></data>
+
+  <data name="NavMenu_Dashboard" xml:space="preserve"><value>Dashboard</value></data>
+  <data name="NavMenu_PartnersGroup" xml:space="preserve"><value>Customers and Suppliers</value></data>
+  <data name="NavMenu_Customers" xml:space="preserve"><value>Customers</value></data>
+  <data name="NavMenu_Suppliers" xml:space="preserve"><value>Suppliers</value></data>
+  <data name="NavMenu_InvoicingGroup" xml:space="preserve"><value>Invoicing</value></data>
+  <data name="NavMenu_Invoices" xml:space="preserve"><value>Invoices</value></data>
+  <data name="NavMenu_CreditNotes" xml:space="preserve"><value>Credit notes</value></data>
+  <data name="NavMenu_Payments" xml:space="preserve"><value>Payments</value></data>
+  <data name="NavMenu_StockMovements" xml:space="preserve"><value>Delivery notes</value></data>
+  <data name="NavMenu_ProductsGroup" xml:space="preserve"><value>Products</value></data>
+  <data name="NavMenu_Products" xml:space="preserve"><value>Products</value></data>
+  <data name="NavMenu_Families" xml:space="preserve"><value>Families</value></data>
+  <data name="NavMenu_Subfamilies" xml:space="preserve"><value>Subfamilies</value></data>
+  <data name="NavMenu_Brands" xml:space="preserve"><value>Brands</value></data>
+  <data name="NavMenu_StockGroup" xml:space="preserve"><value>Stock</value></data>
+  <data name="NavMenu_StockBalances" xml:space="preserve"><value>Stock balances</value></data>
+  <data name="NavMenu_InventoryCounts" xml:space="preserve"><value>Inventory counts</value></data>
+  <data name="NavMenu_StockCheck" xml:space="preserve"><value>Stock check</value></data>
+  <data name="NavMenu_PurchasingGroup" xml:space="preserve"><value>Purchasing</value></data>
+  <data name="NavMenu_PurchaseOrders" xml:space="preserve"><value>Purchase orders</value></data>
+  <data name="NavMenu_GoodsReceipts" xml:space="preserve"><value>Goods receipts</value></data>
+  <data name="NavMenu_SupplierReturns" xml:space="preserve"><value>Supplier returns</value></data>
+  <data name="NavMenu_SupplierInvoices" xml:space="preserve"><value>Supplier invoices</value></data>
+  <data name="NavMenu_SelfBilledInvoices" xml:space="preserve"><value>Self-billed invoices</value></data>
+  <data name="NavMenu_AccountingGroup" xml:space="preserve"><value>Accounting</value></data>
+  <data name="NavMenu_JournalEntries" xml:space="preserve"><value>Journal entries</value></data>
+  <data name="NavMenu_ChartOfAccounts" xml:space="preserve"><value>Chart of accounts</value></data>
+  <data name="NavMenu_TrialBalance" xml:space="preserve"><value>Trial balance</value></data>
+  <data name="NavMenu_ReportsGroup" xml:space="preserve"><value>Reports and Tax Authority</value></data>
+  <data name="NavMenu_Saft" xml:space="preserve"><value>SAF-T (PT)</value></data>
+  <data name="NavMenu_InventoryFile" xml:space="preserve"><value>Inventory file submission</value></data>
+  <data name="NavMenu_VatReport" xml:space="preserve"><value>VAT report</value></data>
+  <data name="NavMenu_Reports" xml:space="preserve"><value>Reports</value></data>
+  <data name="NavMenu_SettingsGroup" xml:space="preserve"><value>Settings</value></data>
+  <data name="NavMenu_Series" xml:space="preserve"><value>Invoicing series</value></data>
+  <data name="NavMenu_VatRates" xml:space="preserve"><value>VAT rates</value></data>
+  <data name="NavMenu_BackofficeGroup" xml:space="preserve"><value>Backoffice</value></data>
+  <data name="NavMenu_Companies" xml:space="preserve"><value>Companies</value></data>
+  <data name="NavMenu_Notifications" xml:space="preserve"><value>Notifications</value></data>
+
+  <data name="Dashboard_PageTitle" xml:space="preserve"><value>Dashboard — ERP</value></data>
+  <data name="Dashboard_Heading" xml:space="preserve"><value>Dashboard</value></data>
+  <data name="Dashboard_InvoicesThisMonth" xml:space="preserve"><value>Invoices this month</value></data>
+  <data name="Dashboard_ActiveCustomers" xml:space="preserve"><value>Active customers</value></data>
+  <data name="Dashboard_ItemsInStock" xml:space="preserve"><value>Items in stock</value></data>
+  <data name="Dashboard_SalesVolume" xml:space="preserve"><value>Sales volume</value></data>
+
+  <data name="AccessDenied_PageTitle" xml:space="preserve"><value>Access Denied</value></data>
+  <data name="AccessDenied_Heading" xml:space="preserve"><value>Access Denied</value></data>
+  <data name="AccessDenied_Message" xml:space="preserve"><value>You do not have permission to access this page.</value></data>
+
+  <data name="NotFound_Heading" xml:space="preserve"><value>Not Found</value></data>
+  <data name="NotFound_Message" xml:space="preserve"><value>Sorry, the content you are looking for does not exist.</value></data>
+
+  <data name="Brands_PageTitle" xml:space="preserve"><value>Brands</value></data>
+  <data name="Brands_NewBrand" xml:space="preserve"><value>New brand</value></data>
+  <data name="Brands_SearchPlaceholder" xml:space="preserve"><value>Search by code or name</value></data>
+  <data name="Brands_EmptyTitle" xml:space="preserve"><value>No brands to show</value></data>
+  <data name="Brands_EmptyDescription" xml:space="preserve"><value>Adjust the filters or create the first brand.</value></data>
+  <data name="Brands_ItemsLabel" xml:space="preserve"><value>brands</value></data>
+  <data name="Brands_LoadErrorMessage" xml:space="preserve"><value>Unable to load brands</value></data>
+  <data name="Brands_Active" xml:space="preserve"><value>Active</value></data>
+  <data name="Brands_Inactive" xml:space="preserve"><value>Inactive</value></data>
+  <data name="Brands_EditBrand" xml:space="preserve"><value>Edit brand</value></data>
+  <data name="BrandEditor_NewTitle" xml:space="preserve"><value>New brand</value></data>
+  <data name="BrandEditor_EditTitle" xml:space="preserve"><value>Edit brand</value></data>
+  <data name="BrandEditor_ActiveLabel" xml:space="preserve"><value>Active brand</value></data>
+  <data name="BrandEditor_CodeHelperText" xml:space="preserve"><value>The code cannot be changed</value></data>
+  <data name="BrandEditor_NotFound" xml:space="preserve"><value>Brand not found.</value></data>
+  <data name="BrandEditor_LoadError" xml:space="preserve"><value>Unable to load the brand: {0}</value></data>
+  <data name="BrandEditor_SaveError" xml:space="preserve"><value>Unable to save the brand: {0}</value></data>
+  <data name="BrandEditor_Created" xml:space="preserve"><value>Brand created.</value></data>
+  <data name="BrandEditor_Updated" xml:space="preserve"><value>Brand updated.</value></data>
+
+  <data name="Companies_PageTitle" xml:space="preserve"><value>Companies</value></data>
+  <data name="Companies_NewCompany" xml:space="preserve"><value>New company</value></data>
+  <data name="Companies_SearchPlaceholder" xml:space="preserve"><value>Search by name or tax ID</value></data>
+  <data name="Companies_EmptyTitle" xml:space="preserve"><value>No companies to show</value></data>
+  <data name="Companies_EmptyDescription" xml:space="preserve"><value>Adjust the filters or create the first company.</value></data>
+  <data name="Companies_ItemsLabel" xml:space="preserve"><value>companies</value></data>
+  <data name="Companies_LoadErrorMessage" xml:space="preserve"><value>Unable to load companies</value></data>
+  <data name="Companies_LegalNameColumn" xml:space="preserve"><value>Legal name</value></data>
+  <data name="Companies_TaxIdColumn" xml:space="preserve"><value>Tax ID</value></data>
+
+  <data name="Families_PageTitle" xml:space="preserve"><value>Families</value></data>
+  <data name="Families_Subfamilies" xml:space="preserve"><value>Subfamilies</value></data>
+  <data name="Families_NewFamily" xml:space="preserve"><value>New family</value></data>
+  <data name="Families_SearchPlaceholder" xml:space="preserve"><value>Search by code or name</value></data>
+  <data name="Families_EmptyTitle" xml:space="preserve"><value>No families to show</value></data>
+  <data name="Families_EmptyDescription" xml:space="preserve"><value>Adjust the filters or create the first family.</value></data>
+  <data name="Families_ItemsLabel" xml:space="preserve"><value>families</value></data>
+  <data name="Families_LoadErrorMessage" xml:space="preserve"><value>Unable to load families</value></data>
+  <data name="Families_SubfamilyCountColumn" xml:space="preserve"><value>Subfamilies</value></data>
+
+  <data name="CompanyEditor_NewTitle" xml:space="preserve"><value>New company</value></data>
+  <data name="CompanyEditor_EditTitle" xml:space="preserve"><value>Edit company</value></data>
+  <data name="CompanyEditor_TaxIdHelperText" xml:space="preserve"><value>The tax ID identifies the company to the tax authority and cannot be repeated.</value></data>
+  <data name="CompanyEditor_DataTab" xml:space="preserve"><value>Data</value></data>
+  <data name="CompanyEditor_LegalNameLabel" xml:space="preserve"><value>Legal name</value></data>
+  <data name="CompanyEditor_AddressSectionHint" xml:space="preserve"><value>Headquarters — the SAF-T header requires the address, so the file is incomplete without it.</value></data>
+  <data name="CompanyEditor_CountryHelperText" xml:space="preserve"><value>2-letter code</value></data>
+  <data name="CompanyEditor_ActiveLabel" xml:space="preserve"><value>Active company</value></data>
+  <data name="CompanyEditor_UsersTab" xml:space="preserve"><value>Users</value></data>
+  <data name="CompanyEditor_UsersTabDisabledHint" xml:space="preserve"><value>Save the company before assigning users</value></data>
+  <data name="CompanyEditor_UsersTabDescription" xml:space="preserve"><value>Who has access to this company. This list feeds the company selector in the header.</value></data>
+  <data name="CompanyEditor_UserLabel" xml:space="preserve"><value>User</value></data>
+  <data name="CompanyEditor_RoleLabel" xml:space="preserve"><value>Role in the company</value></data>
+  <data name="CompanyEditor_AssignButton" xml:space="preserve"><value>Assign</value></data>
+  <data name="CompanyEditor_AllUsersAssignedHint" xml:space="preserve"><value>All active users are already assigned to this company.</value></data>
+  <data name="CompanyEditor_UserColumn" xml:space="preserve"><value>User</value></data>
+  <data name="CompanyEditor_EmailColumn" xml:space="preserve"><value>Email</value></data>
+  <data name="CompanyEditor_ActionsColumn" xml:space="preserve"><value>Actions</value></data>
+  <data name="CompanyEditor_NoUsersMessage" xml:space="preserve"><value>No user has access to this company.</value></data>
+  <data name="CompanyEditor_RemoveAccessTitle" xml:space="preserve"><value>Remove access</value></data>
+  <data name="CompanyEditor_WarehousesTab" xml:space="preserve"><value>Warehouses</value></data>
+  <data name="CompanyEditor_WarehousesTabDisabledHint" xml:space="preserve"><value>Save the company before creating warehouses</value></data>
+  <data name="CompanyEditor_WarehousesTabDescription" xml:space="preserve"><value>Where this company stores stock. The default is what documents assume when none is specified.</value></data>
+  <data name="CompanyEditor_NewWarehouse" xml:space="preserve"><value>New warehouse</value></data>
+  <data name="CompanyEditor_CityColumn" xml:space="preserve"><value>City</value></data>
+  <data name="CompanyEditor_DefaultColumn" xml:space="preserve"><value>Default</value></data>
+  <data name="CompanyEditor_DefaultChip" xml:space="preserve"><value>Default</value></data>
+  <data name="CompanyEditor_NewWarehouseTitle" xml:space="preserve"><value>New warehouse</value></data>
+  <data name="CompanyEditor_EditWarehouseTitle" xml:space="preserve"><value>Edit warehouse</value></data>
+  <data name="CompanyEditor_WarehouseCodeUniqueHint" xml:space="preserve"><value>Unique in the company</value></data>
+  <data name="CompanyEditor_WarehouseCodeHelperText" xml:space="preserve"><value>The code cannot be changed</value></data>
+  <data name="CompanyEditor_WarehouseIsDefaultLabel" xml:space="preserve"><value>Default warehouse</value></data>
+  <data name="CompanyEditor_WarehouseIsDefaultHint" xml:space="preserve"><value>It is what documents assume when none is specified. There can only be one per company.</value></data>
+  <data name="CompanyEditor_WarehouseActiveLabel" xml:space="preserve"><value>Active warehouse</value></data>
+  <data name="CompanyEditor_NotFound" xml:space="preserve"><value>Company not found.</value></data>
+  <data name="CompanyEditor_LoadError" xml:space="preserve"><value>Unable to load the company: {0}</value></data>
+  <data name="CompanyEditor_LoadUsersError" xml:space="preserve"><value>Unable to load users: {0}</value></data>
+  <data name="CompanyEditor_LoadAccessesError" xml:space="preserve"><value>Unable to load accesses: {0}</value></data>
+  <data name="CompanyEditor_LoadWarehousesError" xml:space="preserve"><value>Unable to load warehouses: {0}</value></data>
+  <data name="CompanyEditor_WarehouseSaved" xml:space="preserve"><value>Warehouse {0} saved.</value></data>
+  <data name="CompanyEditor_SaveWarehouseError" xml:space="preserve"><value>Unable to save the warehouse: {0}</value></data>
+  <data name="CompanyEditor_Created" xml:space="preserve"><value>Company created. Assign users now.</value></data>
+  <data name="CompanyEditor_Updated" xml:space="preserve"><value>Company updated.</value></data>
+  <data name="CompanyEditor_SaveError" xml:space="preserve"><value>Unable to save the company: {0}</value></data>
+  <data name="CompanyEditor_UserGainedAccess" xml:space="preserve"><value>{0} now has access to this company.</value></data>
+  <data name="CompanyEditor_RoleUpdated" xml:space="preserve"><value>Role updated.</value></data>
+  <data name="CompanyEditor_AccessReactivated" xml:space="preserve"><value>Access reactivated.</value></data>
+  <data name="CompanyEditor_AccessDeactivated" xml:space="preserve"><value>Access deactivated.</value></data>
+  <data name="CompanyEditor_UserLostAccess" xml:space="preserve"><value>{0} no longer has access to this company.</value></data>
+  <data name="CompanyEditor_OperationError" xml:space="preserve"><value>Unable to complete the operation: {0}</value></data>
+  <data name="Customers_PageTitle" xml:space="preserve"><value>Customers</value></data>
+  <data name="Customers_NewButton" xml:space="preserve"><value>New customer</value></data>
+  <data name="Customers_SearchPlaceholder" xml:space="preserve"><value>Search by code, name or tax ID</value></data>
+  <data name="Customers_EmptyTitle" xml:space="preserve"><value>No customers to show</value></data>
+  <data name="Customers_EmptyDescription" xml:space="preserve"><value>Adjust the filters or create the first customer.</value></data>
+  <data name="Customers_ItemsLabel" xml:space="preserve"><value>customers</value></data>
+  <data name="Customers_LoadError" xml:space="preserve"><value>Unable to load customers</value></data>
+  <data name="Customers_CodeColumn" xml:space="preserve"><value>Code</value></data>
+  <data name="Customers_NameColumn" xml:space="preserve"><value>Name</value></data>
+  <data name="Customers_TaxIdColumn" xml:space="preserve"><value>Tax ID</value></data>
+  <data name="Customers_CityColumn" xml:space="preserve"><value>City</value></data>
+  <data name="Customers_PostalCodeColumn" xml:space="preserve"><value>Postal code</value></data>
+  <data name="Customers_CountryColumn" xml:space="preserve"><value>Country</value></data>
+  <data name="Customers_EmailColumn" xml:space="preserve"><value>Email</value></data>
+  <data name="Customers_PhoneColumn" xml:space="preserve"><value>Phone</value></data>
+  <data name="Customers_StatusColumn" xml:space="preserve"><value>Status</value></data>
+  <data name="Customers_EditAction" xml:space="preserve"><value>Edit</value></data>
+  <data name="Suppliers_PageTitle" xml:space="preserve"><value>Suppliers</value></data>
+  <data name="Suppliers_NewButton" xml:space="preserve"><value>New supplier</value></data>
+  <data name="Suppliers_SearchPlaceholder" xml:space="preserve"><value>Search by code, name or tax ID</value></data>
+  <data name="Suppliers_EmptyTitle" xml:space="preserve"><value>No suppliers to show</value></data>
+  <data name="Suppliers_EmptyDescription" xml:space="preserve"><value>Adjust the filters or create the first supplier.</value></data>
+  <data name="Suppliers_ItemsLabel" xml:space="preserve"><value>suppliers</value></data>
+  <data name="Suppliers_LoadError" xml:space="preserve"><value>Unable to load suppliers</value></data>
+  <data name="CustomerEditor_NewTitle" xml:space="preserve"><value>New customer</value></data>
+  <data name="CustomerEditor_EditTitle" xml:space="preserve"><value>Edit customer</value></data>
+  <data name="CustomerEditor_UpdateHint" xml:space="preserve"><value>Changing the customer does not affect documents already issued: each one keeps its own copy.</value></data>
+  <data name="CustomerEditor_NoCompanyWarning" xml:space="preserve"><value>Choose a company in the header before creating customers.</value></data>
+  <data name="CustomerEditor_ActiveLabel" xml:space="preserve"><value>Active customer</value></data>
+  <data name="CustomerEditor_NotFound" xml:space="preserve"><value>Customer not found.</value></data>
+  <data name="CustomerEditor_LoadError" xml:space="preserve"><value>Unable to load the customer: {0}</value></data>
+  <data name="CustomerEditor_Created" xml:space="preserve"><value>Customer created.</value></data>
+  <data name="CustomerEditor_Updated" xml:space="preserve"><value>Customer updated.</value></data>
+  <data name="CustomerEditor_SaveError" xml:space="preserve"><value>Unable to save the customer: {0}</value></data>
+  <data name="SupplierEditor_NewTitle" xml:space="preserve"><value>New supplier</value></data>
+  <data name="SupplierEditor_EditTitle" xml:space="preserve"><value>Edit supplier</value></data>
+  <data name="SupplierEditor_UpdateHint" xml:space="preserve"><value>Changing the supplier does not affect documents already issued: each one keeps its own copy.</value></data>
+  <data name="SupplierEditor_NoCompanyWarning" xml:space="preserve"><value>Choose a company in the header before creating suppliers.</value></data>
+  <data name="SupplierEditor_ActiveLabel" xml:space="preserve"><value>Active supplier</value></data>
+  <data name="SupplierEditor_NotFound" xml:space="preserve"><value>Supplier not found.</value></data>
+  <data name="SupplierEditor_LoadError" xml:space="preserve"><value>Unable to load the supplier: {0}</value></data>
+  <data name="SupplierEditor_Created" xml:space="preserve"><value>Supplier created.</value></data>
+  <data name="SupplierEditor_Updated" xml:space="preserve"><value>Supplier updated.</value></data>
+  <data name="SupplierEditor_SaveError" xml:space="preserve"><value>Unable to save the supplier: {0}</value></data>
+  <data name="Subfamilies_PageTitle" xml:space="preserve"><value>Subfamilies</value></data>
+  <data name="Subfamilies_FamiliesButton" xml:space="preserve"><value>Families</value></data>
+  <data name="Subfamilies_NewButton" xml:space="preserve"><value>New subfamily</value></data>
+  <data name="Subfamilies_SearchPlaceholder" xml:space="preserve"><value>Search by code, name or family</value></data>
+  <data name="Subfamilies_EmptyTitle" xml:space="preserve"><value>No subfamilies to show</value></data>
+  <data name="Subfamilies_EmptyDescription" xml:space="preserve"><value>Adjust the filters or create the first subfamily.</value></data>
+  <data name="Subfamilies_ItemsLabel" xml:space="preserve"><value>subfamilies</value></data>
+  <data name="Subfamilies_LoadError" xml:space="preserve"><value>Unable to load subfamilies</value></data>
+  <data name="Subfamilies_CodeColumn" xml:space="preserve"><value>Code</value></data>
+  <data name="Subfamilies_NameColumn" xml:space="preserve"><value>Name</value></data>
+  <data name="Subfamilies_FamilyColumn" xml:space="preserve"><value>Family</value></data>
+  <data name="Subfamilies_StatusColumn" xml:space="preserve"><value>Status</value></data>
+  <data name="Subfamilies_ActiveFeminine" xml:space="preserve"><value>Active</value></data>
+  <data name="Subfamilies_InactiveFeminine" xml:space="preserve"><value>Inactive</value></data>
+  <data name="Subfamilies_EditAction" xml:space="preserve"><value>Edit</value></data>
+  <data name="SubfamilyEditor_NewTitle" xml:space="preserve"><value>New subfamily</value></data>
+  <data name="SubfamilyEditor_EditTitle" xml:space="preserve"><value>Edit subfamily</value></data>
+  <data name="SubfamilyEditor_NoFamiliesWarning" xml:space="preserve"><value>There is no active family. A subfamily always lives inside a family.</value></data>
+  <data name="SubfamilyEditor_CreateFamilyLink" xml:space="preserve"><value>Create family</value></data>
+  <data name="SubfamilyEditor_FamilyLabel" xml:space="preserve"><value>Family</value></data>
+  <data name="SubfamilyEditor_CodeLabel" xml:space="preserve"><value>Code</value></data>
+  <data name="SubfamilyEditor_CodeHelperText" xml:space="preserve"><value>The code cannot be changed</value></data>
+  <data name="SubfamilyEditor_NameLabel" xml:space="preserve"><value>Name</value></data>
+  <data name="SubfamilyEditor_ActiveLabel" xml:space="preserve"><value>Active subfamily</value></data>
+  <data name="SubfamilyEditor_NotFound" xml:space="preserve"><value>Subfamily not found.</value></data>
+  <data name="SubfamilyEditor_LoadError" xml:space="preserve"><value>Unable to load the subfamily: {0}</value></data>
+  <data name="SubfamilyEditor_Created" xml:space="preserve"><value>Subfamily created.</value></data>
+  <data name="SubfamilyEditor_Updated" xml:space="preserve"><value>Subfamily updated.</value></data>
+  <data name="SubfamilyEditor_SaveError" xml:space="preserve"><value>Unable to save the subfamily: {0}</value></data>
+  <data name="Products_PageTitle" xml:space="preserve"><value>Products</value></data>
+  <data name="Products_NewButton" xml:space="preserve"><value>New product</value></data>
+  <data name="Products_SearchPlaceholder" xml:space="preserve"><value>Search by code, description or barcode</value></data>
+  <data name="Products_EmptyTitle" xml:space="preserve"><value>No products to show</value></data>
+  <data name="Products_EmptyDescription" xml:space="preserve"><value>Adjust the filters or create the first product.</value></data>
+  <data name="Products_ItemsLabel" xml:space="preserve"><value>products</value></data>
+  <data name="Products_LoadError" xml:space="preserve"><value>Unable to load products</value></data>
+  <data name="Products_CodeColumn" xml:space="preserve"><value>Code</value></data>
+  <data name="Products_DescriptionColumn" xml:space="preserve"><value>Description</value></data>
+  <data name="Products_FamilyColumn" xml:space="preserve"><value>Family</value></data>
+  <data name="Products_FamilyFilterPlaceholder" xml:space="preserve"><value>Search family...</value></data>
+  <data name="Products_SubfamilyColumn" xml:space="preserve"><value>Subfamily</value></data>
+  <data name="Products_BrandColumn" xml:space="preserve"><value>Brand</value></data>
+  <data name="Products_PriceColumn" xml:space="preserve"><value>Price</value></data>
+  <data name="Products_TaxColumn" xml:space="preserve"><value>VAT</value></data>
+  <data name="Products_StatusColumn" xml:space="preserve"><value>Status</value></data>
+  <data name="Products_EditAction" xml:space="preserve"><value>Edit</value></data>
+  <data name="ProductEditor_NewTitle" xml:space="preserve"><value>New product</value></data>
+  <data name="ProductEditor_EditTitle" xml:space="preserve"><value>Edit product</value></data>
+  <data name="ProductEditor_FamiliesButton" xml:space="preserve"><value>Families</value></data>
+  <data name="ProductEditor_BrandsButton" xml:space="preserve"><value>Brands</value></data>
+  <data name="ProductEditor_ActiveLabel" xml:space="preserve"><value>Active</value></data>
+  <data name="ProductEditor_CardTitle" xml:space="preserve"><value>Product</value></data>
+  <data name="ProductEditor_CodeLabel" xml:space="preserve"><value>Code</value></data>
+  <data name="ProductEditor_DescriptionLabel" xml:space="preserve"><value>Description</value></data>
+  <data name="ProductEditor_BarcodeLabel" xml:space="preserve"><value>Barcode</value></data>
+  <data name="ProductEditor_TypeLabel" xml:space="preserve"><value>Type</value></data>
+  <data name="ProductEditor_TypeProduct" xml:space="preserve"><value>Product</value></data>
+  <data name="ProductEditor_TypeService" xml:space="preserve"><value>Service</value></data>
+  <data name="ProductEditor_TypeOther" xml:space="preserve"><value>Other</value></data>
+  <data name="ProductEditor_TypeTax" xml:space="preserve"><value>Taxes and fees</value></data>
+  <data name="ProductEditor_FamilyLabel" xml:space="preserve"><value>Family</value></data>
+  <data name="ProductEditor_SubfamilyLabel" xml:space="preserve"><value>Subfamily</value></data>
+  <data name="ProductEditor_BrandLabel" xml:space="preserve"><value>Brand</value></data>
+  <data name="ProductEditor_UnitPriceLabel" xml:space="preserve"><value>Unit price</value></data>
+  <data name="ProductEditor_UnitCostLabel" xml:space="preserve"><value>Unit cost</value></data>
+  <data name="ProductEditor_UnitOfMeasureLabel" xml:space="preserve"><value>Unit</value></data>
+  <data name="ProductEditor_TaxLabel" xml:space="preserve"><value>VAT</value></data>
+  <data name="ProductEditor_TaxRegionLabel" xml:space="preserve"><value>Fiscal region</value></data>
+  <data name="ProductEditor_TaxRegionMainland" xml:space="preserve"><value>Mainland</value></data>
+  <data name="ProductEditor_TaxRegionAzores" xml:space="preserve"><value>Azores</value></data>
+  <data name="ProductEditor_TaxRegionMadeira" xml:space="preserve"><value>Madeira</value></data>
+  <data name="ProductEditor_InventoryCategoryLabel" xml:space="preserve"><value>Inventory cat.</value></data>
+  <data name="ProductEditor_BiologicalAssetsNotice" xml:space="preserve"><value>Biological assets only exist in the valued format (2_01). In a quantity-only report, this product goes as goods.</value></data>
+  <data name="ProductEditor_SaveHint" xml:space="preserve"><value>Fill in the code and description to be able to save.</value></data>
+  <data name="ProductEditor_TaxRateNormal" xml:space="preserve"><value>Standard - 23%</value></data>
+  <data name="ProductEditor_TaxRateIntermediate" xml:space="preserve"><value>Intermediate - 13%</value></data>
+  <data name="ProductEditor_TaxRateReduced" xml:space="preserve"><value>Reduced - 6%</value></data>
+  <data name="ProductEditor_TaxRateExempt" xml:space="preserve"><value>Exempt</value></data>
+  <data name="ProductEditor_NotFound" xml:space="preserve"><value>Product not found.</value></data>
+  <data name="ProductEditor_LoadError" xml:space="preserve"><value>Unable to load the product: {0}</value></data>
+  <data name="ProductEditor_Created" xml:space="preserve"><value>Product created.</value></data>
+  <data name="ProductEditor_Updated" xml:space="preserve"><value>Product updated.</value></data>
+  <data name="ProductEditor_SaveError" xml:space="preserve"><value>Unable to save the product: {0}</value></data>
+  <data name="StockBalances_PageTitle" xml:space="preserve"><value>Stock</value></data>
+  <data name="StockBalances_Subtitle" xml:space="preserve"><value>Balance by warehouse. Click a row to see the movements that arrived there.</value></data>
+  <data name="StockBalances_CheckButton" xml:space="preserve"><value>Stock check</value></data>
+  <data name="StockBalances_NoWarehousesWarning" xml:space="preserve"><value>This company has no warehouses yet, so there is nowhere to keep stock. Create them on the company page, under the {0} tab.</value></data>
+  <data name="StockBalances_WarehousesTabName" xml:space="preserve"><value>Warehouses</value></data>
+  <data name="StockBalances_WarehouseLabel" xml:space="preserve"><value>Warehouse</value></data>
+  <data name="StockBalances_AllPlaceholder" xml:space="preserve"><value>All</value></data>
+  <data name="StockBalances_FilterLabel" xml:space="preserve"><value>Filter</value></data>
+  <data name="StockBalances_FilterHelperText" xml:space="preserve"><value>Product code or description</value></data>
+  <data name="StockBalances_OnlyWithStockLabel" xml:space="preserve"><value>Only with stock</value></data>
+  <data name="StockBalances_ProductColumn" xml:space="preserve"><value>Product</value></data>
+  <data name="StockBalances_DescriptionColumn" xml:space="preserve"><value>Description</value></data>
+  <data name="StockBalances_WarehouseColumn" xml:space="preserve"><value>Warehouse</value></data>
+  <data name="StockBalances_QuantityColumn" xml:space="preserve"><value>Quantity</value></data>
+  <data name="StockBalances_AverageCostColumn" xml:space="preserve"><value>Average cost</value></data>
+  <data name="StockBalances_ValueColumn" xml:space="preserve"><value>Value</value></data>
+  <data name="StockBalances_LastMovementColumn" xml:space="preserve"><value>Last movement</value></data>
+  <data name="StockBalances_ActionsColumn" xml:space="preserve"><value>Actions</value></data>
+  <data name="StockBalances_NoCostTooltip" xml:space="preserve"><value>Nothing with a cost has come in yet through a purchase or opening adjustment</value></data>
+  <data name="StockBalances_AdjustTooltip" xml:space="preserve"><value>Adjust stock</value></data>
+  <data name="StockBalances_NoRecords" xml:space="preserve"><value>No stock to show.</value></data>
+  <data name="StockBalances_TotalValueLabel" xml:space="preserve"><value>Stock value</value></data>
+  <data name="StockBalances_TotalValueCaption" xml:space="preserve"><value>At the weighted average cost of what was purchased</value></data>
+  <data name="StockBalances_WithoutCostSingular" xml:space="preserve"><value>product has</value></data>
+  <data name="StockBalances_WithoutCostPlural" xml:space="preserve"><value>products have</value></data>
+  <data name="StockBalances_WithoutCostNotice" xml:space="preserve"><value>{0} {1} stock with no known cost: it came in through an adjustment, or before costing existed. It is worth zero in the valuation until a purchase gives it a price — or an opening adjustment declares it.</value></data>
+  <data name="StockBalances_NegativeSingular" xml:space="preserve"><value>product has</value></data>
+  <data name="StockBalances_NegativePlural" xml:space="preserve"><value>products have</value></data>
+  <data name="StockBalances_NegativeNotice" xml:space="preserve"><value>{0} {1} negative stock: goods left that never came in. The stock check helps find where.</value></data>
+  <data name="StockBalances_LedgerTitle" xml:space="preserve"><value>Movements of {0}</value></data>
+  <data name="StockBalances_DateColumn" xml:space="preserve"><value>Date</value></data>
+  <data name="StockBalances_DocumentColumn" xml:space="preserve"><value>Document</value></data>
+  <data name="StockBalances_ReasonColumn" xml:space="preserve"><value>Reason</value></data>
+  <data name="StockBalances_MovementColumn" xml:space="preserve"><value>Movement</value></data>
+  <data name="StockBalances_BalanceColumn" xml:space="preserve"><value>Balance</value></data>
+  <data name="StockBalances_NoMovements" xml:space="preserve"><value>No movements.</value></data>
+  <data name="StockBalances_CloseButton" xml:space="preserve"><value>Close</value></data>
+  <data name="StockBalances_AdjustTitle" xml:space="preserve"><value>Adjust stock</value></data>
+  <data name="StockBalances_AdjustDescription" xml:space="preserve"><value>The adjustment does not fix the past: it writes a new movement, and both remain visible.</value></data>
+  <data name="StockBalances_CurrentStockLabel" xml:space="preserve"><value>Current stock</value></data>
+  <data name="StockBalances_CountedQuantityLabel" xml:space="preserve"><value>Counted quantity</value></data>
+  <data name="StockBalances_DifferenceLabel" xml:space="preserve"><value>Difference</value></data>
+  <data name="StockBalances_UnitCostLabel" xml:space="preserve"><value>Unit cost</value></data>
+  <data name="StockBalances_UnitCostHelperText" xml:space="preserve"><value>Only for opening stock; left blank it uses the current average cost</value></data>
+  <data name="StockBalances_UnitCostNotice" xml:space="preserve"><value>A count finds goods, not prices. Only declare a cost when entering stock that never went through a purchase here.</value></data>
+  <data name="StockBalances_ReasonLabel" xml:space="preserve"><value>Reason</value></data>
+  <data name="StockBalances_ReasonHelperText" xml:space="preserve"><value>Stays in the ledger, and explains the adjustment later</value></data>
+  <data name="StockBalances_CancelButton" xml:space="preserve"><value>Cancel</value></data>
+  <data name="StockBalances_AdjustButton" xml:space="preserve"><value>Adjust</value></data>
+  <data name="StockBalances_LoadError" xml:space="preserve"><value>Unable to load stock: {0}</value></data>
+  <data name="StockBalances_LoadLedgerError" xml:space="preserve"><value>Unable to load movements: {0}</value></data>
+  <data name="StockBalances_Adjusted" xml:space="preserve"><value>Stock for {0} adjusted.</value></data>
+  <data name="StockBalances_AdjustError" xml:space="preserve"><value>Unable to adjust stock: {0}</value></data>
+  <data name="StockCheck_PageTitle" xml:space="preserve"><value>Stock check</value></data>
+  <data name="StockCheck_Subtitle" xml:space="preserve"><value>Recalculates stock from the movements and compares it with the stored balance. They should always match.</value></data>
+  <data name="StockCheck_BackButton" xml:space="preserve"><value>Back</value></data>
+  <data name="StockCheck_ProductLabel" xml:space="preserve"><value>Product</value></data>
+  <data name="StockCheck_ProductHelperText" xml:space="preserve"><value>Leave blank to check the whole company</value></data>
+  <data name="StockCheck_Running" xml:space="preserve"><value>Checking...</value></data>
+  <data name="StockCheck_RunButton" xml:space="preserve"><value>Run check</value></data>
+  <data name="StockCheck_ProductCheckedSingular" xml:space="preserve"><value>product checked</value></data>
+  <data name="StockCheck_ProductCheckedPlural" xml:space="preserve"><value>products checked</value></data>
+  <data name="StockCheck_SuccessMessage" xml:space="preserve"><value>{0} {1}, no differences. The quantities {2}and values{3} match the movements.</value></data>
+  <data name="StockCheck_DifferenceSingular" xml:space="preserve"><value>product does not match</value></data>
+  <data name="StockCheck_DifferencePlural" xml:space="preserve"><value>products do not match</value></data>
+  <data name="StockCheck_QuantityDifferenceMessage" xml:space="preserve"><value>{0} of {1} {2} on quantity. A difference means someone wrote outside the normal path — the balance changed without a movement explaining it, or there was a movement without a balance.</value></data>
+  <data name="StockCheck_ValueDifferenceMessage" xml:space="preserve"><value>{0} {1} on {2}value{3}. The average cost depends on the {4}order{5} in which movements arrived, not just their sum — so a value can diverge while the quantity matches. The usual cause is old movements, written before costing existed and with no cost recorded.</value></data>
+  <data name="StockCheck_LoadWarehousesError" xml:space="preserve"><value>Unable to load the warehouses: {0}</value></data>
+  <data name="StockCheck_ResultTitle" xml:space="preserve"><value>Result</value></data>
+  <data name="StockCheck_OnlyDifferencesLabel" xml:space="preserve"><value>Only differences</value></data>
+  <data name="StockCheck_ProductColumn" xml:space="preserve"><value>Product</value></data>
+  <data name="StockCheck_DescriptionColumn" xml:space="preserve"><value>Description</value></data>
+  <data name="StockCheck_WarehouseColumn" xml:space="preserve"><value>Warehouse</value></data>
+  <data name="StockCheck_RecordedBalanceColumn" xml:space="preserve"><value>Stored balance</value></data>
+  <data name="StockCheck_LedgerSumColumn" xml:space="preserve"><value>Sum of movements</value></data>
+  <data name="StockCheck_DifferenceColumn" xml:space="preserve"><value>Difference</value></data>
+  <data name="StockCheck_RecordedValueColumn" xml:space="preserve"><value>Stored value</value></data>
+  <data name="StockCheck_RecalculatedValueColumn" xml:space="preserve"><value>Recalculated value</value></data>
+  <data name="StockCheck_MovementsColumn" xml:space="preserve"><value>Movements</value></data>
+  <data name="StockCheck_NoRecords" xml:space="preserve"><value>Nothing to show.</value></data>
+  <data name="StockCheck_RunError" xml:space="preserve"><value>Unable to run the check: {0}</value></data>
+  <data name="StockCheck_CheckedAt" xml:space="preserve"><value>Checked at {0} UTC. Movements after that instant are not included.</value></data>
+  <data name="InventoryCounts_PageTitle" xml:space="preserve"><value>Inventories</value></data>
+  <data name="InventoryCounts_OpenButton" xml:space="preserve"><value>Open count</value></data>
+  <data name="InventoryCounts_OpenSingular" xml:space="preserve"><value>product</value></data>
+  <data name="InventoryCounts_OpenPlural" xml:space="preserve"><value>products</value></data>
+  <data name="InventoryCounts_OpenNotice" xml:space="preserve"><value>Count {0} is open, with {1} {2}. While it stays open, another one cannot be opened.</value></data>
+  <data name="InventoryCounts_ContinueButton" xml:space="preserve"><value>Continue</value></data>
+  <data name="InventoryCounts_SearchPlaceholder" xml:space="preserve"><value>Search reference</value></data>
+  <data name="InventoryCounts_EmptyTitle" xml:space="preserve"><value>No counts to show</value></data>
+  <data name="InventoryCounts_EmptyDescription" xml:space="preserve"><value>Adjust the filters or open the first count.</value></data>
+  <data name="InventoryCounts_ItemsLabel" xml:space="preserve"><value>counts</value></data>
+  <data name="InventoryCounts_LoadError" xml:space="preserve"><value>Unable to load counts</value></data>
+  <data name="InventoryCounts_ReferenceColumn" xml:space="preserve"><value>Reference</value></data>
+  <data name="InventoryCounts_DateColumn" xml:space="preserve"><value>Date</value></data>
+  <data name="InventoryCounts_ScopeColumn" xml:space="preserve"><value>Scope</value></data>
+  <data name="InventoryCounts_StatusColumn" xml:space="preserve"><value>Status</value></data>
+  <data name="InventoryCounts_StatusOpen" xml:space="preserve"><value>Open</value></data>
+  <data name="InventoryCounts_StatusClosed" xml:space="preserve"><value>Closed</value></data>
+  <data name="InventoryCounts_LineCountColumn" xml:space="preserve"><value>Products</value></data>
+  <data name="InventoryCounts_DifferenceColumn" xml:space="preserve"><value>With difference</value></data>
+  <data name="InventoryCounts_ClosedAtColumn" xml:space="preserve"><value>Closed at</value></data>
+  <data name="InventoryCounts_ContinueAction" xml:space="preserve"><value>Continue count</value></data>
+  <data name="InventoryCounts_ViewAction" xml:space="preserve"><value>View count</value></data>
+  <data name="InventoryCounts_ScopeTotal" xml:space="preserve"><value>Whole company</value></data>
+  <data name="InventoryCounts_ScopeWarehouse" xml:space="preserve"><value>Single warehouse</value></data>
+  <data name="InventoryCounts_ScopeProducts" xml:space="preserve"><value>Chosen products</value></data>
+  <data name="InventoryCountOpen_PageTitle" xml:space="preserve"><value>Open count</value></data>
+  <data name="InventoryCountOpen_Subtitle" xml:space="preserve"><value>When opened, the system takes a snapshot of the stock in scope. From then on, what is found gets recorded.</value></data>
+  <data name="InventoryCountOpen_BackButton" xml:space="preserve"><value>Back</value></data>
+  <data name="InventoryCountOpen_ChooseCompanyNotice" xml:space="preserve"><value>Choose a company in the header.</value></data>
+  <data name="InventoryCountOpen_ReferenceLabel" xml:space="preserve"><value>Reference</value></data>
+  <data name="InventoryCountOpen_ReferenceHelperText" xml:space="preserve"><value>How this count becomes known, e.g. INV2026-01</value></data>
+  <data name="InventoryCountOpen_CountDateLabel" xml:space="preserve"><value>Count date</value></data>
+  <data name="InventoryCountOpen_CountDateHelperText" xml:space="preserve"><value>Date of the adjustment movements</value></data>
+  <data name="InventoryCountOpen_WarehouseLabel" xml:space="preserve"><value>Warehouse</value></data>
+  <data name="InventoryCountOpen_WarehouseHelperText" xml:space="preserve"><value>Blank counts every warehouse</value></data>
+  <data name="InventoryCountOpen_ProductsLabel" xml:space="preserve"><value>Products</value></data>
+  <data name="InventoryCountOpen_ProductsHelperText" xml:space="preserve"><value>Codes separated by comma or by line. Blank counts everything in scope.</value></data>
+  <data name="InventoryCountOpen_StartAtZeroLabel" xml:space="preserve"><value>Open with everything at zero</value></data>
+  <data name="InventoryCountOpen_StartAtZeroHelperText" xml:space="preserve"><value>For a count built from scratch: lines start at zero and get filled in as counting happens.</value></data>
+  <data name="InventoryCountOpen_StartAtZeroWarning" xml:space="preserve"><value>If the count is closed without filling anything in, the stock in scope goes to zero — that is the way to zero out stock before recounting.</value></data>
+  <data name="InventoryCountOpen_CancelButton" xml:space="preserve"><value>Cancel</value></data>
+  <data name="InventoryCountOpen_Opening" xml:space="preserve"><value>Opening...</value></data>
+  <data name="InventoryCountOpen_OpenButton" xml:space="preserve"><value>Open count</value></data>
+  <data name="InventoryCountOpen_LoadWarehousesError" xml:space="preserve"><value>Unable to load warehouses: {0}</value></data>
+  <data name="InventoryCountOpen_OpenFailed" xml:space="preserve"><value>Unable to open the count.</value></data>
+  <data name="InventoryCountOpen_Opened" xml:space="preserve"><value>Count {0} opened with {1} products.</value></data>
+  <data name="InventoryCountOpen_OpenError" xml:space="preserve"><value>Unable to open the count: {0}</value></data>
+  <data name="InventoryCountSheet_DefaultTitle" xml:space="preserve"><value>Count</value></data>
+  <data name="InventoryCountSheet_OpenStatus" xml:space="preserve"><value>open</value></data>
+  <data name="InventoryCountSheet_ClosedStatus" xml:space="preserve"><value>closed at {0}</value></data>
+  <data name="InventoryCountSheet_BackButton" xml:space="preserve"><value>Back</value></data>
+  <data name="InventoryCountSheet_NotFound" xml:space="preserve"><value>Count not found.</value></data>
+  <data name="InventoryCountSheet_ProductsLabel" xml:space="preserve"><value>Products</value></data>
+  <data name="InventoryCountSheet_DifferenceLabel" xml:space="preserve"><value>With difference</value></data>
+  <data name="InventoryCountSheet_TotalAdjustmentLabel" xml:space="preserve"><value>Total adjustment</value></data>
+  <data name="InventoryCountSheet_ProductButton" xml:space="preserve"><value>Product</value></data>
+  <data name="InventoryCountSheet_Saving" xml:space="preserve"><value>Saving...</value></data>
+  <data name="InventoryCountSheet_SaveButton" xml:space="preserve"><value>Save</value></data>
+  <data name="InventoryCountSheet_UnsavedNotice" xml:space="preserve"><value>There are quantities not yet saved. Closing the count uses what is saved, so save before closing.</value></data>
+  <data name="InventoryCountSheet_EmptySheetNotice" xml:space="preserve"><value>The sheet is empty because the system has no stock in this scope. This is how {0} is entered: add the products with {1}, enter the quantity and cost, and close the count.</value></data>
+  <data name="InventoryCountSheet_OpeningStockTerm" xml:space="preserve"><value>opening stock</value></data>
+  <data name="InventoryCountSheet_SearchPlaceholder" xml:space="preserve"><value>Search product</value></data>
+  <data name="InventoryCountSheet_OnlyDifferencesLabel" xml:space="preserve"><value>Only differences</value></data>
+  <data name="InventoryCountSheet_ProductColumn" xml:space="preserve"><value>Product</value></data>
+  <data name="InventoryCountSheet_DescriptionColumn" xml:space="preserve"><value>Description</value></data>
+  <data name="InventoryCountSheet_WarehouseColumn" xml:space="preserve"><value>Warehouse</value></data>
+  <data name="InventoryCountSheet_SystemColumn" xml:space="preserve"><value>System</value></data>
+  <data name="InventoryCountSheet_CountedColumn" xml:space="preserve"><value>Counted</value></data>
+  <data name="InventoryCountSheet_DifferenceColumn" xml:space="preserve"><value>Difference</value></data>
+  <data name="InventoryCountSheet_NoRecords" xml:space="preserve"><value>Nothing to show.</value></data>
+  <data name="InventoryCountSheet_CloseTitle" xml:space="preserve"><value>Close count</value></data>
+  <data name="InventoryCountSheet_CloseDescription" xml:space="preserve"><value>Closing writes an adjustment movement for each line with a difference. The difference is measured against the balance at the moment of closing, not against the opening snapshot — movements made during the count are not undone. Once closed, the count cannot reopen.</value></data>
+  <data name="InventoryCountSheet_CloseUnsavedWarning" xml:space="preserve"><value>Save the quantities before closing, or unsaved changes are lost.</value></data>
+  <data name="InventoryCountSheet_Closing" xml:space="preserve"><value>Closing...</value></data>
+  <data name="InventoryCountSheet_CloseButton" xml:space="preserve"><value>Close and adjust {0} products</value></data>
+  <data name="InventoryCountSheet_ClosedNotice" xml:space="preserve"><value>Count closed. The adjustments are in the stock movements, with the reference {0}.</value></data>
+  <data name="InventoryCountSheet_ClosedReferencePrefix" xml:space="preserve"><value>Inventory {0}</value></data>
+  <data name="InventoryCountSheet_ViewStockLink" xml:space="preserve"><value>View stock</value></data>
+  <data name="InventoryCountSheet_AddLineTitle" xml:space="preserve"><value>Add product to count</value></data>
+  <data name="InventoryCountSheet_AddLineDescription" xml:space="preserve"><value>For goods that are on the shelf and the system does not know about. The line starts at zero, so what gets counted is what comes in.</value></data>
+  <data name="InventoryCountSheet_AddProductLabel" xml:space="preserve"><value>Product</value></data>
+  <data name="InventoryCountSheet_AddWarehouseLabel" xml:space="preserve"><value>Warehouse</value></data>
+  <data name="InventoryCountSheet_AddWarehouseHelperText" xml:space="preserve"><value>The count belongs to a single warehouse</value></data>
+  <data name="InventoryCountSheet_AddUnitCostLabel" xml:space="preserve"><value>Unit cost</value></data>
+  <data name="InventoryCountSheet_AddUnitCostNotice" xml:space="preserve"><value>The ledger never saw these goods, so it does not know their value. Left blank, it enters at the average cost the product already has — which for a new product is zero.</value></data>
+  <data name="InventoryCountSheet_CancelButton" xml:space="preserve"><value>Cancel</value></data>
+  <data name="InventoryCountSheet_AddButton" xml:space="preserve"><value>Add</value></data>
+  <data name="InventoryCountSheet_LoadError" xml:space="preserve"><value>Unable to load the count: {0}</value></data>
+  <data name="InventoryCountSheet_AddLineFailed" xml:space="preserve"><value>Unable to add the product.</value></data>
+  <data name="InventoryCountSheet_LineAdded" xml:space="preserve"><value>{0} added to the count.</value></data>
+  <data name="InventoryCountSheet_AddLineError" xml:space="preserve"><value>Unable to add the product: {0}</value></data>
+  <data name="InventoryCountSheet_SaveFailed" xml:space="preserve"><value>Unable to save the quantities.</value></data>
+  <data name="InventoryCountSheet_LineSavedSingular" xml:space="preserve"><value>line saved</value></data>
+  <data name="InventoryCountSheet_LineSavedPlural" xml:space="preserve"><value>lines saved</value></data>
+  <data name="InventoryCountSheet_SaveError" xml:space="preserve"><value>Unable to save the quantities: {0}</value></data>
+  <data name="InventoryCountSheet_CloseFailed" xml:space="preserve"><value>Unable to close the count.</value></data>
+  <data name="InventoryCountSheet_ClosedNoAdjustments" xml:space="preserve"><value>Count closed with no adjustments: the stock already matched.</value></data>
+  <data name="InventoryCountSheet_ClosedWithAdjustmentSingular" xml:space="preserve"><value>adjustment</value></data>
+  <data name="InventoryCountSheet_ClosedWithAdjustmentPlural" xml:space="preserve"><value>adjustments</value></data>
+  <data name="InventoryCountSheet_ClosedWithAdjustments" xml:space="preserve"><value>Count closed with {0} {1}.</value></data>
+  <data name="InventoryCountSheet_CloseError" xml:space="preserve"><value>Unable to close the count: {0}</value></data>
+  <data name="InventoryCountSheet_ScopeTotal" xml:space="preserve"><value>whole company</value></data>
+  <data name="InventoryCountSheet_ScopeWarehouse" xml:space="preserve"><value>single warehouse</value></data>
+  <data name="InventoryCountSheet_ScopeProducts" xml:space="preserve"><value>chosen products</value></data>
+  <data name="InventoryFileExport_PageTitle" xml:space="preserve"><value>Inventory reporting</value></data>
+  <data name="InventoryFileExport_Subtitle" xml:space="preserve"><value>File of stock at the reference date, to report to the tax authority, valued at the {0} on that same date. For periods from 2021 onward the format is the valued one (2_01); the earlier one, quantities only (1_02), remains available for older periods.</value></data>
+  <data name="InventoryFileExport_WeightedCostTerm" xml:space="preserve"><value>weighted average purchase cost</value></data>
+  <data name="InventoryFileExport_ChooseCompanyNotice" xml:space="preserve"><value>Choose a company in the header to generate the file.</value></data>
+  <data name="InventoryFileExport_PeriodLabel" xml:space="preserve"><value>Period</value></data>
+  <data name="InventoryFileExport_ReferenceDateLabel" xml:space="preserve"><value>Reference date</value></data>
+  <data name="InventoryFileExport_ReferenceDateHelperText" xml:space="preserve"><value>Last day of the period; the stock is that of that day</value></data>
+  <data name="InventoryFileExport_TypeLabel" xml:space="preserve"><value>Report type</value></data>
+  <data name="InventoryFileExport_ValuedOption" xml:space="preserve"><value>Valued (2_01)</value></data>
+  <data name="InventoryFileExport_QuantitiesOnlyOption" xml:space="preserve"><value>Quantities only (1_02)</value></data>
+  <data name="InventoryFileExport_OldFormatWarning" xml:space="preserve"><value>The quantities-only format is only for before 2021. For period {0} the tax authority requires the valued report.</value></data>
+  <data name="InventoryFileExport_FileContentTitle" xml:space="preserve"><value>File contents</value></data>
+  <data name="InventoryFileExport_NoDataNotice" xml:space="preserve"><value>No data for the chosen date.</value></data>
+  <data name="InventoryFileExport_ProductsLabel" xml:space="preserve"><value>Products</value></data>
+  <data name="InventoryFileExport_TotalQuantityLabel" xml:space="preserve"><value>Total quantity</value></data>
+  <data name="InventoryFileExport_TotalValueLabel" xml:space="preserve"><value>Total value</value></data>
+  <data name="InventoryFileExport_TotalValueNotInFile" xml:space="preserve"><value> (not included in the file)</value></data>
+  <data name="InventoryFileExport_WeightedCostLabel" xml:space="preserve"><value>Weighted average cost</value></data>
+  <data name="InventoryFileExport_Generating" xml:space="preserve"><value>Generating...</value></data>
+  <data name="InventoryFileExport_GenerateButton" xml:space="preserve"><value>Generate file</value></data>
+  <data name="InventoryFileExport_NoStockNotice" xml:space="preserve"><value>There was no stock on this date. The report is still due — in that case it is filed as “no stock” on the tax portal, not through this file.</value></data>
+  <data name="InventoryFileExport_ValidationErrorSingular" xml:space="preserve"><value>point</value></data>
+  <data name="InventoryFileExport_ValidationErrorPlural" xml:space="preserve"><value>points</value></data>
+  <data name="InventoryFileExport_ValidationErrorsNotice" xml:space="preserve"><value>The file does not comply with the official schema in {0} {1}. The details are in the server log — do not submit it as is.</value></data>
+  <data name="InventoryFileExport_NegativeStockSingular" xml:space="preserve"><value>product has</value></data>
+  <data name="InventoryFileExport_NegativeStockPlural" xml:space="preserve"><value>products have</value></data>
+  <data name="InventoryFileExport_NegativeStockNotice" xml:space="preserve"><value>{0} {1} negative stock on this date. The schema does not accept quantities below zero, so the file does not pass until this is corrected — there are outputs recorded without the matching input.</value></data>
+  <data name="InventoryFileExport_RunStockCheckLink" xml:space="preserve"><value>Run the stock check</value></data>
+  <data name="InventoryFileExport_DoCountLink" xml:space="preserve"><value>Do a count</value></data>
+  <data name="InventoryFileExport_WithoutCostSingularVerb" xml:space="preserve"><value>product goes</value></data>
+  <data name="InventoryFileExport_WithoutCostPluralVerb" xml:space="preserve"><value>products go</value></data>
+  <data name="InventoryFileExport_WithoutCostNotice" xml:space="preserve"><value>{0} of {1} {2} with zero value: neither purchases gave them a cost, nor does the product record have one. The valued report requires valuation — record the purchase, declare the cost in an opening adjustment, or fill in the cost on the product record.</value></data>
+  <data name="InventoryFileExport_ViewStockLink" xml:space="preserve"><value>View stock</value></data>
+  <data name="InventoryFileExport_CostedFromFileSingularVerb" xml:space="preserve"><value>product was valued</value></data>
+  <data name="InventoryFileExport_CostedFromFilePluralVerb" xml:space="preserve"><value>products were valued</value></data>
+  <data name="InventoryFileExport_CostedFromFileNotice" xml:space="preserve"><value>{0} {1} at the {2}, because the ledger never observed what they cost. This is expected for opening stock; otherwise, it points to purchases that were never recorded.</value></data>
+  <data name="InventoryFileExport_FileCostTerm" xml:space="preserve"><value>product record cost</value></data>
+  <data name="InventoryFileExport_ValidationNotice" xml:space="preserve"><value>The file is validated against the official XSD of the chosen version before being delivered. Passing validation says the structure is correct, not that the values are — checking the stock remains yours to do.</value></data>
+  <data name="InventoryFileExport_LoadError" xml:space="preserve"><value>Unable to read the stock: {0}</value></data>
+  <data name="InventoryFileExport_GenerateFailed" xml:space="preserve"><value>Unable to generate the file.</value></data>
+  <data name="InventoryFileExport_GeneratedWithErrors" xml:space="preserve"><value>{0} generated, but with {1} errors against the official schema. Do not submit it as is.</value></data>
+  <data name="InventoryFileExport_GeneratedWithoutCost" xml:space="preserve"><value>{0} generated, but with {1} products without cost.</value></data>
+  <data name="InventoryFileExport_Generated" xml:space="preserve"><value>{0} generated.</value></data>
+  <data name="InventoryFileExport_GenerateError" xml:space="preserve"><value>Unable to generate the file: {0}</value></data>
+  <data name="SaftExport_PageTitle" xml:space="preserve"><value>SAF-T export</value></data>
+  <data name="SaftExport_PageTitleWithVersion" xml:space="preserve"><value>SAF-T export (PT)</value></data>
+  <data name="SaftExport_Subtitle" xml:space="preserve"><value>Invoicing file in version {0}, with invoices, stock movement notes and payments for the period.</value></data>
+  <data name="SaftExport_ChooseCompanyNotice" xml:space="preserve"><value>Choose a company in the header to export the SAF-T.</value></data>
+  <data name="SaftExport_PeriodTitle" xml:space="preserve"><value>Period</value></data>
+  <data name="SaftExport_PeriodTypeLabel" xml:space="preserve"><value>Period type</value></data>
+  <data name="SaftExport_MonthOption" xml:space="preserve"><value>Month</value></data>
+  <data name="SaftExport_QuarterOption" xml:space="preserve"><value>Quarter</value></data>
+  <data name="SaftExport_YearOption" xml:space="preserve"><value>Year</value></data>
+  <data name="SaftExport_CustomOption" xml:space="preserve"><value>Custom range</value></data>
+  <data name="SaftExport_YearLabel" xml:space="preserve"><value>Year</value></data>
+  <data name="SaftExport_MonthLabel" xml:space="preserve"><value>Month</value></data>
+  <data name="SaftExport_QuarterLabel" xml:space="preserve"><value>Quarter</value></data>
+  <data name="SaftExport_QuarterNumberFormat" xml:space="preserve"><value>Q{0}</value></data>
+  <data name="SaftExport_StartDateLabel" xml:space="preserve"><value>Start date</value></data>
+  <data name="SaftExport_EndDateLabel" xml:space="preserve"><value>End date</value></data>
+  <data name="SaftExport_ContentTitle" xml:space="preserve"><value>Period contents</value></data>
+  <data name="SaftExport_NoDataNotice" xml:space="preserve"><value>No data for the chosen period.</value></data>
+  <data name="SaftExport_InvoicesLabel" xml:space="preserve"><value>Invoices</value></data>
+  <data name="SaftExport_StockMovementsLabel" xml:space="preserve"><value>Stock movement notes</value></data>
+  <data name="SaftExport_PaymentsLabel" xml:space="preserve"><value>Payments</value></data>
+  <data name="SaftExport_Generating" xml:space="preserve"><value>Generating...</value></data>
+  <data name="SaftExport_GenerateButton" xml:space="preserve"><value>Generate file</value></data>
+  <data name="SaftExport_NoDocumentsNotice" xml:space="preserve"><value>There are no documents in this period, so there is no file to generate.</value></data>
+  <data name="SaftExport_ValidatedSuccess" xml:space="preserve"><value>The file was validated against the tax authority's official schema ({0}) with no errors.</value></data>
+  <data name="SaftExport_ValidationErrorSingular" xml:space="preserve"><value>error</value></data>
+  <data name="SaftExport_ValidationErrorPlural" xml:space="preserve"><value>errors</value></data>
+  <data name="SaftExport_ValidationWarning" xml:space="preserve"><value>The file was generated, but has {0} {1} against the official schema. The details are in the server log — do not submit it as is.</value></data>
+  <data name="SaftExport_VoidedDocumentsNotice" xml:space="preserve"><value>Voided documents are included in the file with status “A”: SAF-T must account for every number issued. Control totals only count those that are not voided.</value></data>
+  <data name="SaftExport_SelfBillingTitle" xml:space="preserve"><value>Self-billing</value></data>
+  <data name="SaftExport_SelfBillingSubtitle" xml:space="preserve"><value>A separate file, of type {0}, and {1}: the documents are that supplier's sales, and it is their tax ID that goes in the header. None of these documents go into the invoicing file above.</value></data>
+  <data name="SaftExport_SelfBillingTypeS" xml:space="preserve"><value>S</value></data>
+  <data name="SaftExport_SelfBillingOnePerSupplier" xml:space="preserve"><value>one per supplier</value></data>
+  <data name="SaftExport_SelfBilledSupplierLabel" xml:space="preserve"><value>Self-billed supplier</value></data>
+  <data name="SaftExport_GenerateFileSButton" xml:space="preserve"><value>Generate file S</value></data>
+  <data name="SaftExport_NoActiveSuppliersNotice" xml:space="preserve"><value>There are no active suppliers for this company.</value></data>
+  <data name="SaftExport_LoadSuppliersError" xml:space="preserve"><value>Unable to load the suppliers: {0}</value></data>
+  <data name="SaftExport_LoadSummaryError" xml:space="preserve"><value>Unable to read the period: {0}</value></data>
+  <data name="SaftExport_GenerateFailed" xml:space="preserve"><value>Unable to generate the file.</value></data>
+  <data name="SaftExport_GeneratedAndValidated" xml:space="preserve"><value>{0} generated and validated against the official schema.</value></data>
+  <data name="SaftExport_GeneratedButFailsSchema" xml:space="preserve"><value>{0} generated, but does not pass the official schema.</value></data>
+  <data name="SaftExport_GenerateError" xml:space="preserve"><value>Unable to generate the file: {0}</value></data>
+  <data name="SaftExport_GenerateSelfBillingFailed" xml:space="preserve"><value>Unable to generate the self-billing file.</value></data>
+  <data name="SaftExport_GenerateSelfBillingError" xml:space="preserve"><value>Unable to generate the self-billing file: {0}</value></data>
+  <data name="Notifications_PageTitle" xml:space="preserve"><value>Notifications</value></data>
+  <data name="Notifications_RefreshButton" xml:space="preserve"><value>Refresh</value></data>
+  <data name="Notifications_SearchPlaceholder" xml:space="preserve"><value>Search by recipient or subject</value></data>
+  <data name="Notifications_EmptyTitle" xml:space="preserve"><value>No notifications to show</value></data>
+  <data name="Notifications_EmptyDescription" xml:space="preserve"><value>Adjust the filters: no notification has been sent yet.</value></data>
+  <data name="Notifications_ItemsLabel" xml:space="preserve"><value>notifications</value></data>
+  <data name="Notifications_LoadErrorMessage" xml:space="preserve"><value>Unable to load the notifications</value></data>
+  <data name="Notifications_RecipientColumn" xml:space="preserve"><value>Recipient</value></data>
+  <data name="Notifications_SubjectColumn" xml:space="preserve"><value>Subject</value></data>
+  <data name="Notifications_StatusColumn" xml:space="preserve"><value>Status</value></data>
+  <data name="Notifications_RetryCountColumn" xml:space="preserve"><value>Retries</value></data>
+  <data name="Notifications_CreatedColumn" xml:space="preserve"><value>Created</value></data>
+  <data name="Notifications_ProcessedColumn" xml:space="preserve"><value>Processed</value></data>
+  <data name="Notifications_LastErrorColumn" xml:space="preserve"><value>Last error</value></data>
+  <data name="Notifications_ViewAction" xml:space="preserve"><value>View</value></data>
+  <data name="Notifications_RequeueAction" xml:space="preserve"><value>Requeue</value></data>
+  <data name="Notifications_RequeuedSuccess" xml:space="preserve"><value>Notification requeued.</value></data>
+  <data name="Notifications_StatusPending" xml:space="preserve"><value>Pending</value></data>
+  <data name="Notifications_StatusSent" xml:space="preserve"><value>Sent</value></data>
+  <data name="Notifications_StatusFailed" xml:space="preserve"><value>Failed</value></data>
+  <data name="NotificationView_DefaultTitle" xml:space="preserve"><value>Notification</value></data>
+  <data name="NotificationView_ToLabel" xml:space="preserve"><value>To {0}</value></data>
+  <data name="NotificationView_BackButton" xml:space="preserve"><value>Back</value></data>
+  <data name="NotificationView_StatusLabel" xml:space="preserve"><value>Status</value></data>
+  <data name="NotificationView_RetryCountLabel" xml:space="preserve"><value>Retries</value></data>
+  <data name="NotificationView_CreatedLabel" xml:space="preserve"><value>Created</value></data>
+  <data name="NotificationView_ProcessedLabel" xml:space="preserve"><value>Processed</value></data>
+  <data name="NotificationView_LastErrorPrefix" xml:space="preserve"><value>Last error:</value></data>
+  <data name="NotificationView_BodyTitle" xml:space="preserve"><value>Message body</value></data>
+  <data name="NotificationView_RequeueButton" xml:space="preserve"><value>Requeue</value></data>
+  <data name="NotificationView_NotFound" xml:space="preserve"><value>Notification not found.</value></data>
+  <data name="NotificationView_LoadError" xml:space="preserve"><value>Unable to load the notification: {0}</value></data>
+  <data name="NotificationView_RequeuedSuccess" xml:space="preserve"><value>Notification requeued.</value></data>
+  <data name="NotificationView_RequeueError" xml:space="preserve"><value>Unable to requeue: {0}</value></data>
+  <data name="NotificationView_StatusPending" xml:space="preserve"><value>Pending</value></data>
+  <data name="NotificationView_StatusSent" xml:space="preserve"><value>Sent</value></data>
+  <data name="NotificationView_StatusFailed" xml:space="preserve"><value>Failed</value></data>
+  <data name="SeriesList_PageTitle" xml:space="preserve"><value>Invoicing series</value></data>
+  <data name="SeriesList_NewSeriesButton" xml:space="preserve"><value>New series</value></data>
+  <data name="SeriesList_SearchPlaceholder" xml:space="preserve"><value>Search by type or series</value></data>
+  <data name="SeriesList_EmptyTitle" xml:space="preserve"><value>No series to show</value></data>
+  <data name="SeriesList_EmptyDescription" xml:space="preserve"><value>Adjust the filters or create the first series.</value></data>
+  <data name="SeriesList_ItemsLabel" xml:space="preserve"><value>series</value></data>
+  <data name="SeriesList_LoadErrorMessage" xml:space="preserve"><value>Unable to load the series</value></data>
+  <data name="SeriesList_TypeColumn" xml:space="preserve"><value>Type</value></data>
+  <data name="SeriesList_SeriesColumn" xml:space="preserve"><value>Series</value></data>
+  <data name="SeriesList_SelfBillingColumn" xml:space="preserve"><value>Self-billing</value></data>
+  <data name="SeriesList_SelfBillingTooltip" xml:space="preserve"><value>Numbers invoices issued on behalf of the supplier</value></data>
+  <data name="SeriesList_SelfBillingChip" xml:space="preserve"><value>Self-billing</value></data>
+  <data name="SeriesList_ValidationCodeColumn" xml:space="preserve"><value>Validation code</value></data>
+  <data name="SeriesList_NotCommunicated" xml:space="preserve"><value>Not communicated yet</value></data>
+  <data name="SeriesList_LastNumberColumn" xml:space="preserve"><value>Last no.</value></data>
+  <data name="SeriesList_StatusColumn" xml:space="preserve"><value>Status</value></data>
+  <data name="SeriesList_OpenSeriesAction" xml:space="preserve"><value>Open series</value></data>
+  <data name="SeriesList_StatusCreated" xml:space="preserve"><value>Created</value></data>
+  <data name="SeriesList_StatusCommunicated" xml:space="preserve"><value>Communicated</value></data>
+  <data name="SeriesList_StatusActive" xml:space="preserve"><value>Active</value></data>
+  <data name="SeriesList_StatusFinalized" xml:space="preserve"><value>Finalized</value></data>
+  <data name="SeriesEditor_NewSeriesTitle" xml:space="preserve"><value>New series</value></data>
+  <data name="SeriesEditor_SeriesTitle" xml:space="preserve"><value>Series</value></data>
+  <data name="SeriesEditor_SeriesTitleWithCode" xml:space="preserve"><value>Series {0}</value></data>
+  <data name="SeriesEditor_Subtitle" xml:space="preserve"><value>The identifier cannot repeat for the same document type in the same company.</value></data>
+  <data name="SeriesEditor_BackButton" xml:space="preserve"><value>Back</value></data>
+  <data name="SeriesEditor_DocumentTypeLabel" xml:space="preserve"><value>Document type</value></data>
+  <data name="SeriesEditor_SeriesCodeLabel" xml:space="preserve"><value>Series identifier</value></data>
+  <data name="SeriesEditor_InitialSequenceLabel" xml:space="preserve"><value>Initial number</value></data>
+  <data name="SeriesEditor_EstablishmentLabel" xml:space="preserve"><value>Establishment</value></data>
+  <data name="SeriesEditor_OptionalHelperText" xml:space="preserve"><value>Optional</value></data>
+  <data name="SeriesEditor_StockEffectLabel" xml:space="preserve"><value>Stock effect</value></data>
+  <data name="SeriesEditor_DefaultStockEffectHelperText" xml:space="preserve"><value>Default for {0}: {1}</value></data>
+  <data name="SeriesEditor_StockEffectNotice" xml:space="preserve"><value>Documents in this series move the warehouse stock. An invoice issued from a delivery note does not move again what the delivery note already moved.</value></data>
+  <data name="SeriesEditor_SelfBillingSwitchLabel" xml:space="preserve"><value>Self-billing series</value></data>
+  <data name="SeriesEditor_SelfBillingNotice" xml:space="preserve"><value>Numbers invoices we issue {0}, under article 36 no. 11 of the VAT Code. It cannot number our own sales, and its documents go out in their own SAF-T, of type {1}, one per supplier.</value></data>
+  <data name="SeriesEditor_SelfBillingNoticeEmphasis" xml:space="preserve"><value>on the supplier's behalf</value></data>
+  <data name="SeriesEditor_SelfBillingNoticeTypeS" xml:space="preserve"><value>S</value></data>
+  <data name="SeriesEditor_CreateSeriesButton" xml:space="preserve"><value>Create series</value></data>
+  <data name="SeriesEditor_DocumentTypeColumn" xml:space="preserve"><value>Document type</value></data>
+  <data name="SeriesEditor_IdentifierLabel" xml:space="preserve"><value>Identifier</value></data>
+  <data name="SeriesEditor_LastNumberIssuedLabel" xml:space="preserve"><value>Last number issued</value></data>
+  <data name="SeriesEditor_StatusLabel" xml:space="preserve"><value>Status</value></data>
+  <data name="SeriesEditor_UsageLabel" xml:space="preserve"><value>Usage</value></data>
+  <data name="SeriesEditor_SelfBillingUsage" xml:space="preserve"><value>Self-billing</value></data>
+  <data name="SeriesEditor_ImmutableNotice" xml:space="preserve"><value>The type, identifier and numbering {0}: they were communicated to the tax authority and are written on every document already issued. To number differently, create a new series.</value></data>
+  <data name="SeriesEditor_ImmutableNoticeEmphasis" xml:space="preserve"><value>cannot be changed</value></data>
+  <data name="SeriesEditor_StockEffectSectionTitle" xml:space="preserve"><value>Stock effect</value></data>
+  <data name="SeriesEditor_StockEffectSectionNotice" xml:space="preserve"><value>What the {0} documents in this series do to stock. It is not a fiscal decision — the same document type is used differently by different businesses — so it can change. Documents already issued stay as they are.</value></data>
+  <data name="SeriesEditor_StockEffectSectionNoticeEmphasis" xml:space="preserve"><value>next</value></data>
+  <data name="SeriesEditor_SaveButton" xml:space="preserve"><value>Save</value></data>
+  <data name="CompanyState_NoCompanyAssociated" xml:space="preserve"><value>Your account has no company associated.</value></data>
+  <data name="CompanyState_LoadError" xml:space="preserve"><value>Could not load the companies: {0}</value></data>
+  <data name="SeriesEditor_StockEffectSectionNoticeText" xml:space="preserve"><value>documents in this series do to stock. This is not a tax decision — the same document type is used differently by different businesses — so it can change. Already issued documents remain as they are.</value></data>
+  <data name="SeriesEditor_DocType_FT" xml:space="preserve"><value>Invoice</value></data>
+  <data name="SeriesEditor_DocType_FS" xml:space="preserve"><value>Simplified invoice</value></data>
+  <data name="SeriesEditor_DocType_FR" xml:space="preserve"><value>Invoice-receipt</value></data>
+  <data name="SeriesEditor_DocType_NC" xml:space="preserve"><value>Credit note</value></data>
+  <data name="SeriesEditor_DocType_ND" xml:space="preserve"><value>Debit note</value></data>
+  <data name="SeriesEditor_DocType_GR" xml:space="preserve"><value>Delivery note</value></data>
+  <data name="SeriesEditor_DocType_GT" xml:space="preserve"><value>Transport note</value></data>
+  <data name="SeriesEditor_DocType_GA" xml:space="preserve"><value>Own assets note</value></data>
+  <data name="SeriesEditor_DocType_GC" xml:space="preserve"><value>Consignment note</value></data>
+  <data name="SeriesEditor_DocType_GD" xml:space="preserve"><value>Return note</value></data>
+  <data name="SeriesEditor_DocType_RC" xml:space="preserve"><value>Receipt (cash VAT scheme)</value></data>
+  <data name="SeriesEditor_DocType_RG" xml:space="preserve"><value>Other receipts</value></data>
+  <data name="SeriesEditor_CommunicationSectionTitle" xml:space="preserve"><value>Report to tax authority</value></data>
+  <data name="SeriesEditor_CommunicationSectionNotice" xml:space="preserve"><value>Register here the validation code returned by the tax authority when reporting the series. It is that code that forms the ATCUD of the documents and unlocks issuing.</value></data>
+  <data name="SeriesEditor_CommunicatedNotice" xml:space="preserve"><value>Series reported with code {0}.</value></data>
+  <data name="SeriesEditor_ValidationCodeLabel" xml:space="preserve"><value>Validation code</value></data>
+  <data name="SeriesEditor_RegisterCodeButton" xml:space="preserve"><value>Register code</value></data>
+  <data name="SeriesEditor_SeriesNotFoundNotice" xml:space="preserve"><value>Series not found for this company.</value></data>
+  <data name="SeriesEditor_LoadError" xml:space="preserve"><value>Unable to load the series: {0}</value></data>
+  <data name="SeriesEditor_CreateFailed" xml:space="preserve"><value>Unable to create the series.</value></data>
+  <data name="SeriesEditor_CreatedSuccess" xml:space="preserve"><value>Series {0} created. Still needs to be reported to the tax authority.</value></data>
+  <data name="SeriesEditor_CreateError" xml:space="preserve"><value>Unable to create the series: {0}</value></data>
+  <data name="SeriesEditor_UpdateStockEffectFailed" xml:space="preserve"><value>Unable to change the stock effect.</value></data>
+  <data name="SeriesEditor_StockEffectUpdatedSuccess" xml:space="preserve"><value>Stock effect changed.</value></data>
+  <data name="SeriesEditor_UpdateStockEffectError" xml:space="preserve"><value>Unable to change the stock effect: {0}</value></data>
+  <data name="SeriesEditor_ValidationCodeRegisteredSuccess" xml:space="preserve"><value>Validation code registered.</value></data>
+  <data name="SeriesEditor_RegisterCodeError" xml:space="preserve"><value>Unable to register the code: {0}</value></data>
+  <data name="PurchaseOrders_PageTitle" xml:space="preserve"><value>Purchase orders</value></data>
+  <data name="PurchaseOrders_HeaderTitle" xml:space="preserve"><value>Orders</value></data>
+  <data name="PurchaseOrders_OpenOnlySwitch" xml:space="preserve"><value>Pending only</value></data>
+  <data name="PurchaseOrders_NewOrderButton" xml:space="preserve"><value>New order</value></data>
+  <data name="PurchaseOrders_SearchPlaceholder" xml:space="preserve"><value>Search number or supplier</value></data>
+  <data name="PurchaseOrders_EmptyTitle" xml:space="preserve"><value>No orders to show</value></data>
+  <data name="PurchaseOrders_EmptyDescription" xml:space="preserve"><value>Adjust the filters or create the first order.</value></data>
+  <data name="PurchaseOrders_ItemsLabel" xml:space="preserve"><value>orders</value></data>
+  <data name="PurchaseOrders_LoadErrorMessage" xml:space="preserve"><value>Unable to load the orders</value></data>
+  <data name="PurchaseOrders_NumberColumn" xml:space="preserve"><value>Number</value></data>
+  <data name="PurchaseOrders_DateColumn" xml:space="preserve"><value>Date</value></data>
+  <data name="PurchaseOrders_ExpectedColumn" xml:space="preserve"><value>Expected</value></data>
+  <data name="PurchaseOrders_SupplierColumn" xml:space="preserve"><value>Supplier</value></data>
+  <data name="PurchaseOrders_TaxIdColumn" xml:space="preserve"><value>Tax ID</value></data>
+  <data name="PurchaseOrders_StatusColumn" xml:space="preserve"><value>Status</value></data>
+  <data name="PurchaseOrders_LinesColumn" xml:space="preserve"><value>Lines</value></data>
+  <data name="PurchaseOrders_TotalColumn" xml:space="preserve"><value>Total</value></data>
+  <data name="PurchaseOrders_OpenOrderAction" xml:space="preserve"><value>Open order</value></data>
+  <data name="PurchaseOrderEditor_PageTitleNew" xml:space="preserve"><value>New order</value></data>
+  <data name="PurchaseOrderEditor_PageTitleEdit" xml:space="preserve"><value>Edit order</value></data>
+  <data name="PurchaseOrderEditor_HeaderNew" xml:space="preserve"><value>New order</value></data>
+  <data name="PurchaseOrderEditor_HeaderEdit" xml:space="preserve"><value>Edit {0}</value></data>
+  <data name="PurchaseOrderEditor_Description" xml:space="preserve"><value>The order is not a fiscal document: the number is ours and it can be corrected until the goods arrive.</value></data>
+  <data name="PurchaseOrderEditor_BackButton" xml:space="preserve"><value>Back</value></data>
+  <data name="PurchaseOrderEditor_NoCompanySelected" xml:space="preserve"><value>Choose a company in the header.</value></data>
+  <data name="PurchaseOrderEditor_SupplierDeliverySectionTitle" xml:space="preserve"><value>Supplier and delivery</value></data>
+  <data name="PurchaseOrderEditor_SupplierLabel" xml:space="preserve"><value>Supplier</value></data>
+  <data name="PurchaseOrderEditor_SupplierHelperText" xml:space="preserve"><value>The supplier does not change once the order exists</value></data>
+  <data name="PurchaseOrderEditor_WarehouseLabel" xml:space="preserve"><value>Receiving warehouse</value></data>
+  <data name="PurchaseOrderEditor_OrderDateLabel" xml:space="preserve"><value>Date</value></data>
+  <data name="PurchaseOrderEditor_ExpectedDateLabel" xml:space="preserve"><value>Expected delivery</value></data>
+  <data name="PurchaseOrderEditor_NotesLabel" xml:space="preserve"><value>Notes</value></data>
+  <data name="PurchaseOrderEditor_LinesSectionTitle" xml:space="preserve"><value>Lines</value></data>
+  <data name="PurchaseOrderEditor_AddLineButton" xml:space="preserve"><value>Add line</value></data>
+  <data name="PurchaseOrderEditor_ProductColumn" xml:space="preserve"><value>Item</value></data>
+  <data name="PurchaseOrderEditor_DescriptionColumn" xml:space="preserve"><value>Description</value></data>
+  <data name="PurchaseOrderEditor_QuantityColumn" xml:space="preserve"><value>Qty.</value></data>
+  <data name="PurchaseOrderEditor_UnitColumn" xml:space="preserve"><value>Unit</value></data>
+  <data name="PurchaseOrderEditor_UnitCostColumn" xml:space="preserve"><value>Unit cost</value></data>
+  <data name="PurchaseOrderEditor_TaxColumn" xml:space="preserve"><value>VAT</value></data>
+  <data name="PurchaseOrderEditor_TotalColumn" xml:space="preserve"><value>Total</value></data>
+  <data name="PurchaseOrderEditor_ActionsColumn" xml:space="preserve"><value>Actions</value></data>
+  <data name="PurchaseOrderEditor_FreeProductPlaceholder" xml:space="preserve"><value>Free</value></data>
+  <data name="PurchaseOrderEditor_ProductCodePlaceholder" xml:space="preserve"><value>Code</value></data>
+  <data name="PurchaseOrderEditor_NetTotalLabel" xml:space="preserve"><value>Without VAT</value></data>
+  <data name="PurchaseOrderEditor_TaxTotalLabel" xml:space="preserve"><value>VAT</value></data>
+  <data name="PurchaseOrderEditor_GrossTotalLabel" xml:space="preserve"><value>Total</value></data>
+  <data name="PurchaseOrderEditor_CancelButton" xml:space="preserve"><value>Cancel</value></data>
+  <data name="PurchaseOrderEditor_SaveDraftButton" xml:space="preserve"><value>Save draft</value></data>
+  <data name="PurchaseOrderEditor_SaveButton" xml:space="preserve"><value>Save</value></data>
+  <data name="PurchaseOrderEditor_SaveAndPlaceButton" xml:space="preserve"><value>Save and place</value></data>
+  <data name="PurchaseOrderEditor_TaxRateNormal" xml:space="preserve"><value>Standard - 23%</value></data>
+  <data name="PurchaseOrderEditor_TaxRateIntermediate" xml:space="preserve"><value>Intermediate - 13%</value></data>
+  <data name="PurchaseOrderEditor_TaxRateReduced" xml:space="preserve"><value>Reduced - 6%</value></data>
+  <data name="PurchaseOrderEditor_TaxRateExempt" xml:space="preserve"><value>Exempt</value></data>
+  <data name="PurchaseOrderEditor_SaveFailed" xml:space="preserve"><value>Unable to save the order.</value></data>
+  <data name="PurchaseOrderEditor_SavedSuccess" xml:space="preserve"><value>Order {0} saved.</value></data>
+  <data name="PurchaseOrderEditor_SaveError" xml:space="preserve"><value>Unable to save the order: {0}</value></data>
+  <data name="PurchaseOrderEditor_LoadDataError" xml:space="preserve"><value>Unable to load the data: {0}</value></data>
+  <data name="PurchaseOrderEditor_OrderNotFound" xml:space="preserve"><value>Order not found.</value></data>
+  <data name="CompanyEditor_NoWarehousesMessage" xml:space="preserve"><value>This company does not yet have warehouses, so there is nowhere to store stock.</value></data>
+  <data name="PurchaseOrderView_DefaultTitle" xml:space="preserve"><value>Order</value></data>
+  <data name="PurchaseOrderView_EditButton" xml:space="preserve"><value>Edit</value></data>
+  <data name="PurchaseOrderView_PlaceButton" xml:space="preserve"><value>Place</value></data>
+  <data name="PurchaseOrderView_BackButton" xml:space="preserve"><value>Back</value></data>
+  <data name="PurchaseOrderView_OrderNotFound" xml:space="preserve"><value>Order not found.</value></data>
+  <data name="PurchaseOrderView_StatusLabel" xml:space="preserve"><value>Status</value></data>
+  <data name="PurchaseOrderView_ExpectedDeliveryLabel" xml:space="preserve"><value>Expected delivery</value></data>
+  <data name="PurchaseOrderView_TaxIdLabel" xml:space="preserve"><value>Tax ID</value></data>
+  <data name="PurchaseOrderView_TotalLabel" xml:space="preserve"><value>Total</value></data>
+  <data name="PurchaseOrderView_NotesLabel" xml:space="preserve"><value>Notes</value></data>
+  <data name="PurchaseOrderView_CancelledStatus" xml:space="preserve"><value>Cancelled</value></data>
+  <data name="PurchaseOrderView_ClosedStatus" xml:space="preserve"><value>Closed</value></data>
+  <data name="PurchaseOrderView_ClosedAtMessage" xml:space="preserve"><value>on {0}: {1}</value></data>
+  <data name="PurchaseOrderView_LinesSectionTitle" xml:space="preserve"><value>Lines</value></data>
+  <data name="PurchaseOrderView_LineNumberColumn" xml:space="preserve"><value>#</value></data>
+  <data name="PurchaseOrderView_ProductColumn" xml:space="preserve"><value>Item</value></data>
+  <data name="PurchaseOrderView_DescriptionColumn" xml:space="preserve"><value>Description</value></data>
+  <data name="PurchaseOrderView_OrderedColumn" xml:space="preserve"><value>Ordered</value></data>
+  <data name="PurchaseOrderView_ReceivedColumn" xml:space="preserve"><value>Received</value></data>
+  <data name="PurchaseOrderView_PendingColumn" xml:space="preserve"><value>Pending</value></data>
+  <data name="PurchaseOrderView_UnitCostColumn" xml:space="preserve"><value>Unit cost</value></data>
+  <data name="PurchaseOrderView_TotalColumn" xml:space="preserve"><value>Total</value></data>
+  <data name="PurchaseOrderView_CloseOrderTitle" xml:space="preserve"><value>Close order</value></data>
+  <data name="PurchaseOrderView_CancelOrderTitle" xml:space="preserve"><value>Cancel order</value></data>
+  <data name="PurchaseOrderView_CloseHelpText" xml:space="preserve"><value>Part of the goods has already arrived, so the order is closed instead of cancelled: what is missing is marked as not delivered, and what arrived stays recorded.</value></data>
+  <data name="PurchaseOrderView_CancelHelpText" xml:space="preserve"><value>Nothing has arrived yet, so the order can be cancelled. Once there are any receipts, it can only be closed.</value></data>
+  <data name="PurchaseOrderView_ReasonLabel" xml:space="preserve"><value>Reason</value></data>
+  <data name="PurchaseOrderView_CloseButton" xml:space="preserve"><value>Close</value></data>
+  <data name="PurchaseOrderView_CancelButton" xml:space="preserve"><value>Cancel</value></data>
+  <data name="PurchaseOrderView_LoadError" xml:space="preserve"><value>Unable to load the order: {0}</value></data>
+  <data name="PurchaseOrderView_PlaceFailed" xml:space="preserve"><value>Unable to place the order.</value></data>
+  <data name="PurchaseOrderView_PlacedSuccess" xml:space="preserve"><value>Order {0} placed.</value></data>
+  <data name="PurchaseOrderView_PlaceError" xml:space="preserve"><value>Unable to place the order: {0}</value></data>
+  <data name="PurchaseOrderView_FinishFailed" xml:space="preserve"><value>Unable to finish the order.</value></data>
+  <data name="PurchaseOrderView_ClosedSuccess" xml:space="preserve"><value>Order closed.</value></data>
+  <data name="PurchaseOrderView_CancelledSuccess" xml:space="preserve"><value>Order cancelled.</value></data>
+  <data name="PurchaseOrderView_FinishError" xml:space="preserve"><value>Unable to finish the order: {0}</value></data>
+  <data name="Invoices_PageTitle" xml:space="preserve"><value>Invoices</value></data>
+  <data name="Invoices_HeaderTitle" xml:space="preserve"><value>Invoices</value></data>
+  <data name="Invoices_FromMovementsButton" xml:space="preserve"><value>Invoice delivery notes</value></data>
+  <data name="Invoices_NewInvoiceButton" xml:space="preserve"><value>New invoice</value></data>
+  <data name="Invoices_SearchPlaceholder" xml:space="preserve"><value>Search by document, customer or tax ID</value></data>
+  <data name="Invoices_EmptyTitle" xml:space="preserve"><value>No invoices to show</value></data>
+  <data name="Invoices_EmptyDescription" xml:space="preserve"><value>Adjust the filters or issue the first invoice.</value></data>
+  <data name="Invoices_ItemsLabel" xml:space="preserve"><value>invoices</value></data>
+  <data name="Invoices_LoadErrorMessage" xml:space="preserve"><value>Unable to load the invoices</value></data>
+  <data name="Invoices_DocumentColumn" xml:space="preserve"><value>Document</value></data>
+  <data name="Invoices_TypeColumn" xml:space="preserve"><value>Type</value></data>
+  <data name="Invoices_AtcudColumn" xml:space="preserve"><value>ATCUD</value></data>
+  <data name="Invoices_DateColumn" xml:space="preserve"><value>Date</value></data>
+  <data name="Invoices_CustomerColumn" xml:space="preserve"><value>Customer</value></data>
+  <data name="Invoices_TaxIdColumn" xml:space="preserve"><value>Tax ID</value></data>
+  <data name="Invoices_NetTotalColumn" xml:space="preserve"><value>Net</value></data>
+  <data name="Invoices_TaxColumn" xml:space="preserve"><value>VAT</value></data>
+  <data name="Invoices_TotalColumn" xml:space="preserve"><value>Total</value></data>
+  <data name="Invoices_StatusColumn" xml:space="preserve"><value>Status</value></data>
+  <data name="Invoices_ViewDocumentAction" xml:space="preserve"><value>View document</value></data>
+  <data name="Invoices_StatusCancelled" xml:space="preserve"><value>Cancelled</value></data>
+  <data name="Invoices_StatusInvoiced" xml:space="preserve"><value>Invoiced</value></data>
+  <data name="Invoices_StatusSelfBilled" xml:space="preserve"><value>Self-billed</value></data>
+  <data name="Invoices_StatusNormal" xml:space="preserve"><value>Normal</value></data>
+  <data name="InvoiceView_DefaultTitle" xml:space="preserve"><value>Document</value></data>
+  <data name="InvoiceView_AtcudLabel" xml:space="preserve"><value>ATCUD:{0}</value></data>
+  <data name="InvoiceView_PrintButton" xml:space="preserve"><value>Print</value></data>
+  <data name="InvoiceView_BackButton" xml:space="preserve"><value>Back</value></data>
+  <data name="InvoiceView_CancelledNotice" xml:space="preserve"><value>Document cancelled. The original record is preserved, as required by certification.</value></data>
+  <data name="InvoiceView_CustomerLabel" xml:space="preserve"><value>Customer</value></data>
+  <data name="InvoiceView_TaxIdLabel" xml:space="preserve"><value>Tax ID {0}</value></data>
+  <data name="InvoiceView_DocumentDateLabel" xml:space="preserve"><value>Document date</value></data>
+  <data name="InvoiceView_SystemEntryLabel" xml:space="preserve"><value>System entry</value></data>
+  <data name="InvoiceView_SignatureLabel" xml:space="preserve"><value>Signature</value></data>
+  <data name="InvoiceView_CertifiedProgramNote" xml:space="preserve"><value>Processed by certified software</value></data>
+  <data name="InvoiceView_RectifiedDocumentLabel" xml:space="preserve"><value>Rectified document</value></data>
+  <data name="InvoiceView_LineNumberColumn" xml:space="preserve"><value>#</value></data>
+  <data name="InvoiceView_CodeColumn" xml:space="preserve"><value>Code</value></data>
+  <data name="InvoiceView_DescriptionColumn" xml:space="preserve"><value>Description</value></data>
+  <data name="InvoiceView_QuantityColumn" xml:space="preserve"><value>Qty.</value></data>
+  <data name="InvoiceView_UnitPriceColumn" xml:space="preserve"><value>Unit price</value></data>
+  <data name="InvoiceView_NetColumn" xml:space="preserve"><value>Net</value></data>
+  <data name="InvoiceView_TaxColumn" xml:space="preserve"><value>VAT</value></data>
+  <data name="InvoiceView_TaxAmountColumn" xml:space="preserve"><value>VAT amount</value></data>
+  <data name="InvoiceView_TaxableBaseLabel" xml:space="preserve"><value>Taxable base</value></data>
+  <data name="InvoiceView_TaxLabel" xml:space="preserve"><value>VAT</value></data>
+  <data name="InvoiceView_TotalLabel" xml:space="preserve"><value>Total</value></data>
+  <data name="InvoiceView_QrDataTitle" xml:space="preserve"><value>QR code data</value></data>
+  <data name="InvoiceView_QrDataDescription" xml:space="preserve"><value>Message generated according to Portaria 195/2020.</value></data>
+  <data name="InvoiceView_VoidDocumentTitle" xml:space="preserve"><value>Void document</value></data>
+  <data name="InvoiceView_VoidHelpText" xml:space="preserve"><value>Voiding does not delete or change the document: it records the new status and reason, keeping the original record and its place in the signature chain.</value></data>
+  <data name="InvoiceView_ReasonLabel" xml:space="preserve"><value>Reason</value></data>
+  <data name="InvoiceView_VoidButton" xml:space="preserve"><value>Void</value></data>
+  <data name="InvoiceView_DocumentNotFound" xml:space="preserve"><value>Document not found.</value></data>
+  <data name="InvoiceView_LoadError" xml:space="preserve"><value>Unable to load the document: {0}</value></data>
+  <data name="InvoiceView_VoidedSuccess" xml:space="preserve"><value>Document voided.</value></data>
+  <data name="InvoiceView_VoidError" xml:space="preserve"><value>Unable to void the document: {0}</value></data>
+  <data name="NewInvoice_PageTitle" xml:space="preserve"><value>New invoice</value></data>
+  <data name="NewInvoice_HeaderTitle" xml:space="preserve"><value>New invoice</value></data>
+  <data name="NewInvoice_Description" xml:space="preserve"><value>The document is signed and numbered at issuance and cannot be changed afterwards.</value></data>
+  <data name="NewInvoice_BackButton" xml:space="preserve"><value>Back</value></data>
+  <data name="NewInvoice_NoSeriesWarning" xml:space="preserve"><value>There is no series communicated to the tax authority for this company. Without a validation code it is not possible to issue documents.</value></data>
+  <data name="NewInvoice_ManageSeriesLink" xml:space="preserve"><value>Manage series</value></data>
+  <data name="NewInvoice_SeriesLabel" xml:space="preserve"><value>Series</value></data>
+  <data name="NewInvoice_SeriesNextNumber" xml:space="preserve"><value>{0} {1} (next no. {2})</value></data>
+  <data name="NewInvoice_DocumentDateLabel" xml:space="preserve"><value>Document date</value></data>
+  <data name="NewInvoice_CustomerSectionTitle" xml:space="preserve"><value>Customer</value></data>
+  <data name="NewInvoice_TaxIdLabel" xml:space="preserve"><value>Tax ID</value></data>
+  <data name="NewInvoice_TaxIdHelperText" xml:space="preserve"><value>Leave empty for final consumer</value></data>
+  <data name="NewInvoice_NameLabel" xml:space="preserve"><value>Name</value></data>
+  <data name="NewInvoice_AddressLabel" xml:space="preserve"><value>Address</value></data>
+  <data name="NewInvoice_LinesSectionTitle" xml:space="preserve"><value>Lines</value></data>
+  <data name="NewInvoice_AddLineButton" xml:space="preserve"><value>Add line</value></data>
+  <data name="NewInvoice_ProductColumn" xml:space="preserve"><value>Item</value></data>
+  <data name="NewInvoice_DescriptionColumn" xml:space="preserve"><value>Description</value></data>
+  <data name="NewInvoice_QuantityColumn" xml:space="preserve"><value>Qty.</value></data>
+  <data name="NewInvoice_UnitPriceColumn" xml:space="preserve"><value>Unit price</value></data>
+  <data name="NewInvoice_TaxColumn" xml:space="preserve"><value>VAT</value></data>
+  <data name="NewInvoice_TotalColumn" xml:space="preserve"><value>Total</value></data>
+  <data name="NewInvoice_ActionsColumn" xml:space="preserve"><value>Actions</value></data>
+  <data name="NewInvoice_FreeProductPlaceholder" xml:space="preserve"><value>Free</value></data>
+  <data name="NewInvoice_ProductCodePlaceholder" xml:space="preserve"><value>Code</value></data>
+  <data name="NewInvoice_RemoveLineTooltip" xml:space="preserve"><value>Remove line</value></data>
+  <data name="NewInvoice_ExemptionReasonLabel" xml:space="preserve"><value>Exemption reason</value></data>
+  <data name="NewInvoice_ExemptionReasonHelperText" xml:space="preserve"><value>Required when any line is exempt from VAT</value></data>
+  <data name="NewInvoice_TaxableBaseLabel" xml:space="preserve"><value>Taxable base</value></data>
+  <data name="NewInvoice_TaxLabel" xml:space="preserve"><value>VAT</value></data>
+  <data name="NewInvoice_TotalLabel" xml:space="preserve"><value>Total</value></data>
+  <data name="NewInvoice_IssuingButton" xml:space="preserve"><value>Issuing...</value></data>
+  <data name="NewInvoice_IssueButton" xml:space="preserve"><value>Issue invoice</value></data>
+  <data name="NewInvoice_TaxRateNormal" xml:space="preserve"><value>Standard - 23%</value></data>
+  <data name="NewInvoice_TaxRateIntermediate" xml:space="preserve"><value>Intermediate - 13%</value></data>
+  <data name="NewInvoice_TaxRateReduced" xml:space="preserve"><value>Reduced - 6%</value></data>
+  <data name="NewInvoice_TaxRateExempt" xml:space="preserve"><value>Exempt</value></data>
+  <data name="NewInvoice_LoadError" xml:space="preserve"><value>Unable to prepare the issuance: {0}</value></data>
+  <data name="NewInvoice_IssueFailed" xml:space="preserve"><value>Unable to issue the document.</value></data>
+  <data name="NewInvoice_IssuedSuccess" xml:space="preserve"><value>{0} {1} issued.</value></data>
+  <data name="NewInvoice_IssueError" xml:space="preserve"><value>Unable to issue the invoice: {0}</value></data>
+  <data name="InvoiceFromMovements_PageTitle" xml:space="preserve"><value>Invoice delivery notes</value></data>
+  <data name="InvoiceFromMovements_HeaderTitle" xml:space="preserve"><value>Invoice delivery notes</value></data>
+  <data name="InvoiceFromMovements_Description" xml:space="preserve"><value>Choose the customer and the delivery notes to invoice: the lines come from them. A delivery note can be invoiced multiple times.</value></data>
+  <data name="InvoiceFromMovements_BackButton" xml:space="preserve"><value>Back</value></data>
+  <data name="InvoiceFromMovements_NoSeriesWarning" xml:space="preserve"><value>There is no invoicing series communicated to the tax authority.</value></data>
+  <data name="InvoiceFromMovements_CreateSeriesLink" xml:space="preserve"><value>Create series</value></data>
+  <data name="InvoiceFromMovements_NoPendingInfo" xml:space="preserve"><value>There are no delivery notes to invoice. Delivery notes for own assets and returns are never invoiced.</value></data>
+  <data name="InvoiceFromMovements_CustomerLabel" xml:space="preserve"><value>Customer</value></data>
+  <data name="InvoiceFromMovements_CustomerHelpText" xml:space="preserve"><value>An invoice groups delivery notes from a single customer</value></data>
+  <data name="InvoiceFromMovements_CustomerOption" xml:space="preserve"><value>{0} ({1})</value></data>
+  <data name="InvoiceFromMovements_SeriesLabel" xml:space="preserve"><value>Series</value></data>
+  <data name="InvoiceFromMovements_SeriesNextNumber" xml:space="preserve"><value>{0} {1} (next no. {2})</value></data>
+  <data name="InvoiceFromMovements_DateLabel" xml:space="preserve"><value>Date</value></data>
+  <data name="InvoiceFromMovements_LinesSectionTitle" xml:space="preserve"><value>Lines to invoice</value></data>
+  <data name="InvoiceFromMovements_SelectAllButton" xml:space="preserve"><value>Invoice all</value></data>
+  <data name="InvoiceFromMovements_SelectNoneButton" xml:space="preserve"><value>Clear</value></data>
+  <data name="InvoiceFromMovements_ProductCodeHeader" xml:space="preserve"><value>Product</value></data>
+  <data name="InvoiceFromMovements_DescriptionHeader" xml:space="preserve"><value>Description</value></data>
+  <data name="InvoiceFromMovements_MovementHeader" xml:space="preserve"><value>Delivery note</value></data>
+  <data name="InvoiceFromMovements_AlreadyInvoicedHeader" xml:space="preserve"><value>Already invoiced</value></data>
+  <data name="InvoiceFromMovements_ToInvoiceHeader" xml:space="preserve"><value>To invoice</value></data>
+  <data name="InvoiceFromMovements_PriceHeader" xml:space="preserve"><value>Price</value></data>
+  <data name="InvoiceFromMovements_TaxHeader" xml:space="preserve"><value>Tax</value></data>
+  <data name="InvoiceFromMovements_TotalHeader" xml:space="preserve"><value>Total</value></data>
+  <data name="InvoiceFromMovements_NoRecords" xml:space="preserve"><value>This customer has no delivery notes to invoice.</value></data>
+  <data name="InvoiceFromMovements_MovementsCountLabel" xml:space="preserve"><value>Delivery notes</value></data>
+  <data name="InvoiceFromMovements_NetTotalLabel" xml:space="preserve"><value>Taxable base</value></data>
+  <data name="InvoiceFromMovements_TaxTotalLabel" xml:space="preserve"><value>Tax</value></data>
+  <data name="InvoiceFromMovements_TotalLabel" xml:space="preserve"><value>Total</value></data>
+  <data name="InvoiceFromMovements_IssuingButton" xml:space="preserve"><value>Issuing...</value></data>
+  <data name="InvoiceFromMovements_IssueButton" xml:space="preserve"><value>Issue invoice</value></data>
+  <data name="InvoiceFromMovements_IssueFailed" xml:space="preserve"><value>Unable to issue the invoice.</value></data>
+  <data name="InvoiceFromMovements_IssuedSuccess" xml:space="preserve"><value>{0} {1} issued.</value></data>
+  <data name="InvoiceFromMovements_IssueError" xml:space="preserve"><value>Unable to issue the invoice: {0}</value></data>
+  <data name="InvoiceFromMovements_LoadError" xml:space="preserve"><value>Unable to prepare the invoicing: {0}</value></data>
+  <data name="CreditNotes_PageTitle" xml:space="preserve"><value>Credit notes</value></data>
+  <data name="CreditNotes_HeaderTitle" xml:space="preserve"><value>Credit and debit notes</value></data>
+  <data name="CreditNotes_NewButton" xml:space="preserve"><value>New note</value></data>
+  <data name="CreditNotes_SearchPlaceholder" xml:space="preserve"><value>Search by document, customer or tax ID</value></data>
+  <data name="CreditNotes_EmptyTitle" xml:space="preserve"><value>No notes to show</value></data>
+  <data name="CreditNotes_EmptyDescription" xml:space="preserve"><value>Adjust the filters or issue the first note.</value></data>
+  <data name="CreditNotes_ItemsLabel" xml:space="preserve"><value>notes</value></data>
+  <data name="CreditNotes_LoadErrorMessage" xml:space="preserve"><value>Unable to load the notes</value></data>
+  <data name="CreditNotes_DocumentColumn" xml:space="preserve"><value>Document</value></data>
+  <data name="CreditNotes_TypeColumn" xml:space="preserve"><value>Type</value></data>
+  <data name="CreditNotes_DateColumn" xml:space="preserve"><value>Date</value></data>
+  <data name="CreditNotes_CustomerColumn" xml:space="preserve"><value>Customer</value></data>
+  <data name="CreditNotes_TaxIdColumn" xml:space="preserve"><value>Tax ID</value></data>
+  <data name="CreditNotes_TotalColumn" xml:space="preserve"><value>Total</value></data>
+  <data name="CreditNotes_StatusColumn" xml:space="preserve"><value>Status</value></data>
+  <data name="CreditNotes_StatusVoided" xml:space="preserve"><value>Voided</value></data>
+  <data name="CreditNotes_StatusNormal" xml:space="preserve"><value>Normal</value></data>
+  <data name="CreditNotes_ViewDocument" xml:space="preserve"><value>View document</value></data>
+  <data name="NewCreditNote_Description" xml:space="preserve"><value>Choose the invoice to correct: the lines come from it. Credit everything, or adjust the quantities to credit only part of it.</value></data>
+  <data name="NewCreditNote_BackButton" xml:space="preserve"><value>Back</value></data>
+  <data name="NewCreditNote_NoSeriesWarning" xml:space="preserve"><value>There is no notes series communicated to the tax authority. Create a series of type NC or ND.</value></data>
+  <data name="NewCreditNote_CreateSeriesLink" xml:space="preserve"><value>Create series</value></data>
+  <data name="NewCreditNote_NoRectifiableInfo" xml:space="preserve"><value>There are no invoices to correct in this company.</value></data>
+  <data name="NewCreditNote_InvoiceToCorrectLabel" xml:space="preserve"><value>Invoice to correct</value></data>
+  <data name="NewCreditNote_InvoiceOption" xml:space="preserve"><value>{0} — {1} ({2})</value></data>
+  <data name="NewCreditNote_SeriesLabel" xml:space="preserve"><value>Series</value></data>
+  <data name="NewCreditNote_SeriesNextNumber" xml:space="preserve"><value>{0} {1} (next no. {2})</value></data>
+  <data name="NewCreditNote_DateLabel" xml:space="preserve"><value>Date</value></data>
+  <data name="NewCreditNote_ReasonLabel" xml:space="preserve"><value>Reason for correction</value></data>
+  <data name="NewCreditNote_ReasonHelpText" xml:space="preserve"><value>Mandatory, appears in the document and in the SAF-T</value></data>
+  <data name="NewCreditNote_CustomerLabel" xml:space="preserve"><value>Customer</value></data>
+  <data name="NewCreditNote_CustomerTaxIdPrefix" xml:space="preserve"><value>Tax ID {0}</value></data>
+  <data name="NewCreditNote_CorrectedDocumentLabel" xml:space="preserve"><value>Corrected document</value></data>
+  <data name="NewCreditNote_AlreadyCredited" xml:space="preserve"><value>Already credited {0} · remaining {1}</value></data>
+  <data name="NewCreditNote_CreditAllButton" xml:space="preserve"><value>Credit all</value></data>
+  <data name="NewCreditNote_LoadSourceInvoiceError" xml:space="preserve"><value>Unable to load the chosen invoice.</value></data>
+  <data name="NewCreditNote_ClearButton" xml:space="preserve"><value>Clear</value></data>
+  <data name="NewCreditNote_LinesSectionTitle" xml:space="preserve"><value>Lines to credit</value></data>
+  <data name="NewCreditNote_CodeColumn" xml:space="preserve"><value>Code</value></data>
+  <data name="NewCreditNote_DescriptionColumn" xml:space="preserve"><value>Description</value></data>
+  <data name="NewCreditNote_InvoicedQuantityColumn" xml:space="preserve"><value>Invoiced qty.</value></data>
+  <data name="NewCreditNote_CreditQuantityColumn" xml:space="preserve"><value>Qty. to credit</value></data>
+  <data name="NewCreditNote_PriceColumn" xml:space="preserve"><value>Price</value></data>
+  <data name="NewCreditNote_TaxColumn" xml:space="preserve"><value>Tax</value></data>
+  <data name="NewCreditNote_TotalColumn" xml:space="preserve"><value>Total</value></data>
+  <data name="NewCreditNote_NetTotalLabel" xml:space="preserve"><value>Taxable base</value></data>
+  <data name="NewCreditNote_TaxTotalLabel" xml:space="preserve"><value>Tax</value></data>
+  <data name="NewCreditNote_GrossTotalLabel" xml:space="preserve"><value>Total to credit</value></data>
+  <data name="NewCreditNote_IssuingButton" xml:space="preserve"><value>Issuing...</value></data>
+  <data name="NewCreditNote_IssueButton" xml:space="preserve"><value>Issue {0}</value></data>
+  <data name="NewCreditNote_ExceedsCreditableAlready" xml:space="preserve"><value> (already credited {0:N2})</value></data>
+  <data name="NewCreditNote_ExceedsCreditable" xml:space="preserve"><value>Invoice {0} only allows {1} more in credit{2}. Reduce the quantities.</value></data>
+  <data name="NewCreditNote_FullCreditInfo" xml:space="preserve"><value>Full credit: the note cancels the value of invoice {0}.</value></data>
+  <data name="NewCreditNote_Heading" xml:space="preserve"><value>New {0}</value></data>
+  <data name="NewCreditNote_LoadError" xml:space="preserve"><value>Unable to prepare the issuance: {0}</value></data>
+  <data name="NewCreditNote_IssueFailed" xml:space="preserve"><value>Unable to issue the note.</value></data>
+  <data name="NewCreditNote_IssuedSuccess" xml:space="preserve"><value>{0} {1} issued.</value></data>
+  <data name="NewCreditNote_IssueError" xml:space="preserve"><value>Unable to issue the note: {0}</value></data>
+  <data name="Payments_PageTitle" xml:space="preserve"><value>Payments</value></data>
+  <data name="Payments_NewButton" xml:space="preserve"><value>New payment</value></data>
+  <data name="Payments_SearchPlaceholder" xml:space="preserve"><value>Search by document, customer or tax ID</value></data>
+  <data name="Payments_EmptyTitle" xml:space="preserve"><value>No payments to show</value></data>
+  <data name="Payments_EmptyDescription" xml:space="preserve"><value>Adjust the filters or issue the first payment.</value></data>
+  <data name="Payments_ItemsLabel" xml:space="preserve"><value>payments</value></data>
+  <data name="Payments_LoadErrorMessage" xml:space="preserve"><value>Unable to load the payments</value></data>
+  <data name="Payments_DocumentColumn" xml:space="preserve"><value>Document</value></data>
+  <data name="Payments_TypeColumn" xml:space="preserve"><value>Type</value></data>
+  <data name="Payments_DateColumn" xml:space="preserve"><value>Date</value></data>
+  <data name="Payments_CustomerColumn" xml:space="preserve"><value>Customer</value></data>
+  <data name="Payments_TaxIdColumn" xml:space="preserve"><value>Tax ID</value></data>
+  <data name="Payments_InvoicesColumn" xml:space="preserve"><value>Invoices</value></data>
+  <data name="Payments_TotalColumn" xml:space="preserve"><value>Total</value></data>
+  <data name="Payments_StatusColumn" xml:space="preserve"><value>Status</value></data>
+  <data name="Payments_StatusVoided" xml:space="preserve"><value>Voided</value></data>
+  <data name="Payments_StatusNormal" xml:space="preserve"><value>Normal</value></data>
+  <data name="Payments_ViewPayment" xml:space="preserve"><value>View payment</value></data>
+  <data name="NewPayment_PageTitle" xml:space="preserve"><value>New payment</value></data>
+  <data name="NewPayment_Description" xml:space="preserve"><value>The payment is signed and numbered at issuance, and settles invoices that still owe an amount.</value></data>
+  <data name="NewPayment_BackButton" xml:space="preserve"><value>Back</value></data>
+  <data name="NewPayment_NoSeriesWarning" xml:space="preserve"><value>There is no receipt series communicated to the tax authority. Create a series of type RC or RG.</value></data>
+  <data name="NewPayment_CreateSeriesLink" xml:space="preserve"><value>Create series</value></data>
+  <data name="NewPayment_NoOutstandingInfo" xml:space="preserve"><value>There are no invoices to settle. A payment can only be issued against invoices with an outstanding amount.</value></data>
+  <data name="NewPayment_DocumentSectionTitle" xml:space="preserve"><value>Document</value></data>
+  <data name="NewPayment_SeriesLabel" xml:space="preserve"><value>Series</value></data>
+  <data name="NewPayment_SeriesOption" xml:space="preserve"><value>{0} {1} — {2} (next no. {3})</value></data>
+  <data name="NewPayment_DateLabel" xml:space="preserve"><value>Payment date</value></data>
+  <data name="NewPayment_NotesLabel" xml:space="preserve"><value>Notes</value></data>
+  <data name="NewPayment_CustomerSectionTitle" xml:space="preserve"><value>Customer</value></data>
+  <data name="NewPayment_CustomerLabel" xml:space="preserve"><value>Customer</value></data>
+  <data name="NewPayment_CustomerHelpText" xml:space="preserve"><value>A payment settles invoices from a single customer</value></data>
+  <data name="NewPayment_CustomerOption" xml:space="preserve"><value>{0} ({1})</value></data>
+  <data name="NewPayment_NameLabel" xml:space="preserve"><value>Name</value></data>
+  <data name="NewPayment_InvoicesSectionTitle" xml:space="preserve"><value>Invoices to settle</value></data>
+  <data name="NewPayment_SettleAllButton" xml:space="preserve"><value>Settle all</value></data>
+  <data name="NewPayment_InvoiceColumn" xml:space="preserve"><value>Invoice</value></data>
+  <data name="NewPayment_DateColumn" xml:space="preserve"><value>Date</value></data>
+  <data name="NewPayment_TotalColumn" xml:space="preserve"><value>Total</value></data>
+  <data name="NewPayment_AlreadySettledColumn" xml:space="preserve"><value>Already settled</value></data>
+  <data name="NewPayment_OutstandingColumn" xml:space="preserve"><value>Outstanding</value></data>
+  <data name="NewPayment_ToSettleColumn" xml:space="preserve"><value>To settle</value></data>
+  <data name="NewPayment_MethodsSectionTitle" xml:space="preserve"><value>Payment methods</value></data>
+  <data name="NewPayment_NoOutstandingInvoices" xml:space="preserve"><value>This customer has no outstanding invoices.</value></data>
+  <data name="NewPayment_AddMethodButton" xml:space="preserve"><value>Add method</value></data>
+  <data name="NewPayment_MethodColumn" xml:space="preserve"><value>Method</value></data>
+  <data name="NewPayment_ValueColumn" xml:space="preserve"><value>Amount</value></data>
+  <data name="NewPayment_ActionsColumn" xml:space="preserve"><value>Actions</value></data>
+  <data name="NewPayment_RemoveMethodTitle" xml:space="preserve"><value>Remove payment method</value></data>
+  <data name="NewPayment_MatchToTotalButton" xml:space="preserve"><value>Match settled total</value></data>
+  <data name="NewPayment_SelectedInvoicesLabel" xml:space="preserve"><value>Selected invoices</value></data>
+  <data name="NewPayment_MethodsTotalLabel" xml:space="preserve"><value>Payment methods</value></data>
+  <data name="NewPayment_ReceiptTotalLabel" xml:space="preserve"><value>Payment total</value></data>
+  <data name="NewPayment_IssuingButton" xml:space="preserve"><value>Issuing...</value></data>
+  <data name="NewPayment_IssueButton" xml:space="preserve"><value>Issue payment</value></data>
+  <data name="NewPayment_MismatchWarning" xml:space="preserve"><value>The payment methods add up to {0} and the payment settles {1}. The two values must match.</value></data>
+  <data name="NewPayment_LoadError" xml:space="preserve"><value>Unable to prepare the issuance: {0}</value></data>
+  <data name="NewPayment_IssueFailed" xml:space="preserve"><value>Unable to issue the payment.</value></data>
+  <data name="NewPayment_IssuedSuccess" xml:space="preserve"><value>Payment {0} issued.</value></data>
+  <data name="NewPayment_IssueError" xml:space="preserve"><value>Unable to issue the payment: {0}</value></data>
+  <data name="PaymentView_DefaultTitle" xml:space="preserve"><value>Payment</value></data>
+  <data name="PaymentView_PrintButton" xml:space="preserve"><value>Print</value></data>
+  <data name="PaymentView_BackButton" xml:space="preserve"><value>Back</value></data>
+  <data name="PaymentView_VoidedNotice" xml:space="preserve"><value>Payment voided. The original record is preserved and the invoices are outstanding again.</value></data>
+  <data name="PaymentView_CustomerLabel" xml:space="preserve"><value>Customer</value></data>
+  <data name="PaymentView_TaxIdPrefix" xml:space="preserve"><value>Tax ID {0}</value></data>
+  <data name="PaymentView_DateLabel" xml:space="preserve"><value>Payment date</value></data>
+  <data name="PaymentView_SystemEntryLabel" xml:space="preserve"><value>System entry</value></data>
+  <data name="PaymentView_SignatureLabel" xml:space="preserve"><value>Signature</value></data>
+  <data name="PaymentView_CertifiedSoftwareNote" xml:space="preserve"><value>Processed by certified software</value></data>
+  <data name="PaymentView_NotesLabel" xml:space="preserve"><value>Notes</value></data>
+  <data name="PaymentView_SettledInvoicesTitle" xml:space="preserve"><value>Settled invoices</value></data>
+  <data name="PaymentView_NumberColumn" xml:space="preserve"><value>#</value></data>
+  <data name="PaymentView_InvoiceColumn" xml:space="preserve"><value>Invoice</value></data>
+  <data name="PaymentView_InvoiceDateColumn" xml:space="preserve"><value>Invoice date</value></data>
+  <data name="PaymentView_SettledAmountColumn" xml:space="preserve"><value>Settled amount</value></data>
+  <data name="PaymentView_ActionsColumn" xml:space="preserve"><value>Actions</value></data>
+  <data name="PaymentView_ViewInvoiceTitle" xml:space="preserve"><value>View invoice</value></data>
+  <data name="PaymentView_MethodsTitle" xml:space="preserve"><value>Payment methods</value></data>
+  <data name="PaymentView_MethodColumn" xml:space="preserve"><value>Method</value></data>
+  <data name="PaymentView_DateColumn" xml:space="preserve"><value>Date</value></data>
+  <data name="PaymentView_ValueColumn" xml:space="preserve"><value>Amount</value></data>
+  <data name="PaymentView_SettledAmountLabel" xml:space="preserve"><value>Settled amount</value></data>
+  <data name="PaymentView_TaxLabel" xml:space="preserve"><value>Tax</value></data>
+  <data name="PaymentView_TotalReceivedLabel" xml:space="preserve"><value>Total received</value></data>
+  <data name="PaymentView_QrDataTitle" xml:space="preserve"><value>QR code data</value></data>
+  <data name="PaymentView_VoidPaymentTitle" xml:space="preserve"><value>Void payment</value></data>
+  <data name="PaymentView_VoidHelpText" xml:space="preserve"><value>Voiding does not delete or change the document: it records the new state and the reason, keeping the original record and its place in the signature chain. The invoices become outstanding again.</value></data>
+  <data name="PaymentView_ReasonLabel" xml:space="preserve"><value>Reason</value></data>
+  <data name="PaymentView_VoidButton" xml:space="preserve"><value>Void</value></data>
+  <data name="PaymentView_PaymentNotFound" xml:space="preserve"><value>Payment not found.</value></data>
+  <data name="PaymentView_LoadError" xml:space="preserve"><value>Unable to load the payment: {0}</value></data>
+  <data name="PaymentView_VoidedSuccess" xml:space="preserve"><value>Payment voided.</value></data>
+  <data name="PaymentView_VoidError" xml:space="preserve"><value>Unable to void the payment: {0}</value></data>
+  <data name="PaymentPrint_DefaultTitle" xml:space="preserve"><value>Payment</value></data>
+  <data name="PaymentPrint_PaymentNotFound" xml:space="preserve"><value>Payment not found.</value></data>
+  <data name="PaymentPrint_Designation" xml:space="preserve"><value>Payment</value></data>
+  <data name="PaymentPrint_VoidedNotice" xml:space="preserve"><value>Payment voided</value></data>
+  <data name="PaymentPrint_CustomerLabel" xml:space="preserve"><value>Customer</value></data>
+  <data name="PaymentPrint_TaxIdPrefix" xml:space="preserve"><value>Tax ID {0}</value></data>
+  <data name="PaymentPrint_NotesLabel" xml:space="preserve"><value>Notes</value></data>
+  <data name="PaymentPrint_NumberColumn" xml:space="preserve"><value>#</value></data>
+  <data name="PaymentPrint_SettledDocumentColumn" xml:space="preserve"><value>Settled document</value></data>
+  <data name="PaymentPrint_DateColumn" xml:space="preserve"><value>Date</value></data>
+  <data name="PaymentPrint_ValueColumn" xml:space="preserve"><value>Amount</value></data>
+  <data name="PaymentPrint_MethodColumn" xml:space="preserve"><value>Payment method</value></data>
+  <data name="PaymentPrint_TaxLabel" xml:space="preserve"><value>Tax</value></data>
+  <data name="PaymentPrint_TotalReceivedLabel" xml:space="preserve"><value>Total received</value></data>
+  <data name="PaymentPrint_IssuedOn" xml:space="preserve"><value>Issued on {0} UTC</value></data>
+  <data name="PaymentPrint_LoadError" xml:space="preserve"><value>Unable to load the payment: {0}</value></data>
+  <data name="InvoicePrint_DefaultTitle" xml:space="preserve"><value>Document</value></data>
+  <data name="InvoicePrint_DocumentNotFound" xml:space="preserve"><value>Document not found.</value></data>
+  <data name="InvoicePrint_VoidedNotice" xml:space="preserve"><value>Document voided</value></data>
+  <data name="InvoicePrint_CustomerLabel" xml:space="preserve"><value>Customer</value></data>
+  <data name="InvoicePrint_TaxIdPrefix" xml:space="preserve"><value>Tax ID {0}</value></data>
+  <data name="InvoicePrint_RectifiedDocumentLabel" xml:space="preserve"><value>Rectified document</value></data>
+  <data name="InvoicePrint_NumberColumn" xml:space="preserve"><value>#</value></data>
+  <data name="InvoicePrint_CodeColumn" xml:space="preserve"><value>Code</value></data>
+  <data name="InvoicePrint_DescriptionColumn" xml:space="preserve"><value>Description</value></data>
+  <data name="InvoicePrint_QuantityColumn" xml:space="preserve"><value>Qty.</value></data>
+  <data name="InvoicePrint_UnitColumn" xml:space="preserve"><value>Unit</value></data>
+  <data name="InvoicePrint_PriceColumn" xml:space="preserve"><value>Price</value></data>
+  <data name="InvoicePrint_TaxColumn" xml:space="preserve"><value>Tax</value></data>
+  <data name="InvoicePrint_ValueColumn" xml:space="preserve"><value>Amount</value></data>
+  <data name="InvoicePrint_TaxSpaceColumn" xml:space="preserve"><value>Tax space</value></data>
+  <data name="InvoicePrint_RateColumn" xml:space="preserve"><value>Rate</value></data>
+  <data name="InvoicePrint_TaxableBaseColumn" xml:space="preserve"><value>Taxable base</value></data>
+  <data name="InvoicePrint_NetTotalLabel" xml:space="preserve"><value>Taxable base</value></data>
+  <data name="InvoicePrint_TaxLabel" xml:space="preserve"><value>Tax</value></data>
+  <data name="InvoicePrint_TotalLabel" xml:space="preserve"><value>Total</value></data>
+  <data name="InvoicePrint_ExemptionPrefix" xml:space="preserve"><value>Exemption: {0}</value></data>
+  <data name="InvoicePrint_IssuedOn" xml:space="preserve"><value>Issued on {0} UTC</value></data>
+  <data name="InvoicePrint_LoadError" xml:space="preserve"><value>Unable to load the document: {0}</value></data>
+  <data name="StockMovements_Title" xml:space="preserve"><value>Goods movements</value></data>
+  <data name="StockMovements_NewButton" xml:space="preserve"><value>New waybill</value></data>
+  <data name="StockMovements_SearchPlaceholder" xml:space="preserve"><value>Search by document, recipient or tax ID</value></data>
+  <data name="StockMovements_EmptyTitle" xml:space="preserve"><value>No waybills to show</value></data>
+  <data name="StockMovements_EmptyDescription" xml:space="preserve"><value>Adjust the filters or issue the first waybill.</value></data>
+  <data name="StockMovements_ItemsLabel" xml:space="preserve"><value>waybills</value></data>
+  <data name="StockMovements_LoadError" xml:space="preserve"><value>Unable to load waybills</value></data>
+  <data name="StockMovements_DocumentColumn" xml:space="preserve"><value>Document</value></data>
+  <data name="StockMovements_TypeColumn" xml:space="preserve"><value>Type</value></data>
+  <data name="StockMovements_AtcudColumn" xml:space="preserve"><value>ATCUD</value></data>
+  <data name="StockMovements_DateColumn" xml:space="preserve"><value>Date</value></data>
+  <data name="StockMovements_RecipientColumn" xml:space="preserve"><value>Recipient</value></data>
+  <data name="StockMovements_TaxIdColumn" xml:space="preserve"><value>Tax ID</value></data>
+  <data name="StockMovements_TransportStartColumn" xml:space="preserve"><value>Transport start</value></data>
+  <data name="StockMovements_QuantityColumn" xml:space="preserve"><value>Quantity</value></data>
+  <data name="StockMovements_CommunicationColumn" xml:space="preserve"><value>Communication</value></data>
+  <data name="StockMovements_ToCommunicate" xml:space="preserve"><value>Pending communication</value></data>
+  <data name="StockMovements_StatusColumn" xml:space="preserve"><value>Status</value></data>
+  <data name="StockMovements_StatusVoided" xml:space="preserve"><value>Voided</value></data>
+  <data name="StockMovements_StatusNormal" xml:space="preserve"><value>Normal</value></data>
+  <data name="StockMovements_ViewAction" xml:space="preserve"><value>View waybill</value></data>
+  <data name="StockMovementView_DefaultTitle" xml:space="preserve"><value>Waybill</value></data>
+  <data name="StockMovementView_PrintButton" xml:space="preserve"><value>Print</value></data>
+  <data name="StockMovementView_BackButton" xml:space="preserve"><value>Back</value></data>
+  <data name="StockMovementView_VoidedNotice" xml:space="preserve"><value>Waybill voided. The original record is preserved as required by certification.</value></data>
+  <data name="StockMovementView_ToCommunicateNotice" xml:space="preserve"><value>Pending communication to the tax authority. Transport can only start once communicated and the code is assigned.</value></data>
+  <data name="StockMovementView_SupplierLabel" xml:space="preserve"><value>Supplier</value></data>
+  <data name="StockMovementView_CustomerLabel" xml:space="preserve"><value>Customer</value></data>
+  <data name="StockMovementView_TaxIdPrefix" xml:space="preserve"><value>Tax ID {0}</value></data>
+  <data name="StockMovementView_DocumentDateLabel" xml:space="preserve"><value>Document date</value></data>
+  <data name="StockMovementView_SystemEntryLabel" xml:space="preserve"><value>System entry</value></data>
+  <data name="StockMovementView_SignatureLabel" xml:space="preserve"><value>Signature</value></data>
+  <data name="StockMovementView_CertifiedSoftwareNote" xml:space="preserve"><value>Processed by certified software</value></data>
+  <data name="StockMovementView_TransportTitle" xml:space="preserve"><value>Transport</value></data>
+  <data name="StockMovementView_LoadLocationLabel" xml:space="preserve"><value>Loading location</value></data>
+  <data name="StockMovementView_UnloadLocationLabel" xml:space="preserve"><value>Unloading location</value></data>
+  <data name="StockMovementView_TransportStartLabel" xml:space="preserve"><value>Transport start</value></data>
+  <data name="StockMovementView_VehiclePlateLabel" xml:space="preserve"><value>Vehicle plate</value></data>
+  <data name="StockMovementView_NotesLabel" xml:space="preserve"><value>Notes</value></data>
+  <data name="StockMovementView_NumberColumn" xml:space="preserve"><value>#</value></data>
+  <data name="StockMovementView_CodeColumn" xml:space="preserve"><value>Code</value></data>
+  <data name="StockMovementView_DescriptionColumn" xml:space="preserve"><value>Description</value></data>
+  <data name="StockMovementView_QuantityColumn" xml:space="preserve"><value>Qty.</value></data>
+  <data name="StockMovementView_UnitPriceColumn" xml:space="preserve"><value>Unit price</value></data>
+  <data name="StockMovementView_BaseColumn" xml:space="preserve"><value>Base</value></data>
+  <data name="StockMovementView_TaxColumn" xml:space="preserve"><value>Tax</value></data>
+  <data name="StockMovementView_TotalQuantityLabel" xml:space="preserve"><value>Total quantity</value></data>
+  <data name="StockMovementView_NetTotalLabel" xml:space="preserve"><value>Taxable base</value></data>
+  <data name="StockMovementView_TaxLabel" xml:space="preserve"><value>Tax</value></data>
+  <data name="StockMovementView_TotalLabel" xml:space="preserve"><value>Total</value></data>
+  <data name="StockMovementView_CommunicationTitle" xml:space="preserve"><value>Tax authority communication</value></data>
+  <data name="StockMovementView_CommunicationHelp" xml:space="preserve"><value>Register here the code returned by the tax authority when communicating the transport document. Until it exists, goods cannot be transported.</value></data>
+  <data name="StockMovementView_AtCodeLabel" xml:space="preserve"><value>Code assigned by the tax authority</value></data>
+  <data name="StockMovementView_RegisterCodeButton" xml:space="preserve"><value>Register code</value></data>
+  <data name="StockMovementView_CommunicatedNotice" xml:space="preserve"><value>Communicated on {0} UTC with code</value></data>
+  <data name="StockMovementView_QrDataTitle" xml:space="preserve"><value>QR code data</value></data>
+  <data name="StockMovementView_VoidMovementTitle" xml:space="preserve"><value>Void waybill</value></data>
+  <data name="StockMovementView_VoidHelp" xml:space="preserve"><value>Voiding does not delete or alter the document: it records the new status and reason, preserving the original record and its place in the signature chain.</value></data>
+  <data name="StockMovementView_ReasonLabel" xml:space="preserve"><value>Reason</value></data>
+  <data name="StockMovementView_VoidButton" xml:space="preserve"><value>Void</value></data>
+  <data name="StockMovementView_MovementNotFound" xml:space="preserve"><value>Waybill not found.</value></data>
+  <data name="StockMovementView_LoadError" xml:space="preserve"><value>Unable to load the waybill: {0}</value></data>
+  <data name="StockMovementView_CommunicateSuccess" xml:space="preserve"><value>Tax authority code registered. The goods can now be transported.</value></data>
+  <data name="StockMovementView_CommunicateError" xml:space="preserve"><value>Unable to register the code: {0}</value></data>
+  <data name="StockMovementView_VoidedSuccess" xml:space="preserve"><value>Waybill voided.</value></data>
+  <data name="StockMovementView_VoidError" xml:space="preserve"><value>Unable to void the waybill: {0}</value></data>
+  <data name="NewStockMovement_Title" xml:space="preserve"><value>New waybill</value></data>
+  <data name="NewStockMovement_HeaderTitle" xml:space="preserve"><value>New goods movement waybill</value></data>
+  <data name="NewStockMovement_HeaderSubtitle" xml:space="preserve"><value>The document is signed and numbered on issue, and must be communicated to the tax authority before transport starts.</value></data>
+  <data name="NewStockMovement_BackButton" xml:space="preserve"><value>Back</value></data>
+  <data name="NewStockMovement_NoSeriesWarning" xml:space="preserve"><value>There is no movement series communicated to the tax authority. Create a series of type GR, GT, GA, GC or GD.</value></data>
+  <data name="NewStockMovement_CreateSeriesLink" xml:space="preserve"><value>Create series</value></data>
+  <data name="NewStockMovement_DocumentTitle" xml:space="preserve"><value>Document</value></data>
+  <data name="NewStockMovement_SeriesLabel" xml:space="preserve"><value>Series</value></data>
+  <data name="NewStockMovement_NextNumberSuffix" xml:space="preserve"><value>(next no. {0})</value></data>
+  <data name="NewStockMovement_DocumentDateLabel" xml:space="preserve"><value>Document date</value></data>
+  <data name="NewStockMovement_VehiclePlateLabel" xml:space="preserve"><value>Vehicle plate</value></data>
+  <data name="NewStockMovement_VehiclePlateHelp" xml:space="preserve"><value>Required by the goods-in-transit regime</value></data>
+  <data name="NewStockMovement_RecipientTitle" xml:space="preserve"><value>Recipient</value></data>
+  <data name="NewStockMovement_SupplierLabel" xml:space="preserve"><value>Supplier</value></data>
+  <data name="NewStockMovement_CustomerLabel" xml:space="preserve"><value>Customer</value></data>
+  <data name="NewStockMovement_FreePlaceholder" xml:space="preserve"><value>Free text</value></data>
+  <data name="NewStockMovement_TaxIdLabel" xml:space="preserve"><value>Tax ID</value></data>
+  <data name="NewStockMovement_TaxIdHelp" xml:space="preserve"><value>Leave empty for final consumer</value></data>
+  <data name="NewStockMovement_NameLabel" xml:space="preserve"><value>Name</value></data>
+  <data name="NewStockMovement_IsSupplierLabel" xml:space="preserve"><value>Is supplier</value></data>
+  <data name="NewStockMovement_TransportTitle" xml:space="preserve"><value>Transport</value></data>
+  <data name="NewStockMovement_LoadLocationLabel" xml:space="preserve"><value>Loading location</value></data>
+  <data name="NewStockMovement_AddressLabel" xml:space="preserve"><value>Address</value></data>
+  <data name="NewStockMovement_PostalCodeLabel" xml:space="preserve"><value>Postal code</value></data>
+  <data name="NewStockMovement_CityLabel" xml:space="preserve"><value>City</value></data>
+  <data name="NewStockMovement_UnloadLocationLabel" xml:space="preserve"><value>Unloading location</value></data>
+  <data name="NewStockMovement_TransportStartDateLabel" xml:space="preserve"><value>Transport start date</value></data>
+  <data name="NewStockMovement_TimeLabel" xml:space="preserve"><value>Time</value></data>
+  <data name="NewStockMovement_NotesLabel" xml:space="preserve"><value>Notes</value></data>
+  <data name="NewStockMovement_GoodsTitle" xml:space="preserve"><value>Goods</value></data>
+  <data name="NewStockMovement_AddLineButton" xml:space="preserve"><value>Add line</value></data>
+  <data name="NewStockMovement_ProductColumn" xml:space="preserve"><value>Product</value></data>
+  <data name="NewStockMovement_DescriptionColumn" xml:space="preserve"><value>Description</value></data>
+  <data name="NewStockMovement_QuantityColumn" xml:space="preserve"><value>Qty.</value></data>
+  <data name="NewStockMovement_UnitPriceColumn" xml:space="preserve"><value>Unit price</value></data>
+  <data name="NewStockMovement_TaxColumn" xml:space="preserve"><value>Tax</value></data>
+  <data name="NewStockMovement_TotalColumn" xml:space="preserve"><value>Total</value></data>
+  <data name="NewStockMovement_ActionsColumn" xml:space="preserve"><value>Actions</value></data>
+  <data name="NewStockMovement_CodePlaceholder" xml:space="preserve"><value>Code</value></data>
+  <data name="NewStockMovement_RemoveLineTooltip" xml:space="preserve"><value>Remove line</value></data>
+  <data name="NewStockMovement_ExemptionReasonLabel" xml:space="preserve"><value>Exemption reason</value></data>
+  <data name="NewStockMovement_ExemptionReasonHelp" xml:space="preserve"><value>Required when any line is tax exempt</value></data>
+  <data name="NewStockMovement_TotalQuantityLabel" xml:space="preserve"><value>Total quantity</value></data>
+  <data name="NewStockMovement_NetTotalLabel" xml:space="preserve"><value>Taxable base</value></data>
+  <data name="NewStockMovement_TotalLabel" xml:space="preserve"><value>Total</value></data>
+  <data name="NewStockMovement_IssuingButton" xml:space="preserve"><value>Issuing...</value></data>
+  <data name="NewStockMovement_IssueButton" xml:space="preserve"><value>Issue waybill</value></data>
+  <data name="NewStockMovement_TaxRateNormal" xml:space="preserve"><value>Normal - 23%</value></data>
+  <data name="NewStockMovement_TaxRateIntermediate" xml:space="preserve"><value>Intermediate - 13%</value></data>
+  <data name="NewStockMovement_TaxRateReduced" xml:space="preserve"><value>Reduced - 6%</value></data>
+  <data name="NewStockMovement_TaxRateExempt" xml:space="preserve"><value>Exempt</value></data>
+  <data name="NewStockMovement_LoadError" xml:space="preserve"><value>Unable to prepare issuance: {0}</value></data>
+  <data name="NewStockMovement_IssueFallbackError" xml:space="preserve"><value>Unable to issue the waybill.</value></data>
+  <data name="NewStockMovement_IssueSuccess" xml:space="preserve"><value>Waybill {0} issued. Still needs to be communicated to the tax authority.</value></data>
+  <data name="NewStockMovement_IssueError" xml:space="preserve"><value>Unable to issue the waybill: {0}</value></data>
+  <data name="NewStockMovement_GenericProductCode" xml:space="preserve"><value>GEN</value></data>
+  <data name="StockMovementPrint_DefaultTitle" xml:space="preserve"><value>Waybill</value></data>
+  <data name="StockMovementPrint_MovementNotFound" xml:space="preserve"><value>Waybill not found.</value></data>
+  <data name="StockMovementPrint_VoidedNotice" xml:space="preserve"><value>Waybill voided</value></data>
+  <data name="StockMovementPrint_ToCommunicateNotice" xml:space="preserve"><value>Document pending communication to the tax authority — goods cannot be transported</value></data>
+  <data name="StockMovementPrint_SupplierLabel" xml:space="preserve"><value>Supplier</value></data>
+  <data name="StockMovementPrint_CustomerLabel" xml:space="preserve"><value>Customer</value></data>
+  <data name="StockMovementPrint_TaxIdPrefix" xml:space="preserve"><value>Tax ID {0}</value></data>
+  <data name="StockMovementPrint_LoadLocationLabel" xml:space="preserve"><value>Loading location</value></data>
+  <data name="StockMovementPrint_UnloadLocationLabel" xml:space="preserve"><value>Unloading location</value></data>
+  <data name="StockMovementPrint_TransportStartLabel" xml:space="preserve"><value>Transport start</value></data>
+  <data name="StockMovementPrint_VehiclePlateLabel" xml:space="preserve"><value>Vehicle plate</value></data>
+  <data name="StockMovementPrint_AtCodeLabel" xml:space="preserve"><value>Code assigned by the tax authority</value></data>
+  <data name="StockMovementPrint_NumberColumn" xml:space="preserve"><value>#</value></data>
+  <data name="StockMovementPrint_CodeColumn" xml:space="preserve"><value>Code</value></data>
+  <data name="StockMovementPrint_DescriptionColumn" xml:space="preserve"><value>Description</value></data>
+  <data name="StockMovementPrint_QuantityColumn" xml:space="preserve"><value>Qty.</value></data>
+  <data name="StockMovementPrint_UnitColumn" xml:space="preserve"><value>Unit</value></data>
+  <data name="StockMovementPrint_PriceColumn" xml:space="preserve"><value>Price</value></data>
+  <data name="StockMovementPrint_ValueColumn" xml:space="preserve"><value>Amount</value></data>
+  <data name="StockMovementPrint_TotalQuantityLabel" xml:space="preserve"><value>Total quantity</value></data>
+  <data name="StockMovementPrint_NetTotalLabel" xml:space="preserve"><value>Taxable base</value></data>
+  <data name="StockMovementPrint_TaxLabel" xml:space="preserve"><value>Tax</value></data>
+  <data name="StockMovementPrint_TotalLabel" xml:space="preserve"><value>Total</value></data>
+  <data name="StockMovementPrint_NotesPrefix" xml:space="preserve"><value>Notes: {0}</value></data>
+  <data name="StockMovementPrint_IssuedOn" xml:space="preserve"><value>Issued on {0} UTC</value></data>
+  <data name="StockMovementPrint_LoadError" xml:space="preserve"><value>Unable to load the waybill: {0}</value></data>
+  <data name="SelfBilledInvoiceView_DefaultTitle" xml:space="preserve"><value>Self-billed invoice</value></data>
+  <data name="SelfBilledInvoiceView_PrintButton" xml:space="preserve"><value>Print</value></data>
+  <data name="SelfBilledInvoiceView_BackButton" xml:space="preserve"><value>Back</value></data>
+  <data name="SelfBilledInvoiceView_VoidedWarning" xml:space="preserve"><value>Document voided. The original record is preserved, as required by certification.</value></data>
+  <data name="SelfBilledInvoiceView_NotAcceptedWarning" xml:space="preserve"><value>The supplier has not yet accepted this document. Article 36(11) of the VAT code requires acceptance of each document, not just the prior agreement.</value></data>
+  <data name="SelfBilledInvoiceView_SupplierLabel" xml:space="preserve"><value>Supplier (self-billed)</value></data>
+  <data name="SelfBilledInvoiceView_TaxIdPrefix" xml:space="preserve"><value>Tax ID {0}</value></data>
+  <data name="SelfBilledInvoiceView_DocumentDateLabel" xml:space="preserve"><value>Document date</value></data>
+  <data name="SelfBilledInvoiceView_SystemEntryLabel" xml:space="preserve"><value>System entry</value></data>
+  <data name="SelfBilledInvoiceView_AcceptanceLabel" xml:space="preserve"><value>Supplier acceptance</value></data>
+  <data name="SelfBilledInvoiceView_PendingAcceptance" xml:space="preserve"><value>Pending acceptance</value></data>
+  <data name="SelfBilledInvoiceView_NumberColumn" xml:space="preserve"><value>#</value></data>
+  <data name="SelfBilledInvoiceView_CodeColumn" xml:space="preserve"><value>Code</value></data>
+  <data name="SelfBilledInvoiceView_DescriptionColumn" xml:space="preserve"><value>Description</value></data>
+  <data name="SelfBilledInvoiceView_QuantityColumn" xml:space="preserve"><value>Qty.</value></data>
+  <data name="SelfBilledInvoiceView_UnitPriceColumn" xml:space="preserve"><value>Unit price</value></data>
+  <data name="SelfBilledInvoiceView_NetColumn" xml:space="preserve"><value>Net</value></data>
+  <data name="SelfBilledInvoiceView_TaxColumn" xml:space="preserve"><value>Tax</value></data>
+  <data name="SelfBilledInvoiceView_TaxAmountColumn" xml:space="preserve"><value>Tax amount</value></data>
+  <data name="SelfBilledInvoiceView_NetTotalLabel" xml:space="preserve"><value>Taxable base</value></data>
+  <data name="SelfBilledInvoiceView_TaxLabel" xml:space="preserve"><value>Tax</value></data>
+  <data name="SelfBilledInvoiceView_TotalLabel" xml:space="preserve"><value>Total</value></data>
+  <data name="SelfBilledInvoiceView_QrPanelTitle" xml:space="preserve"><value>QR code data</value></data>
+  <data name="SelfBilledInvoiceView_QrPanelHelp" xml:space="preserve"><value>Message generated according to Portaria 195/2020. Field A is our tax ID — the signing software is ours — and field B is the supplier's.</value></data>
+  <data name="SelfBilledInvoiceView_AcceptancePanelTitle" xml:space="preserve"><value>Register supplier acceptance</value></data>
+  <data name="SelfBilledInvoiceView_AcceptancePanelHelp" xml:space="preserve"><value>Without the supplier's acceptance the document exists, but the self-billing regime is not fulfilled. It is registered once.</value></data>
+  <data name="SelfBilledInvoiceView_RegisterAcceptanceButton" xml:space="preserve"><value>Register acceptance</value></data>
+  <data name="SelfBilledInvoiceView_VoidPanelTitle" xml:space="preserve"><value>Void document</value></data>
+  <data name="SelfBilledInvoiceView_VoidPanelHelp" xml:space="preserve"><value>Voiding does not erase or alter the document: it records the new status and reason, preserving the original record and its place in the signature chain. Receipt lines that this document invoiced become uninvoiced again.</value></data>
+  <data name="SelfBilledInvoiceView_ReasonLabel" xml:space="preserve"><value>Reason</value></data>
+  <data name="SelfBilledInvoiceView_VoidButton" xml:space="preserve"><value>Void</value></data>
+  <data name="SelfBilledInvoiceView_NotFound" xml:space="preserve"><value>Document not found.</value></data>
+  <data name="SelfBilledInvoiceView_LoadError" xml:space="preserve"><value>Unable to load the document: {0}</value></data>
+  <data name="SelfBilledInvoiceView_AcceptFallbackError" xml:space="preserve"><value>Unable to register the acceptance.</value></data>
+  <data name="SelfBilledInvoiceView_AcceptSuccess" xml:space="preserve"><value>Acceptance registered.</value></data>
+  <data name="SelfBilledInvoiceView_AcceptError" xml:space="preserve"><value>Unable to register the acceptance: {0}</value></data>
+  <data name="SelfBilledInvoiceView_VoidFallbackError" xml:space="preserve"><value>Unable to void the document.</value></data>
+  <data name="SelfBilledInvoiceView_VoidSuccess" xml:space="preserve"><value>Document voided.</value></data>
+  <data name="SelfBilledInvoiceView_VoidError" xml:space="preserve"><value>Unable to void the document: {0}</value></data>
+  <data name="NewSelfBilledInvoice_Title" xml:space="preserve"><value>Issue self-billed invoice</value></data>
+  <data name="NewSelfBilledInvoice_Subtitle" xml:space="preserve"><value>We issue it on the supplier's behalf. The document is numbered, signed and immutable — like any invoice of ours.</value></data>
+  <data name="NewSelfBilledInvoice_BackButton" xml:space="preserve"><value>Back</value></data>
+  <data name="NewSelfBilledInvoice_NoCompanyWarning" xml:space="preserve"><value>Choose a company in the header.</value></data>
+  <data name="NewSelfBilledInvoice_NoSeriesWarningPrefix" xml:space="preserve"><value>There is no self-billing series communicated to the tax authority. Create one under</value></data>
+  <data name="NewSelfBilledInvoice_SeriesLinkText" xml:space="preserve"><value>Series</value></data>
+  <data name="NewSelfBilledInvoice_NoSeriesWarningSuffix" xml:space="preserve"><value>, marked as self-billing, and communicate it before issuing.</value></data>
+  <data name="NewSelfBilledInvoice_DocumentTitle" xml:space="preserve"><value>The document</value></data>
+  <data name="NewSelfBilledInvoice_SupplierLabel" xml:space="preserve"><value>Supplier</value></data>
+  <data name="NewSelfBilledInvoice_SupplierHelp" xml:space="preserve"><value>Their tax ID is the header of the SAF-T generated from here</value></data>
+  <data name="NewSelfBilledInvoice_SeriesLabel" xml:space="preserve"><value>Series</value></data>
+  <data name="NewSelfBilledInvoice_SeriesHelp" xml:space="preserve"><value>Only self-billing series</value></data>
+  <data name="NewSelfBilledInvoice_DateLabel" xml:space="preserve"><value>Date</value></data>
+  <data name="NewSelfBilledInvoice_AgreementLabel" xml:space="preserve"><value>Prior agreement</value></data>
+  <data name="NewSelfBilledInvoice_AgreementHelp" xml:space="preserve"><value>What authorizes the self-billing</value></data>
+  <data name="NewSelfBilledInvoice_UnbilledTitle" xml:space="preserve"><value>Received, not yet invoiced</value></data>
+  <data name="NewSelfBilledInvoice_UnbilledHelpPrefix" xml:space="preserve"><value>These lines already entered stock at receipt — the self-billed invoice</value></data>
+  <data name="NewSelfBilledInvoice_UnbilledHelpStrong" xml:space="preserve"><value>does not move any stock</value></data>
+  <data name="NewSelfBilledInvoice_UnbilledHelpSuffix" xml:space="preserve"><value>, it only settles the money.</value></data>
+  <data name="NewSelfBilledInvoice_ReceiptColumn" xml:space="preserve"><value>Receipt</value></data>
+  <data name="NewSelfBilledInvoice_ProductColumn" xml:space="preserve"><value>Product</value></data>
+  <data name="NewSelfBilledInvoice_PendingColumn" xml:space="preserve"><value>Pending</value></data>
+  <data name="NewSelfBilledInvoice_ToInvoiceColumn" xml:space="preserve"><value>To invoice</value></data>
+  <data name="NewSelfBilledInvoice_UnitPriceColumn" xml:space="preserve"><value>Unit price</value></data>
+  <data name="NewSelfBilledInvoice_OtherLinesTitle" xml:space="preserve"><value>Other lines</value></data>
+  <data name="NewSelfBilledInvoice_OtherLinesHelp" xml:space="preserve"><value>Services and anything that did not come from a receipt.</value></data>
+  <data name="NewSelfBilledInvoice_AddLineButton" xml:space="preserve"><value>Add line</value></data>
+  <data name="NewSelfBilledInvoice_DescriptionColumn" xml:space="preserve"><value>Description</value></data>
+  <data name="NewSelfBilledInvoice_QuantityColumn" xml:space="preserve"><value>Qty.</value></data>
+  <data name="NewSelfBilledInvoice_TaxColumn" xml:space="preserve"><value>Tax</value></data>
+  <data name="NewSelfBilledInvoice_ActionsColumn" xml:space="preserve"><value>Actions</value></data>
+  <data name="NewSelfBilledInvoice_FreePlaceholder" xml:space="preserve"><value>Free</value></data>
+  <data name="NewSelfBilledInvoice_NoLines" xml:space="preserve"><value>None.</value></data>
+  <data name="NewSelfBilledInvoice_ExemptionReasonLabel" xml:space="preserve"><value>Exemption reason</value></data>
+  <data name="NewSelfBilledInvoice_ExemptionReasonHelp" xml:space="preserve"><value>Required for any exempt line</value></data>
+  <data name="NewSelfBilledInvoice_NetTotalLabel" xml:space="preserve"><value>Net</value></data>
+  <data name="NewSelfBilledInvoice_TaxTotalLabel" xml:space="preserve"><value>Tax</value></data>
+  <data name="NewSelfBilledInvoice_TotalLabel" xml:space="preserve"><value>Total</value></data>
+  <data name="NewSelfBilledInvoice_CancelButton" xml:space="preserve"><value>Cancel</value></data>
+  <data name="NewSelfBilledInvoice_IssuingButton" xml:space="preserve"><value>Issuing...</value></data>
+  <data name="NewSelfBilledInvoice_IssueButton" xml:space="preserve"><value>Issue</value></data>
+  <data name="NewSelfBilledInvoice_TaxRateNormal" xml:space="preserve"><value>Standard - 23%</value></data>
+  <data name="NewSelfBilledInvoice_TaxRateIntermediate" xml:space="preserve"><value>Intermediate - 13%</value></data>
+  <data name="NewSelfBilledInvoice_TaxRateReduced" xml:space="preserve"><value>Reduced - 6%</value></data>
+  <data name="NewSelfBilledInvoice_TaxRateExempt" xml:space="preserve"><value>Exempt</value></data>
+  <data name="NewSelfBilledInvoice_LoadError" xml:space="preserve"><value>Unable to prepare the issue: {0}</value></data>
+  <data name="NewSelfBilledInvoice_UnbilledLoadError" xml:space="preserve"><value>Unable to load pending items: {0}</value></data>
+  <data name="NewSelfBilledInvoice_IssueFallbackError" xml:space="preserve"><value>Unable to issue the self-billed invoice.</value></data>
+  <data name="NewSelfBilledInvoice_IssueSuccess" xml:space="preserve"><value>Self-billed invoice {0} issued.</value></data>
+  <data name="NewSelfBilledInvoice_IssueError" xml:space="preserve"><value>Unable to issue the self-billed invoice: {0}</value></data>
+  <data name="SelfBilledInvoices_Title" xml:space="preserve"><value>Self-billing</value></data>
+  <data name="SelfBilledInvoices_NewButton" xml:space="preserve"><value>Issue self-billed invoice</value></data>
+  <data name="SelfBilledInvoices_SearchPlaceholder" xml:space="preserve"><value>Search number, supplier or tax ID</value></data>
+  <data name="SelfBilledInvoices_EmptyTitle" xml:space="preserve"><value>No self-billed invoices to show</value></data>
+  <data name="SelfBilledInvoices_EmptyDescription" xml:space="preserve"><value>Adjust the filters or issue the first self-billed invoice.</value></data>
+  <data name="SelfBilledInvoices_ItemsLabel" xml:space="preserve"><value>self-billed invoices</value></data>
+  <data name="SelfBilledInvoices_LoadErrorMessage" xml:space="preserve"><value>Unable to load self-billed invoices</value></data>
+  <data name="SelfBilledInvoices_NumberColumn" xml:space="preserve"><value>Number</value></data>
+  <data name="SelfBilledInvoices_AtcudColumn" xml:space="preserve"><value>ATCUD</value></data>
+  <data name="SelfBilledInvoices_DateColumn" xml:space="preserve"><value>Date</value></data>
+  <data name="SelfBilledInvoices_SupplierColumn" xml:space="preserve"><value>Supplier</value></data>
+  <data name="SelfBilledInvoices_TaxIdColumn" xml:space="preserve"><value>Tax ID</value></data>
+  <data name="SelfBilledInvoices_AcceptanceColumn" xml:space="preserve"><value>Acceptance</value></data>
+  <data name="SelfBilledInvoices_AcceptedChip" xml:space="preserve"><value>Accepted</value></data>
+  <data name="SelfBilledInvoices_PendingAcceptanceTooltip" xml:space="preserve"><value>Article 36(11) requires acceptance of each document</value></data>
+  <data name="SelfBilledInvoices_PendingAcceptanceChip" xml:space="preserve"><value>Pending acceptance</value></data>
+  <data name="SelfBilledInvoices_NetTotalColumn" xml:space="preserve"><value>Net</value></data>
+  <data name="SelfBilledInvoices_TaxColumn" xml:space="preserve"><value>Tax</value></data>
+  <data name="SelfBilledInvoices_TotalColumn" xml:space="preserve"><value>Total</value></data>
+  <data name="SelfBilledInvoices_StatusColumn" xml:space="preserve"><value>Status</value></data>
+  <data name="SelfBilledInvoices_VoidedChip" xml:space="preserve"><value>Voided</value></data>
+  <data name="SelfBilledInvoices_IssuedChip" xml:space="preserve"><value>Issued</value></data>
+  <data name="SelfBilledInvoices_OpenAction" xml:space="preserve"><value>Open self-billed invoice</value></data>
+  <data name="SelfBilledInvoices_PrintAction" xml:space="preserve"><value>Print</value></data>
+  <data name="NewSupplierInvoice_Title" xml:space="preserve"><value>Record supplier invoice</value></data>
+  <data name="NewSupplierInvoice_Subtitle" xml:space="preserve"><value>Record the document exactly as received. The number and date are theirs; we do not issue anything.</value></data>
+  <data name="NewSupplierInvoice_BackButton" xml:space="preserve"><value>Back</value></data>
+  <data name="NewSupplierInvoice_NoCompanyWarning" xml:space="preserve"><value>Choose a company in the header.</value></data>
+  <data name="NewSupplierInvoice_DocumentTitle" xml:space="preserve"><value>Their document</value></data>
+  <data name="NewSupplierInvoice_SupplierLabel" xml:space="preserve"><value>Supplier</value></data>
+  <data name="NewSupplierInvoice_TypeLabel" xml:space="preserve"><value>Type</value></data>
+  <data name="NewSupplierInvoice_DocumentNumberLabel" xml:space="preserve"><value>Document number</value></data>
+  <data name="NewSupplierInvoice_DocumentNumberHelp" xml:space="preserve"><value>As printed on the document</value></data>
+  <data name="NewSupplierInvoice_AtcudLabel" xml:space="preserve"><value>Supplier ATCUD</value></data>
+  <data name="NewSupplierInvoice_AtcudHelp" xml:space="preserve"><value>If the document has one</value></data>
+  <data name="NewSupplierInvoice_DocumentDateLabel" xml:space="preserve"><value>Document date</value></data>
+  <data name="NewSupplierInvoice_ReceivedDateLabel" xml:space="preserve"><value>Received date</value></data>
+  <data name="NewSupplierInvoice_ReceivedDateHelp" xml:space="preserve"><value>When it reached us</value></data>
+  <data name="NewSupplierInvoice_DueDateLabel" xml:space="preserve"><value>Due date</value></data>
+  <data name="NewSupplierInvoice_ReverseChargeLabel" xml:space="preserve"><value>Reverse charge</value></data>
+  <data name="NewSupplierInvoice_ReverseChargeInfo" xml:space="preserve"><value>The document has no VAT and we are the ones settling and deducting it — intra-community acquisitions and article 2(1)(j).</value></data>
+  <data name="NewSupplierInvoice_CreditNoteInfo" xml:space="preserve"><value>A credit note never enters goods into stock. If goods were returned, that is where the stock exited — here only the money and VAT are settled.</value></data>
+  <data name="NewSupplierInvoice_ViewReturnsLink" xml:space="preserve"><value>View returns</value></data>
+  <data name="NewSupplierInvoice_UnbilledTitle" xml:space="preserve"><value>Received, not yet invoiced</value></data>
+  <data name="NewSupplierInvoice_UnbilledHelpPrefix" xml:space="preserve"><value>These lines already entered stock at receipt, so the invoice</value></data>
+  <data name="NewSupplierInvoice_UnbilledHelpStrong" xml:space="preserve"><value>does not move stock again</value></data>
+  <data name="NewSupplierInvoice_UnbilledHelpSuffix" xml:space="preserve"><value>.</value></data>
+  <data name="NewSupplierInvoice_ReceiptColumn" xml:space="preserve"><value>Receipt</value></data>
+  <data name="NewSupplierInvoice_ProductColumn" xml:space="preserve"><value>Product</value></data>
+  <data name="NewSupplierInvoice_PendingColumn" xml:space="preserve"><value>Pending</value></data>
+  <data name="NewSupplierInvoice_ToInvoiceColumn" xml:space="preserve"><value>To invoice</value></data>
+  <data name="NewSupplierInvoice_UnitPriceColumn" xml:space="preserve"><value>Unit price</value></data>
+  <data name="NewSupplierInvoice_LinesTitle" xml:space="preserve"><value>Lines</value></data>
+  <data name="NewSupplierInvoice_OtherLinesTitle" xml:space="preserve"><value>Other lines</value></data>
+  <data name="NewSupplierInvoice_CreditLinesHelp" xml:space="preserve"><value>What the supplier is crediting.</value></data>
+  <data name="NewSupplierInvoice_OtherLinesHelpPrefix" xml:space="preserve"><value>Services, and goods that arrived with the invoice without a receipt — those</value></data>
+  <data name="NewSupplierInvoice_OtherLinesHelpStrong" xml:space="preserve"><value>enter stock here</value></data>
+  <data name="NewSupplierInvoice_OtherLinesHelpSuffix" xml:space="preserve"><value>.</value></data>
+  <data name="NewSupplierInvoice_AddLineButton" xml:space="preserve"><value>Add line</value></data>
+  <data name="NewSupplierInvoice_DescriptionColumn" xml:space="preserve"><value>Description</value></data>
+  <data name="NewSupplierInvoice_NatureColumn" xml:space="preserve"><value>Nature</value></data>
+  <data name="NewSupplierInvoice_QuantityColumn" xml:space="preserve"><value>Qty.</value></data>
+  <data name="NewSupplierInvoice_TaxColumn" xml:space="preserve"><value>Tax</value></data>
+  <data name="NewSupplierInvoice_ActionsColumn" xml:space="preserve"><value>Actions</value></data>
+  <data name="NewSupplierInvoice_FreePlaceholder" xml:space="preserve"><value>Free</value></data>
+  <data name="NewSupplierInvoice_NoLines" xml:space="preserve"><value>None.</value></data>
+  <data name="NewSupplierInvoice_WarehouseLabel" xml:space="preserve"><value>Warehouse</value></data>
+  <data name="NewSupplierInvoice_WarehouseHelp" xml:space="preserve"><value>Where this invoice's stock enters</value></data>
+  <data name="NewSupplierInvoice_NetTotalLabel" xml:space="preserve"><value>Net</value></data>
+  <data name="NewSupplierInvoice_TaxTotalLabel" xml:space="preserve"><value>Tax</value></data>
+  <data name="NewSupplierInvoice_TotalLabel" xml:space="preserve"><value>Total</value></data>
+  <data name="NewSupplierInvoice_CancelButton" xml:space="preserve"><value>Cancel</value></data>
+  <data name="NewSupplierInvoice_SavingButton" xml:space="preserve"><value>Saving...</value></data>
+  <data name="NewSupplierInvoice_SaveButton" xml:space="preserve"><value>Save</value></data>
+  <data name="NewSupplierInvoice_TaxRateNormal" xml:space="preserve"><value>Standard - 23%</value></data>
+  <data name="NewSupplierInvoice_TaxRateIntermediate" xml:space="preserve"><value>Intermediate - 13%</value></data>
+  <data name="NewSupplierInvoice_TaxRateReduced" xml:space="preserve"><value>Reduced - 6%</value></data>
+  <data name="NewSupplierInvoice_TaxRateExempt" xml:space="preserve"><value>Exempt</value></data>
+  <data name="NewSupplierInvoice_LoadError" xml:space="preserve"><value>Unable to prepare the record: {0}</value></data>
+  <data name="NewSupplierInvoice_UnbilledLoadError" xml:space="preserve"><value>Unable to load pending items: {0}</value></data>
+  <data name="NewSupplierInvoice_SaveFallbackError" xml:space="preserve"><value>Unable to record the invoice.</value></data>
+  <data name="NewSupplierInvoice_SaveSuccess" xml:space="preserve"><value>Invoice {0} recorded.</value></data>
+  <data name="NewSupplierInvoice_SaveError" xml:space="preserve"><value>Unable to record the invoice: {0}</value></data>
+  <data name="SupplierInvoices_Title" xml:space="preserve"><value>Supplier invoices</value></data>
+  <data name="SupplierInvoices_NewAction" xml:space="preserve"><value>Record invoice</value></data>
+  <data name="SupplierInvoices_SearchPlaceholder" xml:space="preserve"><value>Search number, supplier or tax ID</value></data>
+  <data name="SupplierInvoices_EmptyTitle" xml:space="preserve"><value>No invoices to show</value></data>
+  <data name="SupplierInvoices_EmptyDescription" xml:space="preserve"><value>Adjust the filters or record the first supplier invoice.</value></data>
+  <data name="SupplierInvoices_ItemsLabel" xml:space="preserve"><value>invoices</value></data>
+  <data name="SupplierInvoices_LoadErrorMessage" xml:space="preserve"><value>Unable to load invoices</value></data>
+  <data name="SupplierInvoices_TypeColumn" xml:space="preserve"><value>Type</value></data>
+  <data name="SupplierInvoices_NumberColumn" xml:space="preserve"><value>Number</value></data>
+  <data name="SupplierInvoices_DateColumn" xml:space="preserve"><value>Date</value></data>
+  <data name="SupplierInvoices_DueDateColumn" xml:space="preserve"><value>Due date</value></data>
+  <data name="SupplierInvoices_SupplierColumn" xml:space="preserve"><value>Supplier</value></data>
+  <data name="SupplierInvoices_TaxIdColumn" xml:space="preserve"><value>Tax ID</value></data>
+  <data name="SupplierInvoices_NetTotalColumn" xml:space="preserve"><value>Net</value></data>
+  <data name="SupplierInvoices_TaxTotalColumn" xml:space="preserve"><value>Tax</value></data>
+  <data name="SupplierInvoices_GrossTotalColumn" xml:space="preserve"><value>Total</value></data>
+  <data name="SupplierInvoices_ReverseChargeColumn" xml:space="preserve"><value>Reverse charge</value></data>
+  <data name="SupplierInvoices_ReverseChargeChip" xml:space="preserve"><value>Reverse chg.</value></data>
+  <data name="SupplierInvoices_StatusColumn" xml:space="preserve"><value>Status</value></data>
+  <data name="SupplierInvoices_VoidedStatus" xml:space="preserve"><value>Voided</value></data>
+  <data name="SupplierInvoices_BookedStatus" xml:space="preserve"><value>Booked</value></data>
+  <data name="SupplierInvoices_OpenAction" xml:space="preserve"><value>Open invoice</value></data>
+  <data name="SupplierInvoiceView_DefaultTitle" xml:space="preserve"><value>Supplier invoice</value></data>
+  <data name="SupplierInvoiceView_BackButton" xml:space="preserve"><value>Back</value></data>
+  <data name="SupplierInvoiceView_NotFound" xml:space="preserve"><value>Invoice not found.</value></data>
+  <data name="SupplierInvoiceView_VoidedAlert" xml:space="preserve"><value>Record voided on {0}: {1}. The supplier's document is not affected — it was never ours to void.</value></data>
+  <data name="SupplierInvoiceView_TaxIdLabel" xml:space="preserve"><value>Tax ID</value></data>
+  <data name="SupplierInvoiceView_AtcudLabel" xml:space="preserve"><value>Supplier ATCUD</value></data>
+  <data name="SupplierInvoiceView_ReceivedLabel" xml:space="preserve"><value>Received on</value></data>
+  <data name="SupplierInvoiceView_DueDateLabel" xml:space="preserve"><value>Due date</value></data>
+  <data name="SupplierInvoiceView_ReverseChargeStrong" xml:space="preserve"><value>Reverse charge.</value></data>
+  <data name="SupplierInvoiceView_ReverseChargeInfo" xml:space="preserve"><value>The document had no VAT and we are the ones settling and deducting it.</value></data>
+  <data name="SupplierInvoiceView_MovedStockPrefix" xml:space="preserve"><value>This invoice</value></data>
+  <data name="SupplierInvoiceView_MovedStockStrong" xml:space="preserve"><value>entered goods into stock</value></data>
+  <data name="SupplierInvoiceView_MovedStockSuffix" xml:space="preserve"><value>: it brought goods no receipt had entered. Because of this it cannot be corrected — only voided.</value></data>
+  <data name="SupplierInvoiceView_LinesTitle" xml:space="preserve"><value>Lines</value></data>
+  <data name="SupplierInvoiceView_NumberColumn" xml:space="preserve"><value>#</value></data>
+  <data name="SupplierInvoiceView_ProductColumn" xml:space="preserve"><value>Product</value></data>
+  <data name="SupplierInvoiceView_DescriptionColumn" xml:space="preserve"><value>Description</value></data>
+  <data name="SupplierInvoiceView_NatureColumn" xml:space="preserve"><value>Nature</value></data>
+  <data name="SupplierInvoiceView_StockColumn" xml:space="preserve"><value>Stock</value></data>
+  <data name="SupplierInvoiceView_QuantityColumn" xml:space="preserve"><value>Qty.</value></data>
+  <data name="SupplierInvoiceView_UnitPriceColumn" xml:space="preserve"><value>Unit price</value></data>
+  <data name="SupplierInvoiceView_TaxColumn" xml:space="preserve"><value>Tax</value></data>
+  <data name="SupplierInvoiceView_TotalColumn" xml:space="preserve"><value>Total</value></data>
+  <data name="SupplierInvoiceView_ReceiptTooltip" xml:space="preserve"><value>Goods already entered at the receipt</value></data>
+  <data name="SupplierInvoiceView_FromReceiptLink" xml:space="preserve"><value>From receipt</value></data>
+  <data name="SupplierInvoiceView_EnteredChip" xml:space="preserve"><value>Entered stock</value></data>
+  <data name="SupplierInvoiceView_TaxSummaryTitle" xml:space="preserve"><value>Tax</value></data>
+  <data name="SupplierInvoiceView_RateColumn" xml:space="preserve"><value>Rate</value></data>
+  <data name="SupplierInvoiceView_TaxableBaseColumn" xml:space="preserve"><value>Taxable base</value></data>
+  <data name="SupplierInvoiceView_TaxAmountColumn" xml:space="preserve"><value>Tax amount</value></data>
+  <data name="SupplierInvoiceView_TotalRowLabel" xml:space="preserve"><value>Total</value></data>
+  <data name="SupplierInvoiceView_GrandTotalLabel" xml:space="preserve"><value>Total: {0}</value></data>
+  <data name="SupplierInvoiceView_VoidPanelTitle" xml:space="preserve"><value>Void record</value></data>
+  <data name="SupplierInvoiceView_VoidHelpPrefix" xml:space="preserve"><value>Voiding the</value></data>
+  <data name="SupplierInvoiceView_VoidHelpStrong" xml:space="preserve"><value>record</value></data>
+  <data name="SupplierInvoiceView_VoidHelpSuffix" xml:space="preserve"><value>, not the document: that was never ours. It stops counting toward deductible VAT, and any stock this invoice entered is removed. Goods that came through a receipt remain — that receipt still stands.</value></data>
+  <data name="SupplierInvoiceView_ReasonLabel" xml:space="preserve"><value>Reason</value></data>
+  <data name="SupplierInvoiceView_VoidButton" xml:space="preserve"><value>Void</value></data>
+  <data name="SupplierInvoiceView_LoadError" xml:space="preserve"><value>Unable to load the invoice: {0}</value></data>
+  <data name="SupplierInvoiceView_VoidFallbackError" xml:space="preserve"><value>Unable to void the record.</value></data>
+  <data name="SupplierInvoiceView_VoidSuccess" xml:space="preserve"><value>Record voided.</value></data>
+  <data name="SupplierInvoiceView_VoidError" xml:space="preserve"><value>Unable to void the record: {0}</value></data>
+  <data name="GoodsReceipts_Title" xml:space="preserve"><value>Receipts</value></data>
+  <data name="GoodsReceipts_PageTitle" xml:space="preserve"><value>Goods receipts</value></data>
+  <data name="GoodsReceipts_NewAction" xml:space="preserve"><value>Receive goods</value></data>
+  <data name="GoodsReceipts_SearchPlaceholder" xml:space="preserve"><value>Search number, supplier or delivery note</value></data>
+  <data name="GoodsReceipts_EmptyTitle" xml:space="preserve"><value>No receipts to show</value></data>
+  <data name="GoodsReceipts_EmptyDescription" xml:space="preserve"><value>Adjust the filters or record the first receipt.</value></data>
+  <data name="GoodsReceipts_ItemsLabel" xml:space="preserve"><value>receipts</value></data>
+  <data name="GoodsReceipts_LoadErrorMessage" xml:space="preserve"><value>Unable to load receipts</value></data>
+  <data name="GoodsReceipts_NumberColumn" xml:space="preserve"><value>Number</value></data>
+  <data name="GoodsReceipts_DateColumn" xml:space="preserve"><value>Date</value></data>
+  <data name="GoodsReceipts_SupplierColumn" xml:space="preserve"><value>Supplier</value></data>
+  <data name="GoodsReceipts_SupplierDocumentColumn" xml:space="preserve"><value>Supplier document</value></data>
+  <data name="GoodsReceipts_LinesColumn" xml:space="preserve"><value>Lines</value></data>
+  <data name="GoodsReceipts_CostColumn" xml:space="preserve"><value>Cost</value></data>
+  <data name="GoodsReceipts_StatusColumn" xml:space="preserve"><value>Status</value></data>
+  <data name="GoodsReceipts_VoidedStatus" xml:space="preserve"><value>Voided</value></data>
+  <data name="GoodsReceipts_ReceivedStatus" xml:space="preserve"><value>Received</value></data>
+  <data name="GoodsReceipts_OpenAction" xml:space="preserve"><value>Open receipt</value></data>
+  <data name="NewGoodsReceipt_Title" xml:space="preserve"><value>Receive goods</value></data>
+  <data name="NewGoodsReceipt_Subtitle" xml:space="preserve"><value>Choose the supplier and what arrived. Pending items come from the orders — no need to copy anything by hand.</value></data>
+  <data name="NewGoodsReceipt_BackButton" xml:space="preserve"><value>Back</value></data>
+  <data name="NewGoodsReceipt_NoCompanyWarning" xml:space="preserve"><value>Choose a company in the header.</value></data>
+  <data name="NewGoodsReceipt_SupplierLabel" xml:space="preserve"><value>Supplier</value></data>
+  <data name="NewGoodsReceipt_WarehouseLabel" xml:space="preserve"><value>Warehouse</value></data>
+  <data name="NewGoodsReceipt_WarehouseHelp" xml:space="preserve"><value>Where the goods enter</value></data>
+  <data name="NewGoodsReceipt_DateLabel" xml:space="preserve"><value>Date</value></data>
+  <data name="NewGoodsReceipt_SupplierDocumentLabel" xml:space="preserve"><value>Supplier delivery note</value></data>
+  <data name="NewGoodsReceipt_SupplierDocumentHelp" xml:space="preserve"><value>Their number, as reference</value></data>
+  <data name="NewGoodsReceipt_PendingTitle" xml:space="preserve"><value>Pending</value></data>
+  <data name="NewGoodsReceipt_PendingHelp" xml:space="preserve"><value>From orders placed with this supplier. Adjust the quantity if only part arrived.</value></data>
+  <data name="NewGoodsReceipt_NoPendingInfo" xml:space="preserve"><value>This supplier has nothing pending. You can still receive goods by adding lines below — goods arriving without an order are accepted.</value></data>
+  <data name="NewGoodsReceipt_OrderColumn" xml:space="preserve"><value>Order</value></data>
+  <data name="NewGoodsReceipt_ProductColumn" xml:space="preserve"><value>Product</value></data>
+  <data name="NewGoodsReceipt_PendingColumn" xml:space="preserve"><value>Pending</value></data>
+  <data name="NewGoodsReceipt_ToReceiveColumn" xml:space="preserve"><value>To receive</value></data>
+  <data name="NewGoodsReceipt_UnitCostColumn" xml:space="preserve"><value>Unit cost</value></data>
+  <data name="NewGoodsReceipt_ExpectedPrefix" xml:space="preserve"><value>Expected</value></data>
+  <data name="NewGoodsReceipt_NoOrderTitle" xml:space="preserve"><value>No order</value></data>
+  <data name="NewGoodsReceipt_NoOrderHelp" xml:space="preserve"><value>Goods that arrived without being ordered.</value></data>
+  <data name="NewGoodsReceipt_AddLineButton" xml:space="preserve"><value>Add line</value></data>
+  <data name="NewGoodsReceipt_DescriptionColumn" xml:space="preserve"><value>Description</value></data>
+  <data name="NewGoodsReceipt_QuantityColumn" xml:space="preserve"><value>Qty.</value></data>
+  <data name="NewGoodsReceipt_UnitColumn" xml:space="preserve"><value>Unit</value></data>
+  <data name="NewGoodsReceipt_ActionsColumn" xml:space="preserve"><value>Actions</value></data>
+  <data name="NewGoodsReceipt_FreePlaceholder" xml:space="preserve"><value>Free</value></data>
+  <data name="NewGoodsReceipt_NoLines" xml:space="preserve"><value>None.</value></data>
+  <data name="NewGoodsReceipt_LineCountSingular" xml:space="preserve"><value>line</value></data>
+  <data name="NewGoodsReceipt_LineCountPlural" xml:space="preserve"><value>lines</value></data>
+  <data name="NewGoodsReceipt_LineCountSuffix" xml:space="preserve"><value>to receive</value></data>
+  <data name="NewGoodsReceipt_TotalCostLabel" xml:space="preserve"><value>Total cost: {0}</value></data>
+  <data name="NewGoodsReceipt_CancelButton" xml:space="preserve"><value>Cancel</value></data>
+  <data name="NewGoodsReceipt_SavingButton" xml:space="preserve"><value>Receiving...</value></data>
+  <data name="NewGoodsReceipt_SaveButton" xml:space="preserve"><value>Receive</value></data>
+  <data name="NewGoodsReceipt_LoadError" xml:space="preserve"><value>Unable to prepare the receipt: {0}</value></data>
+  <data name="NewGoodsReceipt_PendingLoadError" xml:space="preserve"><value>Unable to load pending items: {0}</value></data>
+  <data name="NewGoodsReceipt_SaveFallbackError" xml:space="preserve"><value>Unable to receive the goods.</value></data>
+  <data name="NewGoodsReceipt_SaveSuccess" xml:space="preserve"><value>Receipt {0} recorded. Stock has been updated.</value></data>
+  <data name="NewGoodsReceipt_SaveError" xml:space="preserve"><value>Unable to receive the goods: {0}</value></data>
+  <data name="GoodsReceiptView_DefaultTitle" xml:space="preserve"><value>Receipt</value></data>
+  <data name="GoodsReceiptView_BackButton" xml:space="preserve"><value>Back</value></data>
+  <data name="GoodsReceiptView_NotFound" xml:space="preserve"><value>Receipt not found.</value></data>
+  <data name="GoodsReceiptView_VoidedAlert" xml:space="preserve"><value>Voided on {0}: {1}. Stock this receipt entered has been removed.</value></data>
+  <data name="GoodsReceiptView_TaxIdLabel" xml:space="preserve"><value>Tax ID</value></data>
+  <data name="GoodsReceiptView_SupplierDocumentLabel" xml:space="preserve"><value>Supplier delivery note</value></data>
+  <data name="GoodsReceiptView_LinesLabel" xml:space="preserve"><value>Lines</value></data>
+  <data name="GoodsReceiptView_TotalCostLabel" xml:space="preserve"><value>Total cost</value></data>
+  <data name="GoodsReceiptView_ArrivedTitle" xml:space="preserve"><value>What arrived</value></data>
+  <data name="GoodsReceiptView_NumberColumn" xml:space="preserve"><value>#</value></data>
+  <data name="GoodsReceiptView_ProductColumn" xml:space="preserve"><value>Product</value></data>
+  <data name="GoodsReceiptView_DescriptionColumn" xml:space="preserve"><value>Description</value></data>
+  <data name="GoodsReceiptView_OriginColumn" xml:space="preserve"><value>Origin</value></data>
+  <data name="GoodsReceiptView_QuantityColumn" xml:space="preserve"><value>Quantity</value></data>
+  <data name="GoodsReceiptView_UnitCostColumn" xml:space="preserve"><value>Unit cost</value></data>
+  <data name="GoodsReceiptView_TotalColumn" xml:space="preserve"><value>Total</value></data>
+  <data name="GoodsReceiptView_OrderLink" xml:space="preserve"><value>Order</value></data>
+  <data name="GoodsReceiptView_NoOrder" xml:space="preserve"><value>No order</value></data>
+  <data name="GoodsReceiptView_VoidPanelTitle" xml:space="preserve"><value>Void receipt</value></data>
+  <data name="GoodsReceiptView_VoidHelp" xml:space="preserve"><value>Voiding removes from the warehouse the stock this receipt entered and returns the quantity to the orders. Nothing is deleted: the receipt keeps the reason, and the opposite movement sits in the ledger next to the original.</value></data>
+  <data name="GoodsReceiptView_ReasonLabel" xml:space="preserve"><value>Reason</value></data>
+  <data name="GoodsReceiptView_VoidButton" xml:space="preserve"><value>Void</value></data>
+  <data name="GoodsReceiptView_LoadError" xml:space="preserve"><value>Unable to load the receipt: {0}</value></data>
+  <data name="GoodsReceiptView_VoidFallbackError" xml:space="preserve"><value>Unable to void the receipt.</value></data>
+  <data name="GoodsReceiptView_VoidSuccess" xml:space="preserve"><value>Receipt voided. Stock has been removed.</value></data>
+  <data name="GoodsReceiptView_VoidError" xml:space="preserve"><value>Unable to void the receipt: {0}</value></data>
+  <data name="SupplierReturns_Title" xml:space="preserve"><value>Supplier returns</value></data>
+  <data name="SupplierReturns_NewButton" xml:space="preserve"><value>Return goods</value></data>
+  <data name="SupplierReturns_InfoAlert" xml:space="preserve"><value>This records the movement. If the goods travel, the transport document is ours and fiscal — issue a return delivery note (GD) in Transport documents.</value></data>
+  <data name="SupplierReturns_InfoAlertPrefix" xml:space="preserve"><value>This records the</value></data>
+  <data name="SupplierReturns_InfoAlertMovement" xml:space="preserve"><value>movement</value></data>
+  <data name="SupplierReturns_InfoAlertMiddle" xml:space="preserve"><value>If the goods travel, the transport document is</value></data>
+  <data name="SupplierReturns_InfoAlertEmphasis" xml:space="preserve"><value>ours and fiscal</value></data>
+  <data name="SupplierReturns_InfoAlertSuffix" xml:space="preserve"><value>— issue a return delivery note (GD) in</value></data>
+  <data name="SupplierReturns_InfoAlertLink" xml:space="preserve"><value>Transport documents</value></data>
+  <data name="SupplierReturns_SearchPlaceholder" xml:space="preserve"><value>Search number, supplier or reason</value></data>
+  <data name="SupplierReturns_EmptyTitle" xml:space="preserve"><value>No returns to show</value></data>
+  <data name="SupplierReturns_EmptyDescription" xml:space="preserve"><value>Adjust the filters or register the first return.</value></data>
+  <data name="SupplierReturns_ItemsLabel" xml:space="preserve"><value>returns</value></data>
+  <data name="SupplierReturns_LoadErrorMessage" xml:space="preserve"><value>Unable to load the returns</value></data>
+  <data name="SupplierReturns_NumberColumn" xml:space="preserve"><value>Number</value></data>
+  <data name="SupplierReturns_DateColumn" xml:space="preserve"><value>Date</value></data>
+  <data name="SupplierReturns_SupplierColumn" xml:space="preserve"><value>Supplier</value></data>
+  <data name="SupplierReturns_ReasonColumn" xml:space="preserve"><value>Reason</value></data>
+  <data name="SupplierReturns_LinesColumn" xml:space="preserve"><value>Lines</value></data>
+  <data name="SupplierReturns_CostColumn" xml:space="preserve"><value>Cost</value></data>
+  <data name="SupplierReturns_StatusColumn" xml:space="preserve"><value>Status</value></data>
+  <data name="SupplierReturns_StatusVoided" xml:space="preserve"><value>Voided</value></data>
+  <data name="SupplierReturns_StatusReturned" xml:space="preserve"><value>Returned</value></data>
+  <data name="SupplierReturns_OpenAction" xml:space="preserve"><value>Open return</value></data>
+  <data name="NewSupplierReturn_Title" xml:space="preserve"><value>Return goods</value></data>
+  <data name="NewSupplierReturn_Subtitle" xml:space="preserve"><value>You can only return what was received and is still here. Stock leaves at the cost it entered.</value></data>
+  <data name="NewSupplierReturn_BackButton" xml:space="preserve"><value>Back</value></data>
+  <data name="NewSupplierReturn_NoCompanyAlert" xml:space="preserve"><value>Choose a company in the header.</value></data>
+  <data name="NewSupplierReturn_SupplierLabel" xml:space="preserve"><value>Supplier</value></data>
+  <data name="NewSupplierReturn_DateLabel" xml:space="preserve"><value>Date</value></data>
+  <data name="NewSupplierReturn_ReasonLabel" xml:space="preserve"><value>Reason</value></data>
+  <data name="NewSupplierReturn_ReasonHelperText" xml:space="preserve"><value>This is what the supplier's credit note will cite</value></data>
+  <data name="NewSupplierReturn_ReturnableTitle" xml:space="preserve"><value>What is here</value></data>
+  <data name="NewSupplierReturn_ReturnableSubtitle" xml:space="preserve"><value>Received from this supplier and not yet returned.</value></data>
+  <data name="NewSupplierReturn_NoReturnableAlert" xml:space="preserve"><value>There is nothing received from this supplier to return.</value></data>
+  <data name="NewSupplierReturn_ReceiptColumn" xml:space="preserve"><value>Receipt</value></data>
+  <data name="NewSupplierReturn_ProductColumn" xml:space="preserve"><value>Product</value></data>
+  <data name="NewSupplierReturn_ReceivedColumn" xml:space="preserve"><value>Received</value></data>
+  <data name="NewSupplierReturn_ReturnableColumn" xml:space="preserve"><value>Can return</value></data>
+  <data name="NewSupplierReturn_ToReturnColumn" xml:space="preserve"><value>To return</value></data>
+  <data name="NewSupplierReturn_CostColumn" xml:space="preserve"><value>Cost</value></data>
+  <data name="NewSupplierReturn_LineCountSingular" xml:space="preserve"><value>line</value></data>
+  <data name="NewSupplierReturn_LineCountPlural" xml:space="preserve"><value>lines</value></data>
+  <data name="NewSupplierReturn_LineCountSuffix" xml:space="preserve"><value>to return</value></data>
+  <data name="NewSupplierReturn_TotalCostLabel" xml:space="preserve"><value>Total cost</value></data>
+  <data name="NewSupplierReturn_CancelButton" xml:space="preserve"><value>Cancel</value></data>
+  <data name="NewSupplierReturn_SavingButton" xml:space="preserve"><value>Returning...</value></data>
+  <data name="NewSupplierReturn_SaveButton" xml:space="preserve"><value>Return</value></data>
+  <data name="NewSupplierReturn_LoadSuppliersError" xml:space="preserve"><value>Unable to load the suppliers: {0}</value></data>
+  <data name="NewSupplierReturn_LoadReturnableError" xml:space="preserve"><value>Unable to load what can be returned: {0}</value></data>
+  <data name="NewSupplierReturn_SaveFallbackError" xml:space="preserve"><value>Unable to register the return.</value></data>
+  <data name="NewSupplierReturn_SaveSuccess" xml:space="preserve"><value>Return {0} registered. Stock has been removed.</value></data>
+  <data name="NewSupplierReturn_SaveError" xml:space="preserve"><value>Unable to register the return: {0}</value></data>
+  <data name="SupplierReturnView_DefaultTitle" xml:space="preserve"><value>Return</value></data>
+  <data name="SupplierReturnView_BackButton" xml:space="preserve"><value>Back</value></data>
+  <data name="SupplierReturnView_NotFound" xml:space="preserve"><value>Return not found.</value></data>
+  <data name="SupplierReturnView_VoidedAlert" xml:space="preserve"><value>Voided on {0}: {1}. Stock has been received back in.</value></data>
+  <data name="SupplierReturnView_TransportInfoAlert" xml:space="preserve"><value>If the goods traveled, the transport document is ours and fiscal — a return delivery note (GD) in Transport documents.</value></data>
+  <data name="SupplierReturnView_TransportInfoAlertPrefix" xml:space="preserve"><value>If the goods traveled, the transport document is</value></data>
+  <data name="SupplierReturnView_TransportInfoAlertEmphasis" xml:space="preserve"><value>ours and fiscal</value></data>
+  <data name="SupplierReturnView_TransportInfoAlertSuffix" xml:space="preserve"><value>a return delivery note (GD) in</value></data>
+  <data name="SupplierReturnView_TransportInfoAlertLink" xml:space="preserve"><value>Transport documents</value></data>
+  <data name="SupplierReturnView_TaxIdLabel" xml:space="preserve"><value>Tax ID</value></data>
+  <data name="SupplierReturnView_ReasonLabel" xml:space="preserve"><value>Reason</value></data>
+  <data name="SupplierReturnView_TotalCostLabel" xml:space="preserve"><value>Total cost</value></data>
+  <data name="SupplierReturnView_ReturnedTitle" xml:space="preserve"><value>What came back</value></data>
+  <data name="SupplierReturnView_NumberColumn" xml:space="preserve"><value>#</value></data>
+  <data name="SupplierReturnView_ProductColumn" xml:space="preserve"><value>Product</value></data>
+  <data name="SupplierReturnView_DescriptionColumn" xml:space="preserve"><value>Description</value></data>
+  <data name="SupplierReturnView_ReceiptColumn" xml:space="preserve"><value>Receipt</value></data>
+  <data name="SupplierReturnView_QuantityColumn" xml:space="preserve"><value>Quantity</value></data>
+  <data name="SupplierReturnView_UnitCostColumn" xml:space="preserve"><value>Unit cost</value></data>
+  <data name="SupplierReturnView_TotalColumn" xml:space="preserve"><value>Total</value></data>
+  <data name="SupplierReturnView_ViewLink" xml:space="preserve"><value>View</value></data>
+  <data name="SupplierReturnView_VoidPanelTitle" xml:space="preserve"><value>Void return</value></data>
+  <data name="SupplierReturnView_VoidHelp" xml:space="preserve"><value>Voiding re-enters the stock that left: the goods become ours again and can be returned again. Nothing is deleted — the opposite movement sits in the ledger next to the original.</value></data>
+  <data name="SupplierReturnView_VoidButton" xml:space="preserve"><value>Void</value></data>
+  <data name="SupplierReturnView_LoadError" xml:space="preserve"><value>Unable to load the return: {0}</value></data>
+  <data name="SupplierReturnView_VoidFallbackError" xml:space="preserve"><value>Unable to void the return.</value></data>
+  <data name="SupplierReturnView_VoidSuccess" xml:space="preserve"><value>Return voided. Stock has been received back in.</value></data>
+  <data name="SupplierReturnView_VoidError" xml:space="preserve"><value>Unable to void the return: {0}</value></data>
+  <data name="FamilyEditor_NewTitle" xml:space="preserve"><value>New family</value></data>
+  <data name="FamilyEditor_EditTitle" xml:space="preserve"><value>Edit family</value></data>
+  <data name="FamilyEditor_BackButton" xml:space="preserve"><value>Back</value></data>
+  <data name="FamilyEditor_CodeLabel" xml:space="preserve"><value>Code</value></data>
+  <data name="FamilyEditor_CodeHelperText" xml:space="preserve"><value>The code cannot be changed</value></data>
+  <data name="FamilyEditor_NameLabel" xml:space="preserve"><value>Name</value></data>
+  <data name="FamilyEditor_ActiveLabel" xml:space="preserve"><value>Family active</value></data>
+  <data name="FamilyEditor_SaveButton" xml:space="preserve"><value>Save</value></data>
+  <data name="FamilyEditor_NotFound" xml:space="preserve"><value>Family not found.</value></data>
+  <data name="FamilyEditor_LoadError" xml:space="preserve"><value>Unable to load the family: {0}</value></data>
+  <data name="FamilyEditor_CreatedMessage" xml:space="preserve"><value>Family created.</value></data>
+  <data name="FamilyEditor_UpdatedMessage" xml:space="preserve"><value>Family updated.</value></data>
+  <data name="FamilyEditor_SaveError" xml:space="preserve"><value>Unable to save the family: {0}</value></data>
+  <data name="SelfBilledInvoicePrint_DefaultTitle" xml:space="preserve"><value>Self-billed invoice</value></data>
+  <data name="SelfBilledInvoicePrint_DocumentNotFound" xml:space="preserve"><value>Document not found.</value></data>
+  <data name="SelfBilledInvoicePrint_Designation" xml:space="preserve"><value>Self-billing</value></data>
+  <data name="SelfBilledInvoicePrint_VoidedNotice" xml:space="preserve"><value>Voided document</value></data>
+  <data name="SelfBilledInvoicePrint_SupplierLabel" xml:space="preserve"><value>Supplier (self-billed)</value></data>
+  <data name="SelfBilledInvoicePrint_TaxIdPrefix" xml:space="preserve"><value>Tax ID {0}</value></data>
+  <data name="SelfBilledInvoicePrint_AcquirerLabel" xml:space="preserve"><value>Acquirer (issuer)</value></data>
+  <data name="SelfBilledInvoicePrint_NumberColumn" xml:space="preserve"><value>#</value></data>
+  <data name="SelfBilledInvoicePrint_CodeColumn" xml:space="preserve"><value>Code</value></data>
+  <data name="SelfBilledInvoicePrint_DescriptionColumn" xml:space="preserve"><value>Description</value></data>
+  <data name="SelfBilledInvoicePrint_QuantityColumn" xml:space="preserve"><value>Qty.</value></data>
+  <data name="SelfBilledInvoicePrint_UnitColumn" xml:space="preserve"><value>Unit</value></data>
+  <data name="SelfBilledInvoicePrint_PriceColumn" xml:space="preserve"><value>Price</value></data>
+  <data name="SelfBilledInvoicePrint_TaxColumn" xml:space="preserve"><value>Tax</value></data>
+  <data name="SelfBilledInvoicePrint_ValueColumn" xml:space="preserve"><value>Amount</value></data>
+  <data name="SelfBilledInvoicePrint_TaxSpaceColumn" xml:space="preserve"><value>Tax space</value></data>
+  <data name="SelfBilledInvoicePrint_RateColumn" xml:space="preserve"><value>Rate</value></data>
+  <data name="SelfBilledInvoicePrint_TaxableBaseColumn" xml:space="preserve"><value>Taxable base</value></data>
+  <data name="SelfBilledInvoicePrint_NetTotalLabel" xml:space="preserve"><value>Taxable base</value></data>
+  <data name="SelfBilledInvoicePrint_TaxLabel" xml:space="preserve"><value>Tax</value></data>
+  <data name="SelfBilledInvoicePrint_TotalLabel" xml:space="preserve"><value>Total</value></data>
+  <data name="SelfBilledInvoicePrint_ExemptionPrefix" xml:space="preserve"><value>Exemption: {0}</value></data>
+  <data name="SelfBilledInvoicePrint_IssuedOn" xml:space="preserve"><value>Issued on {0} UTC</value></data>
+  <data name="SelfBilledInvoicePrint_LegalNotice" xml:space="preserve"><value>Self-billing under article 36 (11) of the VAT code (CIVA)</value></data>
+  <data name="SelfBilledInvoicePrint_LoadError" xml:space="preserve"><value>Unable to load the document: {0}</value></data>
+</root>

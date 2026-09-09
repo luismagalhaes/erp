@@ -6,20 +6,23 @@
 @using Erp.Main.Components.Common
 @using Erp.Main.Models
 @using Erp.Main.Services
+@using Erp.Main.Resources
+@using Microsoft.Extensions.Localization
 @inject PurchasingApiClient Purchasing
 @inject CompanyState Company
 @inject NavigationManager Navigation
+@inject IStringLocalizer<MainResources> L
 
-<PageTitle>Faturas de fornecedor</PageTitle>
+<PageTitle>@L["SupplierInvoices_Title"]</PageTitle>
 
 <MudStack Spacing="4">
-    <PageHeader Title="Faturas de fornecedor">
+    <PageHeader Title="@L["SupplierInvoices_Title"]">
         <Actions>
             <MudButton Variant="Variant.Filled" Color="Color.Primary"
                        StartIcon="@Icons.Material.Filled.Add"
                        Disabled="@(!Company.HasCompany)"
                        OnClick="@(() => Navigation.NavigateTo("supplier-invoices/new"))">
-                Registar fatura
+                @L["SupplierInvoices_NewAction"]
             </MudButton>
         </Actions>
     </PageHeader>
@@ -27,37 +30,37 @@
     <DataGrid T="PurchaseInvoiceListItem"
               LoadAsync="@((companyId, query, ct) => Purchasing.QueryInvoicesAsync(companyId, query, ct))"
               SearchFields="SearchFields" DefaultOrderBy="SupplierDocumentDate desc,SupplierDocumentNumber desc"
-              SearchPlaceholder="Procurar número, fornecedor ou NIF"
+              SearchPlaceholder="@L["SupplierInvoices_SearchPlaceholder"]"
               EmptyIcon="@Icons.Material.Filled.ReceiptLong"
-              EmptyTitle="Sem faturas para mostrar"
-              EmptyDescription="Ajuste os filtros ou registe a primeira fatura de fornecedor."
-              ItemsLabel="faturas"
-              LoadErrorMessage="Não foi possível carregar as faturas">
+              EmptyTitle="@L["SupplierInvoices_EmptyTitle"]"
+              EmptyDescription="@L["SupplierInvoices_EmptyDescription"]"
+              ItemsLabel="@L["SupplierInvoices_ItemsLabel"]"
+              LoadErrorMessage="@L["SupplierInvoices_LoadErrorMessage"]">
         <Columns>
-            <PropertyColumn Property="x => x.DocumentType" Title="Tipo" />
-            <PropertyColumn Property="x => x.SupplierDocumentNumber" Title="Número" CellClass="erp-mono" />
-            <PropertyColumn Property="x => x.SupplierDocumentDate" Title="Data" Format="yyyy-MM-dd" />
-            <PropertyColumn Property="x => x.DueDate" Title="Vencimento">
+            <PropertyColumn Property="x => x.DocumentType" Title="@L["SupplierInvoices_TypeColumn"]" />
+            <PropertyColumn Property="x => x.SupplierDocumentNumber" Title="@L["SupplierInvoices_NumberColumn"]" CellClass="erp-mono" />
+            <PropertyColumn Property="x => x.SupplierDocumentDate" Title="@L["SupplierInvoices_DateColumn"]" Format="yyyy-MM-dd" />
+            <PropertyColumn Property="x => x.DueDate" Title="@L["SupplierInvoices_DueDateColumn"]">
                 <CellTemplate>
                     <MudText Typo="Typo.body2" Color="@DueColor(context.Item)">
                         @(context.Item.DueDate?.ToString("yyyy-MM-dd") ?? "—")
                     </MudText>
                 </CellTemplate>
             </PropertyColumn>
-            <PropertyColumn Property="x => x.SupplierName" Title="Fornecedor" />
-            <PropertyColumn Property="x => x.SupplierTaxId" Title="NIF" CellClass="erp-mono" />
-            <PropertyColumn Property="x => x.NetTotal" Title="Base" Format="N2"
+            <PropertyColumn Property="x => x.SupplierName" Title="@L["SupplierInvoices_SupplierColumn"]" />
+            <PropertyColumn Property="x => x.SupplierTaxId" Title="@L["SupplierInvoices_TaxIdColumn"]" CellClass="erp-mono" />
+            <PropertyColumn Property="x => x.NetTotal" Title="@L["SupplierInvoices_NetTotalColumn"]" Format="N2"
                             CellClass="erp-numeric" HeaderClass="erp-numeric" />
-            <PropertyColumn Property="x => x.TaxTotal" Title="IVA" Format="N2"
+            <PropertyColumn Property="x => x.TaxTotal" Title="@L["SupplierInvoices_TaxTotalColumn"]" Format="N2"
                             CellClass="erp-numeric" HeaderClass="erp-numeric" />
-            <PropertyColumn Property="x => x.GrossTotal" Title="Total" Format="N2"
+            <PropertyColumn Property="x => x.GrossTotal" Title="@L["SupplierInvoices_GrossTotalColumn"]" Format="N2"
                             CellClass="erp-numeric" HeaderClass="erp-numeric" />
-            <PropertyColumn Property="x => x.ReverseCharge" Title="Autoliquidação">
+            <PropertyColumn Property="x => x.ReverseCharge" Title="@L["SupplierInvoices_ReverseChargeColumn"]">
                 <CellTemplate>
                     @if (context.Item.ReverseCharge)
                     {
                         <MudChip T="string" Size="Size.Small" Color="Color.Warning" Variant="Variant.Text">
-                            Autoliq.
+                            @L["SupplierInvoices_ReverseChargeChip"]
                         </MudChip>
                     }
                     else
@@ -66,11 +69,11 @@
                     }
                 </CellTemplate>
             </PropertyColumn>
-            <PropertyColumn Property="x => x.Status" Title="Estado">
+            <PropertyColumn Property="x => x.Status" Title="@L["SupplierInvoices_StatusColumn"]">
                 <CellTemplate>
                     <MudChip T="string" Size="Size.Small" Variant="Variant.Text"
                              Color="@(context.Item.IsVoided ? Color.Error : Color.Success)">
-                        @(context.Item.IsVoided ? "Anulada" : "Escriturada")
+                        @(context.Item.IsVoided ? L["SupplierInvoices_VoidedStatus"] : L["SupplierInvoices_BookedStatus"])
                     </MudChip>
                 </CellTemplate>
             </PropertyColumn>
@@ -82,7 +85,7 @@
                              AnchorOrigin="Origin.BottomRight" TransformOrigin="Origin.TopRight">
                         <MudMenuItem Icon="@Icons.Material.Filled.Visibility"
                                      OnClick="@(() => Navigation.NavigateTo($"supplier-invoices/{context.Item.Id}"))">
-                            Abrir fatura
+                            @L["SupplierInvoices_OpenAction"]
                         </MudMenuItem>
                     </MudMenu>
                 </CellTemplate>

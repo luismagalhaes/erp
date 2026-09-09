@@ -22,7 +22,7 @@ Correm em processo separado apenas os que têm razão para isso:
 | Runtime | .NET 10 (`net10.0`) |
 | UI | Blazor (Interactive Server) + MudBlazor 8 |
 | Identidade | Duende IdentityServer 7 + ASP.NET Core Identity |
-| APIs | ASP.NET Core Web API (Controllers) + OpenAPI/Scalar |
+| APIs | ASP.NET Core Web API (Controllers) + OpenAPI/Scalar, com OData como linguagem de query das listagens |
 | Dados | EF Core 10 + SQL Server (LocalDB em desenvolvimento) |
 | Logging | Serilog |
 | Testes | xUnit + FluentAssertions + NSubstitute |
@@ -89,7 +89,9 @@ Erp.Api  ─── Core · SeriesRegistry · Sales · Inventory · Purchasing ·
 Controllers/Core/           Access, Companies, UserCompanies,
                             Products, ProductFamilies, ProductSubfamilies, Brands,
                             Customers, Suppliers, Warehouses
-Controllers/Sales/          Invoices, StockMovements, Payments, Saft, Series
+Controllers/SeriesRegistry/ Series
+Controllers/FiscalPT/       Saft
+Controllers/Sales/          Invoices, StockMovements, Payments
 Controllers/Inventory/      Stock, InventoryCounts, InventoryFile
 Controllers/Purchasing/     PurchaseOrders, GoodsReceipts, SupplierReturns, PurchaseInvoices,
                            SelfBilledInvoices
@@ -97,7 +99,7 @@ Controllers/Notification/   Notifications
 Controllers/HealthController.cs
 ```
 
-Um único audience (`erp-api`) e **dois scopes globais** (`erp.read` e `erp.write`), aplicados pelas políticas em [Policies](src/Erp.Api/Authorization/Policies.cs). Os módulos partilham o host e a base de dados; o que os separa é o projeto e o seu próprio `DbContext`.
+Um único audience (`erp-api`) e **dois scopes globais** (`erp.read` e `erp.write`), aplicados pelas políticas em [Policies](src/Erp.Api/Services/Policies.cs). Os módulos partilham o host e a base de dados; o que os separa é o projeto e o seu próprio `DbContext`.
 
 Módulos ainda por implementar: Accounting e Reporting. Entram como mais uma pasta de controllers e um projeto em [src/Modules](src/Modules/).
 
@@ -175,7 +177,7 @@ O `Erp.Identity` é o único emissor de tokens. O `Erp.Main` autentica por **Aut
 
 Como todos os módulos de negócio correm num só host, não há um par de scopes por módulo: o token diz apenas se a aplicação **lê** ou **escreve**, e o que o chamador alcança dentro da API é depois decidido por role e por pertença à empresa. Repare que `erp.notification.send` e `erp.identity.read` apontam em sentidos opostos e validam audiences diferentes: o primeiro é o Identity a chamar a `erp-api`, o segundo é a UI a chamar a `identity-api`.
 
-**Políticas** ([Policies.cs](src/Erp.Api/Authorization/Policies.cs)):
+**Políticas** ([Policies.cs](src/Erp.Api/Services/Policies.cs)):
 
 | Política | Exige |
 |---|---|
@@ -409,7 +411,7 @@ Emite também os **recibos** — `RC` (regime de IVA de caixa) e `RG` (restantes
 | `PUT` | `/api/series/{id}` | `Admin` |
 | `POST` | `/api/series/{id}/communicate` | `Admin` |
 
-O acesso é por **scope** do token (políticas em [Policies.cs](src/Erp.Api/Authorization/Policies.cs)); a gestão de séries não depende do scope mas sim da role `SuperAdmin`, através da política `Admin`. Não existe endpoint de alteração nem de remoção de documentos: correções fazem-se por documento retificativo e a anulação escreve um registo de mudança de estado.
+O acesso é por **scope** do token (políticas em [Policies.cs](src/Erp.Api/Services/Policies.cs)); a gestão de séries não depende do scope mas sim da role `SuperAdmin`, através da política `Admin`. Não existe endpoint de alteração nem de remoção de documentos: correções fazem-se por documento retificativo e a anulação escreve um registo de mudança de estado.
 
 **Uma empresa nova nasce com as suas séries.** Criar uma empresa cria também uma série por tipo de documento — as doze que existem, de `FT` a `RG` — codificadas `{Tipo}{Ano}` (`FT2026`, `NC2026`, `GR2026`…) e já com o efeito no stock habitual do tipo. Sem isto a empresa chegava incapaz de emitir seja o que fosse, e chegar lá dava doze passagens por um formulário para responder sempre o óbvio. Não as torna utilizáveis: falta o código de validação da AT, e esse ninguém o pode dar em nome da empresa. A composição é feita pelo host — uma empresa não sabe o que é uma série, e o registo de séries não sabe o que é uma empresa.
 
@@ -575,7 +577,7 @@ O envio efetivo é feito pelo [Erp.Notification.Worker](src/Notification/Erp.Not
 
 ## Interface (Erp.Main)
 
-A empresa ativa escolhe-se no cabeçalho e é partilhada por todas as páginas ([CompanyState](src/UI/Erp.Main/Services/CompanyState.cs)).
+A empresa ativa escolhe-se no cabeçalho e é partilhada por todas as páginas ([CompanyState](src/UI/Erp.Main/Services/Core/CompanyState.cs)).
 
 | Rota | Página |
 |---|---|
@@ -634,6 +636,14 @@ A empresa ativa escolhe-se no cabeçalho e é partilhada por todas as páginas (
 
 As rotas são sempre em **inglês**, mesmo com a interface em português, e as páginas organizam-se **uma pasta por funcionalidade** em `Pages` (`Backoffice/Companies`, `Sales/Invoices`, …), com a listagem e o respetivo editor juntos.
 
+### Listagens e OData
+
+**As 19 listagens são todas a mesma grelha.** O [`DataGrid`](src/UI/Erp.Main/Components/Common/DataGrid.razor) é um componente só, e a página dá-lhe as colunas: filtro por coluna, ordenação múltipla, colunas escondíveis, reordenáveis e redimensionáveis, cabeçalho fixo, pesquisa com *debounce* na barra, estado vazio próprio, contagem total com botão de recarregar, e uma coluna de ações colada à direita. Uma listagem nova herda tudo isto sem o copiar, e uma melhoria à grelha chega às 19 de uma vez.
+
+**Nada disto é feito em memória.** Cada listagem tem um `GET .../odata` no seu controller — são 18, um por listagem servida pela API — e a grelha traduz o que o utilizador faz em `$filter`, `$orderby`, `$skip` e `$top` sobre um `IQueryable` que só é materializado no fim. O `VirtualizeServerData` só pede as linhas visíveis, por isso um ficheiro de artigos com dezenas de milhares de registos custa o mesmo que um com dez.
+
+O que **não** é negociável no filtro: a empresa. O `companyId` fica **fora** da query OData, como parâmetro próprio, e o `IQueryable` já vem restrito a ela do storage. É uma fronteira de tenancy, e a diferença entre estar dentro ou fora do `$filter` é a diferença entre um filtro que o chamador pode estreitar e um que pode **alargar** — bastaria um `$filter` à mão para ler os dados de outra empresa. Os limites de página vivem em `Constants.ODataQueryLimits`, lidos pelos dois lados.
+
 ---
 
 ## Documentação
@@ -653,8 +663,12 @@ Em resumo:
 
 - Código, nomes e comentários em **inglês** — incluindo as rotas das páginas do `Erp.Main`, mesmo com a UI em português.
 - Endpoints em **Controllers**, nunca Minimal APIs.
-- Todos os microserviços expõem `HealthController` e OpenAPI, com Scalar em desenvolvimento.
+- Todos os hosts expõem `HealthController` e OpenAPI, com Scalar em desenvolvimento.
+- **Nenhum tipo se chama `Erp*`.** O namespace já diz de onde vem, por isso o prefixo é ruído: o componente é `DataGrid` e o registo de módulos é `Modules`. Os *projetos* e *assemblies* mantêm o prefixo — é aí que ele distingue alguma coisa.
+- **Constantes não vivem em classes de negócio.** Cabeçalhos HTTP, claims, scopes, roles e limites de query ficam todos no [`Constants`](src/Shared/Erp.Common/Constants.cs), em classes aninhadas (`Roles`, `Claims`, `Headers`, `ODataQueryLimits`, …), para que a API e a UI leiam a mesma constante em vez de repetirem o literal.
 - Páginas de listagem (`Index`) só listam; a criação vive numa página `Create` separada.
+- **Todas as listagens usam a mesma grelha** — ver [Listagens](#listagens-e-odata).
+- Nos `PageHeader`, só o título, sem subtítulo. Páginas de detalhe, criação e edição levam *breadcrumbs* `<Listagem> / <Ação>` ("Artigos / Novo artigo"), com o primeiro nível a ligar para a listagem e o último desativado.
 - Nas listagens do backoffice, ações em botões de ícone com a coluna *Actions* no fim.
 - Páginas de edição com várias secções usam tabs.
 - Páginas de conta não autenticadas usam o `AuthLayout` (sem header nem menu).
@@ -687,3 +701,115 @@ Há segredos em código e em configuração versionada que têm de sair antes de
 Mover para *user secrets* em desenvolvimento e para variáveis de ambiente ou um cofre de segredos em produção.
 
 A chave privada de assinatura dos documentos do Sales segue já esta regra: vem de `Fiscal:PrivateKeyPem` (user secrets ou cofre) e nunca do repositório. Em desenvolvimento, se não estiver configurada, é gerada uma chave local em `%LOCALAPPDATA%\Erp\Sales\` — válida para testar, nunca para certificação.
+
+# TODO: Sistema de Impressão (Agente Local + Fallback)
+
+## Contexto
+
+ERP em Blazor, SaaS multi-tenant na cloud (clientes auto-registam-se). Objetivo: permitir impressão automática/silenciosa quando a empresa quer, sem obrigar todos os clientes a instalar software extra, e minimizando suporte.
+
+Limitações de partida:
+- Browser não permite listar impressoras nem imprimir silenciosamente por razões de segurança.
+- Servidor está na cloud — não alcança impressoras de rede na LAN do cliente (sem VPN/túnel), portanto socket direto porta 9100 não se aplica aqui.
+- A maioria dos clientes não tem impressoras de rede (normalmente USB local).
+
+## Decisão de arquitetura
+
+Feature flag por tenant: `Tenant.PrintAgentEnabled`.
+
+- **Se desativado** → comportamento normal, `window.print()` do browser (diálogo nativo, utilizador escolhe impressora).
+- **Se ativado** → tenta usar o agente local; se o agente não responder (não instalado, não a correr), cai automaticamente em `window.print()` sem erro visível ao utilizador.
+
+```
+Tenant.PrintAgentEnabled == false → window.print()
+Tenant.PrintAgentEnabled == true:
+    agente disponível?  → imprime via agente (silencioso)
+    agente indisponível? → window.print() (fallback transparente)
+```
+
+## Componente 1 — Agente local (serviço Windows em .NET)
+
+- Instalador único (MSI/exe), self-contained, auto-atualizável (verifica versão a cada arranque contra endpoint do servidor).
+- Expõe API HTTP local: `http://localhost:51234` (usar `localhost` — é exceção reconhecida de "contexto seguro" mesmo chamado a partir de página HTTPS).
+- Endpoints previstos:
+  - `GET /status` — confirma que está vivo.
+  - `GET /printers` — lista impressoras instaladas (`PrinterSettings.InstalledPrinters`).
+  - `GET /config` — devolve config atual do posto.
+  - `POST /config` — grava config (por função: faturas, etiquetas, etc).
+  - `POST /print` — recebe documento (PDF base64 / ZPL / etc) + função ou nome de impressora, imprime sem diálogo.
+  - `GET /config-status` — compara config guardada vs impressoras atualmente instaladas, devolve disponibilidade por função.
+- Validar `Origin` do pedido (só aceitar o domínio do ERP) + considerar token por dispositivo gerado na instalação.
+
+## Componente 2 — Configuração por posto (não por utilizador nem por empresa)
+
+**Ponto-chave:** a configuração de impressora pertence ao **posto físico** (PC), nunca ao utilizador autenticado nem a uma única config global da empresa. Isto resolve automaticamente:
+- Utilizador muda de posto / outro user faz login no mesmo PC → continua a imprimir na impressora certa daquele posto, porque a config não viaja com o login.
+- Empresa X, Posto Y → impressora Z; Empresa X, Posto B → impressora C. Cada agente só conhece a sua própria máquina — não há conflito porque `localhost` é sempre "esta máquina".
+
+Guardado localmente em `config.json` ao lado do executável (ou registo do Windows):
+
+```json
+{
+  "deviceId": "guid-gerado-na-instalacao",
+  "tenants": {
+    "empresaX": {
+      "faturas": "ZDesigner GK420t",
+      "etiquetas": "HP LaserJet Balcao"
+    }
+  }
+}
+```
+
+Suporte a múltiplos tenants no mesmo `config.json` desde já (ex: contabilista que gere vários clientes no mesmo PC) — evita ter de migrar o formato mais tarde.
+
+### Quem configura
+
+Ninguém edita o JSON à mão. Fluxo:
+1. Utilizador abre ecrã "Configuração de Impressão" no ERP.
+2. Blazor chama `GET /printers` no agente → mostra dropdown com as impressoras reais daquele PC.
+3. Utilizador escolhe impressora por função (faturas / etiquetas) e grava.
+4. Blazor chama `POST /config` → agente escreve no `config.json` local.
+
+`deviceId` é gerado automaticamente pelo agente (não escolhido por ninguém) — serve só para o servidor identificar/rotular o posto em ecrãs de gestão (ex: "Posto Balcão").
+
+## Componente 3 — Nome da impressora pode mudar
+
+Nomes de impressoras no Windows não são estáveis (reinstalação de driver, renomeação manual, etc).
+
+- **Validação no momento de imprimir**: antes de cada impressão, o agente confirma que o nome guardado ainda consta em `InstalledPrinters`. Se não existir → erro `PRINTER_NOT_FOUND` → Blazor cai em `window.print()` automaticamente.
+- Não tentar fazer correspondência automática por nome parecido (risco de imprimir na impressora errada). Forçar reconfiguração manual explícita.
+
+## Componente 4 — Alerta ao utilizador no login se impressora configurada não estiver disponível
+
+Fluxo:
+1. Login bem-sucedido + `Tenant.PrintAgentEnabled == true` → dispara verificação em background (não bloqueia o login).
+2. Blazor chama `GET /config-status` no agente (timeout curto, ex: 800ms).
+   - Agente não responde → sem alerta (assume-se fallback normal, não incomodar o utilizador).
+3. Agente compara config local vs impressoras reais no momento, devolve disponibilidade por função.
+4. Se alguma função vier indisponível → banner/toast não bloqueante: *"A impressora de Faturas configurada neste posto não foi encontrada. Reconfigure em Definições > Impressão."*
+
+**Importante:** este alerta usa sempre o ping direto ao agente (fonte de verdade em tempo real), nunca uma cópia em BD — evita mostrar estado desatualizado.
+
+### Opcional — espelhar estado na BD (para painel de admin)
+
+Só necessário se quiseres visibilidade remota (sem depender de alguém fazer login naquele posto para ver o alerta):
+
+```
+DevicePrinterConfig
+├── TenantId
+├── DeviceId
+├── Funcao                  ("faturas", "etiquetas")
+├── NomeImpressora
+├── DisponivelUltimaVez     (bool)
+└── VerificadoEm            (timestamp)
+```
+
+Agente envia `POST /api/printagent/report` sempre que faz a verificação local. Serve só para relatórios/admin — o alerta ao utilizador continua a depender do ping direto, não desta tabela.
+
+## Resumo de prioridades de implementação
+
+1. Agente local (.NET) com endpoints `/status`, `/printers`, `/config`, `/print`, `/config-status`.
+2. Ecrã de configuração no ERP (dropdowns por função, ligados ao agente).
+3. Lógica de fallback no Blazor (`agenteDisponivel()` → agente ou `window.print()`).
+4. Verificação e alerta no login (`/config-status`).
+5. (Opcional) Sincronização com BD para painel de admin multi-posto.

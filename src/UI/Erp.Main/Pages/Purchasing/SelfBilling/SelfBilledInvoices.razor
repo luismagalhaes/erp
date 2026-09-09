@@ -6,20 +6,23 @@
 @using Erp.Main.Components.Common
 @using Erp.Main.Models
 @using Erp.Main.Services
+@using Erp.Main.Resources
+@using Microsoft.Extensions.Localization
 @inject PurchasingApiClient Purchasing
 @inject CompanyState Company
 @inject NavigationManager Navigation
+@inject IStringLocalizer<MainResources> L
 
-<PageTitle>Autofaturação</PageTitle>
+<PageTitle>@L["SelfBilledInvoices_Title"]</PageTitle>
 
 <MudStack Spacing="4">
-    <PageHeader Title="Autofaturação">
+    <PageHeader Title="@L["SelfBilledInvoices_Title"]">
         <Actions>
             <MudButton Variant="Variant.Filled" Color="Color.Primary"
                        StartIcon="@Icons.Material.Filled.Add"
                        Disabled="@(!Company.HasCompany)"
                        OnClick="@(() => Navigation.NavigateTo("self-billed-invoices/new"))">
-                Emitir autofatura
+                @L["SelfBilledInvoices_NewButton"]
             </MudButton>
         </Actions>
     </PageHeader>
@@ -27,19 +30,19 @@
     <DataGrid T="SelfBilledInvoiceListItem"
               LoadAsync="@((companyId, query, ct) => Purchasing.QuerySelfBilledInvoicesAsync(companyId, query, ct))"
               SearchFields="SearchFields" DefaultOrderBy="IssueDate desc,DocumentNumber desc"
-              SearchPlaceholder="Procurar número, fornecedor ou NIF"
+              SearchPlaceholder="@L["SelfBilledInvoices_SearchPlaceholder"]"
               EmptyIcon="@Icons.Material.Filled.ReceiptLong"
-              EmptyTitle="Sem autofaturas para mostrar"
-              EmptyDescription="Ajuste os filtros ou emita a primeira autofatura."
-              ItemsLabel="autofaturas"
-              LoadErrorMessage="Não foi possível carregar as autofaturas">
+              EmptyTitle="@L["SelfBilledInvoices_EmptyTitle"]"
+              EmptyDescription="@L["SelfBilledInvoices_EmptyDescription"]"
+              ItemsLabel="@L["SelfBilledInvoices_ItemsLabel"]"
+              LoadErrorMessage="@L["SelfBilledInvoices_LoadErrorMessage"]">
         <Columns>
-            <PropertyColumn Property="x => x.DocumentNumber" Title="Número" CellClass="erp-mono" />
-            <PropertyColumn Property="x => x.Atcud" Title="ATCUD" CellClass="erp-mono" />
-            <PropertyColumn Property="x => x.IssueDate" Title="Data" Format="yyyy-MM-dd" />
-            <PropertyColumn Property="x => x.SupplierName" Title="Fornecedor" />
-            <PropertyColumn Property="x => x.SupplierTaxId" Title="NIF" CellClass="erp-mono" />
-            <PropertyColumn Property="x => x.IsAccepted" Title="Aceitação">
+            <PropertyColumn Property="x => x.DocumentNumber" Title="@L["SelfBilledInvoices_NumberColumn"]" CellClass="erp-mono" />
+            <PropertyColumn Property="x => x.Atcud" Title="@L["SelfBilledInvoices_AtcudColumn"]" CellClass="erp-mono" />
+            <PropertyColumn Property="x => x.IssueDate" Title="@L["SelfBilledInvoices_DateColumn"]" Format="yyyy-MM-dd" />
+            <PropertyColumn Property="x => x.SupplierName" Title="@L["SelfBilledInvoices_SupplierColumn"]" />
+            <PropertyColumn Property="x => x.SupplierTaxId" Title="@L["SelfBilledInvoices_TaxIdColumn"]" CellClass="erp-mono" />
+            <PropertyColumn Property="x => x.IsAccepted" Title="@L["SelfBilledInvoices_AcceptanceColumn"]">
                 <CellTemplate>
                     @if (context.Item.IsVoided)
                     {
@@ -48,30 +51,30 @@
                     else if (context.Item.IsAccepted)
                     {
                         <MudChip T="string" Size="Size.Small" Color="Color.Success" Variant="Variant.Text">
-                            Aceite
+                            @L["SelfBilledInvoices_AcceptedChip"]
                         </MudChip>
                     }
                     else
                     {
-                        <MudTooltip Text="O artigo 36.º n.º 11 exige a aceitação de cada documento">
+                        <MudTooltip Text="@L["SelfBilledInvoices_PendingAcceptanceTooltip"]">
                             <MudChip T="string" Size="Size.Small" Color="Color.Warning" Variant="Variant.Text">
-                                Por aceitar
+                                @L["SelfBilledInvoices_PendingAcceptanceChip"]
                             </MudChip>
                         </MudTooltip>
                     }
                 </CellTemplate>
             </PropertyColumn>
-            <PropertyColumn Property="x => x.NetTotal" Title="Base" Format="N2"
+            <PropertyColumn Property="x => x.NetTotal" Title="@L["SelfBilledInvoices_NetTotalColumn"]" Format="N2"
                             CellClass="erp-numeric" HeaderClass="erp-numeric" />
-            <PropertyColumn Property="x => x.TaxPayable" Title="IVA" Format="N2"
+            <PropertyColumn Property="x => x.TaxPayable" Title="@L["SelfBilledInvoices_TaxColumn"]" Format="N2"
                             CellClass="erp-numeric" HeaderClass="erp-numeric" />
-            <PropertyColumn Property="x => x.GrossTotal" Title="Total" Format="N2"
+            <PropertyColumn Property="x => x.GrossTotal" Title="@L["SelfBilledInvoices_TotalColumn"]" Format="N2"
                             CellClass="erp-numeric" HeaderClass="erp-numeric" />
-            <PropertyColumn Property="x => x.Status" Title="Estado">
+            <PropertyColumn Property="x => x.Status" Title="@L["SelfBilledInvoices_StatusColumn"]">
                 <CellTemplate>
                     <MudChip T="string" Size="Size.Small" Variant="Variant.Text"
                              Color="@(context.Item.IsVoided ? Color.Error : Color.Success)">
-                        @(context.Item.IsVoided ? "Anulada" : "Emitida")
+                        @(context.Item.IsVoided ? L["SelfBilledInvoices_VoidedChip"] : L["SelfBilledInvoices_IssuedChip"])
                     </MudChip>
                 </CellTemplate>
             </PropertyColumn>
@@ -83,11 +86,11 @@
                              AnchorOrigin="Origin.BottomRight" TransformOrigin="Origin.TopRight">
                         <MudMenuItem Icon="@Icons.Material.Filled.Visibility"
                                      OnClick="@(() => Navigation.NavigateTo($"self-billed-invoices/{context.Item.Id}"))">
-                            Abrir autofatura
+                            @L["SelfBilledInvoices_OpenAction"]
                         </MudMenuItem>
                         <MudMenuItem Icon="@Icons.Material.Filled.Print"
                                      OnClick="@(() => Navigation.NavigateTo($"self-billed-invoices/{context.Item.Id}/print"))">
-                            Imprimir
+                            @L["SelfBilledInvoices_PrintAction"]
                         </MudMenuItem>
                     </MudMenu>
                 </CellTemplate>

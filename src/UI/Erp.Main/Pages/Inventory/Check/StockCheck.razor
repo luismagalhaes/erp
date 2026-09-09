@@ -6,25 +6,27 @@
 @using MudBlazor
 @using Erp.Main.Models
 @using Erp.Main.Services
+@using Erp.Main.Resources
+@using Microsoft.Extensions.Localization
 @inject StockApiClient StockApi
 @inject CompanyState Company
 @inject NavigationManager Navigation
+@inject IStringLocalizer<MainResources> Localizer
 
-<PageTitle>Teste de stock</PageTitle>
+<PageTitle>@Localizer["StockCheck_PageTitle"]</PageTitle>
 
 <MudStack Spacing="4">
     <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center">
         <MudStack Spacing="0">
-            <MudText Typo="Typo.h4">Teste de stock</MudText>
+            <MudText Typo="Typo.h4">@Localizer["StockCheck_PageTitle"]</MudText>
             <MudText Typo="Typo.body2" Color="Color.Secondary">
-                Recalcula as existências a partir dos movimentos e compara com o saldo guardado.
-                Devem ser iguais sempre.
+                @Localizer["StockCheck_Subtitle"]
             </MudText>
         </MudStack>
 
         <MudButton Variant="Variant.Text" StartIcon="@Icons.Material.Filled.ArrowBack"
                    OnClick="@(() => Navigation.NavigateTo("stock"))">
-            Voltar
+            @Localizer["StockCheck_BackButton"]
         </MudButton>
     </MudStack>
 
@@ -37,15 +39,15 @@
         <MudGrid>
             <MudItem xs="12" md="6">
                 <MudTextField @bind-Value="_productCode" @bind-Value:after="StateHasChanged" Immediate="true"
-                              Label="Artigo" Variant="Variant.Outlined"
-                              HelperText="Deixe vazio para testar a empresa inteira" />
+                              Label="@Localizer["StockCheck_ProductLabel"]" Variant="Variant.Outlined"
+                              HelperText="@Localizer["StockCheck_ProductHelperText"]" />
             </MudItem>
             <MudItem xs="12" md="6" Class="d-flex align-center">
                 <MudButton Variant="Variant.Filled" Color="Color.Primary"
                            StartIcon="@Icons.Material.Filled.FactCheck"
                            Disabled="@(_running || !Company.HasCompany)"
                            OnClick="RunAsync">
-                    @(_running ? "A verificar..." : "Correr teste")
+                    @(_running ? Localizer["StockCheck_Running"] : Localizer["StockCheck_RunButton"])
                 </MudButton>
             </MudItem>
         </MudGrid>
@@ -56,8 +58,9 @@
         @if (_result.ProductsWithDifference == 0 && _result.ProductsWithValueDifference == 0)
         {
             <MudAlert Severity="Severity.Success">
-                @_result.ProductsChecked @(_result.ProductsChecked == 1 ? "artigo verificado" : "artigos verificados"),
-                sem diferenças. As quantidades <strong>e os valores</strong> batem certo com os movimentos.
+                @string.Format(Localizer["StockCheck_SuccessMessage"], _result.ProductsChecked,
+                         _result.ProductsChecked == 1 ? Localizer["StockCheck_ProductCheckedSingular"] : Localizer["StockCheck_ProductCheckedPlural"],
+                         "", "")
             </MudAlert>
         }
         else
@@ -65,22 +68,18 @@
             @if (_result.ProductsWithDifference > 0)
             {
                 <MudAlert Severity="Severity.Error">
-                    @_result.ProductsWithDifference de @_result.ProductsChecked
-                    @(_result.ProductsWithDifference == 1 ? "artigo não bate" : "artigos não batem") certo
-                    na quantidade. Uma diferença significa que alguém escreveu fora do caminho normal —
-                    o saldo mudou sem um movimento que o explique, ou houve movimento sem saldo.
+                    @string.Format(Localizer["StockCheck_QuantityDifferenceMessage"], _result.ProductsWithDifference,
+                             _result.ProductsChecked,
+                             _result.ProductsWithDifference == 1 ? Localizer["StockCheck_DifferenceSingular"] : Localizer["StockCheck_DifferencePlural"])
                 </MudAlert>
             }
 
             @if (_result.ProductsWithValueDifference > 0)
             {
                 <MudAlert Severity="Severity.Warning">
-                    @_result.ProductsWithValueDifference
-                    @(_result.ProductsWithValueDifference == 1 ? "artigo não bate" : "artigos não batem")
-                    certo no <strong>valor</strong>. O custo médio depende da <strong>ordem</strong> em que
-                    os movimentos entraram, não só da sua soma — por isso um valor pode divergir com a
-                    quantidade a bater certo. A causa habitual são movimentos antigos, escritos antes de
-                    haver custeio e sem custo nenhum registado.
+                    @string.Format(Localizer["StockCheck_ValueDifferenceMessage"], _result.ProductsWithValueDifference,
+                             _result.ProductsWithValueDifference == 1 ? Localizer["StockCheck_DifferenceSingular"] : Localizer["StockCheck_DifferencePlural"],
+                             "", "", "", "")
                 </MudAlert>
             }
         }
@@ -88,61 +87,60 @@
         <MudPaper Elevation="1" Class="pa-2">
             <MudTable Items="Visible" Hover="true" Striped="true" Dense="true" Breakpoint="Breakpoint.Sm">
                 <ToolBarContent>
-                    <MudText Typo="Typo.h6">Resultado</MudText>
+                    <MudText Typo="Typo.h6">@Localizer["StockCheck_ResultTitle"]</MudText>
                     <MudSpacer />
                     <MudSwitch @bind-Value="_onlyDifferences" @bind-Value:after="StateHasChanged"
-                               Color="Color.Primary" Label="Só diferenças" />
+                               Color="Color.Primary" Label="@Localizer["StockCheck_OnlyDifferencesLabel"]" />
                 </ToolBarContent>
                 <HeaderContent>
-                    <MudTh>Artigo</MudTh>
-                    <MudTh>Descrição</MudTh>
-                    <MudTh>Armazém</MudTh>
-                    <MudTh Style="text-align: right;">Saldo guardado</MudTh>
-                    <MudTh Style="text-align: right;">Soma dos movimentos</MudTh>
-                    <MudTh Style="text-align: right;">Diferença</MudTh>
-                    <MudTh Style="text-align: right;">Valor guardado</MudTh>
-                    <MudTh Style="text-align: right;">Valor recalculado</MudTh>
-                    <MudTh Style="text-align: right;">Movimentos</MudTh>
+                    <MudTh>@Localizer["StockCheck_ProductColumn"]</MudTh>
+                    <MudTh>@Localizer["StockCheck_DescriptionColumn"]</MudTh>
+                    <MudTh>@Localizer["StockCheck_WarehouseColumn"]</MudTh>
+                    <MudTh Style="text-align: right;">@Localizer["StockCheck_RecordedBalanceColumn"]</MudTh>
+                    <MudTh Style="text-align: right;">@Localizer["StockCheck_LedgerSumColumn"]</MudTh>
+                    <MudTh Style="text-align: right;">@Localizer["StockCheck_DifferenceColumn"]</MudTh>
+                    <MudTh Style="text-align: right;">@Localizer["StockCheck_RecordedValueColumn"]</MudTh>
+                    <MudTh Style="text-align: right;">@Localizer["StockCheck_RecalculatedValueColumn"]</MudTh>
+                    <MudTh Style="text-align: right;">@Localizer["StockCheck_MovementsColumn"]</MudTh>
                 </HeaderContent>
                 <RowTemplate>
-                    <MudTd DataLabel="Artigo">
+                    <MudTd DataLabel="@Localizer["StockCheck_ProductColumn"]">
                         <MudText Typo="Typo.body2" Style="font-family: monospace;">@context.ProductCode</MudText>
                     </MudTd>
-                    <MudTd DataLabel="Descrição">
+                    <MudTd DataLabel="@Localizer["StockCheck_DescriptionColumn"]">
                         @(string.IsNullOrWhiteSpace(context.ProductDescription) ? "—" : context.ProductDescription)
                     </MudTd>
-                    <MudTd DataLabel="Armazém">@WarehouseName(context.WarehouseId)</MudTd>
-                    <MudTd DataLabel="Saldo guardado" Style="text-align: right;">
+                    <MudTd DataLabel="@Localizer["StockCheck_WarehouseColumn"]">@WarehouseName(context.WarehouseId)</MudTd>
+                    <MudTd DataLabel="@Localizer["StockCheck_RecordedBalanceColumn"]" Style="text-align: right;">
                         @context.RecordedQuantity.ToString("N3")
                     </MudTd>
-                    <MudTd DataLabel="Soma dos movimentos" Style="text-align: right;">
+                    <MudTd DataLabel="@Localizer["StockCheck_LedgerSumColumn"]" Style="text-align: right;">
                         @context.LedgerQuantity.ToString("N3")
                     </MudTd>
-                    <MudTd DataLabel="Diferença" Style="text-align: right;">
+                    <MudTd DataLabel="@Localizer["StockCheck_DifferenceColumn"]" Style="text-align: right;">
                         <MudText Typo="Typo.body2" Color="@(context.Difference == 0 ? Color.Success : Color.Error)">
                             <strong>@context.Difference.ToString("N3")</strong>
                         </MudText>
                     </MudTd>
-                    <MudTd DataLabel="Valor guardado" Style="text-align: right;">
+                    <MudTd DataLabel="@Localizer["StockCheck_RecordedValueColumn"]" Style="text-align: right;">
                         @context.RecordedValue.ToString("N2")
                     </MudTd>
-                    <MudTd DataLabel="Valor recalculado" Style="text-align: right;">
+                    <MudTd DataLabel="@Localizer["StockCheck_RecalculatedValueColumn"]" Style="text-align: right;">
                         <MudText Typo="Typo.body2"
                                  Color="@(context.ValueDifference == 0 ? Color.Default : Color.Error)">
                             @context.LedgerValue.ToString("N2")
                         </MudText>
                     </MudTd>
-                    <MudTd DataLabel="Movimentos" Style="text-align: right;">@context.EntryCount</MudTd>
+                    <MudTd DataLabel="@Localizer["StockCheck_MovementsColumn"]" Style="text-align: right;">@context.EntryCount</MudTd>
                 </RowTemplate>
                 <NoRecordsContent>
-                    <MudText Typo="Typo.body2" Color="Color.Secondary">Nada a mostrar.</MudText>
+                    <MudText Typo="Typo.body2" Color="Color.Secondary">@Localizer["StockCheck_NoRecords"]</MudText>
                 </NoRecordsContent>
             </MudTable>
         </MudPaper>
 
         <MudText Typo="Typo.caption" Color="Color.Secondary">
-            Verificado em @_result.CheckedAtUtc.ToString("yyyy-MM-dd HH:mm:ss") UTC. Movimentos posteriores
-            a esse instante não estão incluídos.
+            @string.Format(Localizer["StockCheck_CheckedAt"], _result.CheckedAtUtc.ToString("yyyy-MM-dd HH:mm:ss"))
         </MudText>
     }
 </MudStack>
@@ -193,7 +191,7 @@
         }
         catch (Exception ex)
         {
-            _error = $"Não foi possível carregar os armazéns: {ex.Message}";
+            _error = string.Format(Localizer["StockCheck_LoadWarehousesError"], ex.Message);
         }
         finally
         {
@@ -221,7 +219,7 @@
         }
         catch (Exception ex)
         {
-            _error = $"Não foi possível correr o teste: {ex.Message}";
+            _error = string.Format(Localizer["StockCheck_RunError"], ex.Message);
         }
         finally
         {

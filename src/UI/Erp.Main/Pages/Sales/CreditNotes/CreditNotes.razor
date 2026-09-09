@@ -6,20 +6,23 @@
 @using Erp.Main.Components.Common
 @using Erp.Main.Models
 @using Erp.Main.Services
+@using Microsoft.Extensions.Localization
+@using Erp.Main.Resources
 @inject SalesApiClient SalesApi
 @inject CompanyState Company
 @inject NavigationManager Navigation
+@inject IStringLocalizer<MainResources> L
 
-<PageTitle>Notas de crédito</PageTitle>
+<PageTitle>@L["CreditNotes_PageTitle"]</PageTitle>
 
 <MudStack Spacing="4">
-    <PageHeader Title="Notas de crédito e de débito">
+    <PageHeader Title="@L["CreditNotes_HeaderTitle"]">
         <Actions>
             <MudButton Variant="Variant.Filled" Color="Color.Primary"
                        StartIcon="@Icons.Material.Filled.Add"
                        Disabled="@(!Company.HasCompany)"
                        OnClick="@(() => Navigation.NavigateTo("credit-notes/new"))">
-                Nova nota
+                @L["CreditNotes_NewButton"]
             </MudButton>
         </Actions>
     </PageHeader>
@@ -27,31 +30,31 @@
     <DataGrid T="InvoiceListItem"
               LoadAsync="LoadAsync"
               SearchFields="SearchFields" DefaultOrderBy="DocumentDate desc,DocumentNumber desc"
-              SearchPlaceholder="Procurar por documento, cliente ou NIF"
+              SearchPlaceholder="@L["CreditNotes_SearchPlaceholder"]"
               EmptyIcon="@Icons.Material.Filled.ReceiptLong"
-              EmptyTitle="Sem notas para mostrar"
-              EmptyDescription="Ajuste os filtros ou emita a primeira nota."
-              ItemsLabel="notas"
-              LoadErrorMessage="Não foi possível carregar as notas">
+              EmptyTitle="@L["CreditNotes_EmptyTitle"]"
+              EmptyDescription="@L["CreditNotes_EmptyDescription"]"
+              ItemsLabel="@L["CreditNotes_ItemsLabel"]"
+              LoadErrorMessage="@L["CreditNotes_LoadErrorMessage"]">
         <Columns>
-            <PropertyColumn Property="x => x.DocumentNumber" Title="Documento" CellClass="erp-mono" />
-            <PropertyColumn Property="x => x.DocumentType" Title="Tipo">
+            <PropertyColumn Property="x => x.DocumentNumber" Title="@L["CreditNotes_DocumentColumn"]" CellClass="erp-mono" />
+            <PropertyColumn Property="x => x.DocumentType" Title="@L["CreditNotes_TypeColumn"]">
                 <CellTemplate>
                     <MudChip T="string" Size="Size.Small" Variant="Variant.Text">
                         @InvoiceTypes.Describe(context.Item.DocumentType)
                     </MudChip>
                 </CellTemplate>
             </PropertyColumn>
-            <PropertyColumn Property="x => x.DocumentDate" Title="Data" Format="yyyy-MM-dd" />
-            <PropertyColumn Property="x => x.CustomerName" Title="Cliente" />
-            <PropertyColumn Property="x => x.CustomerTaxId" Title="NIF" />
-            <PropertyColumn Property="x => x.GrossTotal" Title="Total" Format="N2"
+            <PropertyColumn Property="x => x.DocumentDate" Title="@L["CreditNotes_DateColumn"]" Format="yyyy-MM-dd" />
+            <PropertyColumn Property="x => x.CustomerName" Title="@L["CreditNotes_CustomerColumn"]" />
+            <PropertyColumn Property="x => x.CustomerTaxId" Title="@L["CreditNotes_TaxIdColumn"]" />
+            <PropertyColumn Property="x => x.GrossTotal" Title="@L["CreditNotes_TotalColumn"]" Format="N2"
                             CellClass="erp-numeric" HeaderClass="erp-numeric" />
-            <PropertyColumn Property="x => x.Status" Title="Estado">
+            <PropertyColumn Property="x => x.Status" Title="@L["CreditNotes_StatusColumn"]">
                 <CellTemplate>
                     <MudChip T="string" Size="Size.Small" Variant="Variant.Text"
                              Color="@(context.Item.Status == "A" ? Color.Error : Color.Success)">
-                        @(context.Item.Status == "A" ? "Anulada" : "Normal")
+                        @(context.Item.Status == "A" ? L["CreditNotes_StatusVoided"] : L["CreditNotes_StatusNormal"])
                     </MudChip>
                 </CellTemplate>
             </PropertyColumn>
@@ -63,7 +66,7 @@
                              AnchorOrigin="Origin.BottomRight" TransformOrigin="Origin.TopRight">
                         <MudMenuItem Icon="@Icons.Material.Filled.Visibility"
                                      OnClick="@(() => Navigation.NavigateTo($"invoices/{context.Item.Id}"))">
-                            Ver documento
+                            @L["CreditNotes_ViewDocument"]
                         </MudMenuItem>
                     </MudMenu>
                 </CellTemplate>

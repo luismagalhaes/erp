@@ -6,26 +6,29 @@
 @using MudBlazor
 @using Erp.Main.Models
 @using Erp.Main.Services
+@using Erp.Main.Resources
+@using Microsoft.Extensions.Localization
 @inject PurchasingApiClient Purchasing
 @inject CatalogApiClient Catalog
 @inject CompanyState Company
 @inject NavigationManager Navigation
 @inject ISnackbar Snackbar
+@inject IStringLocalizer<MainResources> L
 
-<PageTitle>Devolver mercadoria</PageTitle>
+<PageTitle>@L["NewSupplierReturn_Title"]</PageTitle>
 
 <MudStack Spacing="4">
     <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center">
         <MudStack Spacing="0">
-            <MudText Typo="Typo.h4">Devolver mercadoria</MudText>
+            <MudText Typo="Typo.h4">@L["NewSupplierReturn_Title"]</MudText>
             <MudText Typo="Typo.body2" Color="Color.Secondary">
-                Só se pode devolver o que foi recebido e ainda cá está. O stock sai ao custo a que entrou.
+                @L["NewSupplierReturn_Subtitle"]
             </MudText>
         </MudStack>
 
         <MudButton Variant="Variant.Text" StartIcon="@Icons.Material.Filled.ArrowBack"
                    OnClick="@(() => Navigation.NavigateTo("supplier-returns"))">
-            Voltar
+            @L["NewSupplierReturn_BackButton"]
         </MudButton>
     </MudStack>
 
@@ -36,7 +39,7 @@
 
     @if (!Company.HasCompany)
     {
-        <MudAlert Severity="Severity.Info">Escolha uma empresa no cabeçalho.</MudAlert>
+        <MudAlert Severity="Severity.Info">@L["NewSupplierReturn_NoCompanyAlert"]</MudAlert>
     }
     else
     {
@@ -44,7 +47,7 @@
             <MudGrid>
                 <MudItem xs="12" md="4">
                     <MudSelect T="Guid?" Value="_supplierId" ValueChanged="OnSupplierChangedAsync"
-                               Label="Fornecedor" Variant="Variant.Outlined" Required="true">
+                               Label="@L["NewSupplierReturn_SupplierLabel"]" Variant="Variant.Outlined" Required="true">
                         @foreach (var supplier in _suppliers)
                         {
                             <MudSelectItem T="Guid?" Value="@supplier.Id">
@@ -54,13 +57,13 @@
                     </MudSelect>
                 </MudItem>
                 <MudItem xs="12" md="3">
-                    <MudDatePicker @bind-Date="_returnDate" Label="Data" Variant="Variant.Outlined"
+                    <MudDatePicker @bind-Date="_returnDate" Label="@L["NewSupplierReturn_DateLabel"]" Variant="Variant.Outlined"
                                    DateFormat="yyyy-MM-dd" />
                 </MudItem>
                 <MudItem xs="12" md="5">
                     <MudTextField @bind-Value="_reason" @bind-Value:after="StateHasChanged" Immediate="true"
-                                  Label="Motivo" Variant="Variant.Outlined" Required="true"
-                                  HelperText="É o que a nota de crédito do fornecedor vai citar" />
+                                  Label="@L["NewSupplierReturn_ReasonLabel"]" Variant="Variant.Outlined" Required="true"
+                                  HelperText="@L["NewSupplierReturn_ReasonHelperText"]" />
                 </MudItem>
             </MudGrid>
         </MudPaper>
@@ -70,9 +73,9 @@
             <MudPaper Elevation="1" Class="pa-4">
                 <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center" Class="mb-3">
                     <MudStack Spacing="0">
-                        <MudText Typo="Typo.h6">O que está cá</MudText>
+                        <MudText Typo="Typo.h6">@L["NewSupplierReturn_ReturnableTitle"]</MudText>
                         <MudText Typo="Typo.caption" Color="Color.Secondary">
-                            Recebido deste fornecedor e ainda não devolvido.
+                            @L["NewSupplierReturn_ReturnableSubtitle"]
                         </MudText>
                     </MudStack>
                     @if (_loadingReturnable)
@@ -84,7 +87,7 @@
                 @if (_returnable.Count == 0)
                 {
                     <MudAlert Severity="Severity.Info" Dense="true">
-                        Não há nada recebido deste fornecedor por devolver.
+                        @L["NewSupplierReturn_NoReturnableAlert"]
                     </MudAlert>
                 }
                 else
@@ -92,12 +95,12 @@
                     <MudTable Items="_returnable" Dense="true" Hover="true" Striped="true" Breakpoint="Breakpoint.Sm">
                         <HeaderContent>
                             <MudTh Style="width: 60px;"></MudTh>
-                            <MudTh>Receção</MudTh>
-                            <MudTh>Artigo</MudTh>
-                            <MudTh Style="text-align: right;">Recebido</MudTh>
-                            <MudTh Style="text-align: right;">Pode voltar</MudTh>
-                            <MudTh Style="width: 150px;">A devolver</MudTh>
-                            <MudTh Style="text-align: right;">Custo</MudTh>
+                            <MudTh>@L["NewSupplierReturn_ReceiptColumn"]</MudTh>
+                            <MudTh>@L["NewSupplierReturn_ProductColumn"]</MudTh>
+                            <MudTh Style="text-align: right;">@L["NewSupplierReturn_ReceivedColumn"]</MudTh>
+                            <MudTh Style="text-align: right;">@L["NewSupplierReturn_ReturnableColumn"]</MudTh>
+                            <MudTh Style="width: 150px;">@L["NewSupplierReturn_ToReturnColumn"]</MudTh>
+                            <MudTh Style="text-align: right;">@L["NewSupplierReturn_CostColumn"]</MudTh>
                         </HeaderContent>
                         <RowTemplate>
                             <MudTd>
@@ -105,7 +108,7 @@
                                              ValueChanged="@(chosen => Toggle(context, chosen))"
                                              Color="Color.Primary" Dense="true" />
                             </MudTd>
-                            <MudTd DataLabel="Receção">
+                            <MudTd DataLabel="@L["NewSupplierReturn_ReceiptColumn"]">
                                 <MudStack Spacing="0">
                                     <MudText Typo="Typo.body2" Style="font-family: monospace;">
                                         @context.ReceiptNumber
@@ -115,7 +118,7 @@
                                     </MudText>
                                 </MudStack>
                             </MudTd>
-                            <MudTd DataLabel="Artigo">
+                            <MudTd DataLabel="@L["NewSupplierReturn_ProductColumn"]">
                                 <MudStack Spacing="0">
                                     <MudText Typo="Typo.body2">@context.ProductCode</MudText>
                                     <MudText Typo="Typo.caption" Color="Color.Secondary">
@@ -123,13 +126,13 @@
                                     </MudText>
                                 </MudStack>
                             </MudTd>
-                            <MudTd DataLabel="Recebido" Style="text-align: right;">
+                            <MudTd DataLabel="@L["NewSupplierReturn_ReceivedColumn"]" Style="text-align: right;">
                                 @context.ReceivedQuantity.ToString("N3")
                             </MudTd>
-                            <MudTd DataLabel="Pode voltar" Style="text-align: right;">
+                            <MudTd DataLabel="@L["NewSupplierReturn_ReturnableColumn"]" Style="text-align: right;">
                                 @context.ReturnableQuantity.ToString("N3") @context.UnitOfMeasure
                             </MudTd>
-                            <MudTd DataLabel="A devolver">
+                            <MudTd DataLabel="@L["NewSupplierReturn_ToReturnColumn"]">
                                 @if (Chosen(context) is { } chosen)
                                 {
                                     <MudNumericField T="decimal" Value="chosen.Quantity"
@@ -138,7 +141,7 @@
                                                      Max="@context.ReturnableQuantity" />
                                 }
                             </MudTd>
-                            <MudTd DataLabel="Custo" Style="text-align: right;">
+                            <MudTd DataLabel="@L["NewSupplierReturn_CostColumn"]" Style="text-align: right;">
                                 @context.UnitCost.ToString("N2")
                             </MudTd>
                         </RowTemplate>
@@ -149,21 +152,21 @@
             <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center">
                 <MudStack Spacing="0">
                     <MudText Typo="Typo.caption" Color="Color.Secondary">
-                        @LineCount @(LineCount == 1 ? "linha" : "linhas") a devolver
+                        @LineCount @(LineCount == 1 ? L["NewSupplierReturn_LineCountSingular"] : L["NewSupplierReturn_LineCountPlural"]) @L["NewSupplierReturn_LineCountSuffix"]
                     </MudText>
-                    <MudText Typo="Typo.h6">Custo total: @TotalCost.ToString("N2")</MudText>
+                    <MudText Typo="Typo.h6">@L["NewSupplierReturn_TotalCostLabel"]: @TotalCost.ToString("N2")</MudText>
                 </MudStack>
 
                 <MudStack Row="true" Spacing="2">
                     <MudButton Variant="Variant.Text"
                                OnClick="@(() => Navigation.NavigateTo("supplier-returns"))">
-                        Cancelar
+                        @L["NewSupplierReturn_CancelButton"]
                     </MudButton>
                     <MudButton Variant="Variant.Filled" Color="Color.Primary"
                                StartIcon="@Icons.Material.Filled.Undo"
                                Disabled="@(_saving || !CanSave)"
                                OnClick="SaveAsync">
-                        @(_saving ? "A devolver..." : "Devolver")
+                        @(_saving ? L["NewSupplierReturn_SavingButton"] : L["NewSupplierReturn_SaveButton"])
                     </MudButton>
                 </MudStack>
             </MudStack>
@@ -225,7 +228,7 @@
         }
         catch (Exception ex)
         {
-            _error = $"Não foi possível carregar os fornecedores: {ex.Message}";
+            _error = string.Format(L["NewSupplierReturn_LoadSuppliersError"], ex.Message);
         }
         finally
         {
@@ -256,7 +259,7 @@
         }
         catch (Exception ex)
         {
-            _error = $"Não foi possível carregar o que pode ser devolvido: {ex.Message}";
+            _error = string.Format(L["NewSupplierReturn_LoadReturnableError"], ex.Message);
         }
         finally
         {
@@ -322,16 +325,16 @@
 
             if (created is null)
             {
-                _error = error ?? "Não foi possível registar a devolução.";
+                _error = error ?? L["NewSupplierReturn_SaveFallbackError"];
                 return;
             }
 
-            Snackbar.Add($"Devolução {created.Number} registada. O stock foi retirado.", Severity.Success);
+            Snackbar.Add(string.Format(L["NewSupplierReturn_SaveSuccess"], created.Number), Severity.Success);
             Navigation.NavigateTo($"supplier-returns/{created.Id}");
         }
         catch (Exception ex)
         {
-            _error = $"Não foi possível registar a devolução: {ex.Message}";
+            _error = string.Format(L["NewSupplierReturn_SaveError"], ex.Message);
         }
         finally
         {

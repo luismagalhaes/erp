@@ -7,28 +7,31 @@
 @using Erp.Main.Components
 @using Erp.Main.Models
 @using Erp.Main.Services
+@using Erp.Main.Resources
+@using Microsoft.Extensions.Localization
 @inject CatalogApiClient Catalog
 @inject CompanyState Company
 @inject NavigationManager Navigation
 @inject ISnackbar Snackbar
+@inject IStringLocalizer<MainResources> Localizer
 
-<PageTitle>@(IsNew ? "Novo cliente" : "Editar cliente")</PageTitle>
+<PageTitle>@(IsNew ? Localizer["CustomerEditor_NewTitle"] : Localizer["CustomerEditor_EditTitle"])</PageTitle>
 
 <MudStack Spacing="4">
     <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center">
         <MudStack Spacing="0">
-            <MudText Typo="Typo.h4">@(IsNew ? "Novo cliente" : "Editar cliente")</MudText>
+            <MudText Typo="Typo.h4">@(IsNew ? Localizer["CustomerEditor_NewTitle"] : Localizer["CustomerEditor_EditTitle"])</MudText>
             @if (!IsNew)
             {
                 <MudText Typo="Typo.body2" Color="Color.Secondary">
-                    Alterar o cliente não muda documentos já emitidos: cada um guarda a sua própria cópia.
+                    @Localizer["CustomerEditor_UpdateHint"]
                 </MudText>
             }
         </MudStack>
 
         <MudButton Variant="Variant.Text" StartIcon="@Icons.Material.Filled.ArrowBack"
                    OnClick="@(() => Navigation.NavigateTo("customers"))">
-            Voltar
+            @Localizer["Common_Back"]
         </MudButton>
     </MudStack>
 
@@ -41,7 +44,7 @@
     @if (!Company.HasCompany)
     {
         <MudAlert Severity="Severity.Warning" Dense="true">
-            Escolha uma empresa no cabeçalho antes de criar clientes.
+            @Localizer["CustomerEditor_NoCompanyWarning"]
         </MudAlert>
     }
 
@@ -54,14 +57,14 @@
         <MudPaper Elevation="1" Class="pa-4">
             @* ModelChanged is what re-renders this page, so the save button follows what is typed. *@
             <PartnerFormFields Model="_model" ModelChanged="OnModelChanged"
-                               AllowCodeEdit="IsNew" ShowActive="@(!IsNew)" ActiveLabel="Cliente ativo" />
+                               AllowCodeEdit="IsNew" ShowActive="@(!IsNew)" ActiveLabel="@Localizer["CustomerEditor_ActiveLabel"]" />
 
             <MudStack Row="true" Justify="Justify.FlexEnd" Class="mt-4">
                 <MudButton Variant="Variant.Filled" Color="Color.Primary"
                            StartIcon="@Icons.Material.Filled.Save"
                            Disabled="@(_saving || !_model.IsValid || !Company.HasCompany)"
                            OnClick="SaveAsync">
-                    Guardar
+                    @Localizer["Common_SaveButton"]
                 </MudButton>
             </MudStack>
         </MudPaper>
@@ -108,7 +111,7 @@
 
             if (customer is null)
             {
-                _error = "Cliente não encontrado.";
+                _error = Localizer["CustomerEditor_NotFound"];
                 return;
             }
 
@@ -116,7 +119,7 @@
         }
         catch (Exception ex)
         {
-            _error = $"Não foi possível carregar o cliente: {ex.Message}";
+            _error = string.Format(Localizer["CustomerEditor_LoadError"], ex.Message);
         }
         finally
         {
@@ -147,12 +150,12 @@
                 return;
             }
 
-            Snackbar.Add(IsNew ? "Cliente criado." : "Cliente atualizado.", Severity.Success);
+            Snackbar.Add(IsNew ? Localizer["CustomerEditor_Created"].Value : Localizer["CustomerEditor_Updated"].Value, Severity.Success);
             Navigation.NavigateTo("customers");
         }
         catch (Exception ex)
         {
-            _error = $"Não foi possível guardar o cliente: {ex.Message}";
+            _error = string.Format(Localizer["CustomerEditor_SaveError"], ex.Message);
         }
         finally
         {

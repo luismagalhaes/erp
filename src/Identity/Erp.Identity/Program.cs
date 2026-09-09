@@ -6,7 +6,9 @@ using Erp.Identity.Dependencies;
 using Erp.Identity.Storage;
 using Duende.IdentityServer;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Localization;
 using MudBlazor.Services;
+using Erp.Common.Localization;
 using Serilog;
 
 Log.Logger = new LoggerConfiguration()
@@ -31,6 +33,25 @@ try
         builder.Configuration,
         builder.Environment.IsDevelopment() ? Constants.Clients.IdentityServiceSecret : null);
     builder.Services.AddMudServices();
+
+    builder.Services.AddLocalization();
+    builder.Services.Configure<RequestLocalizationOptions>(options =>
+    {
+        var supportedCultures = Erp.Common.Constants.Localization.SupportedCultures;
+
+        options.SetDefaultCulture(Erp.Common.Constants.Localization.DefaultCulture);
+        options.AddSupportedCultures(supportedCultures);
+        options.AddSupportedUICultures(supportedCultures);
+
+        // Authenticated users get their language from the "locale" claim, so a signed-in
+        // account keeps its preferred language even from a different browser/device.
+        options.RequestCultureProviders =
+        [
+            new ClaimsRequestCultureProvider(),
+            new CookieRequestCultureProvider { CookieName = Erp.Common.Constants.Localization.CultureCookieName },
+            new AcceptLanguageHeaderRequestCultureProvider()
+        ];
+    });
 
     builder.Services.AddRazorComponents()
         .AddInteractiveServerComponents();
@@ -69,11 +90,13 @@ try
     app.UseRouting();
     app.UseCors("BlazorPolicy");
     app.UseAuthentication();
+    app.UseRequestLocalization(app.Services.GetRequiredService<Microsoft.Extensions.Options.IOptions<RequestLocalizationOptions>>().Value);
     app.UseIdentityServer();
     app.UseAuthorization();
     app.UseAntiforgery();
 
     app.MapAuthenticationEndpoints();
+    app.MapCultureEndpoints();
     app.MapControllers();
 
     app.MapRazorComponents<Erp.Identity.Shell.App>()

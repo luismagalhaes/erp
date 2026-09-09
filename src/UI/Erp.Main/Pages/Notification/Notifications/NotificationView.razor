@@ -3,27 +3,30 @@
 @using Microsoft.AspNetCore.Authorization
 @using Microsoft.AspNetCore.Components.Web
 @using MudBlazor
+@using Microsoft.Extensions.Localization
 @using Erp.Main.Models
+@using Erp.Main.Resources
 @using Erp.Main.Services
 @inject NotificationApiClient NotificationApi
 @inject NavigationManager Navigation
 @inject ISnackbar Snackbar
+@inject IStringLocalizer<MainResources> L
 
-<PageTitle>@(_notification?.Subject ?? "Notificação")</PageTitle>
+<PageTitle>@(_notification?.Subject ?? L["NotificationView_DefaultTitle"])</PageTitle>
 
 <MudStack Spacing="4">
     <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center">
         <MudStack Spacing="0">
-            <MudText Typo="Typo.h4">@(_notification?.Subject ?? "Notificação")</MudText>
+            <MudText Typo="Typo.h4">@(_notification?.Subject ?? L["NotificationView_DefaultTitle"])</MudText>
             @if (_notification is not null)
             {
-                <MudText Typo="Typo.body2" Color="Color.Secondary">Para @_notification.ToEmail</MudText>
+                <MudText Typo="Typo.body2" Color="Color.Secondary">@L["NotificationView_ToLabel", _notification.ToEmail]</MudText>
             }
         </MudStack>
 
         <MudButton Variant="Variant.Text" StartIcon="@Icons.Material.Filled.ArrowBack"
                    OnClick="@(() => Navigation.NavigateTo("notifications"))">
-            Voltar
+            @L["NotificationView_BackButton"]
         </MudButton>
     </MudStack>
 
@@ -41,22 +44,22 @@
         <MudPaper Elevation="1" Class="pa-4">
             <MudGrid>
                 <MudItem xs="12" md="3">
-                    <MudText Typo="Typo.caption" Color="Color.Secondary">Estado</MudText>
+                    <MudText Typo="Typo.caption" Color="Color.Secondary">@L["NotificationView_StatusLabel"]</MudText>
                     <MudChip T="string" Size="Size.Small" Variant="Variant.Outlined"
                              Color="@StatusColor(_notification.Status)">
                         @DescribeStatus(_notification.Status)
                     </MudChip>
                 </MudItem>
                 <MudItem xs="12" md="3">
-                    <MudText Typo="Typo.caption" Color="Color.Secondary">Tentativas</MudText>
+                    <MudText Typo="Typo.caption" Color="Color.Secondary">@L["NotificationView_RetryCountLabel"]</MudText>
                     <MudText>@_notification.RetryCount</MudText>
                 </MudItem>
                 <MudItem xs="12" md="3">
-                    <MudText Typo="Typo.caption" Color="Color.Secondary">Criado</MudText>
+                    <MudText Typo="Typo.caption" Color="Color.Secondary">@L["NotificationView_CreatedLabel"]</MudText>
                     <MudText>@_notification.CreatedAtUtc.ToString("yyyy-MM-dd HH:mm:ss") UTC</MudText>
                 </MudItem>
                 <MudItem xs="12" md="3">
-                    <MudText Typo="Typo.caption" Color="Color.Secondary">Processado</MudText>
+                    <MudText Typo="Typo.caption" Color="Color.Secondary">@L["NotificationView_ProcessedLabel"]</MudText>
                     <MudText>@(_notification.ProcessedAtUtc?.ToString("yyyy-MM-dd HH:mm:ss") ?? "—")</MudText>
                 </MudItem>
             </MudGrid>
@@ -64,21 +67,21 @@
             @if (!string.IsNullOrWhiteSpace(_notification.LastError))
             {
                 <MudAlert Severity="Severity.Error" Dense="true" Class="mt-4">
-                    <strong>Último erro:</strong> @_notification.LastError
+                    <strong>@L["NotificationView_LastErrorPrefix"]</strong> @_notification.LastError
                 </MudAlert>
             }
         </MudPaper>
 
         <MudPaper Elevation="1" Class="pa-4">
             <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center" Class="mb-3">
-                <MudText Typo="Typo.h6">Corpo da mensagem</MudText>
+                <MudText Typo="Typo.h6">@L["NotificationView_BodyTitle"]</MudText>
                 @if (_notification.Status == "Failed")
                 {
                     <MudButton Variant="Variant.Filled" Color="Color.Warning"
                                StartIcon="@Icons.Material.Filled.Replay"
                                Disabled="_requeuing"
                                OnClick="RequeueAsync">
-                        Voltar a enfileirar
+                        @L["NotificationView_RequeueButton"]
                     </MudButton>
                 }
             </MudStack>
@@ -119,11 +122,11 @@
         {
             _notification = await NotificationApi.GetNotificationAsync(Id);
             if (_notification is null)
-                _error = "Notificação não encontrada.";
+                _error = L["NotificationView_NotFound"];
         }
         catch (Exception ex)
         {
-            _error = $"Não foi possível carregar a notificação: {ex.Message}";
+            _error = L["NotificationView_LoadError", ex.Message];
         }
         finally
         {
@@ -146,12 +149,12 @@
                 return;
             }
 
-            Snackbar.Add("Notificação novamente na fila.", Severity.Success);
+            Snackbar.Add(L["NotificationView_RequeuedSuccess"].Value, Severity.Success);
             await LoadAsync();
         }
         catch (Exception ex)
         {
-            _error = $"Não foi possível voltar a enfileirar: {ex.Message}";
+            _error = L["NotificationView_RequeueError", ex.Message];
         }
         finally
         {
@@ -159,11 +162,11 @@
         }
     }
 
-    private static string DescribeStatus(string status) => status switch
+    private string DescribeStatus(string status) => status switch
     {
-        "Pending" => "Pendente",
-        "Sent" => "Enviado",
-        "Failed" => "Falhado",
+        "Pending" => L["NotificationView_StatusPending"],
+        "Sent" => L["NotificationView_StatusSent"],
+        "Failed" => L["NotificationView_StatusFailed"],
         _ => status
     };
 

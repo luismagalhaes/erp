@@ -5,7 +5,9 @@
 @using Microsoft.AspNetCore.Authorization
 @using Microsoft.AspNetCore.Components.Web
 @using MudBlazor
+@using Microsoft.Extensions.Localization
 @using Erp.Main.Models
+@using Erp.Main.Resources
 @using Erp.Main.Services
 @inject PurchasingApiClient Purchasing
 @inject CatalogApiClient Catalog
@@ -13,22 +15,22 @@
 @inject CompanyState Company
 @inject NavigationManager Navigation
 @inject ISnackbar Snackbar
+@inject IStringLocalizer<MainResources> L
 
-<PageTitle>@(IsNew ? "Nova encomenda" : "Editar encomenda")</PageTitle>
+<PageTitle>@(IsNew ? L["PurchaseOrderEditor_PageTitleNew"] : L["PurchaseOrderEditor_PageTitleEdit"])</PageTitle>
 
 <MudStack Spacing="4">
     <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center">
         <MudStack Spacing="0">
-            <MudText Typo="Typo.h4">@(IsNew ? "Nova encomenda" : $"Editar {_number}")</MudText>
+            <MudText Typo="Typo.h4">@(IsNew ? L["PurchaseOrderEditor_HeaderNew"] : (string)L["PurchaseOrderEditor_HeaderEdit", _number])</MudText>
             <MudText Typo="Typo.body2" Color="Color.Secondary">
-                A encomenda não é um documento fiscal: o número é nosso e pode ser corrigida enquanto
-                não chegar mercadoria.
+                @L["PurchaseOrderEditor_Description"]
             </MudText>
         </MudStack>
 
         <MudButton Variant="Variant.Text" StartIcon="@Icons.Material.Filled.ArrowBack"
                    OnClick="GoBack">
-            Voltar
+            @L["PurchaseOrderEditor_BackButton"]
         </MudButton>
     </MudStack>
 
@@ -39,7 +41,7 @@
 
     @if (!Company.HasCompany)
     {
-        <MudAlert Severity="Severity.Info">Escolha uma empresa no cabeçalho.</MudAlert>
+        <MudAlert Severity="Severity.Info">@L["PurchaseOrderEditor_NoCompanySelected"]</MudAlert>
     }
     else if (_loading)
     {
@@ -48,13 +50,13 @@
     else
     {
         <MudPaper Elevation="1" Class="pa-4">
-            <MudText Typo="Typo.h6" Class="mb-3">Fornecedor e entrega</MudText>
+            <MudText Typo="Typo.h6" Class="mb-3">@L["PurchaseOrderEditor_SupplierDeliverySectionTitle"]</MudText>
             <MudGrid>
                 <MudItem xs="12" md="4">
-                    <MudSelect T="Guid?" @bind-Value="_supplierId" Label="Fornecedor"
+                    <MudSelect T="Guid?" @bind-Value="_supplierId" Label="@L["PurchaseOrderEditor_SupplierLabel"]"
                                Variant="Variant.Outlined" Required="true"
                                Disabled="@(!IsNew)"
-                               HelperText="@(IsNew ? null : "O fornecedor não muda depois de a encomenda existir")">
+                               HelperText="@(IsNew ? null : L["PurchaseOrderEditor_SupplierHelperText"])">
                         @foreach (var supplier in _suppliers)
                         {
                             <MudSelectItem T="Guid?" Value="@supplier.Id">
@@ -64,7 +66,7 @@
                     </MudSelect>
                 </MudItem>
                 <MudItem xs="12" md="4">
-                    <MudSelect T="Guid?" @bind-Value="_warehouseId" Label="Armazém de receção"
+                    <MudSelect T="Guid?" @bind-Value="_warehouseId" Label="@L["PurchaseOrderEditor_WarehouseLabel"]"
                                Variant="Variant.Outlined" Required="true">
                         @foreach (var warehouse in _warehouses)
                         {
@@ -75,46 +77,46 @@
                     </MudSelect>
                 </MudItem>
                 <MudItem xs="12" md="2">
-                    <MudDatePicker @bind-Date="_orderDate" Label="Data" Variant="Variant.Outlined"
+                    <MudDatePicker @bind-Date="_orderDate" Label="@L["PurchaseOrderEditor_OrderDateLabel"]" Variant="Variant.Outlined"
                                    DateFormat="yyyy-MM-dd" />
                 </MudItem>
                 <MudItem xs="12" md="2">
-                    <MudDatePicker @bind-Date="_expectedDate" Label="Entrega prevista"
+                    <MudDatePicker @bind-Date="_expectedDate" Label="@L["PurchaseOrderEditor_ExpectedDateLabel"]"
                                    Variant="Variant.Outlined" DateFormat="yyyy-MM-dd" Clearable="true" />
                 </MudItem>
                 <MudItem xs="12">
-                    <MudTextField @bind-Value="_notes" Label="Observações" Variant="Variant.Outlined" Lines="2" />
+                    <MudTextField @bind-Value="_notes" Label="@L["PurchaseOrderEditor_NotesLabel"]" Variant="Variant.Outlined" Lines="2" />
                 </MudItem>
             </MudGrid>
         </MudPaper>
 
         <MudPaper Elevation="1" Class="pa-4">
             <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center" Class="mb-3">
-                <MudText Typo="Typo.h6">Linhas</MudText>
+                <MudText Typo="Typo.h6">@L["PurchaseOrderEditor_LinesSectionTitle"]</MudText>
                 <MudButton Variant="Variant.Outlined" Color="Color.Primary" Size="Size.Small"
                            StartIcon="@Icons.Material.Filled.Add" OnClick="AddLine">
-                    Adicionar linha
+                    @L["PurchaseOrderEditor_AddLineButton"]
                 </MudButton>
             </MudStack>
 
             <MudTable Items="_lines" Dense="true" Hover="true" Striped="true" Breakpoint="Breakpoint.Sm">
                 <HeaderContent>
-                    <MudTh Style="width: 220px;">Artigo</MudTh>
-                    <MudTh>Descrição</MudTh>
-                    <MudTh Style="width: 100px;">Qtd.</MudTh>
-                    <MudTh Style="width: 90px;">Unid.</MudTh>
-                    <MudTh Style="width: 130px;">Custo unit.</MudTh>
-                    <MudTh Style="width: 150px;">IVA</MudTh>
-                    <MudTh Style="width: 110px; text-align: right;">Total</MudTh>
-                    <MudTh Style="width: 70px; text-align: right;">Ações</MudTh>
+                    <MudTh Style="width: 220px;">@L["PurchaseOrderEditor_ProductColumn"]</MudTh>
+                    <MudTh>@L["PurchaseOrderEditor_DescriptionColumn"]</MudTh>
+                    <MudTh Style="width: 100px;">@L["PurchaseOrderEditor_QuantityColumn"]</MudTh>
+                    <MudTh Style="width: 90px;">@L["PurchaseOrderEditor_UnitColumn"]</MudTh>
+                    <MudTh Style="width: 130px;">@L["PurchaseOrderEditor_UnitCostColumn"]</MudTh>
+                    <MudTh Style="width: 150px;">@L["PurchaseOrderEditor_TaxColumn"]</MudTh>
+                    <MudTh Style="width: 110px; text-align: right;">@L["PurchaseOrderEditor_TotalColumn"]</MudTh>
+                    <MudTh Style="width: 70px; text-align: right;">@L["PurchaseOrderEditor_ActionsColumn"]</MudTh>
                 </HeaderContent>
                 <RowTemplate>
-                    <MudTd DataLabel="Artigo">
+                    <MudTd DataLabel="@L["PurchaseOrderEditor_ProductColumn"]">
                         @if (_products.Count > 0)
                         {
                             <MudSelect T="Guid?" Value="context.ProductId"
                                        ValueChanged="@(productId => OnProductChanged(context, productId))"
-                                       Margin="Margin.Dense" Clearable="true" Placeholder="Livre">
+                                       Margin="Margin.Dense" Clearable="true" Placeholder="@L["PurchaseOrderEditor_FreeProductPlaceholder"]">
                                 @foreach (var product in _products)
                                 {
                                     <MudSelectItem T="Guid?" Value="@product.Id">
@@ -125,24 +127,24 @@
                         }
                         else
                         {
-                            <MudTextField @bind-Value="context.ProductCode" Margin="Margin.Dense" Placeholder="Código" />
+                            <MudTextField @bind-Value="context.ProductCode" Margin="Margin.Dense" Placeholder="@L["PurchaseOrderEditor_ProductCodePlaceholder"]" />
                         }
                     </MudTd>
-                    <MudTd DataLabel="Descrição">
+                    <MudTd DataLabel="@L["PurchaseOrderEditor_DescriptionColumn"]">
                         <MudTextField @bind-Value="context.ProductDescription" Margin="Margin.Dense" />
                     </MudTd>
-                    <MudTd DataLabel="Qtd.">
+                    <MudTd DataLabel="@L["PurchaseOrderEditor_QuantityColumn"]">
                         <MudNumericField @bind-Value="context.Quantity" @bind-Value:after="StateHasChanged"
                                          Margin="Margin.Dense" Min="0" />
                     </MudTd>
-                    <MudTd DataLabel="Unid.">
+                    <MudTd DataLabel="@L["PurchaseOrderEditor_UnitColumn"]">
                         <MudTextField @bind-Value="context.UnitOfMeasure" Margin="Margin.Dense" />
                     </MudTd>
-                    <MudTd DataLabel="Custo unit.">
+                    <MudTd DataLabel="@L["PurchaseOrderEditor_UnitCostColumn"]">
                         <MudNumericField @bind-Value="context.UnitPrice" @bind-Value:after="StateHasChanged"
                                          Margin="Margin.Dense" Min="0" Format="N2" />
                     </MudTd>
-                    <MudTd DataLabel="IVA">
+                    <MudTd DataLabel="@L["PurchaseOrderEditor_TaxColumn"]">
                         <MudSelect T="string" Value="context.TaxCode"
                                    ValueChanged="@(code => OnTaxCodeChanged(context, code))"
                                    Margin="Margin.Dense">
@@ -152,8 +154,8 @@
                             }
                         </MudSelect>
                     </MudTd>
-                    <MudTd DataLabel="Total" Style="text-align: right;">@LineTotal(context).ToString("N2")</MudTd>
-                    <MudTd DataLabel="Ações" Style="text-align: right;">
+                    <MudTd DataLabel="@L["PurchaseOrderEditor_TotalColumn"]" Style="text-align: right;">@LineTotal(context).ToString("N2")</MudTd>
+                    <MudTd DataLabel="@L["PurchaseOrderEditor_ActionsColumn"]" Style="text-align: right;">
                         <MudIconButton Size="Size.Small" Icon="@Icons.Material.Filled.Delete"
                                        Color="Color.Error" Disabled="@(_lines.Count == 1)"
                                        OnClick="@(() => RemoveLine(context))" />
@@ -165,28 +167,28 @@
 
             <MudStack Row="true" Justify="Justify.FlexEnd" Spacing="6">
                 <MudStack Spacing="0" AlignItems="AlignItems.End">
-                    <MudText Typo="Typo.caption" Color="Color.Secondary">Sem IVA</MudText>
+                    <MudText Typo="Typo.caption" Color="Color.Secondary">@L["PurchaseOrderEditor_NetTotalLabel"]</MudText>
                     <MudText Typo="Typo.body1">@NetTotal.ToString("N2")</MudText>
                 </MudStack>
                 <MudStack Spacing="0" AlignItems="AlignItems.End">
-                    <MudText Typo="Typo.caption" Color="Color.Secondary">IVA</MudText>
+                    <MudText Typo="Typo.caption" Color="Color.Secondary">@L["PurchaseOrderEditor_TaxTotalLabel"]</MudText>
                     <MudText Typo="Typo.body1">@TaxTotal.ToString("N2")</MudText>
                 </MudStack>
                 <MudStack Spacing="0" AlignItems="AlignItems.End">
-                    <MudText Typo="Typo.caption" Color="Color.Secondary">Total</MudText>
+                    <MudText Typo="Typo.caption" Color="Color.Secondary">@L["PurchaseOrderEditor_GrossTotalLabel"]</MudText>
                     <MudText Typo="Typo.h6" Color="Color.Primary">@GrossTotal.ToString("N2")</MudText>
                 </MudStack>
             </MudStack>
         </MudPaper>
 
         <MudStack Row="true" Justify="Justify.FlexEnd" Spacing="2">
-            <MudButton Variant="Variant.Text" OnClick="GoBack">Cancelar</MudButton>
+            <MudButton Variant="Variant.Text" OnClick="GoBack">@L["PurchaseOrderEditor_CancelButton"]</MudButton>
 
             <MudButton Variant="Variant.Outlined" Color="Color.Primary"
                        StartIcon="@Icons.Material.Filled.Save"
                        Disabled="@(_saving || !CanSave)"
                        OnClick="@(() => SaveAsync(place: false))">
-                @(IsNew ? "Guardar rascunho" : "Guardar")
+                @(IsNew ? L["PurchaseOrderEditor_SaveDraftButton"] : L["PurchaseOrderEditor_SaveButton"])
             </MudButton>
 
             @if (IsNew)
@@ -195,7 +197,7 @@
                            StartIcon="@Icons.Material.Filled.Send"
                            Disabled="@(_saving || !CanSave)"
                            OnClick="@(() => SaveAsync(place: true))">
-                    Guardar e colocar
+                    @L["PurchaseOrderEditor_SaveAndPlaceButton"]
                 </MudButton>
             }
         </MudStack>
@@ -203,12 +205,12 @@
 </MudStack>
 
 @code {
-    private static readonly TaxRateOption[] TaxRates =
+    private TaxRateOption[] TaxRates =>
     [
-        new("NOR", 23m, "Normal - 23%"),
-        new("INT", 13m, "Intermédia - 13%"),
-        new("RED", 6m, "Reduzida - 6%"),
-        new("ISE", 0m, "Isento")
+        new("NOR", 23m, L["PurchaseOrderEditor_TaxRateNormal"]),
+        new("INT", 13m, L["PurchaseOrderEditor_TaxRateIntermediate"]),
+        new("RED", 6m, L["PurchaseOrderEditor_TaxRateReduced"]),
+        new("ISE", 0m, L["PurchaseOrderEditor_TaxRateExempt"])
     ];
 
     [Parameter]
@@ -304,7 +306,7 @@
         }
         catch (Exception ex)
         {
-            _error = $"Não foi possível carregar os dados: {ex.Message}";
+            _error = string.Format(L["PurchaseOrderEditor_LoadDataError"], ex.Message);
         }
         finally
         {
@@ -319,7 +321,7 @@
 
         if (order is null)
         {
-            _error = "Encomenda não encontrada.";
+            _error = L["PurchaseOrderEditor_OrderNotFound"];
             return;
         }
 
@@ -437,16 +439,16 @@
 
             if (order is null)
             {
-                _error = error ?? "Não foi possível guardar a encomenda.";
+                _error = error ?? L["PurchaseOrderEditor_SaveFailed"];
                 return;
             }
 
-            Snackbar.Add($"Encomenda {order.Number} guardada.", Severity.Success);
+            Snackbar.Add(string.Format(L["PurchaseOrderEditor_SavedSuccess"], order.Number), Severity.Success);
             Navigation.NavigateTo($"purchase-orders/{order.Id}");
         }
         catch (Exception ex)
         {
-            _error = $"Não foi possível guardar a encomenda: {ex.Message}";
+            _error = string.Format(L["PurchaseOrderEditor_SaveError"], ex.Message);
         }
         finally
         {

@@ -8,11 +8,14 @@
 @using Erp.Main.Layout
 @using Erp.Main.Models
 @using Erp.Main.Services
+@using Microsoft.Extensions.Localization
+@using Erp.Main.Resources
 @inject SalesApiClient SalesApi
 @inject CoreApiClient CoreApi
 @inject CompanyState Company
+@inject IStringLocalizer<MainResources> L
 
-<PageTitle>@(_invoice?.DocumentNumber ?? "Documento")</PageTitle>
+<PageTitle>@(_invoice?.DocumentNumber ?? L["InvoicePrint_DefaultTitle"])</PageTitle>
 
 <PrintToolbar Copy="_copy" CopyChanged="@(copy => _copy = copy)" BackUrl="@($"invoices/{Id}")" />
 
@@ -22,7 +25,7 @@
 }
 else if (_invoice is null)
 {
-    <MudAlert Severity="Severity.Error">@(_error ?? "Documento não encontrado.")</MudAlert>
+    <MudAlert Severity="Severity.Error">@(_error ?? L["InvoicePrint_DocumentNotFound"])</MudAlert>
 }
 else
 {
@@ -34,25 +37,25 @@ else
 
     @if (_invoice.Status == "A")
     {
-        <div class="print-voided">Documento anulado</div>
+        <div class="print-voided">@L["InvoicePrint_VoidedNotice"]</div>
     }
 
     <div class="print-parties">
         <div class="print-box">
-            <div class="label">Adquirente</div>
+            <div class="label">@L["InvoicePrint_CustomerLabel"]</div>
             <div><strong>@_invoice.CustomerName</strong></div>
             @if (!string.IsNullOrWhiteSpace(_invoice.CustomerAddress))
             {
                 <div>@_invoice.CustomerAddress</div>
             }
-            <div>NIF @_invoice.CustomerTaxId</div>
+            <div>@L["InvoicePrint_TaxIdPrefix", _invoice.CustomerTaxId]</div>
         </div>
 
         @* Menção obrigatória num documento retificativo. *@
         @if (!string.IsNullOrWhiteSpace(_invoice.RectifiedDocumentNumber))
         {
             <div class="print-box">
-                <div class="label">Documento retificado</div>
+                <div class="label">@L["InvoicePrint_RectifiedDocumentLabel"]</div>
                 <div><strong>@_invoice.RectifiedDocumentNumber</strong></div>
                 <div>@_invoice.RectificationReason</div>
             </div>
@@ -62,14 +65,14 @@ else
     <table class="print-table">
         <thead>
             <tr>
-                <th style="width: 24px;">#</th>
-                <th style="width: 70px;">Código</th>
-                <th>Descrição</th>
-                <th class="num" style="width: 60px;">Qtd.</th>
-                <th style="width: 34px;">Un.</th>
-                <th class="num" style="width: 70px;">Preço</th>
-                <th class="num" style="width: 44px;">IVA</th>
-                <th class="num" style="width: 76px;">Valor</th>
+                <th style="width: 24px;">@L["InvoicePrint_NumberColumn"]</th>
+                <th style="width: 70px;">@L["InvoicePrint_CodeColumn"]</th>
+                <th>@L["InvoicePrint_DescriptionColumn"]</th>
+                <th class="num" style="width: 60px;">@L["InvoicePrint_QuantityColumn"]</th>
+                <th style="width: 34px;">@L["InvoicePrint_UnitColumn"]</th>
+                <th class="num" style="width: 70px;">@L["InvoicePrint_PriceColumn"]</th>
+                <th class="num" style="width: 44px;">@L["InvoicePrint_TaxColumn"]</th>
+                <th class="num" style="width: 76px;">@L["InvoicePrint_ValueColumn"]</th>
             </tr>
         </thead>
         <tbody>
@@ -100,10 +103,10 @@ else
             <table class="print-table" style="width: auto;">
                 <thead>
                     <tr>
-                        <th>Espaço fiscal</th>
-                        <th>Taxa</th>
-                        <th class="num">Incidência</th>
-                        <th class="num">IVA</th>
+                        <th>@L["InvoicePrint_TaxSpaceColumn"]</th>
+                        <th>@L["InvoicePrint_RateColumn"]</th>
+                        <th class="num">@L["InvoicePrint_TaxableBaseColumn"]</th>
+                        <th class="num">@L["InvoicePrint_TaxColumn"]</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -121,9 +124,9 @@ else
         </div>
 
         <div class="print-totals">
-            <div class="row"><span>Base tributável</span><span>@_invoice.NetTotal.ToString("N2")</span></div>
-            <div class="row"><span>IVA</span><span>@_invoice.TaxPayable.ToString("N2")</span></div>
-            <div class="row grand"><span>Total</span><span>@_invoice.GrossTotal.ToString("N2") EUR</span></div>
+            <div class="row"><span>@L["InvoicePrint_NetTotalLabel"]</span><span>@_invoice.NetTotal.ToString("N2")</span></div>
+            <div class="row"><span>@L["InvoicePrint_TaxLabel"]</span><span>@_invoice.TaxPayable.ToString("N2")</span></div>
+            <div class="row grand"><span>@L["InvoicePrint_TotalLabel"]</span><span>@_invoice.GrossTotal.ToString("N2") EUR</span></div>
         </div>
     </div>
 
@@ -132,7 +135,7 @@ else
         <div class="print-exemptions">
             @foreach (var reason in _exemptionReasons)
             {
-                <div>Isenção: @reason</div>
+                <div>@L["InvoicePrint_ExemptionPrefix", reason]</div>
             }
         </div>
     }
@@ -140,7 +143,7 @@ else
     <PrintFiscalFooter PrintableHash="@_invoice.PrintableHash"
                        Atcud="@_invoice.Atcud"
                        QrCodePayload="@_invoice.QrCodePayload">
-        <div>Emitido em @_invoice.SystemEntryDateUtc.ToString("yyyy-MM-dd HH:mm:ss") UTC</div>
+        <div>@L["InvoicePrint_IssuedOn", _invoice.SystemEntryDateUtc.ToString("yyyy-MM-dd HH:mm:ss")]</div>
     </PrintFiscalFooter>
 }
 
@@ -179,7 +182,7 @@ else
 
             if (_invoice is null)
             {
-                _error = "Documento não encontrado.";
+                _error = L["InvoicePrint_DocumentNotFound"];
                 return;
             }
 
@@ -195,7 +198,7 @@ else
         }
         catch (Exception ex)
         {
-            _error = $"Não foi possível carregar o documento: {ex.Message}";
+            _error = L["InvoicePrint_LoadError", ex.Message];
         }
         finally
         {

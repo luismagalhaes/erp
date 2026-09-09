@@ -3,22 +3,25 @@
 @using Microsoft.AspNetCore.Authorization
 @using Microsoft.AspNetCore.Components.Web
 @using MudBlazor
+@using Microsoft.Extensions.Localization
 @using Erp.Main.Components.Common
 @using Erp.Main.Models
+@using Erp.Main.Resources
 @using Erp.Main.Services
 @inject NotificationApiClient NotificationApi
 @inject NavigationManager Navigation
 @inject ISnackbar Snackbar
+@inject IStringLocalizer<MainResources> L
 
-<PageTitle>Notificações</PageTitle>
+<PageTitle>@L["Notifications_PageTitle"]</PageTitle>
 
 <MudStack Spacing="4">
-    <PageHeader Title="Notificações">
+    <PageHeader Title="@L["Notifications_PageTitle"]">
         <Actions>
             <MudButton Variant="Variant.Outlined" Color="Color.Primary"
                        StartIcon="@Icons.Material.Filled.Refresh"
                        OnClick="ReloadAsync">
-                Atualizar
+                @L["Notifications_RefreshButton"]
             </MudButton>
         </Actions>
     </PageHeader>
@@ -27,16 +30,16 @@
     <DataGrid @ref="_grid" T="NotificationListItem" CompanyScoped="false"
               LoadAsync="@((_, query, ct) => NotificationApi.QueryNotificationsAsync(query, ct))"
               SearchFields="SearchFields" DefaultOrderBy="CreatedAtUtc desc"
-              SearchPlaceholder="Procurar por destinatário ou assunto"
+              SearchPlaceholder="@L["Notifications_SearchPlaceholder"]"
               EmptyIcon="@Icons.Material.Filled.MarkEmailRead"
-              EmptyTitle="Sem notificações para mostrar"
-              EmptyDescription="Ajuste os filtros: ainda não foi enviada nenhuma notificação."
-              ItemsLabel="notificações"
-              LoadErrorMessage="Não foi possível carregar as notificações">
+              EmptyTitle="@L["Notifications_EmptyTitle"]"
+              EmptyDescription="@L["Notifications_EmptyDescription"]"
+              ItemsLabel="@L["Notifications_ItemsLabel"]"
+              LoadErrorMessage="@L["Notifications_LoadErrorMessage"]">
         <Columns>
-            <PropertyColumn Property="x => x.ToEmail" Title="Destinatário" />
-            <PropertyColumn Property="x => x.Subject" Title="Assunto" />
-            <PropertyColumn Property="x => x.Status" Title="Estado">
+            <PropertyColumn Property="x => x.ToEmail" Title="@L["Notifications_RecipientColumn"]" />
+            <PropertyColumn Property="x => x.Subject" Title="@L["Notifications_SubjectColumn"]" />
+            <PropertyColumn Property="x => x.Status" Title="@L["Notifications_StatusColumn"]">
                 <CellTemplate>
                     <MudChip T="string" Size="Size.Small" Variant="Variant.Text"
                              Color="@StatusColor(context.Item.Status)">
@@ -44,11 +47,11 @@
                     </MudChip>
                 </CellTemplate>
             </PropertyColumn>
-            <PropertyColumn Property="x => x.RetryCount" Title="Tentativas"
+            <PropertyColumn Property="x => x.RetryCount" Title="@L["Notifications_RetryCountColumn"]"
                             CellClass="erp-numeric" HeaderClass="erp-numeric" />
-            <PropertyColumn Property="x => x.CreatedAtUtc" Title="Criado" Format="yyyy-MM-dd HH:mm" />
-            <PropertyColumn Property="x => x.ProcessedAtUtc" Title="Processado" Format="yyyy-MM-dd HH:mm" />
-            <PropertyColumn Property="x => x.LastError" Title="Último erro" Hidden="true" />
+            <PropertyColumn Property="x => x.CreatedAtUtc" Title="@L["Notifications_CreatedColumn"]" Format="yyyy-MM-dd HH:mm" />
+            <PropertyColumn Property="x => x.ProcessedAtUtc" Title="@L["Notifications_ProcessedColumn"]" Format="yyyy-MM-dd HH:mm" />
+            <PropertyColumn Property="x => x.LastError" Title="@L["Notifications_LastErrorColumn"]" Hidden="true" />
             <TemplateColumn Title="" Sortable="false" Filterable="false" Hideable="false"
                             StickyRight="true"
                             CellClass="erp-numeric" HeaderClass="erp-numeric">
@@ -57,13 +60,13 @@
                              AnchorOrigin="Origin.BottomRight" TransformOrigin="Origin.TopRight">
                         <MudMenuItem Icon="@Icons.Material.Filled.Visibility"
                                      OnClick="@(() => Navigation.NavigateTo($"notifications/{context.Item.Id}"))">
-                            Ver
+                            @L["Notifications_ViewAction"]
                         </MudMenuItem>
                         @if (context.Item.Status == "Failed")
                         {
                             <MudMenuItem Icon="@Icons.Material.Filled.Replay"
                                          OnClick="@(() => RequeueAsync(context.Item.Id))">
-                                Voltar a enfileirar
+                                @L["Notifications_RequeueAction"]
                             </MudMenuItem>
                         }
                     </MudMenu>
@@ -94,15 +97,15 @@
             return;
         }
 
-        Snackbar.Add("Notificação novamente na fila.", Severity.Success);
+        Snackbar.Add(L["Notifications_RequeuedSuccess"].Value, Severity.Success);
         await ReloadAsync();
     }
 
-    private static string DescribeStatus(string status) => status switch
+    private string DescribeStatus(string status) => status switch
     {
-        "Pending" => "Pendente",
-        "Sent" => "Enviada",
-        "Failed" => "Falhou",
+        "Pending" => L["Notifications_StatusPending"],
+        "Sent" => L["Notifications_StatusSent"],
+        "Failed" => L["Notifications_StatusFailed"],
         _ => status
     };
 

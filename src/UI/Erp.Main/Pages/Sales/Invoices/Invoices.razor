@@ -3,29 +3,32 @@
 @using Microsoft.AspNetCore.Authorization
 @using Microsoft.AspNetCore.Components.Web
 @using MudBlazor
+@using Microsoft.Extensions.Localization
 @using Erp.Main.Components.Common
 @using Erp.Main.Models
+@using Erp.Main.Resources
 @using Erp.Main.Services
 @inject SalesApiClient SalesApi
 @inject CompanyState Company
 @inject NavigationManager Navigation
+@inject IStringLocalizer<MainResources> L
 
-<PageTitle>Faturas</PageTitle>
+<PageTitle>@L["Invoices_PageTitle"]</PageTitle>
 
 <MudStack Spacing="4">
-    <PageHeader Title="Faturas">
+    <PageHeader Title="@L["Invoices_HeaderTitle"]">
         <Actions>
             <MudButton Variant="Variant.Outlined" Color="Color.Primary"
                        StartIcon="@Icons.Material.Filled.LocalShipping"
                        Disabled="@(!Company.HasCompany)"
                        OnClick="@(() => Navigation.NavigateTo("invoices/from-movements"))">
-                Faturar guias
+                @L["Invoices_FromMovementsButton"]
             </MudButton>
             <MudButton Variant="Variant.Filled" Color="Color.Primary"
                        StartIcon="@Icons.Material.Filled.Add"
                        Disabled="@(!Company.HasCompany)"
                        OnClick="@(() => Navigation.NavigateTo("invoices/new"))">
-                Nova fatura
+                @L["Invoices_NewInvoiceButton"]
             </MudButton>
         </Actions>
     </PageHeader>
@@ -33,30 +36,30 @@
     <DataGrid T="InvoiceListItem"
               LoadAsync="@((companyId, query, ct) => SalesApi.QueryInvoicesAsync(companyId, query, ct))"
               SearchFields="SearchFields" DefaultOrderBy="DocumentDate desc,DocumentNumber desc"
-              SearchPlaceholder="Procurar por documento, cliente ou NIF"
+              SearchPlaceholder="@L["Invoices_SearchPlaceholder"]"
               EmptyIcon="@Icons.Material.Filled.ReceiptLong"
-              EmptyTitle="Sem faturas para mostrar"
-              EmptyDescription="Ajuste os filtros ou emita a primeira fatura."
-              ItemsLabel="faturas"
-              LoadErrorMessage="Não foi possível carregar as faturas">
+              EmptyTitle="@L["Invoices_EmptyTitle"]"
+              EmptyDescription="@L["Invoices_EmptyDescription"]"
+              ItemsLabel="@L["Invoices_ItemsLabel"]"
+              LoadErrorMessage="@L["Invoices_LoadErrorMessage"]">
         <Columns>
-            <PropertyColumn Property="x => x.DocumentNumber" Title="Documento" CellClass="erp-mono" />
-            <PropertyColumn Property="x => x.DocumentType" Title="Tipo">
+            <PropertyColumn Property="x => x.DocumentNumber" Title="@L["Invoices_DocumentColumn"]" CellClass="erp-mono" />
+            <PropertyColumn Property="x => x.DocumentType" Title="@L["Invoices_TypeColumn"]">
                 <CellTemplate>
                     <MudChip T="string" Size="Size.Small" Variant="Variant.Text">@context.Item.DocumentType</MudChip>
                 </CellTemplate>
             </PropertyColumn>
-            <PropertyColumn Property="x => x.Atcud" Title="ATCUD" CellClass="erp-mono" />
-            <PropertyColumn Property="x => x.DocumentDate" Title="Data" Format="yyyy-MM-dd" />
-            <PropertyColumn Property="x => x.CustomerName" Title="Cliente" />
-            <PropertyColumn Property="x => x.CustomerTaxId" Title="NIF" />
-            <PropertyColumn Property="x => x.NetTotal" Title="Base" Format="N2"
+            <PropertyColumn Property="x => x.Atcud" Title="@L["Invoices_AtcudColumn"]" CellClass="erp-mono" />
+            <PropertyColumn Property="x => x.DocumentDate" Title="@L["Invoices_DateColumn"]" Format="yyyy-MM-dd" />
+            <PropertyColumn Property="x => x.CustomerName" Title="@L["Invoices_CustomerColumn"]" />
+            <PropertyColumn Property="x => x.CustomerTaxId" Title="@L["Invoices_TaxIdColumn"]" />
+            <PropertyColumn Property="x => x.NetTotal" Title="@L["Invoices_NetTotalColumn"]" Format="N2"
                             CellClass="erp-numeric" HeaderClass="erp-numeric" />
-            <PropertyColumn Property="x => x.TaxPayable" Title="IVA" Format="N2"
+            <PropertyColumn Property="x => x.TaxPayable" Title="@L["Invoices_TaxColumn"]" Format="N2"
                             CellClass="erp-numeric" HeaderClass="erp-numeric" />
-            <PropertyColumn Property="x => x.GrossTotal" Title="Total" Format="N2"
+            <PropertyColumn Property="x => x.GrossTotal" Title="@L["Invoices_TotalColumn"]" Format="N2"
                             CellClass="erp-numeric" HeaderClass="erp-numeric" />
-            <PropertyColumn Property="x => x.Status" Title="Estado">
+            <PropertyColumn Property="x => x.Status" Title="@L["Invoices_StatusColumn"]">
                 <CellTemplate>
                     <MudChip T="string" Size="Size.Small" Variant="Variant.Text"
                              Color="@(context.Item.Status == "A" ? Color.Error : Color.Success)">
@@ -72,7 +75,7 @@
                              AnchorOrigin="Origin.BottomRight" TransformOrigin="Origin.TopRight">
                         <MudMenuItem Icon="@Icons.Material.Filled.Visibility"
                                      OnClick="@(() => Navigation.NavigateTo($"invoices/{context.Item.Id}"))">
-                            Ver documento
+                            @L["Invoices_ViewDocumentAction"]
                         </MudMenuItem>
                     </MudMenu>
                 </CellTemplate>
@@ -88,11 +91,11 @@
     /// </summary>
     private static readonly string[] SearchFields = ["DocumentNumber", "CustomerName", "CustomerTaxId"];
 
-    private static string DescribeStatus(string status) => status switch
+    private string DescribeStatus(string status) => status switch
     {
-        "A" => "Anulado",
-        "F" => "Faturado",
-        "S" => "Autofaturado",
-        _ => "Normal"
+        "A" => L["Invoices_StatusCancelled"],
+        "F" => L["Invoices_StatusInvoiced"],
+        "S" => L["Invoices_StatusSelfBilled"],
+        _ => L["Invoices_StatusNormal"]
     };
 }

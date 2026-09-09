@@ -7,20 +7,23 @@
 @using Erp.Main.Components.Common
 @using Erp.Main.Models
 @using Erp.Main.Services
+@using Erp.Main.Resources
+@using Microsoft.Extensions.Localization
 @inject CatalogApiClient Catalog
 @inject CompanyState Company
 @inject NavigationManager Navigation
 @inject ISnackbar Snackbar
+@inject IStringLocalizer<MainResources> Localizer
 
-<PageTitle>@(IsNew ? "Novo artigo" : "Editar artigo")</PageTitle>
+<PageTitle>@(IsNew ? Localizer["ProductEditor_NewTitle"] : Localizer["ProductEditor_EditTitle"])</PageTitle>
 
 <MudStack Spacing="3">
-    <PageHeader Title="@(IsNew ? "Novo artigo" : "Editar artigo")"
+    <PageHeader Title="@(IsNew ? Localizer["ProductEditor_NewTitle"] : Localizer["ProductEditor_EditTitle"])"
                 Breadcrumbs="Breadcrumbs">
         <Actions>
             <MudButton Variant="Variant.Text" StartIcon="@Icons.Material.Filled.ArrowBack"
                        OnClick="@(() => Navigation.NavigateTo("products"))">
-                Voltar
+                @Localizer["Common_Back"]
             </MudButton>
         </Actions>
     </PageHeader>
@@ -36,44 +39,44 @@
     }
     else
     {
-        <EditorCard Title="Artigo" Icon="@Icons.Material.Filled.Inventory2">
+        <EditorCard Title="@Localizer["ProductEditor_CardTitle"]" Icon="@Icons.Material.Filled.Inventory2">
             <HeaderActions>
                 <MudButton Variant="Variant.Text" Size="Size.Small" StartIcon="@Icons.Material.Filled.Category"
-                           OnClick="@(() => Navigation.NavigateTo("product-families"))">Famílias</MudButton>
+                           OnClick="@(() => Navigation.NavigateTo("product-families"))">@Localizer["ProductEditor_FamiliesButton"]</MudButton>
                 <MudButton Variant="Variant.Text" Size="Size.Small" StartIcon="@Icons.Material.Filled.Sell"
-                           OnClick="@(() => Navigation.NavigateTo("brands"))">Marcas</MudButton>
+                           OnClick="@(() => Navigation.NavigateTo("brands"))">@Localizer["ProductEditor_BrandsButton"]</MudButton>
                 @if (!IsNew)
                 {
-                    <MudSwitch @bind-Value="_isActive" Color="Color.Primary" Size="Size.Small" Label="Ativo" />
+                    <MudSwitch @bind-Value="_isActive" Color="Color.Primary" Size="Size.Small" Label="@Localizer["ProductEditor_ActiveLabel"]" />
                 }
             </HeaderActions>
             <ChildContent>
                 <MudGrid>
                     <MudItem xs="12" sm="3" md="2">
-                        <MudTextField @bind-Value="_productCode" Label="Código" Variant="Variant.Outlined"
+                        <MudTextField @bind-Value="_productCode" Label="@Localizer["ProductEditor_CodeLabel"]" Variant="Variant.Outlined"
                                       Margin="Margin.Dense" Required="true" Disabled="@(!IsNew)" />
                     </MudItem>
                     <MudItem xs="12" sm="9" md="6">
-                        <MudTextField @bind-Value="_description" Label="Descrição" Variant="Variant.Outlined"
+                        <MudTextField @bind-Value="_description" Label="@Localizer["ProductEditor_DescriptionLabel"]" Variant="Variant.Outlined"
                                       Margin="Margin.Dense" Required="true" />
                     </MudItem>
                     <MudItem xs="12" sm="6" md="2">
-                        <MudTextField @bind-Value="_barcode" Label="Código de barras" Variant="Variant.Outlined"
+                        <MudTextField @bind-Value="_barcode" Label="@Localizer["ProductEditor_BarcodeLabel"]" Variant="Variant.Outlined"
                                       Margin="Margin.Dense" />
                     </MudItem>
                     <MudItem xs="12" sm="6" md="2">
-                        <MudSelect @bind-Value="_productType" Label="Tipo" Variant="Variant.Outlined"
+                        <MudSelect @bind-Value="_productType" Label="@Localizer["ProductEditor_TypeLabel"]" Variant="Variant.Outlined"
                                    Margin="Margin.Dense">
-                            <MudSelectItem T="string" Value="@("P")">Produto</MudSelectItem>
-                            <MudSelectItem T="string" Value="@("S")">Serviço</MudSelectItem>
-                            <MudSelectItem T="string" Value="@("O")">Outro</MudSelectItem>
-                            <MudSelectItem T="string" Value="@("I")">Impostos e taxas</MudSelectItem>
+                            <MudSelectItem T="string" Value="@("P")">@Localizer["ProductEditor_TypeProduct"]</MudSelectItem>
+                            <MudSelectItem T="string" Value="@("S")">@Localizer["ProductEditor_TypeService"]</MudSelectItem>
+                            <MudSelectItem T="string" Value="@("O")">@Localizer["ProductEditor_TypeOther"]</MudSelectItem>
+                            <MudSelectItem T="string" Value="@("I")">@Localizer["ProductEditor_TypeTax"]</MudSelectItem>
                         </MudSelect>
                     </MudItem>
 
                     <MudItem xs="12" sm="4" md="4">
                         <MudSelect T="Guid?" Value="_familyId" ValueChanged="OnFamilyChanged"
-                                   Label="Família" Variant="Variant.Outlined" Margin="Margin.Dense" Clearable="true">
+                                   Label="@Localizer["ProductEditor_FamilyLabel"]" Variant="Variant.Outlined" Margin="Margin.Dense" Clearable="true">
                             @foreach (var family in _families)
                             {
                                 <MudSelectItem T="Guid?" Value="@family.Id">@family.Name</MudSelectItem>
@@ -81,7 +84,7 @@
                         </MudSelect>
                     </MudItem>
                     <MudItem xs="12" sm="4" md="4">
-                        <MudSelect T="Guid?" @bind-Value="_subfamilyId" Label="Subfamília" Variant="Variant.Outlined"
+                        <MudSelect T="Guid?" @bind-Value="_subfamilyId" Label="@Localizer["ProductEditor_SubfamilyLabel"]" Variant="Variant.Outlined"
                                    Margin="Margin.Dense" Clearable="true" Disabled="@(_familyId is null)">
                             @foreach (var subfamily in AvailableSubfamilies)
                             {
@@ -90,7 +93,7 @@
                         </MudSelect>
                     </MudItem>
                     <MudItem xs="12" sm="4" md="4">
-                        <MudSelect T="Guid?" @bind-Value="_brandId" Label="Marca" Variant="Variant.Outlined"
+                        <MudSelect T="Guid?" @bind-Value="_brandId" Label="@Localizer["ProductEditor_BrandLabel"]" Variant="Variant.Outlined"
                                    Margin="Margin.Dense" Clearable="true">
                             @foreach (var brand in _brands)
                             {
@@ -100,20 +103,20 @@
                     </MudItem>
 
                     <MudItem xs="6" sm="3" md="2">
-                        <MudNumericField @bind-Value="_unitPrice" Label="Preço unitário" Variant="Variant.Outlined"
+                        <MudNumericField @bind-Value="_unitPrice" Label="@Localizer["ProductEditor_UnitPriceLabel"]" Variant="Variant.Outlined"
                                          Margin="Margin.Dense" Min="0" Format="N2" />
                     </MudItem>
                     <MudItem xs="6" sm="3" md="2">
-                        <MudNumericField @bind-Value="_unitCost" Label="Custo unitário" Variant="Variant.Outlined"
+                        <MudNumericField @bind-Value="_unitCost" Label="@Localizer["ProductEditor_UnitCostLabel"]" Variant="Variant.Outlined"
                                          Margin="Margin.Dense" Min="0" Format="N2" />
                     </MudItem>
                     <MudItem xs="6" sm="2" md="2">
-                        <MudTextField @bind-Value="_unitOfMeasure" Label="Unidade" Variant="Variant.Outlined"
+                        <MudTextField @bind-Value="_unitOfMeasure" Label="@Localizer["ProductEditor_UnitOfMeasureLabel"]" Variant="Variant.Outlined"
                                       Margin="Margin.Dense" />
                     </MudItem>
                     <MudItem xs="6" sm="2" md="2">
                         <MudSelect T="string" Value="_taxCode" ValueChanged="OnTaxCodeChanged"
-                                   Label="IVA" Variant="Variant.Outlined" Margin="Margin.Dense">
+                                   Label="@Localizer["ProductEditor_TaxLabel"]" Variant="Variant.Outlined" Margin="Margin.Dense">
                             @foreach (var rate in TaxRates)
                             {
                                 <MudSelectItem T="string" Value="@rate.Code">@rate.Label</MudSelectItem>
@@ -121,15 +124,15 @@
                         </MudSelect>
                     </MudItem>
                     <MudItem xs="12" sm="2" md="2">
-                        <MudSelect @bind-Value="_taxCountryRegion" Label="Espaço fiscal" Variant="Variant.Outlined"
+                        <MudSelect @bind-Value="_taxCountryRegion" Label="@Localizer["ProductEditor_TaxRegionLabel"]" Variant="Variant.Outlined"
                                    Margin="Margin.Dense">
-                            <MudSelectItem T="string" Value="@("PT")">Continente</MudSelectItem>
-                            <MudSelectItem T="string" Value="@("PT-AC")">Açores</MudSelectItem>
-                            <MudSelectItem T="string" Value="@("PT-MA")">Madeira</MudSelectItem>
+                            <MudSelectItem T="string" Value="@("PT")">@Localizer["ProductEditor_TaxRegionMainland"]</MudSelectItem>
+                            <MudSelectItem T="string" Value="@("PT-AC")">@Localizer["ProductEditor_TaxRegionAzores"]</MudSelectItem>
+                            <MudSelectItem T="string" Value="@("PT-MA")">@Localizer["ProductEditor_TaxRegionMadeira"]</MudSelectItem>
                         </MudSelect>
                     </MudItem>
                     <MudItem xs="12" sm="12" md="2">
-                        <MudSelect @bind-Value="_inventoryCategory" Label="Cat. inventário"
+                        <MudSelect @bind-Value="_inventoryCategory" Label="@Localizer["ProductEditor_InventoryCategoryLabel"]"
                                    Variant="Variant.Outlined" Margin="Margin.Dense">
                             @foreach (var category in InventoryCategories.All)
                             {
@@ -144,8 +147,7 @@
                     {
                         <MudItem xs="12">
                             <MudAlert Severity="Severity.Info" Dense="true">
-                                Ativos biológicos só existem no formato valorizado (2_01). Numa comunicação
-                                só com quantidades, este artigo vai como mercadoria.
+                                @Localizer["ProductEditor_BiologicalAssetsNotice"]
                             </MudAlert>
                         </MudItem>
                     }
@@ -154,7 +156,7 @@
         </EditorCard>
 
         <FormActions Busy="_saving" Disabled="@(!CanSave)"
-                     Hint="@(CanSave ? null : "Preencha o código e a descrição para poder guardar.")"
+                     Hint="@(CanSave ? null : Localizer["ProductEditor_SaveHint"].Value)"
                      OnSubmit="SaveAsync"
                      OnCancel="@(() => Navigation.NavigateTo("products"))" />
     }
@@ -163,16 +165,16 @@
 @code {
     private List<BreadcrumbItem> Breadcrumbs =>
     [
-        new("Artigos", href: "products"),
-        new(IsNew ? "Novo artigo" : "Editar artigo", href: null, disabled: true)
+        new(Localizer["Products_PageTitle"].Value, href: "products"),
+        new(IsNew ? Localizer["ProductEditor_NewTitle"].Value : Localizer["ProductEditor_EditTitle"].Value, href: null, disabled: true)
     ];
 
-    private static readonly TaxRateOption[] TaxRates =
+    private TaxRateOption[] TaxRates =>
     [
-        new("NOR", 23m, "Normal - 23%"),
-        new("INT", 13m, "Intermédia - 13%"),
-        new("RED", 6m, "Reduzida - 6%"),
-        new("ISE", 0m, "Isento")
+        new("NOR", 23m, Localizer["ProductEditor_TaxRateNormal"]),
+        new("INT", 13m, Localizer["ProductEditor_TaxRateIntermediate"]),
+        new("RED", 6m, Localizer["ProductEditor_TaxRateReduced"]),
+        new("ISE", 0m, Localizer["ProductEditor_TaxRateExempt"])
     ];
 
     [Parameter]
@@ -239,7 +241,7 @@
 
             if (product is null)
             {
-                _error = "Artigo não encontrado.";
+                _error = Localizer["ProductEditor_NotFound"];
                 return;
             }
 
@@ -260,7 +262,7 @@
         }
         catch (Exception ex)
         {
-            _error = $"Não foi possível carregar o artigo: {ex.Message}";
+            _error = string.Format(Localizer["ProductEditor_LoadError"], ex.Message);
         }
         finally
         {
@@ -348,12 +350,12 @@
                 return;
             }
 
-            Snackbar.Add(IsNew ? "Artigo criado." : "Artigo atualizado.", Severity.Success);
+            Snackbar.Add(IsNew ? Localizer["ProductEditor_Created"].Value : Localizer["ProductEditor_Updated"].Value, Severity.Success);
             Navigation.NavigateTo("products");
         }
         catch (Exception ex)
         {
-            _error = $"Não foi possível guardar o artigo: {ex.Message}";
+            _error = string.Format(Localizer["ProductEditor_SaveError"], ex.Message);
         }
         finally
         {

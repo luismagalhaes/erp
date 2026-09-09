@@ -1,16 +1,19 @@
 @page "/Backoffice/Users"
 @page "/Backoffice/Users/{Mode}"
 @using Microsoft.AspNetCore.Components.Web
+@using Microsoft.Extensions.Localization
+@using Erp.Identity.Resources
 @attribute [Authorize(Roles = "SuperAdmin")]
 @inject IUserService UserService
 @inject NavigationManager Navigation
+@inject IStringLocalizer<IdentityResources> Localizer
 
-<PageTitle>Backoffice - Users</PageTitle>
+<PageTitle>@Localizer["Backoffice_Users_PageTitle"]</PageTitle>
 
 @if (IsEditMode)
 {
     <div class="content-card mud-elevation-1">
-        <h2>Edit User</h2>
+        <h2>@Localizer["Backoffice_Users_EditHeading"]</h2>
 
         @if (!string.IsNullOrWhiteSpace(ErrorMessage))
         {
@@ -19,44 +22,51 @@
 
         @if (Form is null)
         {
-            <p>Loading...</p>
+            <p>@Localizer["Backoffice_Users_Loading"]</p>
         }
         else
         {
             <EditForm Model="Form" OnSubmit="SaveAsync" FormName="users-edit-form">
                 <div class="tab-strip">
-                    <button type="button" class="tab-btn @(ActiveTab == "MainInfo" ? "active" : null)" @onclick='() => SelectTab("MainInfo")'>Main Info</button>
-                    <button type="button" class="tab-btn @(ActiveTab == "Roles" ? "active" : null)" @onclick='() => SelectTab("Roles")'>Roles</button>
+                    <button type="button" class="tab-btn @(ActiveTab == "MainInfo" ? "active" : null)" @onclick='() => SelectTab("MainInfo")'>@Localizer["Backoffice_Users_Tab_MainInfo"]</button>
+                    <button type="button" class="tab-btn @(ActiveTab == "Roles" ? "active" : null)" @onclick='() => SelectTab("Roles")'>@Localizer["Backoffice_Users_Tab_Roles"]</button>
                 </div>
 
                 <div class="tab-panel @(ActiveTab == "MainInfo" ? "active" : null)">
-                    <div class="auth-field"><label>Email</label><InputText @bind-Value="Form.Email" disabled /></div>
-                    <div class="auth-field"><label>Name</label><InputText @bind-Value="Form.FullName" disabled /></div>
+                    <div class="auth-field"><label>@Localizer["Backoffice_Users_EmailLabel"]</label><InputText @bind-Value="Form.Email" disabled /></div>
+                    <div class="auth-field"><label>@Localizer["Backoffice_Users_NameLabel"]</label><InputText @bind-Value="Form.FullName" disabled /></div>
+                    <div class="auth-field">
+                        <label>@Localizer["Backoffice_Users_LanguageLabel"]</label>
+                        <InputSelect @bind-Value="Form.PreferredLanguage">
+                            <option value="pt-PT">Português</option>
+                            <option value="en-US">English</option>
+                        </InputSelect>
+                    </div>
                 </div>
 
                 <div class="tab-panel @(ActiveTab == "Roles" ? "active" : null)">
                     <div class="auth-field">
-                        <label>Roles</label>
+                        <label>@Localizer["Backoffice_Users_RolesLabel"]</label>
                         <table class="backoffice-table">
-                            <thead><tr><th>Role</th><th class="actions-col">Actions</th></tr></thead>
+                            <thead><tr><th>@Localizer["Backoffice_Users_RoleColumn"]</th><th class="actions-col">@Localizer["Backoffice_Users_ActionsColumn"]</th></tr></thead>
                             <tbody>
                             @for (var i = 0; i < Form.Roles.Count; i++)
                             {
                                 var index = i;
                                 <tr>
                                     <td><InputText @bind-Value="Form.Roles[index]" /></td>
-                                    <td class="actions-col"><button type="button" class="action-btn danger" @onclick="() => RemoveRole(index)">Remove</button></td>
+                                    <td class="actions-col"><button type="button" class="action-btn danger" @onclick="() => RemoveRole(index)">@Localizer["Backoffice_Users_RemoveButton"]</button></td>
                                 </tr>
                             }
                             </tbody>
                         </table>
-                        <button type="button" class="action-btn" @onclick="AddRole">Add role</button>
+                        <button type="button" class="action-btn" @onclick="AddRole">@Localizer["Backoffice_Users_AddRoleButton"]</button>
                     </div>
                 </div>
 
                 <div class="form-actions">
-                    <button class="action-btn primary" type="submit">Save</button>
-                    <a class="action-btn" href="/Backoffice/Users">Cancel</a>
+                    <button class="action-btn primary" type="submit">@Localizer["Backoffice_Users_SaveButton"]</button>
+                    <a class="action-btn" href="/Backoffice/Users">@Localizer["Backoffice_Users_CancelButton"]</a>
                 </div>
             </EditForm>
         }
@@ -66,12 +76,12 @@ else
 {
     <div class="content-card mud-elevation-1">
         <div class="list-header">
-            <h2>Users (@UserItems.Count)</h2>
+            <h2>@Localizer["Backoffice_Users_ListHeading", UserItems.Count]</h2>
         </div>
         <table class="backoffice-table">
             <thead>
                 <tr>
-                    <th>Email</th><th>Name</th><th>Active</th><th>Created at</th><th>Roles</th><th class="actions-col">Actions</th>
+                    <th>@Localizer["Backoffice_Users_EmailColumn"]</th><th>@Localizer["Backoffice_Users_NameColumn"]</th><th>@Localizer["Backoffice_Users_ActiveColumn"]</th><th>@Localizer["Backoffice_Users_CreatedAtColumn"]</th><th>@Localizer["Backoffice_Users_RolesLabel"]</th><th class="actions-col">@Localizer["Backoffice_Users_ActionsColumn"]</th>
                 </tr>
             </thead>
             <tbody>
@@ -80,7 +90,7 @@ else
                 <tr>
                     <td>@user.Email</td>
                     <td>@user.FullName</td>
-                    <td><span class="@(user.IsActive ? "ok" : "off")">@(user.IsActive ? "Yes" : "No")</span></td>
+                    <td><span class="@(user.IsActive ? "ok" : "off")">@(user.IsActive ? Localizer["Backoffice_Users_Yes"] : Localizer["Backoffice_Users_No"])</span></td>
                     <td>@user.CreatedAt.ToLocalTime().ToString("yyyy-MM-dd HH:mm")</td>
                     <td>
                         @if (user.Roles.Count == 0)
@@ -97,7 +107,7 @@ else
                     </td>
                     <td class="actions-col">
                         <div class="table-actions">
-                            <MudIconButton Icon="@Icons.Material.Filled.Edit" Href="@($"/Backoffice/Users/Edit?userId={Uri.EscapeDataString(user.Id)}")" Color="Color.Primary" Size="Size.Small" title="Edit" aria-label="Edit" />
+                            <MudIconButton Icon="@Icons.Material.Filled.Edit" Href="@($"/Backoffice/Users/Edit?userId={Uri.EscapeDataString(user.Id)}")" Color="Color.Primary" Size="Size.Small" title="@Localizer["Backoffice_Users_EditAction"]" aria-label="@Localizer["Backoffice_Users_EditAction"]" />
                         </div>
                     </td>
                 </tr>
@@ -140,6 +150,7 @@ else
             {
                 Email = user.Email,
                 FullName = user.FullName,
+                PreferredLanguage = user.PreferredLanguage,
                 Roles = user.Roles
                     .Where(x => !string.IsNullOrWhiteSpace(x))
                     .Select(x => x.Trim())
@@ -157,7 +168,7 @@ else
     {
         if (string.IsNullOrWhiteSpace(UserId) || Form is null)
         {
-            ErrorMessage = "Invalid user.";
+            ErrorMessage = Localizer["Backoffice_Users_ErrorInvalidUser"];
             return;
         }
 
@@ -169,11 +180,12 @@ else
 
         if (roles.Count == 0)
         {
-            ErrorMessage = "At least one role is required.";
+            ErrorMessage = Localizer["Backoffice_Users_ErrorAtLeastOneRole"];
             return;
         }
 
         await UserService.UpdateUserRolesAsync(UserId, roles);
+        await UserService.UpdateUserLanguageAsync(UserId, Form.PreferredLanguage);
         Navigation.NavigateTo("/Backoffice/Users");
     }
 
@@ -194,6 +206,7 @@ else
     {
         public string Email { get; set; } = string.Empty;
         public string FullName { get; set; } = string.Empty;
+        public string PreferredLanguage { get; set; } = "pt-PT";
         public List<string> Roles { get; set; } = [];
     }
 }

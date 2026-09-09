@@ -4,27 +4,30 @@
 @using Microsoft.AspNetCore.Authorization
 @using Microsoft.AspNetCore.Components.Web
 @using MudBlazor
+@using Microsoft.Extensions.Localization
 @using Erp.Main.Models
+@using Erp.Main.Resources
 @using Erp.Main.Services
 @inject SeriesApiClient SalesApi
 @inject CompanyState Company
 @inject NavigationManager Navigation
 @inject ISnackbar Snackbar
+@inject IStringLocalizer<MainResources> L
 
-<PageTitle>@(IsNew ? "Nova série" : "Série")</PageTitle>
+<PageTitle>@(IsNew ? L["SeriesEditor_NewSeriesTitle"] : L["SeriesEditor_SeriesTitle"])</PageTitle>
 
 <MudStack Spacing="4">
     <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center">
         <MudStack Spacing="0">
-            <MudText Typo="Typo.h4">@(IsNew ? "Nova série" : $"Série {_series?.SeriesCode}")</MudText>
+            <MudText Typo="Typo.h4">@(IsNew ? L["SeriesEditor_NewSeriesTitle"] : L["SeriesEditor_SeriesTitleWithCode", _series?.SeriesCode])</MudText>
             <MudText Typo="Typo.body2" Color="Color.Secondary">
-                O identificador não pode repetir-se para o mesmo tipo de documento na mesma empresa.
+                @L["SeriesEditor_Subtitle"]
             </MudText>
         </MudStack>
 
         <MudButton Variant="Variant.Text" StartIcon="@Icons.Material.Filled.ArrowBack"
                    OnClick="@(() => Navigation.NavigateTo("series"))">
-            Voltar
+            @L["SeriesEditor_BackButton"]
         </MudButton>
     </MudStack>
 
@@ -42,7 +45,7 @@
         <MudPaper Elevation="1" Class="pa-4">
             <MudGrid>
                 <MudItem xs="12" md="3">
-                    <MudSelect @bind-Value="_documentType" Label="Tipo de documento" Variant="Variant.Outlined">
+                    <MudSelect @bind-Value="_documentType" Label="@L["SeriesEditor_DocumentTypeLabel"]" Variant="Variant.Outlined">
                         @foreach (var type in DocumentTypes)
                         {
                             <MudSelectItem T="string" Value="@type.Code">@type.Code — @type.Label</MudSelectItem>
@@ -50,21 +53,21 @@
                     </MudSelect>
                 </MudItem>
                 <MudItem xs="12" md="3">
-                    <MudTextField @bind-Value="_seriesCode" Label="Identificador da série"
+                    <MudTextField @bind-Value="_seriesCode" Label="@L["SeriesEditor_SeriesCodeLabel"]"
                                   Variant="Variant.Outlined" Required="true" Placeholder="A2026" />
                 </MudItem>
                 <MudItem xs="12" md="3">
-                    <MudNumericField @bind-Value="_initialSequence" Label="Número inicial"
+                    <MudNumericField @bind-Value="_initialSequence" Label="@L["SeriesEditor_InitialSequenceLabel"]"
                                      Variant="Variant.Outlined" Min="1" />
                 </MudItem>
                 <MudItem xs="12" md="3">
-                    <MudTextField @bind-Value="_establishmentCode" Label="Estabelecimento"
-                                  Variant="Variant.Outlined" HelperText="Opcional" />
+                    <MudTextField @bind-Value="_establishmentCode" Label="@L["SeriesEditor_EstablishmentLabel"]"
+                                  Variant="Variant.Outlined" HelperText="@L["SeriesEditor_OptionalHelperText"]" />
                 </MudItem>
 
                 <MudItem xs="12" md="4">
-                    <MudSelect @bind-Value="_stockEffect" Label="Efeito no stock" Variant="Variant.Outlined"
-                               HelperText="@($"Por omissão para {_documentType}: {StockEffects.Describe(DefaultStockEffectFor(_documentType))}")">
+                    <MudSelect @bind-Value="_stockEffect" Label="@L["SeriesEditor_StockEffectLabel"]" Variant="Variant.Outlined"
+                               HelperText="@L["SeriesEditor_DefaultStockEffectHelperText", _documentType, StockEffects.Describe(DefaultStockEffectFor(_documentType))]">
                         @foreach (var effect in StockEffects.All)
                         {
                             <MudSelectItem T="string" Value="@effect.Code">@effect.Label</MudSelectItem>
@@ -73,8 +76,7 @@
                 </MudItem>
                 <MudItem xs="12" md="8" Class="d-flex align-center">
                     <MudText Typo="Typo.body2" Color="Color.Secondary">
-                        Os documentos desta série movimentam as existências do armazém. Uma fatura emitida
-                        a partir de uma guia não volta a movimentar o que a guia já movimentou.
+                        @L["SeriesEditor_StockEffectNotice"]
                     </MudText>
                 </MudItem>
 
@@ -82,13 +84,11 @@
                 {
                     <MudItem xs="12" md="4" Class="d-flex align-center">
                         <MudSwitch @bind-Value="_selfBilling" @bind-Value:after="StateHasChanged"
-                                   Color="Color.Warning" Label="Série de autofaturação" />
+                                   Color="Color.Warning" Label="@L["SeriesEditor_SelfBillingSwitchLabel"]" />
                     </MudItem>
                     <MudItem xs="12" md="8" Class="d-flex align-center">
                         <MudText Typo="Typo.body2" Color="Color.Secondary">
-                            Numera faturas que emitimos <strong>em nome do fornecedor</strong>, ao abrigo do
-                            artigo 36.º n.º 11 do CIVA. Não pode numerar vendas nossas, e os seus documentos
-                            saem num SAF-T próprio, do tipo <strong>S</strong>, um por fornecedor.
+                            @L["SeriesEditor_SelfBillingNotice", L["SeriesEditor_SelfBillingNoticeEmphasis"], L["SeriesEditor_SelfBillingNoticeTypeS"]]
                         </MudText>
                     </MudItem>
                 }
@@ -99,7 +99,7 @@
                            StartIcon="@Icons.Material.Filled.Save"
                            Disabled="@(_saving || string.IsNullOrWhiteSpace(_seriesCode) || !Company.HasCompany)"
                            OnClick="CreateAsync">
-                    Criar série
+                    @L["SeriesEditor_CreateSeriesButton"]
                 </MudButton>
             </MudStack>
         </MudPaper>
@@ -109,48 +109,44 @@
         <MudPaper Elevation="1" Class="pa-4">
             <MudGrid>
                 <MudItem xs="12" md="3">
-                    <MudText Typo="Typo.caption" Color="Color.Secondary">Tipo de documento</MudText>
+                    <MudText Typo="Typo.caption" Color="Color.Secondary">@L["SeriesEditor_DocumentTypeColumn"]</MudText>
                     <MudText>@_series.DocumentType</MudText>
                 </MudItem>
                 <MudItem xs="12" md="3">
-                    <MudText Typo="Typo.caption" Color="Color.Secondary">Identificador</MudText>
+                    <MudText Typo="Typo.caption" Color="Color.Secondary">@L["SeriesEditor_IdentifierLabel"]</MudText>
                     <MudText Style="font-family: monospace;">@_series.SeriesCode</MudText>
                 </MudItem>
                 <MudItem xs="12" md="3">
-                    <MudText Typo="Typo.caption" Color="Color.Secondary">Último número emitido</MudText>
+                    <MudText Typo="Typo.caption" Color="Color.Secondary">@L["SeriesEditor_LastNumberIssuedLabel"]</MudText>
                     <MudText>@_series.CurrentSequence</MudText>
                 </MudItem>
                 <MudItem xs="12" md="3">
-                    <MudText Typo="Typo.caption" Color="Color.Secondary">Estado</MudText>
+                    <MudText Typo="Typo.caption" Color="Color.Secondary">@L["SeriesEditor_StatusLabel"]</MudText>
                     <MudText>@_series.Status</MudText>
                 </MudItem>
                 @if (_series.SelfBilling)
                 {
                     <MudItem xs="12" md="3">
-                        <MudText Typo="Typo.caption" Color="Color.Secondary">Utilização</MudText>
-                        <MudText>Autofaturação</MudText>
+                        <MudText Typo="Typo.caption" Color="Color.Secondary">@L["SeriesEditor_UsageLabel"]</MudText>
+                        <MudText>@L["SeriesEditor_SelfBillingUsage"]</MudText>
                     </MudItem>
                 }
             </MudGrid>
 
             <MudAlert Severity="Severity.Normal" Dense="true" Class="mt-4">
-                O tipo, o identificador e a numeração <strong>não se alteram</strong>: foram comunicados
-                à AT e estão escritos em todos os documentos já emitidos. Para numerar de outra forma,
-                cria-se uma série nova.
+                @L["SeriesEditor_ImmutableNotice", L["SeriesEditor_ImmutableNoticeEmphasis"]]
             </MudAlert>
         </MudPaper>
 
         <MudPaper Elevation="1" Class="pa-4">
-            <MudText Typo="Typo.h6" Class="mb-2">Efeito no stock</MudText>
+            <MudText Typo="Typo.h6" Class="mb-2">@L["SeriesEditor_StockEffectSectionTitle"]</MudText>
             <MudText Typo="Typo.body2" Color="Color.Secondary" Class="mb-3">
-                O que os <strong>próximos</strong> documentos desta série fazem às existências. Não é
-                uma decisão fiscal — o mesmo tipo de documento é usado de maneiras diferentes por
-                negócios diferentes — e por isso pode mudar. Os documentos já emitidos ficam como estão.
+                O que os <strong>@L["SeriesEditor_StockEffectSectionNoticeEmphasis"]</strong> @L["SeriesEditor_StockEffectSectionNoticeText"]
             </MudText>
 
             <MudStack Row="true" Spacing="2" AlignItems="AlignItems.Center">
                 <MudSelect T="string" @bind-Value="_stockEffect" @bind-Value:after="StateHasChanged"
-                           Label="Efeito no stock" Variant="Variant.Outlined" Margin="Margin.Dense"
+                           Label="@L["SeriesEditor_StockEffectLabel"]" Variant="Variant.Outlined" Margin="Margin.Dense"
                            Style="max-width: 320px;">
                     @foreach (var effect in StockEffects.All)
                     {
@@ -161,33 +157,32 @@
                            StartIcon="@Icons.Material.Filled.Save"
                            Disabled="@(_saving || _stockEffect == _series.StockEffect)"
                            OnClick="UpdateStockEffectAsync">
-                    Guardar
+                    @L["SeriesEditor_SaveButton"]
                 </MudButton>
             </MudStack>
         </MudPaper>
 
         <MudPaper Elevation="1" Class="pa-4">
-            <MudText Typo="Typo.h6" Class="mb-2">Comunicação à AT</MudText>
+            <MudText Typo="Typo.h6" Class="mb-2">@L["SeriesEditor_CommunicationSectionTitle"]</MudText>
             <MudText Typo="Typo.body2" Color="Color.Secondary" Class="mb-3">
-                Registe aqui o código de validação devolvido pela AT ao comunicar a série. É esse código
-                que forma o ATCUD dos documentos e desbloqueia a emissão.
+                @L["SeriesEditor_CommunicationSectionNotice"]
             </MudText>
 
             @if (!string.IsNullOrWhiteSpace(_series.ValidationCode))
             {
                 <MudAlert Severity="Severity.Success" Dense="true" Class="mb-3">
-                    Série comunicada com o código <strong>@_series.ValidationCode</strong>.
+                    @L["SeriesEditor_CommunicatedNotice", _series.ValidationCode]
                 </MudAlert>
             }
 
             <MudStack Row="true" Spacing="2" AlignItems="AlignItems.Center">
-                <MudTextField @bind-Value="_validationCode" Label="Código de validação"
+                <MudTextField @bind-Value="_validationCode" Label="@L["SeriesEditor_ValidationCodeLabel"]"
                               Variant="Variant.Outlined" Margin="Margin.Dense" Style="max-width: 320px;" />
                 <MudButton Variant="Variant.Filled" Color="Color.Primary"
                            StartIcon="@Icons.Material.Filled.CloudDone"
                            Disabled="@(_saving || string.IsNullOrWhiteSpace(_validationCode))"
                            OnClick="CommunicateAsync">
-                    Registar código
+                    @L["SeriesEditor_RegisterCodeButton"]
                 </MudButton>
             </MudStack>
         </MudPaper>
@@ -199,20 +194,20 @@
     /// Every document family that is numbered from a series: faturação, movimentação de
     /// mercadorias e recibos. The API validates against the same list.
     /// </summary>
-    private static readonly DocumentTypeOption[] DocumentTypes =
+    private DocumentTypeOption[] DocumentTypes =>
     [
-        new("FT", "Fatura"),
-        new("FS", "Fatura simplificada"),
-        new("FR", "Fatura-recibo"),
-        new("NC", "Nota de crédito"),
-        new("ND", "Nota de débito"),
-        new("GR", "Guia de remessa"),
-        new("GT", "Guia de transporte"),
-        new("GA", "Guia de ativos próprios"),
-        new("GC", "Guia de consignação"),
-        new("GD", "Guia de devolução"),
-        new("RC", "Recibo (regime de IVA de caixa)"),
-        new("RG", "Outros recibos")
+        new("FT", L["SeriesEditor_DocType_FT"]),
+        new("FS", L["SeriesEditor_DocType_FS"]),
+        new("FR", L["SeriesEditor_DocType_FR"]),
+        new("NC", L["SeriesEditor_DocType_NC"]),
+        new("ND", L["SeriesEditor_DocType_ND"]),
+        new("GR", L["SeriesEditor_DocType_GR"]),
+        new("GT", L["SeriesEditor_DocType_GT"]),
+        new("GA", L["SeriesEditor_DocType_GA"]),
+        new("GC", L["SeriesEditor_DocType_GC"]),
+        new("GD", L["SeriesEditor_DocType_GD"]),
+        new("RC", L["SeriesEditor_DocType_RC"]),
+        new("RG", L["SeriesEditor_DocType_RG"])
     ];
 
     [Parameter]
@@ -281,13 +276,13 @@
             _series = series.FirstOrDefault(x => x.Id == Id);
 
             if (_series is null)
-                _error = "Série não encontrada nesta empresa.";
+                _error = L["SeriesEditor_SeriesNotFoundNotice"];
             else
                 _stockEffect = _series.StockEffect;
         }
         catch (Exception ex)
         {
-            _error = $"Não foi possível carregar a série: {ex.Message}";
+            _error = L["SeriesEditor_LoadError", ex.Message];
         }
         finally
         {
@@ -315,16 +310,16 @@
 
             if (series is null)
             {
-                _error = error ?? "Não foi possível criar a série.";
+                _error = error ?? L["SeriesEditor_CreateFailed"];
                 return;
             }
 
-            Snackbar.Add($"Série {series.SeriesCode} criada. Falta comunicar à AT.", Severity.Success);
+            Snackbar.Add(L["SeriesEditor_CreatedSuccess", series.SeriesCode].Value, Severity.Success);
             Navigation.NavigateTo($"series/{series.Id}");
         }
         catch (Exception ex)
         {
-            _error = $"Não foi possível criar a série: {ex.Message}";
+            _error = L["SeriesEditor_CreateError", ex.Message];
         }
         finally
         {
@@ -343,17 +338,17 @@
 
             if (series is null)
             {
-                _error = error ?? "Não foi possível alterar o efeito no stock.";
+                _error = error ?? L["SeriesEditor_UpdateStockEffectFailed"];
                 return;
             }
 
             _series = series;
             _stockEffect = series.StockEffect;
-            Snackbar.Add("Efeito no stock alterado.", Severity.Success);
+            Snackbar.Add(L["SeriesEditor_StockEffectUpdatedSuccess"].Value, Severity.Success);
         }
         catch (Exception ex)
         {
-            _error = $"Não foi possível alterar o efeito no stock: {ex.Message}";
+            _error = L["SeriesEditor_UpdateStockEffectError", ex.Message];
         }
         finally
         {
@@ -376,13 +371,13 @@
                 return;
             }
 
-            Snackbar.Add("Código de validação registado.", Severity.Success);
+            Snackbar.Add(L["SeriesEditor_ValidationCodeRegisteredSuccess"].Value, Severity.Success);
             _validationCode = string.Empty;
             await LoadAsync();
         }
         catch (Exception ex)
         {
-            _error = $"Não foi possível registar o código: {ex.Message}";
+            _error = L["SeriesEditor_RegisterCodeError", ex.Message];
         }
         finally
         {

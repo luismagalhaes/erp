@@ -5,29 +5,32 @@
 @using MudBlazor
 @using Erp.Main.Models
 @using Erp.Main.Services
+@using Erp.Main.Resources
+@using Microsoft.Extensions.Localization
 @inject StockApiClient StockApi
 @inject CatalogApiClient Catalog
 @inject NavigationManager Navigation
 @inject ISnackbar Snackbar
+@inject IStringLocalizer<MainResources> Localizer
 
-<PageTitle>@(_count?.Reference ?? "Contagem")</PageTitle>
+<PageTitle>@(_count?.Reference ?? Localizer["InventoryCountSheet_DefaultTitle"])</PageTitle>
 
 <MudStack Spacing="4">
     <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center">
         <MudStack Spacing="0">
-            <MudText Typo="Typo.h4">@(_count?.Reference ?? "Contagem")</MudText>
+            <MudText Typo="Typo.h4">@(_count?.Reference ?? Localizer["InventoryCountSheet_DefaultTitle"])</MudText>
             @if (_count is not null)
             {
                 <MudText Typo="Typo.body2" Color="Color.Secondary">
                     @_count.CountDate.ToString("yyyy-MM-dd") · @ScopeLabel(_count.Scope) ·
-                    @(_count.IsOpen ? "aberta" : $"fechada em {_count.ClosedAtUtc:yyyy-MM-dd HH:mm}")
+                    @(_count.IsOpen ? Localizer["InventoryCountSheet_OpenStatus"] : string.Format(Localizer["InventoryCountSheet_ClosedStatus"], _count.ClosedAtUtc?.ToString("yyyy-MM-dd HH:mm")))
                 </MudText>
             }
         </MudStack>
 
         <MudButton Variant="Variant.Text" StartIcon="@Icons.Material.Filled.ArrowBack"
                    OnClick="@(() => Navigation.NavigateTo("inventory-counts"))">
-            Voltar
+            @Localizer["InventoryCountSheet_BackButton"]
         </MudButton>
     </MudStack>
 
@@ -42,24 +45,24 @@
     }
     else if (_count is null)
     {
-        <MudAlert Severity="Severity.Warning">Contagem não encontrada.</MudAlert>
+        <MudAlert Severity="Severity.Warning">@Localizer["InventoryCountSheet_NotFound"]</MudAlert>
     }
     else
     {
         <MudPaper Elevation="1" Class="pa-4">
             <MudGrid>
                 <MudItem xs="6" md="3">
-                    <MudText Typo="Typo.caption" Color="Color.Secondary">Artigos</MudText>
+                    <MudText Typo="Typo.caption" Color="Color.Secondary">@Localizer["InventoryCountSheet_ProductsLabel"]</MudText>
                     <MudText Typo="Typo.h5">@_lines.Count</MudText>
                 </MudItem>
                 <MudItem xs="6" md="3">
-                    <MudText Typo="Typo.caption" Color="Color.Secondary">Com diferença</MudText>
+                    <MudText Typo="Typo.caption" Color="Color.Secondary">@Localizer["InventoryCountSheet_DifferenceLabel"]</MudText>
                     <MudText Typo="Typo.h5" Color="@(DifferenceCount == 0 ? Color.Default : Color.Warning)">
                         @DifferenceCount
                     </MudText>
                 </MudItem>
                 <MudItem xs="6" md="3">
-                    <MudText Typo="Typo.caption" Color="Color.Secondary">Acerto total</MudText>
+                    <MudText Typo="Typo.caption" Color="Color.Secondary">@Localizer["InventoryCountSheet_TotalAdjustmentLabel"]</MudText>
                     <MudText Typo="Typo.h5">@TotalDifference.ToString("N3")</MudText>
                 </MudItem>
                 <MudItem xs="6" md="3" Class="d-flex align-center justify-end">
@@ -68,13 +71,13 @@
                         <MudStack Row="true" Spacing="2">
                             <MudButton Variant="Variant.Outlined" StartIcon="@Icons.Material.Filled.Add"
                                        OnClick="OpenAddLine">
-                                Artigo
+                                @Localizer["InventoryCountSheet_ProductButton"]
                             </MudButton>
                             <MudButton Variant="Variant.Outlined" Color="Color.Primary"
                                        StartIcon="@Icons.Material.Filled.Save"
                                        Disabled="@(_saving || !HasUnsavedChanges)"
                                        OnClick="SaveAsync">
-                                @(_saving ? "A guardar..." : "Guardar")
+                                @(_saving ? Localizer["InventoryCountSheet_Saving"] : Localizer["InventoryCountSheet_SaveButton"])
                             </MudButton>
                         </MudStack>
                     }
@@ -85,17 +88,14 @@
         @if (_count.IsOpen && HasUnsavedChanges)
         {
             <MudAlert Severity="Severity.Info" Dense="true">
-                Há quantidades por guardar. Fechar a contagem usa o que estiver guardado, por isso
-                guarde antes de fechar.
+                @Localizer["InventoryCountSheet_UnsavedNotice"]
             </MudAlert>
         }
 
         @if (_count.IsOpen && _lines.Count == 0)
         {
             <MudAlert Severity="Severity.Info">
-                A folha está vazia porque o sistema não tem existências neste âmbito. É assim que se
-                introduz o <strong>stock de abertura</strong>: acrescente os artigos com
-                <strong>Artigo</strong>, indique a quantidade e o custo, e feche a contagem.
+                @string.Format(Localizer["InventoryCountSheet_EmptySheetNotice"], Localizer["InventoryCountSheet_OpeningStockTerm"], Localizer["InventoryCountSheet_ProductButton"])
             </MudAlert>
         }
 
@@ -103,31 +103,31 @@
             <MudTable Items="Visible" Hover="true" Striped="true" Dense="true" Breakpoint="Breakpoint.Sm">
                 <ToolBarContent>
                     <MudTextField @bind-Value="_filter" @bind-Value:after="StateHasChanged" Immediate="true"
-                                  Placeholder="Procurar artigo" Adornment="Adornment.Start"
+                                  Placeholder="@Localizer["InventoryCountSheet_SearchPlaceholder"]" Adornment="Adornment.Start"
                                   AdornmentIcon="@Icons.Material.Filled.Search" Margin="Margin.Dense"
                                   Class="mt-0" Style="max-width: 320px;" />
                     <MudSpacer />
                     <MudSwitch @bind-Value="_onlyDifferences" @bind-Value:after="StateHasChanged"
-                               Color="Color.Primary" Label="Só diferenças" />
+                               Color="Color.Primary" Label="@Localizer["InventoryCountSheet_OnlyDifferencesLabel"]" />
                 </ToolBarContent>
                 <HeaderContent>
-                    <MudTh>Artigo</MudTh>
-                    <MudTh>Descrição</MudTh>
-                    <MudTh>Armazém</MudTh>
-                    <MudTh Style="text-align: right;">Sistema</MudTh>
-                    <MudTh Style="text-align: right;">Contado</MudTh>
-                    <MudTh Style="text-align: right;">Diferença</MudTh>
+                    <MudTh>@Localizer["InventoryCountSheet_ProductColumn"]</MudTh>
+                    <MudTh>@Localizer["InventoryCountSheet_DescriptionColumn"]</MudTh>
+                    <MudTh>@Localizer["InventoryCountSheet_WarehouseColumn"]</MudTh>
+                    <MudTh Style="text-align: right;">@Localizer["InventoryCountSheet_SystemColumn"]</MudTh>
+                    <MudTh Style="text-align: right;">@Localizer["InventoryCountSheet_CountedColumn"]</MudTh>
+                    <MudTh Style="text-align: right;">@Localizer["InventoryCountSheet_DifferenceColumn"]</MudTh>
                 </HeaderContent>
                 <RowTemplate>
-                    <MudTd DataLabel="Artigo">
+                    <MudTd DataLabel="@Localizer["InventoryCountSheet_ProductColumn"]">
                         <MudText Typo="Typo.body2" Style="font-family: monospace;">@context.ProductCode</MudText>
                     </MudTd>
-                    <MudTd DataLabel="Descrição">@context.ProductDescription</MudTd>
-                    <MudTd DataLabel="Armazém">@WarehouseName(context.WarehouseId)</MudTd>
-                    <MudTd DataLabel="Sistema" Style="text-align: right;">
+                    <MudTd DataLabel="@Localizer["InventoryCountSheet_DescriptionColumn"]">@context.ProductDescription</MudTd>
+                    <MudTd DataLabel="@Localizer["InventoryCountSheet_WarehouseColumn"]">@WarehouseName(context.WarehouseId)</MudTd>
+                    <MudTd DataLabel="@Localizer["InventoryCountSheet_SystemColumn"]" Style="text-align: right;">
                         @context.SystemQuantity.ToString("N3")
                     </MudTd>
-                    <MudTd DataLabel="Contado" Style="text-align: right;">
+                    <MudTd DataLabel="@Localizer["InventoryCountSheet_CountedColumn"]" Style="text-align: right;">
                         @if (_count.IsOpen)
                         {
                             <MudNumericField T="decimal" Value="context.CountedQuantity"
@@ -141,14 +141,14 @@
                             @context.CountedQuantity.ToString("N3")
                         }
                     </MudTd>
-                    <MudTd DataLabel="Diferença" Style="text-align: right;">
+                    <MudTd DataLabel="@Localizer["InventoryCountSheet_DifferenceColumn"]" Style="text-align: right;">
                         <MudText Typo="Typo.body2" Color="@DifferenceColor(context.Difference)">
                             <strong>@Signed(context.Difference)</strong>
                         </MudText>
                     </MudTd>
                 </RowTemplate>
                 <NoRecordsContent>
-                    <MudText Typo="Typo.body2" Color="Color.Secondary">Nada a mostrar.</MudText>
+                    <MudText Typo="Typo.body2" Color="Color.Secondary">@Localizer["InventoryCountSheet_NoRecords"]</MudText>
                 </NoRecordsContent>
             </MudTable>
         </MudPaper>
@@ -156,18 +156,15 @@
         @if (_count.IsOpen)
         {
             <MudExpansionPanels>
-                <MudExpansionPanel Text="Fechar contagem">
+                <MudExpansionPanel Text="@Localizer["InventoryCountSheet_CloseTitle"]">
                     <MudText Typo="Typo.body2" Color="Color.Secondary" Class="mb-3">
-                        Fechar escreve um movimento de acerto por cada linha com diferença. A diferença é
-                        medida contra o saldo no momento do fecho, não contra a fotografia da abertura —
-                        movimentos feitos durante a contagem não são desfeitos. Depois de fechada, a
-                        contagem não volta a abrir.
+                        @Localizer["InventoryCountSheet_CloseDescription"]
                     </MudText>
 
                     @if (HasUnsavedChanges)
                     {
                         <MudAlert Severity="Severity.Warning" Dense="true" Class="mb-3">
-                            Guarde as quantidades antes de fechar, ou as alterações por guardar perdem-se.
+                            @Localizer["InventoryCountSheet_CloseUnsavedWarning"]
                         </MudAlert>
                     }
 
@@ -175,7 +172,7 @@
                                StartIcon="@Icons.Material.Filled.Lock"
                                Disabled="@(_closing || HasUnsavedChanges)"
                                OnClick="CloseAsync">
-                        @(_closing ? "A fechar..." : $"Fechar e acertar {DifferenceCount} artigos")
+                        @(_closing ? Localizer["InventoryCountSheet_Closing"] : string.Format(Localizer["InventoryCountSheet_CloseButton"], DifferenceCount))
                     </MudButton>
                 </MudExpansionPanel>
             </MudExpansionPanels>
@@ -183,9 +180,8 @@
         else
         {
             <MudAlert Severity="Severity.Success">
-                Contagem fechada. Os acertos estão nos movimentos de stock, com a referência
-                <strong>Inventário @_count.Reference</strong>.
-                <MudLink Href="stock" Class="ml-2">Ver existências</MudLink>
+                @string.Format(Localizer["InventoryCountSheet_ClosedNotice"], string.Format(Localizer["InventoryCountSheet_ClosedReferencePrefix"], _count.Reference))
+                <MudLink Href="stock" Class="ml-2">@Localizer["InventoryCountSheet_ViewStockLink"]</MudLink>
             </MudAlert>
         }
     }
@@ -194,18 +190,17 @@
 @* --- Acrescentar artigo à folha --- *@
 <MudDialog @bind-Visible="_addOpen" Options="_dialogOptions">
     <TitleContent>
-        <MudText Typo="Typo.h6">Acrescentar artigo à contagem</MudText>
+        <MudText Typo="Typo.h6">@Localizer["InventoryCountSheet_AddLineTitle"]</MudText>
     </TitleContent>
     <DialogContent>
         <MudText Typo="Typo.body2" Color="Color.Secondary" Class="mb-3">
-            Para mercadoria que está na prateleira e o sistema desconhece. A linha entra a zero, por
-            isso o que contar é o que dá entrada.
+            @Localizer["InventoryCountSheet_AddLineDescription"]
         </MudText>
 
         <MudGrid>
             <MudItem xs="12" md="7">
                 <MudSelect T="Guid?" Value="_addProductId" ValueChanged="OnAddProductChanged"
-                           Label="Artigo" Variant="Variant.Outlined" Required="true">
+                           Label="@Localizer["InventoryCountSheet_AddProductLabel"]" Variant="Variant.Outlined" Required="true">
                     @foreach (var product in _products)
                     {
                         <MudSelectItem T="Guid?" Value="@product.Id">
@@ -216,9 +211,9 @@
             </MudItem>
             <MudItem xs="12" md="5">
                 <MudSelect T="Guid?" @bind-Value="_addWarehouseId" @bind-Value:after="StateHasChanged"
-                           Label="Armazém" Variant="Variant.Outlined" Required="true"
+                           Label="@Localizer["InventoryCountSheet_AddWarehouseLabel"]" Variant="Variant.Outlined" Required="true"
                            Disabled="@(_count?.WarehouseId is not null)"
-                           HelperText="@(_count?.WarehouseId is not null ? "A contagem é de um armazém só" : null)">
+                           HelperText="@(_count?.WarehouseId is not null ? Localizer["InventoryCountSheet_AddWarehouseHelperText"] : null)">
                     @foreach (var warehouse in _warehouses)
                     {
                         <MudSelectItem T="Guid?" Value="@warehouse.Id">
@@ -228,23 +223,22 @@
                 </MudSelect>
             </MudItem>
             <MudItem xs="12" md="5">
-                <MudNumericField T="decimal?" @bind-Value="_addUnitCost" Label="Custo unitário"
+                <MudNumericField T="decimal?" @bind-Value="_addUnitCost" Label="@Localizer["InventoryCountSheet_AddUnitCostLabel"]"
                                  Variant="Variant.Outlined" Format="N4" Clearable="true" />
             </MudItem>
             <MudItem xs="12" md="7" Class="d-flex align-center">
                 <MudText Typo="Typo.caption" Color="Color.Secondary">
-                    O razão nunca viu esta mercadoria, por isso mais nada sabe quanto vale. Em branco,
-                    entra ao custo médio que o artigo já tiver — que para um artigo novo é zero.
+                    @Localizer["InventoryCountSheet_AddUnitCostNotice"]
                 </MudText>
             </MudItem>
         </MudGrid>
     </DialogContent>
     <DialogActions>
-        <MudButton OnClick="@(() => _addOpen = false)">Cancelar</MudButton>
+        <MudButton OnClick="@(() => _addOpen = false)">@Localizer["InventoryCountSheet_CancelButton"]</MudButton>
         <MudButton Variant="Variant.Filled" Color="Color.Primary"
                    Disabled="@(_adding || _addProductId is null || _addWarehouseId is null)"
                    OnClick="AddLineAsync">
-            Acrescentar
+            @Localizer["InventoryCountSheet_AddButton"]
         </MudButton>
     </DialogActions>
 </MudDialog>
@@ -319,7 +313,7 @@
         }
         catch (Exception ex)
         {
-            _error = $"Não foi possível carregar a contagem: {ex.Message}";
+            _error = string.Format(Localizer["InventoryCountSheet_LoadError"], ex.Message);
         }
         finally
         {
@@ -365,7 +359,7 @@
 
             if (count is null)
             {
-                _error = error ?? "Não foi possível acrescentar o artigo.";
+                _error = error ?? Localizer["InventoryCountSheet_AddLineFailed"];
                 return;
             }
 
@@ -374,12 +368,12 @@
             _lines = [.. count.Lines.Select(line =>
                 _pending.TryGetValue(line.Id, out var counted) ? line with { CountedQuantity = counted } : line)];
 
-            Snackbar.Add($"{product.ProductCode} acrescentado à contagem.", Severity.Success);
+            Snackbar.Add(string.Format(Localizer["InventoryCountSheet_LineAdded"], product.ProductCode), Severity.Success);
             _addOpen = false;
         }
         catch (Exception ex)
         {
-            _error = $"Não foi possível acrescentar o artigo: {ex.Message}";
+            _error = string.Format(Localizer["InventoryCountSheet_AddLineError"], ex.Message);
         }
         finally
         {
@@ -412,7 +406,7 @@
 
             if (count is null)
             {
-                _error = error ?? "Não foi possível guardar as quantidades.";
+                _error = error ?? Localizer["InventoryCountSheet_SaveFailed"];
                 return;
             }
 
@@ -420,11 +414,12 @@
             _lines = [.. count.Lines];
             _pending.Clear();
 
-            Snackbar.Add($"{changes.Count} {(changes.Count == 1 ? "linha guardada" : "linhas guardadas")}.", Severity.Success);
+            Snackbar.Add(string.Format("{0} {1}.", changes.Count,
+                changes.Count == 1 ? Localizer["InventoryCountSheet_LineSavedSingular"] : Localizer["InventoryCountSheet_LineSavedPlural"]), Severity.Success);
         }
         catch (Exception ex)
         {
-            _error = $"Não foi possível guardar as quantidades: {ex.Message}";
+            _error = string.Format(Localizer["InventoryCountSheet_SaveError"], ex.Message);
         }
         finally
         {
@@ -443,7 +438,7 @@
 
             if (count is null)
             {
-                _error = error ?? "Não foi possível fechar a contagem.";
+                _error = error ?? Localizer["InventoryCountSheet_CloseFailed"];
                 return;
             }
 
@@ -454,13 +449,14 @@
             var applied = count.Lines.Count(line => line.AppliedDifference is not null and not 0);
             Snackbar.Add(
                 applied == 0
-                    ? "Contagem fechada sem acertos: o stock já batia certo."
-                    : $"Contagem fechada com {applied} {(applied == 1 ? "acerto" : "acertos")}.",
+                    ? Localizer["InventoryCountSheet_ClosedNoAdjustments"]
+                    : string.Format(Localizer["InventoryCountSheet_ClosedWithAdjustments"], applied,
+                        applied == 1 ? Localizer["InventoryCountSheet_ClosedWithAdjustmentSingular"] : Localizer["InventoryCountSheet_ClosedWithAdjustmentPlural"]),
                 Severity.Success);
         }
         catch (Exception ex)
         {
-            _error = $"Não foi possível fechar a contagem: {ex.Message}";
+            _error = string.Format(Localizer["InventoryCountSheet_CloseError"], ex.Message);
         }
         finally
         {
@@ -481,11 +477,11 @@
     private static string Signed(decimal difference) =>
         difference > 0 ? $"+{difference:N3}" : difference.ToString("N3");
 
-    private static string ScopeLabel(string scope) => scope switch
+    private string ScopeLabel(string scope) => scope switch
     {
-        "Total" => "empresa inteira",
-        "Warehouse" => "um armazém",
-        "Products" => "artigos escolhidos",
+        "Total" => Localizer["InventoryCountSheet_ScopeTotal"],
+        "Warehouse" => Localizer["InventoryCountSheet_ScopeWarehouse"],
+        "Products" => Localizer["InventoryCountSheet_ScopeProducts"],
         _ => scope
     };
 }

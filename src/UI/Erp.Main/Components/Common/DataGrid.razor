@@ -6,7 +6,10 @@
 @implements IDisposable
 @using MudBlazor
 @using Erp.Main.Services
+@using Microsoft.Extensions.Localization
+@using Erp.Main.Resources
 @inject CompanyState Company
+@inject IStringLocalizer<MainResources> Localizer
 
 @if (!string.IsNullOrWhiteSpace(_error))
 {
@@ -28,7 +31,7 @@
             @if (SearchFields.Count > 0)
             {
                 <MudTextField Value="_search" ValueChanged="@((string value) => OnSearchChangedAsync(value))"
-                              T="string" Placeholder="@SearchPlaceholder"
+                              T="string" Placeholder="@(SearchPlaceholder ?? Localizer["Common_Search"])"
                               Variant="Variant.Text" Margin="Margin.Dense" Immediate="true" Clearable="true"
                               DebounceInterval="400"
                               Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.Search"
@@ -45,8 +48,8 @@
         <NoRecordsContent>
             <MudStack AlignItems="AlignItems.Center" Spacing="1" Class="pa-8">
                 <MudIcon Icon="@EmptyIcon" Size="Size.Large" Class="mud-text-secondary" />
-                <MudText Typo="Typo.subtitle1">@EmptyTitle</MudText>
-                <MudText Typo="Typo.body2" Class="mud-text-secondary">@EmptyDescription</MudText>
+                <MudText Typo="Typo.subtitle1">@(EmptyTitle ?? Localizer["DataGrid_EmptyTitle"])</MudText>
+                <MudText Typo="Typo.body2" Class="mud-text-secondary">@(EmptyDescription ?? Localizer["DataGrid_EmptyDescription"])</MudText>
             </MudStack>
         </NoRecordsContent>
 
@@ -54,9 +57,9 @@
             <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween"
                       Class="erp-grid-footer px-4 py-2">
                 <MudStack Row="true" Spacing="1" AlignItems="AlignItems.Center">
-                    <MudText Typo="Typo.body2" Class="mud-text-secondary">@_totalItems @ItemsLabel</MudText>
+                    <MudText Typo="Typo.body2" Class="mud-text-secondary">@_totalItems @(ItemsLabel ?? Localizer["DataGrid_ItemsLabel"])</MudText>
                     <MudIconButton Icon="@Icons.Material.Filled.Refresh" Size="Size.Small"
-                                   Color="Color.Primary" title="Atualizar" OnClick="ReloadAsync" />
+                                   Color="Color.Primary" title="@Localizer["DataGrid_RefreshAction"]" OnClick="ReloadAsync" />
                 </MudStack>
             </MudStack>
         </PagerContent>
@@ -86,22 +89,22 @@
     [Parameter, EditorRequired]
     public string DefaultOrderBy { get; set; } = default!;
 
-    [Parameter] public string SearchPlaceholder { get; set; } = "Procurar";
+    [Parameter] public string? SearchPlaceholder { get; set; }
 
     /// <summary>Extra filter controls rendered in the toolbar next to the search box.</summary>
     [Parameter] public RenderFragment? Filters { get; set; }
 
     [Parameter] public string EmptyIcon { get; set; } = Icons.Material.Filled.Inbox;
 
-    [Parameter] public string EmptyTitle { get; set; } = "Sem registos para mostrar";
+    [Parameter] public string? EmptyTitle { get; set; }
 
-    [Parameter] public string EmptyDescription { get; set; } = "Ajuste os filtros ou crie o primeiro registo.";
+    [Parameter] public string? EmptyDescription { get; set; }
 
     /// <summary>The noun shown next to the record count in the footer.</summary>
-    [Parameter] public string ItemsLabel { get; set; } = "registos";
+    [Parameter] public string? ItemsLabel { get; set; }
 
     /// <summary>The message shown when the load fails. The record noun is appended by the page.</summary>
-    [Parameter] public string LoadErrorMessage { get; set; } = "Não foi possível carregar os registos";
+    [Parameter] public string? LoadErrorMessage { get; set; }
 
     /// <summary>
     /// Whether the listing belongs to a company. Backoffice listings such as companies or the email
@@ -184,7 +187,7 @@
         }
         catch (Exception ex)
         {
-            _error = $"{LoadErrorMessage}: {ex.Message}";
+            _error = $"{LoadErrorMessage ?? Localizer["DataGrid_LoadErrorMessage"]}: {ex.Message}";
             _totalItems = 0;
             return new GridData<T> { Items = [], TotalItems = 0 };
         }

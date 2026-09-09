@@ -14,4 +14,7 @@ public sealed class UserService(IUserStorage userStorage) : IUserService
 
     public Task UpdateUserRolesAsync(string userId, IReadOnlyCollection<string> roles, CancellationToken cancellationToken = default)
         => userStorage.UpdateUserRolesAsync(userId, roles, cancellationToken);
+
+    public Task UpdateUserLanguageAsync(string userId, string preferredLanguage, CancellationToken cancellationToken = default)
+        => userStorage.UpdateUserLanguageAsync(userId, preferredLanguage, cancellationToken);
 }

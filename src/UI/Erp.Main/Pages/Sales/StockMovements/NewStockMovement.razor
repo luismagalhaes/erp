@@ -6,27 +6,30 @@
 @using MudBlazor
 @using Erp.Main.Models
 @using Erp.Main.Services
+@using Microsoft.Extensions.Localization
+@using Erp.Main.Resources
 @inject SalesApiClient SalesApi
 @inject SeriesApiClient SeriesApi
 @inject CatalogApiClient Catalog
 @inject CompanyState Company
 @inject NavigationManager Navigation
 @inject ISnackbar Snackbar
+@inject IStringLocalizer<MainResources> L
 
-<PageTitle>Nova guia</PageTitle>
+<PageTitle>@L["NewStockMovement_Title"]</PageTitle>
 
 <MudStack Spacing="4">
     <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center">
         <MudStack Spacing="0">
-            <MudText Typo="Typo.h4">Nova guia de movimentação</MudText>
+            <MudText Typo="Typo.h4">@L["NewStockMovement_HeaderTitle"]</MudText>
             <MudText Typo="Typo.body2" Color="Color.Secondary">
-                O documento é assinado e numerado na emissão, e tem de ser comunicado à AT antes de o transporte começar.
+                @L["NewStockMovement_HeaderSubtitle"]
             </MudText>
         </MudStack>
 
         <MudButton Variant="Variant.Text" StartIcon="@Icons.Material.Filled.ArrowBack"
                    OnClick="@(() => Navigation.NavigateTo("stock-movements"))">
-            Voltar
+            @L["NewStockMovement_BackButton"]
         </MudButton>
     </MudStack>
 
@@ -42,44 +45,44 @@
     else if (_series.Count == 0)
     {
         <MudAlert Severity="Severity.Warning">
-            Não existe nenhuma série de movimentação comunicada à AT. Crie uma série do tipo GR, GT, GA, GC ou GD.
-            <MudLink Href="series/new" Class="ml-2">Criar série</MudLink>
+            @L["NewStockMovement_NoSeriesWarning"]
+            <MudLink Href="series/new" Class="ml-2">@L["NewStockMovement_CreateSeriesLink"]</MudLink>
         </MudAlert>
     }
     else
     {
         <MudPaper Elevation="1" Class="pa-4">
-            <MudText Typo="Typo.h6" Class="mb-3">Documento</MudText>
+            <MudText Typo="Typo.h6" Class="mb-3">@L["NewStockMovement_DocumentTitle"]</MudText>
             <MudGrid>
                 <MudItem xs="12" md="5">
-                    <MudSelect @bind-Value="_seriesId" Label="Série" Variant="Variant.Outlined" Required="true">
+                    <MudSelect @bind-Value="_seriesId" Label="@L["NewStockMovement_SeriesLabel"]" Variant="Variant.Outlined" Required="true">
                         @foreach (var series in _series)
                         {
                             <MudSelectItem T="Guid" Value="@series.Id">
                                 @series.DocumentType @series.SeriesCode — @MovementTypes.Describe(series.DocumentType)
-                                (próximo n.º @(series.CurrentSequence + 1))
+                                @L["NewStockMovement_NextNumberSuffix", series.CurrentSequence + 1]
                             </MudSelectItem>
                         }
                     </MudSelect>
                 </MudItem>
                 <MudItem xs="12" md="3">
-                    <MudDatePicker @bind-Date="_movementDate" Label="Data do documento"
+                    <MudDatePicker @bind-Date="_movementDate" Label="@L["NewStockMovement_DocumentDateLabel"]"
                                    Variant="Variant.Outlined" DateFormat="yyyy-MM-dd" />
                 </MudItem>
                 <MudItem xs="12" md="4">
-                    <MudTextField @bind-Value="_vehiclePlate" Label="Matrícula do veículo" Variant="Variant.Outlined"
-                                  HelperText="Exigida pelo regime de bens em circulação" />
+                    <MudTextField @bind-Value="_vehiclePlate" Label="@L["NewStockMovement_VehiclePlateLabel"]" Variant="Variant.Outlined"
+                                  HelperText="@L["NewStockMovement_VehiclePlateHelp"]" />
                 </MudItem>
             </MudGrid>
         </MudPaper>
 
         <MudPaper Elevation="1" Class="pa-4">
-            <MudText Typo="Typo.h6" Class="mb-3">Destinatário</MudText>
+            <MudText Typo="Typo.h6" Class="mb-3">@L["NewStockMovement_RecipientTitle"]</MudText>
             <MudGrid>
                 <MudItem xs="12" md="4">
                     <MudSelect T="Guid?" Value="_partnerId" ValueChanged="OnPartnerChanged"
-                               Label="@(_partyIsSupplier ? "Fornecedor" : "Cliente")" Variant="Variant.Outlined"
-                               Clearable="true" Placeholder="Livre">
+                               Label="@(_partyIsSupplier ? L["NewStockMovement_SupplierLabel"] : L["NewStockMovement_CustomerLabel"])" Variant="Variant.Outlined"
+                               Clearable="true" Placeholder="@L["NewStockMovement_FreePlaceholder"]">
                         @foreach (var partner in _partyIsSupplier ? _suppliers : _customers)
                         {
                             <MudSelectItem T="Guid?" Value="@partner.Id">@partner.Name (@partner.TaxId)</MudSelectItem>
@@ -87,89 +90,89 @@
                     </MudSelect>
                 </MudItem>
                 <MudItem xs="12" md="3">
-                    <MudTextField @bind-Value="_partyTaxId" Label="NIF" Variant="Variant.Outlined"
-                                  HelperText="Vazio para consumidor final" />
+                    <MudTextField @bind-Value="_partyTaxId" Label="@L["NewStockMovement_TaxIdLabel"]" Variant="Variant.Outlined"
+                                  HelperText="@L["NewStockMovement_TaxIdHelp"]" />
                 </MudItem>
                 <MudItem xs="12" md="3">
-                    <MudTextField @bind-Value="_partyName" Label="Nome" Variant="Variant.Outlined" Required="true" />
+                    <MudTextField @bind-Value="_partyName" Label="@L["NewStockMovement_NameLabel"]" Variant="Variant.Outlined" Required="true" />
                 </MudItem>
                 <MudItem xs="12" md="2" Class="d-flex align-center">
                     <MudSwitch T="bool" Value="_partyIsSupplier" ValueChanged="OnPartyKindChanged"
-                               Color="Color.Primary" Label="É fornecedor" />
+                               Color="Color.Primary" Label="@L["NewStockMovement_IsSupplierLabel"]" />
                 </MudItem>
             </MudGrid>
         </MudPaper>
 
         <MudPaper Elevation="1" Class="pa-4">
-            <MudText Typo="Typo.h6" Class="mb-3">Transporte</MudText>
+            <MudText Typo="Typo.h6" Class="mb-3">@L["NewStockMovement_TransportTitle"]</MudText>
             <MudGrid>
                 <MudItem xs="12" md="6">
-                    <MudText Typo="Typo.subtitle2" Color="Color.Secondary" Class="mb-2">Local de carga</MudText>
-                    <MudTextField @bind-Value="_shipFromAddress" Label="Morada" Variant="Variant.Outlined"
+                    <MudText Typo="Typo.subtitle2" Color="Color.Secondary" Class="mb-2">@L["NewStockMovement_LoadLocationLabel"]</MudText>
+                    <MudTextField @bind-Value="_shipFromAddress" Label="@L["NewStockMovement_AddressLabel"]" Variant="Variant.Outlined"
                                   Required="true" Class="mb-3" />
                     <MudGrid>
                         <MudItem xs="6">
-                            <MudTextField @bind-Value="_shipFromPostalCode" Label="Código postal" Variant="Variant.Outlined" />
+                            <MudTextField @bind-Value="_shipFromPostalCode" Label="@L["NewStockMovement_PostalCodeLabel"]" Variant="Variant.Outlined" />
                         </MudItem>
                         <MudItem xs="6">
-                            <MudTextField @bind-Value="_shipFromCity" Label="Localidade" Variant="Variant.Outlined" />
+                            <MudTextField @bind-Value="_shipFromCity" Label="@L["NewStockMovement_CityLabel"]" Variant="Variant.Outlined" />
                         </MudItem>
                     </MudGrid>
                 </MudItem>
 
                 <MudItem xs="12" md="6">
-                    <MudText Typo="Typo.subtitle2" Color="Color.Secondary" Class="mb-2">Local de descarga</MudText>
-                    <MudTextField @bind-Value="_shipToAddress" Label="Morada" Variant="Variant.Outlined"
+                    <MudText Typo="Typo.subtitle2" Color="Color.Secondary" Class="mb-2">@L["NewStockMovement_UnloadLocationLabel"]</MudText>
+                    <MudTextField @bind-Value="_shipToAddress" Label="@L["NewStockMovement_AddressLabel"]" Variant="Variant.Outlined"
                                   Required="true" Class="mb-3" />
                     <MudGrid>
                         <MudItem xs="6">
-                            <MudTextField @bind-Value="_shipToPostalCode" Label="Código postal" Variant="Variant.Outlined" />
+                            <MudTextField @bind-Value="_shipToPostalCode" Label="@L["NewStockMovement_PostalCodeLabel"]" Variant="Variant.Outlined" />
                         </MudItem>
                         <MudItem xs="6">
-                            <MudTextField @bind-Value="_shipToCity" Label="Localidade" Variant="Variant.Outlined" />
+                            <MudTextField @bind-Value="_shipToCity" Label="@L["NewStockMovement_CityLabel"]" Variant="Variant.Outlined" />
                         </MudItem>
                     </MudGrid>
                 </MudItem>
 
                 <MudItem xs="12" md="4">
-                    <MudDatePicker @bind-Date="_startDate" Label="Data de início do transporte"
+                    <MudDatePicker @bind-Date="_startDate" Label="@L["NewStockMovement_TransportStartDateLabel"]"
                                    Variant="Variant.Outlined" DateFormat="yyyy-MM-dd" />
                 </MudItem>
                 <MudItem xs="12" md="2">
-                    <MudTimePicker @bind-Time="_startTime" Label="Hora" Variant="Variant.Outlined" />
+                    <MudTimePicker @bind-Time="_startTime" Label="@L["NewStockMovement_TimeLabel"]" Variant="Variant.Outlined" />
                 </MudItem>
                 <MudItem xs="12" md="6">
-                    <MudTextField @bind-Value="_comments" Label="Observações" Variant="Variant.Outlined" />
+                    <MudTextField @bind-Value="_comments" Label="@L["NewStockMovement_NotesLabel"]" Variant="Variant.Outlined" />
                 </MudItem>
             </MudGrid>
         </MudPaper>
 
         <MudPaper Elevation="1" Class="pa-4">
             <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center" Class="mb-3">
-                <MudText Typo="Typo.h6">Mercadoria</MudText>
+                <MudText Typo="Typo.h6">@L["NewStockMovement_GoodsTitle"]</MudText>
                 <MudButton Variant="Variant.Outlined" Color="Color.Primary" Size="Size.Small"
                            StartIcon="@Icons.Material.Filled.Add" OnClick="AddLine">
-                    Adicionar linha
+                    @L["NewStockMovement_AddLineButton"]
                 </MudButton>
             </MudStack>
 
             <MudTable Items="_lines" Dense="true" Hover="true" Striped="true" Breakpoint="Breakpoint.Sm">
                 <HeaderContent>
-                    <MudTh Style="width: 200px;">Artigo</MudTh>
-                    <MudTh>Descrição</MudTh>
-                    <MudTh Style="width: 110px;">Qtd.</MudTh>
-                    <MudTh Style="width: 130px;">Preço unit.</MudTh>
-                    <MudTh Style="width: 150px;">IVA</MudTh>
-                    <MudTh Style="width: 110px; text-align: right;">Total</MudTh>
-                    <MudTh Style="width: 70px; text-align: right;">Ações</MudTh>
+                    <MudTh Style="width: 200px;">@L["NewStockMovement_ProductColumn"]</MudTh>
+                    <MudTh>@L["NewStockMovement_DescriptionColumn"]</MudTh>
+                    <MudTh Style="width: 110px;">@L["NewStockMovement_QuantityColumn"]</MudTh>
+                    <MudTh Style="width: 130px;">@L["NewStockMovement_UnitPriceColumn"]</MudTh>
+                    <MudTh Style="width: 150px;">@L["NewStockMovement_TaxColumn"]</MudTh>
+                    <MudTh Style="width: 110px; text-align: right;">@L["NewStockMovement_TotalColumn"]</MudTh>
+                    <MudTh Style="width: 70px; text-align: right;">@L["NewStockMovement_ActionsColumn"]</MudTh>
                 </HeaderContent>
                 <RowTemplate>
-                    <MudTd DataLabel="Artigo">
+                    <MudTd DataLabel="@L["NewStockMovement_ProductColumn"]">
                         @if (_products.Count > 0)
                         {
                             <MudSelect T="Guid?" Value="context.ProductId"
                                        ValueChanged="@(productId => OnProductChanged(context, productId))"
-                                       Margin="Margin.Dense" Clearable="true" Placeholder="Livre">
+                                       Margin="Margin.Dense" Clearable="true" Placeholder="@L["NewStockMovement_FreePlaceholder"]">
                                 @foreach (var product in _products)
                                 {
                                     <MudSelectItem T="Guid?" Value="@product.Id">
@@ -180,19 +183,19 @@
                         }
                         else
                         {
-                            <MudTextField @bind-Value="context.ProductCode" Margin="Margin.Dense" Placeholder="Código" />
+                            <MudTextField @bind-Value="context.ProductCode" Margin="Margin.Dense" Placeholder="@L["NewStockMovement_CodePlaceholder"]" />
                         }
                     </MudTd>
-                    <MudTd DataLabel="Descrição">
+                    <MudTd DataLabel="@L["NewStockMovement_DescriptionColumn"]">
                         <MudTextField @bind-Value="context.ProductDescription" Margin="Margin.Dense" />
                     </MudTd>
-                    <MudTd DataLabel="Qtd.">
+                    <MudTd DataLabel="@L["NewStockMovement_QuantityColumn"]">
                         <MudNumericField @bind-Value="context.Quantity" Margin="Margin.Dense" Min="0" />
                     </MudTd>
-                    <MudTd DataLabel="Preço unit.">
+                    <MudTd DataLabel="@L["NewStockMovement_UnitPriceColumn"]">
                         <MudNumericField @bind-Value="context.UnitPrice" Margin="Margin.Dense" Min="0" Format="N2" />
                     </MudTd>
-                    <MudTd DataLabel="IVA">
+                    <MudTd DataLabel="@L["NewStockMovement_TaxColumn"]">
                         <MudSelect T="string" Value="context.TaxCode"
                                    ValueChanged="@(code => OnTaxCodeChanged(context, code))"
                                    Margin="Margin.Dense">
@@ -202,10 +205,10 @@
                             }
                         </MudSelect>
                     </MudTd>
-                    <MudTd DataLabel="Total" Style="text-align: right;">@LineTotal(context).ToString("N2")</MudTd>
-                    <MudTd DataLabel="Ações" Style="text-align: right;">
+                    <MudTd DataLabel="@L["NewStockMovement_TotalColumn"]" Style="text-align: right;">@LineTotal(context).ToString("N2")</MudTd>
+                    <MudTd DataLabel="@L["NewStockMovement_ActionsColumn"]" Style="text-align: right;">
                         <MudIconButton Icon="@Icons.Material.Filled.Delete" Size="Size.Small" Color="Color.Error"
-                                       title="Remover linha"
+                                       title="@L["NewStockMovement_RemoveLineTooltip"]"
                                        Disabled="@(_lines.Count == 1)"
                                        OnClick="@(() => RemoveLine(context))" />
                     </MudTd>
@@ -215,8 +218,8 @@
             @if (_lines.Any(line => line.TaxCode == ExemptCode))
             {
                 <MudTextField @bind-Value="_exemptionReason" Class="mt-4"
-                              Label="Motivo de isenção" Variant="Variant.Outlined"
-                              HelperText="Obrigatório quando alguma linha está isenta de IVA" />
+                              Label="@L["NewStockMovement_ExemptionReasonLabel"]" Variant="Variant.Outlined"
+                              HelperText="@L["NewStockMovement_ExemptionReasonHelp"]" />
             }
         </MudPaper>
 
@@ -224,15 +227,15 @@
             <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center">
                 <MudStack Row="true" Spacing="6">
                     <MudStack Spacing="0">
-                        <MudText Typo="Typo.caption" Color="Color.Secondary">Quantidade total</MudText>
+                        <MudText Typo="Typo.caption" Color="Color.Secondary">@L["NewStockMovement_TotalQuantityLabel"]</MudText>
                         <MudText Typo="Typo.h6">@TotalQuantity.ToString("N3")</MudText>
                     </MudStack>
                     <MudStack Spacing="0">
-                        <MudText Typo="Typo.caption" Color="Color.Secondary">Base tributável</MudText>
+                        <MudText Typo="Typo.caption" Color="Color.Secondary">@L["NewStockMovement_NetTotalLabel"]</MudText>
                         <MudText Typo="Typo.h6">@NetTotal.ToString("N2")</MudText>
                     </MudStack>
                     <MudStack Spacing="0">
-                        <MudText Typo="Typo.caption" Color="Color.Secondary">Total</MudText>
+                        <MudText Typo="Typo.caption" Color="Color.Secondary">@L["NewStockMovement_TotalLabel"]</MudText>
                         <MudText Typo="Typo.h5" Color="Color.Primary">@GrossTotal.ToString("N2")</MudText>
                     </MudStack>
                 </MudStack>
@@ -241,7 +244,7 @@
                            StartIcon="@Icons.Material.Filled.LocalShipping"
                            Disabled="@(_issuing || !CanIssue)"
                            OnClick="IssueAsync">
-                    @(_issuing ? "A emitir..." : "Emitir guia")
+                    @(_issuing ? L["NewStockMovement_IssuingButton"] : L["NewStockMovement_IssueButton"])
                 </MudButton>
             </MudStack>
         </MudPaper>
@@ -251,12 +254,12 @@
 @code {
     private const string ExemptCode = "ISE";
 
-    private static readonly TaxRateOption[] TaxRates =
+    private TaxRateOption[] TaxRates =>
     [
-        new("NOR", 23m, "Normal - 23%"),
-        new("INT", 13m, "Intermédia - 13%"),
-        new("RED", 6m, "Reduzida - 6%"),
-        new(ExemptCode, 0m, "Isento")
+        new("NOR", 23m, L["NewStockMovement_TaxRateNormal"]),
+        new("INT", 13m, L["NewStockMovement_TaxRateIntermediate"]),
+        new("RED", 6m, L["NewStockMovement_TaxRateReduced"]),
+        new(ExemptCode, 0m, L["NewStockMovement_TaxRateExempt"])
     ];
 
     private bool _loading = true;
@@ -348,7 +351,7 @@
         }
         catch (Exception ex)
         {
-            _error = $"Não foi possível preparar a emissão: {ex.Message}";
+            _error = L["NewStockMovement_LoadError", ex.Message];
         }
         finally
         {
@@ -407,7 +410,7 @@
         line.TaxPercentage = product.DefaultTaxPercentage;
     }
 
-    private static void OnTaxCodeChanged(LineEditor line, string taxCode)
+    private void OnTaxCodeChanged(LineEditor line, string taxCode)
     {
         line.TaxCode = taxCode;
         line.TaxPercentage = TaxRates.First(rate => rate.Code == taxCode).Percentage;
@@ -443,7 +446,7 @@
                     Normalize(_shipToPostalCode)),
                 startAt.ToUniversalTime(),
                 [.. _lines.Select(line => new CreateStockMovementLineRequest(
-                    string.IsNullOrWhiteSpace(line.ProductCode) ? "GEN" : line.ProductCode,
+                    string.IsNullOrWhiteSpace(line.ProductCode) ? L["NewStockMovement_GenericProductCode"] : line.ProductCode,
                     line.ProductDescription,
                     line.Quantity,
                     line.UnitPrice,
@@ -457,16 +460,16 @@
 
             if (movement is null)
             {
-                _error = error ?? "Não foi possível emitir a guia.";
+                _error = error ?? L["NewStockMovement_IssueFallbackError"];
                 return;
             }
 
-            Snackbar.Add($"Guia {movement.DocumentNumber} emitida. Falta comunicar à AT.", Severity.Success);
+            Snackbar.Add(L["NewStockMovement_IssueSuccess", movement.DocumentNumber], Severity.Success);
             Navigation.NavigateTo($"stock-movements/{movement.Id}");
         }
         catch (Exception ex)
         {
-            _error = $"Não foi possível emitir a guia: {ex.Message}";
+            _error = L["NewStockMovement_IssueError", ex.Message];
         }
         finally
         {

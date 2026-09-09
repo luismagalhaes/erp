@@ -7,20 +7,23 @@
 @using Erp.Main.Components.Common
 @using Erp.Main.Models
 @using Erp.Main.Services
+@using Erp.Main.Resources
+@using Microsoft.Extensions.Localization
 @inject CatalogApiClient Catalog
 @inject CompanyState Company
 @inject NavigationManager Navigation
+@inject IStringLocalizer<MainResources> Localizer
 
-<PageTitle>Artigos</PageTitle>
+<PageTitle>@Localizer["Products_PageTitle"]</PageTitle>
 
 <MudStack Spacing="4">
-    <PageHeader Title="Artigos">
+    <PageHeader Title="@Localizer["Products_PageTitle"]">
         <Actions>
             <MudButton Variant="Variant.Filled" Color="Color.Primary"
                        StartIcon="@Icons.Material.Filled.Add"
                        Disabled="@(!Company.HasCompany)"
                        OnClick="@(() => Navigation.NavigateTo("products/new"))">
-                Novo artigo
+                @Localizer["Products_NewButton"]
             </MudButton>
         </Actions>
     </PageHeader>
@@ -28,19 +31,19 @@
     <DataGrid @ref="_grid" T="ProductListItem"
                  LoadAsync="@((companyId, query, ct) => Catalog.QueryProductsAsync(companyId, query, ct))"
                  SearchFields="SearchFields" DefaultOrderBy="ProductCode"
-                 SearchPlaceholder="Procurar por código, descrição ou código de barras"
+                 SearchPlaceholder="@Localizer["Products_SearchPlaceholder"]"
                  EmptyIcon="@Icons.Material.Filled.Inventory2"
-                 EmptyTitle="Sem artigos para mostrar"
-                 EmptyDescription="Ajuste os filtros ou crie o primeiro artigo."
-                 ItemsLabel="artigos"
-                 LoadErrorMessage="Não foi possível carregar os artigos">
+                 EmptyTitle="@Localizer["Products_EmptyTitle"]"
+                 EmptyDescription="@Localizer["Products_EmptyDescription"]"
+                 ItemsLabel="@Localizer["Products_ItemsLabel"]"
+                 LoadErrorMessage="@Localizer["Products_LoadError"]">
         <Columns>
-            <PropertyColumn Property="x => x.ProductCode" Title="Código"/>
-            <PropertyColumn Property="x => x.Description" Title="Descrição" />
-            <PropertyColumn Property="x => x.FamilyName" Title="Família">
+            <PropertyColumn Property="x => x.ProductCode" Title="@Localizer["Products_CodeColumn"]"/>
+            <PropertyColumn Property="x => x.Description" Title="@Localizer["Products_DescriptionColumn"]" />
+            <PropertyColumn Property="x => x.FamilyName" Title="@Localizer["Products_FamilyColumn"]">
                 <FilterTemplate>
                     <MudStack Spacing="2" Class="pa-2" Style="min-width: 260px;">
-                        <MudAutocomplete T="string" Label="Família" Placeholder="Pesquisar família..."
+                        <MudAutocomplete T="string" Label="@Localizer["Products_FamilyColumn"]" Placeholder="@Localizer["Products_FamilyFilterPlaceholder"]"
                                          Value="@string.Empty"
                                          ValueChanged="@(value => AddFamilyFilterAsync(context, value))"
                                          SearchFunc="SearchFamiliesAsync" ResetValueOnEmptyText="true"
@@ -61,20 +64,20 @@
                     </MudStack>
                 </FilterTemplate>
             </PropertyColumn>
-            <PropertyColumn Property="x => x.SubfamilyName" Title="Subfamília" Hidden="true" />
-            <PropertyColumn Property="x => x.BrandName" Title="Marca" />
-            <PropertyColumn Property="x => x.UnitPrice" Title="Preço" Format="N2"
+            <PropertyColumn Property="x => x.SubfamilyName" Title="@Localizer["Products_SubfamilyColumn"]" Hidden="true" />
+            <PropertyColumn Property="x => x.BrandName" Title="@Localizer["Products_BrandColumn"]" />
+            <PropertyColumn Property="x => x.UnitPrice" Title="@Localizer["Products_PriceColumn"]" Format="N2"
                             CellClass="erp-numeric" HeaderClass="erp-numeric" />
-            <PropertyColumn Property="x => x.DefaultTaxCode" Title="IVA">
+            <PropertyColumn Property="x => x.DefaultTaxCode" Title="@Localizer["Products_TaxColumn"]">
                 <CellTemplate>
                     @context.Item.DefaultTaxCode (@context.Item.DefaultTaxPercentage.ToString("N0")%)
                 </CellTemplate>
             </PropertyColumn>
-            <PropertyColumn Property="x => x.IsActive" Title="Estado">
+            <PropertyColumn Property="x => x.IsActive" Title="@Localizer["Products_StatusColumn"]">
                 <CellTemplate>
                     <MudChip T="string" Size="Size.Small" Variant="Variant.Text"
                              Color="@(context.Item.IsActive ? Color.Success : Color.Default)">
-                        @(context.Item.IsActive ? "Ativo" : "Inativo")
+                        @(context.Item.IsActive ? Localizer["Common_Active"] : Localizer["Common_Inactive"])
                     </MudChip>
                 </CellTemplate>
             </PropertyColumn>
@@ -86,7 +89,7 @@
                              AnchorOrigin="Origin.BottomRight" TransformOrigin="Origin.TopRight">
                         <MudMenuItem Icon="@Icons.Material.Filled.Edit"
                                      OnClick="@(() => Navigation.NavigateTo($"products/{context.Item.Id}"))">
-                            Editar
+                            @Localizer["Products_EditAction"]
                         </MudMenuItem>
                     </MudMenu>
                 </CellTemplate>

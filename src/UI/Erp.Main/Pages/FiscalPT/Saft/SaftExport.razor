@@ -4,22 +4,25 @@
 @using Microsoft.AspNetCore.Authorization
 @using Microsoft.AspNetCore.Components.Web
 @using Microsoft.JSInterop
+@using Microsoft.Extensions.Localization
 @using MudBlazor
 @using Erp.Main.Models
+@using Erp.Main.Resources
 @using Erp.Main.Services
 @inject SaftApiClient SaftApi
 @inject CatalogApiClient Catalog
 @inject CompanyState Company
 @inject IJSRuntime JS
 @inject ISnackbar Snackbar
+@inject IStringLocalizer<MainResources> L
 
-<PageTitle>Exportação SAF-T</PageTitle>
+<PageTitle>@L["SaftExport_PageTitle"]</PageTitle>
 
 <MudStack Spacing="4">
     <MudStack Spacing="0">
-        <MudText Typo="Typo.h4">Exportação SAF-T (PT)</MudText>
+        <MudText Typo="Typo.h4">@L["SaftExport_PageTitleWithVersion"]</MudText>
         <MudText Typo="Typo.body2" Color="Color.Secondary">
-            Ficheiro de faturação na versão @SaftVersion, com faturas, guias de movimentação e recibos do período.
+            @L["SaftExport_Subtitle", SaftVersion]
         </MudText>
     </MudStack>
 
@@ -30,27 +33,27 @@
 
     @if (!Company.HasCompany)
     {
-        <MudAlert Severity="Severity.Info">Escolha uma empresa no cabeçalho para exportar o SAF-T.</MudAlert>
+        <MudAlert Severity="Severity.Info">@L["SaftExport_ChooseCompanyNotice"]</MudAlert>
     }
     else
     {
         <MudPaper Elevation="1" Class="pa-4">
-            <MudText Typo="Typo.h6" Class="mb-3">Período</MudText>
+            <MudText Typo="Typo.h6" Class="mb-3">@L["SaftExport_PeriodTitle"]</MudText>
 
             <MudGrid>
                 <MudItem xs="12" md="3">
                     <MudSelect T="SaftPeriodKind" Value="_periodKind" ValueChanged="OnPeriodKindChanged"
-                               Label="Tipo de período" Variant="Variant.Outlined">
-                        <MudSelectItem T="SaftPeriodKind" Value="SaftPeriodKind.Month">Mês</MudSelectItem>
-                        <MudSelectItem T="SaftPeriodKind" Value="SaftPeriodKind.Quarter">Trimestre</MudSelectItem>
-                        <MudSelectItem T="SaftPeriodKind" Value="SaftPeriodKind.Year">Ano</MudSelectItem>
-                        <MudSelectItem T="SaftPeriodKind" Value="SaftPeriodKind.Custom">Intervalo livre</MudSelectItem>
+                               Label="@L["SaftExport_PeriodTypeLabel"]" Variant="Variant.Outlined">
+                        <MudSelectItem T="SaftPeriodKind" Value="SaftPeriodKind.Month">@L["SaftExport_MonthOption"]</MudSelectItem>
+                        <MudSelectItem T="SaftPeriodKind" Value="SaftPeriodKind.Quarter">@L["SaftExport_QuarterOption"]</MudSelectItem>
+                        <MudSelectItem T="SaftPeriodKind" Value="SaftPeriodKind.Year">@L["SaftExport_YearOption"]</MudSelectItem>
+                        <MudSelectItem T="SaftPeriodKind" Value="SaftPeriodKind.Custom">@L["SaftExport_CustomOption"]</MudSelectItem>
                     </MudSelect>
                 </MudItem>
 
                 <MudItem xs="12" md="2">
                     <MudNumericField T="int" Value="_year" ValueChanged="OnYearChanged"
-                                     Label="Ano" Variant="Variant.Outlined" Min="2000" Max="2100"
+                                     Label="@L["SaftExport_YearLabel"]" Variant="Variant.Outlined" Min="2000" Max="2100"
                                      Disabled="@(_periodKind == SaftPeriodKind.Custom)" />
                 </MudItem>
 
@@ -58,7 +61,7 @@
                 {
                     <MudItem xs="12" md="3">
                         <MudSelect T="int" Value="_month" ValueChanged="OnMonthChanged"
-                                   Label="Mês" Variant="Variant.Outlined">
+                                   Label="@L["SaftExport_MonthLabel"]" Variant="Variant.Outlined">
                             @for (var month = 1; month <= 12; month++)
                             {
                                 var value = month;
@@ -71,11 +74,11 @@
                 {
                     <MudItem xs="12" md="3">
                         <MudSelect T="int" Value="_quarter" ValueChanged="OnQuarterChanged"
-                                   Label="Trimestre" Variant="Variant.Outlined">
+                                   Label="@L["SaftExport_QuarterLabel"]" Variant="Variant.Outlined">
                             @for (var quarter = 1; quarter <= 4; quarter++)
                             {
                                 var value = quarter;
-                                <MudSelectItem T="int" Value="@value">@($"{value}.º trimestre")</MudSelectItem>
+                                <MudSelectItem T="int" Value="@value">@L["SaftExport_QuarterNumberFormat", value]</MudSelectItem>
                             }
                         </MudSelect>
                     </MudItem>
@@ -83,11 +86,11 @@
                 else if (_periodKind == SaftPeriodKind.Custom)
                 {
                     <MudItem xs="12" md="3">
-                        <MudDatePicker Date="_startDate" DateChanged="OnStartDateChanged" Label="Data inicial"
+                        <MudDatePicker Date="_startDate" DateChanged="OnStartDateChanged" Label="@L["SaftExport_StartDateLabel"]"
                                        Variant="Variant.Outlined" DateFormat="yyyy-MM-dd" />
                     </MudItem>
                     <MudItem xs="12" md="3">
-                        <MudDatePicker Date="_endDate" DateChanged="OnEndDateChanged" Label="Data final"
+                        <MudDatePicker Date="_endDate" DateChanged="OnEndDateChanged" Label="@L["SaftExport_EndDateLabel"]"
                                        Variant="Variant.Outlined" DateFormat="yyyy-MM-dd" />
                     </MudItem>
                 }
@@ -102,7 +105,7 @@
 
         <MudPaper Elevation="1" Class="pa-4">
             <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center" Class="mb-3">
-                <MudText Typo="Typo.h6">Conteúdo do período</MudText>
+                <MudText Typo="Typo.h6">@L["SaftExport_ContentTitle"]</MudText>
                 @if (_loadingSummary)
                 {
                     <MudProgressCircular Size="Size.Small" Indeterminate="true" Color="Color.Primary" />
@@ -111,24 +114,24 @@
 
             @if (_summary is null)
             {
-                <MudText Typo="Typo.body2" Color="Color.Secondary">Sem dados para o período escolhido.</MudText>
+                <MudText Typo="Typo.body2" Color="Color.Secondary">@L["SaftExport_NoDataNotice"]</MudText>
             }
             else
             {
                 <MudGrid>
                     <MudItem xs="6" md="3">
-                        <MudText Typo="Typo.caption" Color="Color.Secondary">Faturas</MudText>
+                        <MudText Typo="Typo.caption" Color="Color.Secondary">@L["SaftExport_InvoicesLabel"]</MudText>
                         <MudText Typo="Typo.h5">@_summary.InvoiceCount</MudText>
                         <MudText Typo="Typo.body2" Color="Color.Secondary">
                             @_summary.InvoiceGrossTotal.ToString("C2")
                         </MudText>
                     </MudItem>
                     <MudItem xs="6" md="3">
-                        <MudText Typo="Typo.caption" Color="Color.Secondary">Guias de movimentação</MudText>
+                        <MudText Typo="Typo.caption" Color="Color.Secondary">@L["SaftExport_StockMovementsLabel"]</MudText>
                         <MudText Typo="Typo.h5">@_summary.StockMovementCount</MudText>
                     </MudItem>
                     <MudItem xs="6" md="3">
-                        <MudText Typo="Typo.caption" Color="Color.Secondary">Recibos</MudText>
+                        <MudText Typo="Typo.caption" Color="Color.Secondary">@L["SaftExport_PaymentsLabel"]</MudText>
                         <MudText Typo="Typo.h5">@_summary.PaymentCount</MudText>
                         <MudText Typo="Typo.body2" Color="Color.Secondary">
                             @_summary.PaymentGrossTotal.ToString("C2")
@@ -139,7 +142,7 @@
                                    StartIcon="@Icons.Material.Filled.Download"
                                    Disabled="@(_exporting || TotalDocuments == 0)"
                                    OnClick="ExportAsync">
-                            @(_exporting ? "A gerar..." : "Gerar ficheiro")
+                            @(_exporting ? L["SaftExport_Generating"] : L["SaftExport_GenerateButton"])
                         </MudButton>
                     </MudItem>
                 </MudGrid>
@@ -147,7 +150,7 @@
                 @if (TotalDocuments == 0)
                 {
                     <MudAlert Severity="Severity.Info" Dense="true" Class="mt-3">
-                        Não há documentos neste período, por isso não há ficheiro para gerar.
+                        @L["SaftExport_NoDocumentsNotice"]
                     </MudAlert>
                 }
             }
@@ -156,36 +159,33 @@
         @if (_validationErrors == 0)
         {
             <MudAlert Severity="Severity.Success" Dense="true">
-                O ficheiro foi validado contra o esquema oficial da AT (@SaftVersion) sem erros.
+                @L["SaftExport_ValidatedSuccess", SaftVersion]
             </MudAlert>
         }
         else if (_validationErrors > 0)
         {
             <MudAlert Severity="Severity.Warning">
-                O ficheiro foi gerado, mas tem @_validationErrors @(_validationErrors == 1 ? "erro" : "erros")
-                face ao esquema oficial. Os detalhes ficam no log do servidor — não submeta assim.
+                @L["SaftExport_ValidationWarning", _validationErrors,
+                    (_validationErrors == 1 ? L["SaftExport_ValidationErrorSingular"] : L["SaftExport_ValidationErrorPlural"])]
             </MudAlert>
         }
 
         <MudAlert Severity="Severity.Normal" Dense="true">
-            Os documentos anulados vão no ficheiro com o estado "A": o SAF-T tem de dar conta de todos os
-            números emitidos. Os totais de controlo contam apenas os que não estão anulados.
+            @L["SaftExport_VoidedDocumentsNotice"]
         </MudAlert>
 
         <MudPaper Elevation="1" Class="pa-4">
             <MudStack Spacing="0" Class="mb-3">
-                <MudText Typo="Typo.h6">Autofaturação</MudText>
+                <MudText Typo="Typo.h6">@L["SaftExport_SelfBillingTitle"]</MudText>
                 <MudText Typo="Typo.body2" Color="Color.Secondary">
-                    Ficheiro à parte, do tipo <strong>S</strong>, e <strong>um por fornecedor</strong>: os
-                    documentos são vendas dele, e é o NIF dele que vai no cabeçalho. Nenhum destes
-                    documentos entra no ficheiro de faturação acima.
+                    @L["SaftExport_SelfBillingSubtitle", L["SaftExport_SelfBillingTypeS"], L["SaftExport_SelfBillingOnePerSupplier"]]
                 </MudText>
             </MudStack>
 
             <MudGrid>
                 <MudItem xs="12" md="6">
                     <MudSelect T="Guid?" @bind-Value="_selfBillingSupplierId" @bind-Value:after="StateHasChanged"
-                               Label="Fornecedor autofaturado" Variant="Variant.Outlined">
+                               Label="@L["SaftExport_SelfBilledSupplierLabel"]" Variant="Variant.Outlined">
                         @foreach (var supplier in _suppliers)
                         {
                             <MudSelectItem T="Guid?" Value="@supplier.Id">
@@ -199,7 +199,7 @@
                                StartIcon="@Icons.Material.Filled.Download"
                                Disabled="@(_exportingSelfBilling || _selfBillingSupplierId is null)"
                                OnClick="ExportSelfBillingAsync">
-                        @(_exportingSelfBilling ? "A gerar..." : "Gerar ficheiro S")
+                        @(_exportingSelfBilling ? L["SaftExport_Generating"] : L["SaftExport_GenerateFileSButton"])
                     </MudButton>
                 </MudItem>
             </MudGrid>
@@ -207,7 +207,7 @@
             @if (_suppliers.Count == 0)
             {
                 <MudAlert Severity="Severity.Info" Dense="true" Class="mt-3">
-                    Não há fornecedores ativos nesta empresa.
+                    @L["SaftExport_NoActiveSuppliersNotice"]
                 </MudAlert>
             }
         </MudPaper>
@@ -278,7 +278,7 @@
         }
         catch (Exception ex)
         {
-            _error = $"Não foi possível carregar os fornecedores: {ex.Message}";
+            _error = L["SaftExport_LoadSuppliersError", ex.Message];
         }
         finally
         {
@@ -370,7 +370,7 @@
         }
         catch (Exception ex)
         {
-            _error = $"Não foi possível ler o período: {ex.Message}";
+            _error = L["SaftExport_LoadSummaryError", ex.Message];
         }
         finally
         {
@@ -390,7 +390,7 @@
 
             if (file is null)
             {
-                _error = error ?? "Não foi possível gerar o ficheiro.";
+                _error = error ?? L["SaftExport_GenerateFailed"];
                 return;
             }
 
@@ -401,16 +401,16 @@
 
             if (_validationErrors == 0)
             {
-                Snackbar.Add($"{file.FileName} gerado e validado no esquema oficial.", Severity.Success);
+                Snackbar.Add(L["SaftExport_GeneratedAndValidated", file.FileName].Value, Severity.Success);
             }
             else
             {
-                Snackbar.Add($"{file.FileName} gerado, mas não passa no esquema oficial.", Severity.Warning);
+                Snackbar.Add(L["SaftExport_GeneratedButFailsSchema", file.FileName].Value, Severity.Warning);
             }
         }
         catch (Exception ex)
         {
-            _error = $"Não foi possível gerar o ficheiro: {ex.Message}";
+            _error = L["SaftExport_GenerateError", ex.Message];
         }
         finally
         {
@@ -430,7 +430,7 @@
 
             if (file is null)
             {
-                _error = error ?? "Não foi possível gerar o ficheiro de autofaturação.";
+                _error = error ?? L["SaftExport_GenerateSelfBillingFailed"];
                 return;
             }
 
@@ -439,16 +439,16 @@
 
             if (file.ValidationErrors == 0)
             {
-                Snackbar.Add($"{file.FileName} gerado e validado no esquema oficial.", Severity.Success);
+                Snackbar.Add(L["SaftExport_GeneratedAndValidated", file.FileName].Value, Severity.Success);
             }
             else
             {
-                Snackbar.Add($"{file.FileName} gerado, mas não passa no esquema oficial.", Severity.Warning);
+                Snackbar.Add(L["SaftExport_GeneratedButFailsSchema", file.FileName].Value, Severity.Warning);
             }
         }
         catch (Exception ex)
         {
-            _error = $"Não foi possível gerar o ficheiro de autofaturação: {ex.Message}";
+            _error = L["SaftExport_GenerateSelfBillingError", ex.Message];
         }
         finally
         {

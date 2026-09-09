@@ -6,26 +6,29 @@
 @using MudBlazor
 @using Erp.Main.Models
 @using Erp.Main.Services
+@using Microsoft.Extensions.Localization
+@using Erp.Main.Resources
 @inject SalesApiClient SalesApi
 @inject SeriesApiClient SeriesApi
 @inject CompanyState Company
 @inject NavigationManager Navigation
 @inject ISnackbar Snackbar
+@inject IStringLocalizer<MainResources> L
 
-<PageTitle>Novo recibo</PageTitle>
+<PageTitle>@L["NewPayment_PageTitle"]</PageTitle>
 
 <MudStack Spacing="4">
     <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center">
         <MudStack Spacing="0">
-            <MudText Typo="Typo.h4">Novo recibo</MudText>
+            <MudText Typo="Typo.h4">@L["NewPayment_PageTitle"]</MudText>
             <MudText Typo="Typo.body2" Color="Color.Secondary">
-                O recibo é assinado e numerado na emissão, e liquida faturas que ainda tenham valor em dívida.
+                @L["NewPayment_Description"]
             </MudText>
         </MudStack>
 
         <MudButton Variant="Variant.Text" StartIcon="@Icons.Material.Filled.ArrowBack"
                    OnClick="@(() => Navigation.NavigateTo("payments"))">
-            Voltar
+            @L["NewPayment_BackButton"]
         </MudButton>
     </MudStack>
 
@@ -41,82 +44,81 @@
     else if (_series.Count == 0)
     {
         <MudAlert Severity="Severity.Warning">
-            Não existe nenhuma série de recibos comunicada à AT. Crie uma série do tipo RC ou RG.
-            <MudLink Href="series/new" Class="ml-2">Criar série</MudLink>
+            @L["NewPayment_NoSeriesWarning"]
+            <MudLink Href="series/new" Class="ml-2">@L["NewPayment_CreateSeriesLink"]</MudLink>
         </MudAlert>
     }
     else if (_outstanding.Count == 0)
     {
         <MudAlert Severity="Severity.Info">
-            Não há faturas por liquidar. Um recibo só pode ser emitido sobre faturas com valor em dívida.
+            @L["NewPayment_NoOutstandingInfo"]
         </MudAlert>
     }
     else
     {
         <MudPaper Elevation="1" Class="pa-4">
-            <MudText Typo="Typo.h6" Class="mb-3">Documento</MudText>
+            <MudText Typo="Typo.h6" Class="mb-3">@L["NewPayment_DocumentSectionTitle"]</MudText>
             <MudGrid>
                 <MudItem xs="12" md="5">
-                    <MudSelect @bind-Value="_seriesId" Label="Série" Variant="Variant.Outlined" Required="true">
+                    <MudSelect @bind-Value="_seriesId" Label="@L["NewPayment_SeriesLabel"]" Variant="Variant.Outlined" Required="true">
                         @foreach (var series in _series)
                         {
                             <MudSelectItem T="Guid" Value="@series.Id">
-                                @series.DocumentType @series.SeriesCode — @PaymentTypes.Describe(series.DocumentType)
-                                (próximo n.º @(series.CurrentSequence + 1))
+                                @L["NewPayment_SeriesOption", series.DocumentType, series.SeriesCode, PaymentTypes.Describe(series.DocumentType), series.CurrentSequence + 1]
                             </MudSelectItem>
                         }
                     </MudSelect>
                 </MudItem>
                 <MudItem xs="12" md="3">
-                    <MudDatePicker @bind-Date="_transactionDate" Label="Data do recibo"
+                    <MudDatePicker @bind-Date="_transactionDate" Label="@L["NewPayment_DateLabel"]"
                                    Variant="Variant.Outlined" DateFormat="yyyy-MM-dd" />
                 </MudItem>
                 <MudItem xs="12" md="4">
-                    <MudTextField @bind-Value="_description" Label="Observações" Variant="Variant.Outlined" />
+                    <MudTextField @bind-Value="_description" Label="@L["NewPayment_NotesLabel"]" Variant="Variant.Outlined" />
                 </MudItem>
             </MudGrid>
         </MudPaper>
 
         <MudPaper Elevation="1" Class="pa-4">
-            <MudText Typo="Typo.h6" Class="mb-3">Cliente</MudText>
+            <MudText Typo="Typo.h6" Class="mb-3">@L["NewPayment_CustomerSectionTitle"]</MudText>
             <MudGrid>
                 <MudItem xs="12" md="6">
                     <MudSelect T="string" Value="_partyTaxId" ValueChanged="OnCustomerChanged"
-                               Label="Cliente" Variant="Variant.Outlined" Required="true"
-                               HelperText="Um recibo liquida faturas de um único cliente">
+                               Label="@L["NewPayment_CustomerLabel"]" Variant="Variant.Outlined" Required="true"
+                               HelperText="@L["NewPayment_CustomerHelpText"]">
                         @foreach (var customer in _customers)
                         {
                             <MudSelectItem T="string" Value="@customer.TaxId">
-                                @customer.Name (@customer.TaxId)
+                                @L["NewPayment_CustomerOption", customer.Name, customer.TaxId]
                             </MudSelectItem>
                         }
                     </MudSelect>
                 </MudItem>
                 <MudItem xs="12" md="6">
-                    <MudTextField @bind-Value="_partyName" Label="Nome" Variant="Variant.Outlined" Required="true" />
+                    <MudTextField @bind-Value="_partyName" Label="@L["NewPayment_NameLabel"]" Variant="Variant.Outlined" Required="true" />
                 </MudItem>
             </MudGrid>
         </MudPaper>
 
         <MudPaper Elevation="1" Class="pa-4">
             <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center" Class="mb-3">
-                <MudText Typo="Typo.h6">Faturas a liquidar</MudText>
+                <MudText Typo="Typo.h6">@L["NewPayment_InvoicesSectionTitle"]</MudText>
                 <MudButton Variant="Variant.Text" Color="Color.Primary" Size="Size.Small"
                            Disabled="@(_visibleInvoices.Count == 0)"
                            OnClick="SelectAll">
-                    Liquidar tudo
+                    @L["NewPayment_SettleAllButton"]
                 </MudButton>
             </MudStack>
 
             <MudTable Items="_visibleInvoices" Dense="true" Hover="true" Striped="true" Breakpoint="Breakpoint.Sm">
                 <HeaderContent>
                     <MudTh Style="width: 60px;"></MudTh>
-                    <MudTh>Fatura</MudTh>
-                    <MudTh>Data</MudTh>
-                    <MudTh Style="text-align: right;">Total</MudTh>
-                    <MudTh Style="text-align: right;">Já liquidado</MudTh>
-                    <MudTh Style="text-align: right;">Em dívida</MudTh>
-                    <MudTh Style="width: 150px; text-align: right;">A liquidar</MudTh>
+                    <MudTh>@L["NewPayment_InvoiceColumn"]</MudTh>
+                    <MudTh>@L["NewPayment_DateColumn"]</MudTh>
+                    <MudTh Style="text-align: right;">@L["NewPayment_TotalColumn"]</MudTh>
+                    <MudTh Style="text-align: right;">@L["NewPayment_AlreadySettledColumn"]</MudTh>
+                    <MudTh Style="text-align: right;">@L["NewPayment_OutstandingColumn"]</MudTh>
+                    <MudTh Style="width: 150px; text-align: right;">@L["NewPayment_ToSettleColumn"]</MudTh>
                 </HeaderContent>
                 <RowTemplate>
                     <MudTd>
@@ -124,14 +126,14 @@
                                      ValueChanged="@(selected => ToggleInvoice(context, selected))"
                                      Color="Color.Primary" Dense="true" />
                     </MudTd>
-                    <MudTd DataLabel="Fatura">
+                    <MudTd DataLabel="@L["NewPayment_InvoiceColumn"]">
                         <MudText Typo="Typo.body2" Style="font-family: monospace;">@context.DocumentNumber</MudText>
                     </MudTd>
-                    <MudTd DataLabel="Data">@context.DocumentDate.ToString("yyyy-MM-dd")</MudTd>
-                    <MudTd DataLabel="Total" Style="text-align: right;">@context.GrossTotal.ToString("N2")</MudTd>
-                    <MudTd DataLabel="Já liquidado" Style="text-align: right;">@context.SettledAmount.ToString("N2")</MudTd>
-                    <MudTd DataLabel="Em dívida" Style="text-align: right;">@context.OutstandingAmount.ToString("N2")</MudTd>
-                    <MudTd DataLabel="A liquidar" Style="text-align: right;">
+                    <MudTd DataLabel="@L["NewPayment_DateColumn"]">@context.DocumentDate.ToString("yyyy-MM-dd")</MudTd>
+                    <MudTd DataLabel="@L["NewPayment_TotalColumn"]" Style="text-align: right;">@context.GrossTotal.ToString("N2")</MudTd>
+                    <MudTd DataLabel="@L["NewPayment_AlreadySettledColumn"]" Style="text-align: right;">@context.SettledAmount.ToString("N2")</MudTd>
+                    <MudTd DataLabel="@L["NewPayment_OutstandingColumn"]" Style="text-align: right;">@context.OutstandingAmount.ToString("N2")</MudTd>
+                    <MudTd DataLabel="@L["NewPayment_ToSettleColumn"]" Style="text-align: right;">
                         @if (IsSelected(context))
                         {
                             <MudNumericField T="decimal" Value="@_selected[context.DocumentId]"
@@ -146,7 +148,7 @@
                 </RowTemplate>
                 <NoRecordsContent>
                     <MudText Typo="Typo.body2" Color="Color.Secondary">
-                        Este cliente não tem faturas por liquidar.
+                        @L["NewPayment_NoOutstandingInvoices"]
                     </MudText>
                 </NoRecordsContent>
             </MudTable>
@@ -154,22 +156,22 @@
 
         <MudPaper Elevation="1" Class="pa-4">
             <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center" Class="mb-3">
-                <MudText Typo="Typo.h6">Meios de pagamento</MudText>
+                <MudText Typo="Typo.h6">@L["NewPayment_MethodsSectionTitle"]</MudText>
                 <MudButton Variant="Variant.Outlined" Color="Color.Primary" Size="Size.Small"
                            StartIcon="@Icons.Material.Filled.Add" OnClick="AddMethod">
-                    Adicionar meio
+                    @L["NewPayment_AddMethodButton"]
                 </MudButton>
             </MudStack>
 
             <MudTable Items="_methods" Dense="true" Hover="true" Striped="true" Breakpoint="Breakpoint.Sm">
                 <HeaderContent>
-                    <MudTh>Meio</MudTh>
-                    <MudTh Style="width: 160px;">Data</MudTh>
-                    <MudTh Style="width: 160px; text-align: right;">Valor</MudTh>
-                    <MudTh Style="width: 70px; text-align: right;">Ações</MudTh>
+                    <MudTh>@L["NewPayment_MethodColumn"]</MudTh>
+                    <MudTh Style="width: 160px;">@L["NewPayment_DateColumn"]</MudTh>
+                    <MudTh Style="width: 160px; text-align: right;">@L["NewPayment_ValueColumn"]</MudTh>
+                    <MudTh Style="width: 70px; text-align: right;">@L["NewPayment_ActionsColumn"]</MudTh>
                 </HeaderContent>
                 <RowTemplate>
-                    <MudTd DataLabel="Meio">
+                    <MudTd DataLabel="@L["NewPayment_MethodColumn"]">
                         <MudSelect @bind-Value="context.Mechanism" Margin="Margin.Dense">
                             @foreach (var mechanism in PaymentMechanismOptions.All)
                             {
@@ -177,15 +179,15 @@
                             }
                         </MudSelect>
                     </MudTd>
-                    <MudTd DataLabel="Data">
+                    <MudTd DataLabel="@L["NewPayment_DateColumn"]">
                         <MudDatePicker @bind-Date="context.PaymentDate" Margin="Margin.Dense" DateFormat="yyyy-MM-dd" />
                     </MudTd>
-                    <MudTd DataLabel="Valor" Style="text-align: right;">
+                    <MudTd DataLabel="@L["NewPayment_ValueColumn"]" Style="text-align: right;">
                         <MudNumericField @bind-Value="context.Amount" Margin="Margin.Dense" Min="0" Format="N2" />
                     </MudTd>
-                    <MudTd DataLabel="Ações" Style="text-align: right;">
+                    <MudTd DataLabel="@L["NewPayment_ActionsColumn"]" Style="text-align: right;">
                         <MudIconButton Icon="@Icons.Material.Filled.Delete" Size="Size.Small" Color="Color.Error"
-                                       title="Remover meio de pagamento"
+                                       title="@L["NewPayment_RemoveMethodTitle"]"
                                        Disabled="@(_methods.Count == 1)"
                                        OnClick="@(() => RemoveMethod(context))" />
                     </MudTd>
@@ -195,7 +197,7 @@
             <MudButton Variant="Variant.Text" Color="Color.Primary" Size="Size.Small" Class="mt-2"
                        Disabled="@(_methods.Count != 1 || SelectedTotal <= 0)"
                        OnClick="MatchMethodToTotal">
-                Igualar ao total liquidado
+                @L["NewPayment_MatchToTotalButton"]
             </MudButton>
         </MudPaper>
 
@@ -203,17 +205,17 @@
             <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center">
                 <MudStack Row="true" Spacing="6">
                     <MudStack Spacing="0">
-                        <MudText Typo="Typo.caption" Color="Color.Secondary">Faturas selecionadas</MudText>
+                        <MudText Typo="Typo.caption" Color="Color.Secondary">@L["NewPayment_SelectedInvoicesLabel"]</MudText>
                         <MudText Typo="Typo.h6">@_selected.Count</MudText>
                     </MudStack>
                     <MudStack Spacing="0">
-                        <MudText Typo="Typo.caption" Color="Color.Secondary">Meios de pagamento</MudText>
+                        <MudText Typo="Typo.caption" Color="Color.Secondary">@L["NewPayment_MethodsTotalLabel"]</MudText>
                         <MudText Typo="Typo.h6" Color="@(MethodsTotal == SelectedTotal ? Color.Default : Color.Warning)">
                             @MethodsTotal.ToString("N2")
                         </MudText>
                     </MudStack>
                     <MudStack Spacing="0">
-                        <MudText Typo="Typo.caption" Color="Color.Secondary">Total do recibo</MudText>
+                        <MudText Typo="Typo.caption" Color="Color.Secondary">@L["NewPayment_ReceiptTotalLabel"]</MudText>
                         <MudText Typo="Typo.h5" Color="Color.Primary">@SelectedTotal.ToString("N2")</MudText>
                     </MudStack>
                 </MudStack>
@@ -222,15 +224,14 @@
                            StartIcon="@Icons.Material.Filled.ReceiptLong"
                            Disabled="@(_issuing || !CanIssue)"
                            OnClick="IssueAsync">
-                    @(_issuing ? "A emitir..." : "Emitir recibo")
+                    @(_issuing ? L["NewPayment_IssuingButton"] : L["NewPayment_IssueButton"])
                 </MudButton>
             </MudStack>
 
             @if (_selected.Count > 0 && MethodsTotal != SelectedTotal)
             {
                 <MudAlert Severity="Severity.Warning" Dense="true" Class="mt-3">
-                    Os meios de pagamento somam @MethodsTotal.ToString("N2") e o recibo liquida @SelectedTotal.ToString("N2").
-                    Os dois valores têm de coincidir.
+                    @L["NewPayment_MismatchWarning", MethodsTotal.ToString("N2"), SelectedTotal.ToString("N2")]
                 </MudAlert>
             }
         </MudPaper>
@@ -319,7 +320,7 @@
         }
         catch (Exception ex)
         {
-            _error = $"Não foi possível preparar a emissão: {ex.Message}";
+            _error = L["NewPayment_LoadError", ex.Message];
         }
         finally
         {
@@ -409,16 +410,16 @@
 
             if (payment is null)
             {
-                _error = error ?? "Não foi possível emitir o recibo.";
+                _error = error ?? L["NewPayment_IssueFailed"];
                 return;
             }
 
-            Snackbar.Add($"Recibo {payment.PaymentRefNo} emitido.", Severity.Success);
+            Snackbar.Add(L["NewPayment_IssuedSuccess", payment.PaymentRefNo].Value, Severity.Success);
             Navigation.NavigateTo($"payments/{payment.Id}");
         }
         catch (Exception ex)
         {
-            _error = $"Não foi possível emitir o recibo: {ex.Message}";
+            _error = L["NewPayment_IssueError", ex.Message];
         }
         finally
         {

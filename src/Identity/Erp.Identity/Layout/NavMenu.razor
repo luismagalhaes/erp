@@ -1,22 +1,25 @@
 @using Microsoft.AspNetCore.Components.Routing
 @using Microsoft.AspNetCore.Components.Authorization
 @using MudBlazor
+@using Microsoft.Extensions.Localization
+@using Erp.Identity.Resources
+@inject IStringLocalizer<IdentityResources> Localizer
 
 <MudNavMenu>
-    <MudNavLink Href="/" Match="NavLinkMatch.All" Icon="@Icons.Material.Filled.Home">Home</MudNavLink>
+    <MudNavLink Href="/" Match="NavLinkMatch.All" Icon="@Icons.Material.Filled.Home">@Localizer["NavMenu_Home"]</MudNavLink>
 
     @if (_isSuperAdmin)
     {
-        <MudNavGroup Title="Backoffice"
+        <MudNavGroup Title="@Localizer["NavMenu_Backoffice"]"
                      Icon="@Icons.Material.Filled.AdminPanelSettings"
                      @bind-Expanded="_backofficeExpanded">
-            <MudNavLink Href="/Backoffice/Users" Icon="@Icons.Material.Filled.People">Users</MudNavLink>
-            <MudNavLink Href="/Backoffice/Roles" Icon="@Icons.Material.Filled.Security">Roles</MudNavLink>
-            <MudNavLink Href="/Backoffice/Clients" Icon="@Icons.Material.Filled.Devices">Clients</MudNavLink>
-            <MudNavLink Href="/Backoffice/ApiScopes" Icon="@Icons.Material.Filled.Key">API Scopes</MudNavLink>
-            <MudNavLink Href="/Backoffice/ApiResources" Icon="@Icons.Material.Filled.Api">API Resources</MudNavLink>
-            <MudNavLink Href="/Backoffice/IdentityResources" Icon="@Icons.Material.Filled.Badge">Identity Resources</MudNavLink>
-            <MudNavLink Href="/Backoffice/IdentityProviders" Icon="@Icons.Material.Filled.AccountTree">Identity Providers</MudNavLink>
+            <MudNavLink Href="/Backoffice/Users" Icon="@Icons.Material.Filled.People">@Localizer["NavMenu_Users"]</MudNavLink>
+            <MudNavLink Href="/Backoffice/Roles" Icon="@Icons.Material.Filled.Security">@Localizer["NavMenu_Roles"]</MudNavLink>
+            <MudNavLink Href="/Backoffice/Clients" Icon="@Icons.Material.Filled.Devices">@Localizer["NavMenu_Clients"]</MudNavLink>
+            <MudNavLink Href="/Backoffice/ApiScopes" Icon="@Icons.Material.Filled.Key">@Localizer["NavMenu_ApiScopes"]</MudNavLink>
+            <MudNavLink Href="/Backoffice/ApiResources" Icon="@Icons.Material.Filled.Api">@Localizer["NavMenu_ApiResources"]</MudNavLink>
+            <MudNavLink Href="/Backoffice/IdentityResources" Icon="@Icons.Material.Filled.Badge">@Localizer["NavMenu_IdentityResources"]</MudNavLink>
+            <MudNavLink Href="/Backoffice/IdentityProviders" Icon="@Icons.Material.Filled.AccountTree">@Localizer["NavMenu_IdentityProviders"]</MudNavLink>
         </MudNavGroup>
     }
 

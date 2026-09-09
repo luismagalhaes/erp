@@ -2,11 +2,13 @@ using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.OpenIdConnect;
 using Microsoft.AspNetCore.Components;
+using Microsoft.AspNetCore.Localization;
 using MudBlazor.Services;
 using Erp.Main;
 using Erp.Main.Endpoints;
 using Erp.Main.Services;
 using Erp.Common;
+using Erp.Common.Localization;
 using Serilog;
 
 Log.Logger = new LoggerConfiguration()
@@ -26,6 +28,25 @@ builder.Host.UseSerilog((ctx, lc) => lc
 
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
+
+builder.Services.AddLocalization();
+builder.Services.Configure<RequestLocalizationOptions>(options =>
+{
+    var supportedCultures = Constants.Localization.SupportedCultures;
+
+    options.SetDefaultCulture(Constants.Localization.DefaultCulture);
+    options.AddSupportedCultures(supportedCultures);
+    options.AddSupportedUICultures(supportedCultures);
+
+    // Authenticated users get their language from the "locale" claim issued by Identity; the
+    // cookie keeps an anonymous visitor's choice, falling back to the browser's language.
+    options.RequestCultureProviders =
+    [
+        new ClaimsRequestCultureProvider(),
+        new CookieRequestCultureProvider { CookieName = Constants.Localization.CultureCookieName },
+        new AcceptLanguageHeaderRequestCultureProvider()
+    ];
+});
 
 builder.Services.AddAuthorization();
 builder.Services.AddCascadingAuthenticationState();
@@ -133,9 +154,11 @@ var app = builder.Build();
 app.UseStaticFiles();
 app.UseAntiforgery();
 app.UseAuthentication();
+app.UseRequestLocalization(app.Services.GetRequiredService<Microsoft.Extensions.Options.IOptions<RequestLocalizationOptions>>().Value);
 app.UseAuthorization();
 
 app.MapAuthenticationEndpoints();
+app.MapCultureEndpoints();
 
 app.MapRazorComponents<Erp.Main.Shell.App>()
     .AddInteractiveServerRenderMode();

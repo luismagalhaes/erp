@@ -813,3 +813,56 @@ Agente envia `POST /api/printagent/report` sempre que faz a verificação local.
 3. Lógica de fallback no Blazor (`agenteDisponivel()` → agente ou `window.print()`).
 4. Verificação e alerta no login (`/config-status`).
 5. (Opcional) Sincronização com BD para painel de admin multi-posto.
+
+# TODO: Geração de Documentos/Relatórios com QuestPDF
+
+## Decisão
+
+Substituir o Crystal Reports (`.rpt`) por **QuestPDF** como motor de geração de documentos (faturas, guias, relatórios) no ERP.
+
+### Porquê
+
+- Crystal Reports está a caminho do fim: sem suporte nativo a .NET Core/.NET 8+, sem suporte a Blazor, licenciamento caro e pesado, sem modelo de multi-tenant.
+- QuestPDF é 100% código C# (fluent API), nativo em .NET Core/Blazor, sem ficheiros binários proprietários.
+- Licença gratuita (Community) até $1M de receita anual da empresa; sem custos por tenant/servidor.
+- Como os relatórios continuam a ser desenvolvidos internamente (o cliente final não cria/edita reports), a ausência de um designer visual não é uma perda de funcionalidade relevante — pelo contrário, ganha-se versionamento em Git, testes automatizados e reutilização de componentes entre documentos.
+
+## Arquitetura de configuração dinâmica
+
+Cada tipo de documento (ex: `FaturaDocument`) implementa `IDocument` e recebe um modelo de configurações (`DocumentoSettings`) carregado a partir dos dados da empresa/tenant:
+
+```csharp
+public class DocumentoSettings
+{
+    public bool MostrarLogotipo { get; set; } = true;
+    public bool MostrarPrecosUnitarios { get; set; } = true;
+    public bool MostrarIva { get; set; } = true;
+    public bool MostrarRodapeIban { get; set; } = false;
+    public bool MostrarAssinatura { get; set; } = false;
+    public string CorPrincipal { get; set; } = "#1F2937";
+    public string TextoRodape { get; set; } = string.Empty;
+}
+```
+
+O componente QuestPDF lê estas flags e decide o que renderizar (secções condicionais, cores, textos), permitindo personalização por empresa sem intervenção de código por cliente. Para diferenças estruturais (não apenas mostrar/esconder), pode existir uma classe `IDocument` alternativa por template, escolhida em runtime consoante a configuração do tenant.
+
+## Requisito legal — QR Code / ATCUD (Portugal)
+
+- QR Code obrigatório em todas as faturas e documentos fiscalmente relevantes desde janeiro de 2022, independentemente do valor.
+- QuestPDF suporta geração nativa de QR Code (vetorial, sem dependência externa).
+- **Não é trivial** apenas desenhar o QR Code — o conteúdo codificado tem de seguir o formato estruturado exigido pela Portaria n.º 195/2020 (NIF emitente/adquirente, data, tipo de documento, valores tributáveis por taxa de IVA, ATCUD, etc.).
+- ATCUD depende da comunicação prévia das séries de faturação à AT (Portal das Finanças) para obter o código de validação.
+- Confirmar requisitos de certificação do software junto da AT/contabilista antes de considerar esta funcionalidade fechada.
+
+## Migração dos reports existentes
+
+- Não existe conversor automático de `.rpt` para QuestPDF — reconstrução manual, documento a documento.
+- Aproveitar a reconstrução para modularizar componentes comuns (cabeçalho, rodapé, tabela de linhas) reutilizáveis entre tipos de documento.
+
+## Próximos passos
+
+1. Definir estrutura de `DocumentoSettings` completa e onde fica persistida (tabela da empresa / JSON).
+2. Construir ecrã de configuração no ERP (toggles de branding/conteúdo).
+3. Implementar geração da string do QR Code conforme especificação da AT.
+4. Confirmar processo de certificação do software de faturação.
+5. Reconstruir os documentos prioritários (fatura, guia de remessa) em QuestPDF.

@@ -341,22 +341,22 @@ O CI ainda os exclui, com `--filter "Category!=Integration"`, porque o *runner* 
 
 ## Integração contínua e deploy
 
-Tudo vive num workflow só, [dotnet-ci.yml](.github/workflows/dotnet-ci.yml), em dois jobs. `build-and-test` corre sozinho, em todo o push e todo o *pull request* para `main`. O deploy nunca é automático — não corre nem em push nem em PR, só quando alguém o despoleta à mão.
+Tudo vive num workflow só, [dotnet-ci.yml](.github/workflows/dotnet-ci.yml), em dois jobs. **Só há um gatilho automático**: `pull_request` para `main`, que corre o `build-and-test` a cada PR, para dar retorno rápido antes do *merge*. Um push direto a `main` não corre nada sozinho — nem testes, nem *build*, nem deploy. Tudo o resto é `workflow_dispatch`: alguém vai a `Actions` e pede explicitamente.
 
-Isto é assim porque **Required reviewers em *environments* só existe, para repositórios privados, nos planos GitHub Pro/Team/Enterprise** — no Free, a página de configuração do *environment* nem mostra essa opção. Sem esse mecanismo, a autorização passa a ser mais simples: só corre quem clicar. Ver [Estado atual e limitações conhecidas](#estado-atual-e-limitações-conhecidas).
+O deploy usar `workflow_dispatch` em vez de `environment: staging/production` com **Required reviewers** também tem uma razão de plano: esse mecanismo só existe, para repositórios privados, nos planos GitHub Pro/Team/Enterprise — no Free, a página de configuração do *environment* nem mostra essa opção. Sem ele, a autorização é mais simples: só corre quem pedir. Ver [Estado atual e limitações conhecidas](#estado-atual-e-limitações-conhecidas).
 
 Staging e produção são **seis Web Apps distintas** no Azure (três por ambiente), não *slots* da mesma — o *deployment slot* exige tier Standard ou superior, e o objetivo aqui era o Free chegar. Cada uma tem o seu URL, o seu *publish profile* e as suas *Application settings*.
 
 ```
-push/PR → build-and-test (sempre)
+PR → main → build-and-test (automático, só isto)
 
-Actions → Run workflow → escolher "staging" ou "production" → deploy
-              (repete-se uma vez para cada ambiente, sempre uma escolha manual)
+Actions → Run workflow → escolher "staging" ou "production" → build-and-test → deploy
+              (sempre a pedido; production também exige que o branch seja main)
 ```
 
-**`build-and-test`** compila a solução inteira e corre os testes com `--filter "Category!=Integration"` — os de integração ficam de fora porque o *runner* não tem SQL Server (ver [Testes](#testes)). Publica o relatório e os `.trx` como artefactos, mesmo quando falha.
+**`build-and-test`** compila a solução inteira e corre os testes com `--filter "Category!=Integration"` — os de integração ficam de fora porque o *runner* não tem SQL Server (ver [Testes](#testes)). Publica o relatório e os `.trx` como artefactos, mesmo quando falha. Corre em todo o PR, e também como primeiro passo de um `workflow_dispatch`.
 
-**`deploy`** só corre por `workflow_dispatch` — em `Actions → Build and Test ERP Solution → Run workflow`, escolhendo `staging` ou `production` num menu — nunca por push nem PR. Depende de `build-and-test` ter passado, e para cada uma das três apps (`api`, `identity`, `main`) faz `dotnet publish` e despacha com `azure/webapps-deploy@v3` para a Web App do ambiente escolhido, com o *publish profile* correspondente. Compila de novo em cada corrida — ao contrário de um modelo com *promote*, aqui staging e produção não partilham o mesmo binário, porque são duas execuções manuais independentes, normalmente em momentos diferentes.
+**`deploy`** só corre por `workflow_dispatch` — em `Actions → Build and Test ERP Solution → Run workflow`, escolhendo `staging` ou `production` num menu — nunca por push nem PR. Depende de `build-and-test` ter passado, e para cada uma das três apps (`api`, `identity`, `main`) faz `dotnet publish` e despacha com `azure/webapps-deploy@v3` para a Web App do ambiente escolhido, com o *publish profile* correspondente. `staging` aceita qualquer *branch* escolhido no próprio `workflow_dispatch`, para testar antes do *merge*; `production` só corre se esse *branch* for `main`. Compila de novo em cada corrida — ao contrário de um modelo com *promote*, aqui staging e produção não partilham o mesmo binário, porque são duas execuções manuais independentes, normalmente em momentos diferentes.
 
 ### Configuração necessária, uma vez, fora da pipeline
 

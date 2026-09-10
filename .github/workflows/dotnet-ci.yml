@@ -1,14 +1,14 @@
 name: Build and Test ERP Solution
 
 on:
-  push:
-    branches:
-      - main
+  # build-and-test runs on every PR against main, for quick feedback before merging — this is the
+  # only automatic trigger left. A push straight to main runs nothing by itself: building, testing
+  # and deploying are all something someone asks for explicitly, below.
   pull_request:
     branches:
       - main
-  # Deploys are never automatic — build-and-test still runs on every push/PR as a safety net, but
-  # going live is always someone deliberately picking an environment here and clicking Run workflow.
+  # Runs build-and-test, then deploys to whichever environment was picked — on request, never on a
+  # push to main. See the "deploy" job further down for why, and for what production is restricted to.
   workflow_dispatch:
     inputs:
       environment:
@@ -92,6 +92,10 @@ jobs:
   # else can start this job: it only exists as a manual button someone has to click, once for staging
   # and again for production when they're ready to go live.
   #
+  # Production is further restricted to the main branch: workflow_dispatch lets whoever runs it pick
+  # any branch, and without this a manual run from a stray branch could still ship to production.
+  # Staging is left open to any branch on purpose, for trying out a branch before it merges.
+  #
   # Each app has a staging and a production Web App — separate Azure resources, not slots of one,
   # because slots need a Standard tier or higher and these run on the Free tier. The matrix below
   # carries both names and both secrets per app; which one is used is resolved by `environment ==
@@ -108,7 +112,9 @@ jobs:
   #   3. Download each app's publish profile (Overview > Get publish profile) and add the 6 secrets
   #      below.
   deploy:
-    if: github.event_name == 'workflow_dispatch'
+    if: >-
+      github.event_name == 'workflow_dispatch' &&
+      (github.event.inputs.environment == 'staging' || github.ref == 'refs/heads/main')
     runs-on: ubuntu-latest
     needs: build-and-test
     environment: ${{ github.event.inputs.environment }}

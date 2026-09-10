@@ -125,21 +125,21 @@ jobs:
         include:
           - name: api
             project: src/Erp.Api/Erp.Api.csproj
-            app-name-staging: erp-api-staging
+            app-name-staging: erp-api
             app-name-production: erp-api-prod
             secret-name-staging: AZURE_WEBAPP_PUBLISH_PROFILE_API
             secret-name-production: AZURE_WEBAPP_PUBLISH_PROFILE_API_PROD
 
           - name: identity
             project: src/Identity/Erp.Identity/Erp.Identity.csproj
-            app-name-staging: identity-staging
+            app-name-staging: identity
             app-name-production: identity-prod
             secret-name-staging: AZURE_WEBAPP_PUBLISH_PROFILE_IDENTITY
             secret-name-production: AZURE_WEBAPP_PUBLISH_PROFILE_IDENTITY_PROD
 
           - name: main
             project: src/UI/Erp.Main/Erp.Main.csproj
-            app-name-staging: erp-staging
+            app-name-staging: erp
             app-name-production: erp-prod
             secret-name-staging: AZURE_WEBAPP_PUBLISH_PROFILE_MAIN
             secret-name-production: AZURE_WEBAPP_PUBLISH_PROFILE_MAIN_PROD

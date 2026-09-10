@@ -101,6 +101,11 @@ try
 
     app.MapRazorComponents<Erp.Identity.Shell.App>()
         .AddInteractiveServerRenderMode();
+    // Applying pending migrations is never destructive, so it runs on every startup, in every
+    // environment — unlike the seed below, which overwrites the clients/scopes/resources configured
+    // in code and is only run where that is actually wanted.
+    await SeedData.MigrateAsync(app.Services);
+
     if (args.Contains("--seed") || app.Environment.IsDevelopment())
         await SeedData.InitializeAsync(app.Services);
 

@@ -11,17 +11,28 @@ namespace Erp.Identity.Data
 {
 public static class SeedData
 {
+    /// <summary>
+    /// Applies pending migrations to the three Identity contexts. Separate from
+    /// <see cref="InitializeAsync"/> so it can run on every startup, in every environment — unlike
+    /// seeding, applying a migration is never destructive, and the schema has to be current before
+    /// anything else touches these tables.
+    /// </summary>
+    public static async Task MigrateAsync(IServiceProvider services)
+    {
+        await using var scope = services.CreateAsyncScope();
+
+        await scope.ServiceProvider.GetRequiredService<ApplicationDbContext>().Database.MigrateAsync();
+        await scope.ServiceProvider.GetRequiredService<ConfigurationDbContext>().Database.MigrateAsync();
+        await scope.ServiceProvider.GetRequiredService<PersistedGrantDbContext>().Database.MigrateAsync();
+    }
+
+    /// <summary>Seeds the clients, scopes, resources, roles and admin user. Assumes the schema is
+    /// already current — call <see cref="MigrateAsync"/> first.</summary>
     public static async Task InitializeAsync(IServiceProvider services)
     {
         await using var scope = services.CreateAsyncScope();
 
-        var applicationDbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
         var configurationDbContext = scope.ServiceProvider.GetRequiredService<ConfigurationDbContext>();
-        var persistedGrantDbContext = scope.ServiceProvider.GetRequiredService<PersistedGrantDbContext>();
-
-        await applicationDbContext.Database.MigrateAsync();
-        await configurationDbContext.Database.MigrateAsync();
-        await persistedGrantDbContext.Database.MigrateAsync();
 
         var configuredClientIds = Clients.Select(c => c.ClientId).ToHashSet();
         var configuredIdentityResourceNames = IdentityResources.Select(r => r.Name).ToHashSet();

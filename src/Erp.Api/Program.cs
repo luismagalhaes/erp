@@ -1,7 +1,9 @@
 using Erp.Api.Services;
 using Erp.Common;
+using Erp.Storage;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.OData;
+using Microsoft.EntityFrameworkCore;
 using Scalar.AspNetCore;
 using Serilog;
 
@@ -54,6 +56,11 @@ try
     builder.Services.AddOpenApi();
 
     var app = builder.Build();
+
+    // Applying pending migrations is never destructive, so it runs on every startup, in every
+    // environment — the deploy pipeline only ships code, nothing there ever touches the schema.
+    await using (var scope = app.Services.CreateAsyncScope())
+        await scope.ServiceProvider.GetRequiredService<AppDbContext>().Database.MigrateAsync();
 
     if (app.Environment.IsDevelopment())
     {

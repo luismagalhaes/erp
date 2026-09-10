@@ -230,19 +230,13 @@ O seed cria um utilizador administrador cujas credenciais estão definidas em `C
 dotnet restore Erp.slnx
 dotnet build Erp.slnx
 
-# 2. Aplicar migrations e semear o Identity (clients, scopes, roles, admin)
-dotnet run --project .\src\Identity\Erp.Identity\Erp.Identity.csproj -- --seed
-
-# 3. Aplicar as migrations dos módulos de negócio (um contexto para todos)
-dotnet ef database update --context AppDbContext `
-  --startup-project .\src\Erp.Api\Erp.Api.csproj
-
-# 4. Arrancar os três processos (em terminais separados)
-dotnet run --project .\src\Identity\Erp.Identity\Erp.Identity.csproj --launch-profile https
+# 2. Arrancar os três processos (em terminais separados) — cada host migra a sua base de dados
+#    sozinho no arranque, em qualquer ambiente; não há passo manual de "dotnet ef database update"
+dotnet run --project .\src\Identity\Erp.Identity\Erp.Identity.csproj --launch-profile https -- --seed
 dotnet run --project .\src\Erp.Api\Erp.Api.csproj --launch-profile https
 dotnet run --project .\src\UI\Erp.Main\Erp.Main.csproj --launch-profile https
 
-# 5. Opcional: envio efetivo dos emails em fila
+# 3. Opcional: envio efetivo dos emails em fila
 dotnet run --project .\src\Notification\Erp.Notification.Worker\Erp.Notification.Worker.csproj
 ```
 
@@ -252,7 +246,7 @@ Abrir https://localhost:7019 — o acesso não autenticado é redirecionado para
 
 Em Visual Studio existem os perfis de arranque múltiplo **"All"** e **"All + Worker"** ([Erp.slnLaunch.user](Erp.slnLaunch.user)).
 
-> Em `Development` o `Erp.Identity` corre o seed automaticamente no arranque (ver [Program.cs](src/Identity/Erp.Identity/Program.cs)); o `--seed` serve para forçar o mesmo noutros ambientes. O seed **substitui** os clients, scopes e resources configurados em código — alterações feitas pelo backoffice a esses registos são perdidas no arranque seguinte.
+**Migrações aplicam-se sozinhas.** O `Erp.Api` (`AppDbContext`) e o `Erp.Identity` (os seus três contextos) chamam `Database.MigrateAsync()` no arranque, em qualquer ambiente — [Program.cs](src/Erp.Api/Program.cs) e [SeedData.MigrateAsync](src/Identity/Erp.Identity.Storage/Data/SeedData.cs). É por isto que o *pipeline* de deploy (ver [Integração contínua e deploy](#integração-contínua-e-deploy)) não tem passo nenhum de migração: publicar código e arrancar a app já chega. Aplicar uma migração nunca é destrutivo, por isso corre sempre; **semear** é outra coisa — sobrescreve clients, scopes e resources — e continua a exigir `--seed` fora de Development, onde já corre sozinho no arranque (ver [Program.cs](src/Identity/Erp.Identity/Program.cs)). Criar uma migração nova continua a ser manual, com `dotnet ef migrations add` (ver [Base de dados](#base-de-dados)).
 
 ---
 
@@ -295,6 +289,8 @@ dotnet ef migrations add <Nome> --context ApplicationDbContext `
 ```
 
 Contextos disponíveis no Identity: `ApplicationDbContext`, `ConfigurationDbContext`, `PersistedGrantDbContext`.
+
+Criar uma migração continua a ser manual, com os comandos acima; **aplicá-la não é** — os dois hosts fazem-no sozinhos no arranque, em qualquer ambiente (ver [Como executar](#como-executar)).
 
 ---
 

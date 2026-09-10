@@ -7,6 +7,17 @@ on:
   pull_request:
     branches:
       - main
+  # Deploys are never automatic — build-and-test still runs on every push/PR as a safety net, but
+  # going live is always someone deliberately picking an environment here and clicking Run workflow.
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: Environment to deploy
+        required: true
+        type: choice
+        options:
+          - staging
+          - production
 
 permissions:
   contents: read
@@ -75,27 +86,32 @@ jobs:
           path: "**/TestResults/**/*.trx"
           if-no-files-found: error
 
-  # Deploys to 3 dedicated staging Web Apps — separate resources from production, not slots of them,
-  # because slots need a Standard tier or higher and these run on the Free tier. The build is
-  # uploaded as an artifact so promote-to-production can deploy the exact same bits instead of
-  # rebuilding — what goes live is what was actually verified on staging, not a fresh compile of the
-  # same source.
+  # Deploys to whichever environment was picked on the "Run workflow" dropdown. Never triggered by
+  # push or PR — GitHub's Required reviewers on environments needs a paid plan for a private repo
+  # (see "Integração contínua e deploy" in the README), so authorization here is simply that nobody
+  # else can start this job: it only exists as a manual button someone has to click, once for staging
+  # and again for production when they're ready to go live.
+  #
+  # Each app has a staging and a production Web App — separate Azure resources, not slots of one,
+  # because slots need a Standard tier or higher and these run on the Free tier. The matrix below
+  # carries both names and both secrets per app; which one is used is resolved by `environment ==
+  # 'staging'`, from the input picked at dispatch time.
   #
   # One-time setup in Azure, outside this pipeline, before this job can run:
-  #   1. Create 3 Web Apps for staging (erp-api-staging, identity-staging, erp-staging — any Free/F1
-  #      plan works, they don't need to share a plan with production).
-  #   2. On each one's Configuration > Application settings, add ASPNETCORE_ENVIRONMENT=Staging.
-  #      Nothing to mark as "sticky" — these are separate apps, not slots, so there is no swap to
-  #      protect it from.
-  #   3. Download each app's publish profile (Overview > Get publish profile) and add it as the
-  #      secret below.
-  # With that in place, appsettings.Staging.json / appsettings.Production.json are picked up exactly
-  # as ASP.NET Core already does by default — see "Base de dados" and "Testes" in the README.
-  publish:
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+  #   1. Create 6 Web Apps (3 apps × staging/production — any Free/F1 plan works, staging doesn't
+  #      need to share a plan with production).
+  #   2. On each one's Configuration > Application settings, add ASPNETCORE_ENVIRONMENT — Staging on
+  #      the 3 staging apps, Production on the 3 production ones. Nothing to mark as "sticky" — these
+  #      are separate apps, not slots, so there is no swap to protect it from. This, not the
+  #      pipeline, is what makes appsettings.Staging.json / appsettings.Production.json actually get
+  #      picked up — see "Base de dados" in the README.
+  #   3. Download each app's publish profile (Overview > Get publish profile) and add the 6 secrets
+  #      below.
+  deploy:
+    if: github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     needs: build-and-test
-    environment: staging
+    environment: ${{ github.event.inputs.environment }}
 
     strategy:
       fail-fast: false
@@ -103,18 +119,24 @@ jobs:
         include:
           - name: api
             project: src/Erp.Api/Erp.Api.csproj
-            app-name: erp-api
-            secret-name: AZURE_WEBAPP_PUBLISH_PROFILE_API
+            app-name-staging: erp-api-staging
+            app-name-production: erp-api-prod
+            secret-name-staging: AZURE_WEBAPP_PUBLISH_PROFILE_API
+            secret-name-production: AZURE_WEBAPP_PUBLISH_PROFILE_API_PROD
 
           - name: identity
             project: src/Identity/Erp.Identity/Erp.Identity.csproj
-            app-name: identity
-            secret-name: AZURE_WEBAPP_PUBLISH_PROFILE_IDENTITY
+            app-name-staging: identity-staging
+            app-name-production: identity-prod
+            secret-name-staging: AZURE_WEBAPP_PUBLISH_PROFILE_IDENTITY
+            secret-name-production: AZURE_WEBAPP_PUBLISH_PROFILE_IDENTITY_PROD
 
           - name: main
             project: src/UI/Erp.Main/Erp.Main.csproj
-            app-name: erp
-            secret-name: AZURE_WEBAPP_PUBLISH_PROFILE_MAIN
+            app-name-staging: erp-staging
+            app-name-production: erp-prod
+            secret-name-staging: AZURE_WEBAPP_PUBLISH_PROFILE_MAIN
+            secret-name-production: AZURE_WEBAPP_PUBLISH_PROFILE_MAIN_PROD
 
     steps:
       - name: Checkout repository
@@ -131,62 +153,9 @@ jobs:
       - name: Publish
         run: dotnet publish ${{ matrix.project }} --configuration Release --no-restore --output ./publish/${{ matrix.name }}
 
-      - name: Deploy to the staging Web App
+      - name: Deploy to the Web App
         uses: azure/webapps-deploy@v3
         with:
-          app-name: ${{ matrix.app-name }}
-          publish-profile: ${{ secrets[matrix.secret-name] }}
-          package: ./publish/${{ matrix.name }}
-
-      - name: Upload the build for promote-to-production
-        uses: actions/upload-artifact@v5
-        with:
-          name: publish-${{ matrix.name }}
-          path: ./publish/${{ matrix.name }}
-          if-no-files-found: error
-
-  # Promotes what is already verified on staging: downloads the same build publish just produced —
-  # no rebuild — and deploys it to the 3 production Web Apps (separate resources from staging, see
-  # above) with their own publish profiles. Gated by the "production" environment: add required
-  # reviewers to it once, in Settings > Environments > production, and this job pauses for approval
-  # before it runs.
-  #
-  # One-time setup in Azure, outside this pipeline, before this job can run:
-  #   1. On each production app's Configuration > Application settings, add
-  #      ASPNETCORE_ENVIRONMENT=Production (Azure defaults to this already, but setting it explicitly
-  #      means the pipeline doesn't depend on an implicit default).
-  #   2. Download each app's publish profile (Overview > Get publish profile — a different file from
-  #      the staging app's) and add it as the *_PROD secret below.
-  promote-to-production:
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-    runs-on: ubuntu-latest
-    needs: publish
-    environment: production
-
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - name: api
-            app-name: erp-api-prod
-            secret-name: AZURE_WEBAPP_PUBLISH_PROFILE_API_PROD
-          - name: identity
-            app-name: identity-prod
-            secret-name: AZURE_WEBAPP_PUBLISH_PROFILE_IDENTITY_PROD
-          - name: main
-            app-name: erp-prod
-            secret-name: AZURE_WEBAPP_PUBLISH_PROFILE_MAIN_PROD
-
-    steps:
-      - name: Download the build verified on staging
-        uses: actions/download-artifact@v5
-        with:
-          name: publish-${{ matrix.name }}
-          path: ./publish/${{ matrix.name }}
-
-      - name: Deploy to the production Web App
-        uses: azure/webapps-deploy@v3
-        with:
-          app-name: ${{ matrix.app-name }}
-          publish-profile: ${{ secrets[matrix.secret-name] }}
+          app-name: ${{ github.event.inputs.environment == 'staging' && matrix.app-name-staging || matrix.app-name-production }}
+          publish-profile: ${{ github.event.inputs.environment == 'staging' && secrets[matrix.secret-name-staging] || secrets[matrix.secret-name-production] }}
           package: ./publish/${{ matrix.name }}

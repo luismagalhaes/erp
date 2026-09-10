@@ -341,42 +341,33 @@ O CI ainda os exclui, com `--filter "Category!=Integration"`, porque o *runner* 
 
 ## Integração contínua e deploy
 
-Tudo vive num workflow só, [dotnet-ci.yml](.github/workflows/dotnet-ci.yml), em três jobs em cadeia. Só o primeiro corre em *pull request*; os outros dois só em push para `main`, e cada um pode ficar parado à espera de aprovação humana antes de continuar.
+Tudo vive num workflow só, [dotnet-ci.yml](.github/workflows/dotnet-ci.yml), em dois jobs. `build-and-test` corre sozinho, em todo o push e todo o *pull request* para `main`. O deploy nunca é automático — não corre nem em push nem em PR, só quando alguém o despoleta à mão.
 
-Staging e produção são **seis Web Apps distintas** no Azure (três por ambiente), não *slots* da mesma — o *deployment slot* exige tier Standard ou superior, e o objetivo aqui era o Free chegar. A diferença prática é que não há *swap* nem *sticky setting*: são recursos separados, cada um com o seu URL, o seu *publish profile* e as suas *Application settings*.
+Isto é assim porque **Required reviewers em *environments* só existe, para repositórios privados, nos planos GitHub Pro/Team/Enterprise** — no Free, a página de configuração do *environment* nem mostra essa opção. Sem esse mecanismo, a autorização passa a ser mais simples: só corre quem clicar. Ver [Estado atual e limitações conhecidas](#estado-atual-e-limitações-conhecidas).
+
+Staging e produção são **seis Web Apps distintas** no Azure (três por ambiente), não *slots* da mesma — o *deployment slot* exige tier Standard ou superior, e o objetivo aqui era o Free chegar. Cada uma tem o seu URL, o seu *publish profile* e as suas *Application settings*.
 
 ```
-push/PR → build-and-test
-              │  (só em push a main, nunca em PR)
-              ▼
-          publish ──► publica nas 3 Web Apps de staging (*-staging)
-              │  (aprovação do environment "staging")
-              ▼
-promote-to-production ──► publica o MESMO artefacto nas 3 Web Apps de produção
-              (aprovação do environment "production")
+push/PR → build-and-test (sempre)
+
+Actions → Run workflow → escolher "staging" ou "production" → deploy
+              (repete-se uma vez para cada ambiente, sempre uma escolha manual)
 ```
 
 **`build-and-test`** compila a solução inteira e corre os testes com `--filter "Category!=Integration"` — os de integração ficam de fora porque o *runner* não tem SQL Server (ver [Testes](#testes)). Publica o relatório e os `.trx` como artefactos, mesmo quando falha.
 
-**`publish`** só arranca se `build-and-test` passar, em push a `main` (nunca em PR — sem isto, cada PR chegava a fazer deploy). Para cada uma das três apps (`api`, `identity`, `main`) faz `dotnet publish` uma vez e:
-1. despacha o resultado para a **Web App de staging** (`erp-api-staging`, `identity-staging`, `erp-staging`), com `azure/webapps-deploy@v3` e o *publish profile* dessa app;
-2. sobe essa mesma pasta como *artifact* do workflow (`publish-api`, `publish-identity`, `publish-main`), para o job seguinte não voltar a compilar.
-
-**`promote-to-production`** corre depois do `publish`, **descarrega o artefacto que já foi para staging** — não recompila — e faz o mesmo `azure/webapps-deploy@v3` para as **Web Apps de produção** (`erp-api`, `identity`, `erp`), desta vez com o *publish profile* de cada uma. O que vai para produção é byte a byte o que já foi verificado em staging, nunca uma recompilação do mesmo código-fonte.
-
-Cada um dos dois jobs de deploy declara um `environment:` do GitHub (`staging`, `production`) — é aí, não no YAML, que se configuram os *reviewers* obrigatórios: o job fica parado à espera de aprovação manual antes do primeiro passo correr.
+**`deploy`** só corre por `workflow_dispatch` — em `Actions → Build and Test ERP Solution → Run workflow`, escolhendo `staging` ou `production` num menu — nunca por push nem PR. Depende de `build-and-test` ter passado, e para cada uma das três apps (`api`, `identity`, `main`) faz `dotnet publish` e despacha com `azure/webapps-deploy@v3` para a Web App do ambiente escolhido, com o *publish profile* correspondente. Compila de novo em cada corrida — ao contrário de um modelo com *promote*, aqui staging e produção não partilham o mesmo binário, porque são duas execuções manuais independentes, normalmente em momentos diferentes.
 
 ### Configuração necessária, uma vez, fora da pipeline
 
-**No GitHub** (`Settings → Environments`):
-- Criar os *environments* `staging` e `production`, cada um com **Required reviewers** — sem isto os jobs não param para aprovação, só ficam com o nome do *environment* anexado.
+**No GitHub** — nada a configurar em *environments* (sem Required reviewers no Free, a única coisa que um `environment:` faz aqui é agrupar o *run* na UI). Só falta:
 - Seis *secrets* com os *publish profiles*, um por Web App — descarregados no Azure em **Overview → Get publish profile** de cada app (são ficheiros diferentes, mesmo com o mesmo código por trás):
 
   | App | Web App de staging | Secret | Web App de produção | Secret |
   |---|---|---|---|---|
-  | Erp.Api | `erp-api-staging` | `AZURE_WEBAPP_PUBLISH_PROFILE_API` | `erp-api` | `AZURE_WEBAPP_PUBLISH_PROFILE_API_PROD` |
-  | Erp.Identity | `identity-staging` | `AZURE_WEBAPP_PUBLISH_PROFILE_IDENTITY` | `identity` | `AZURE_WEBAPP_PUBLISH_PROFILE_IDENTITY_PROD` |
-  | Erp.Main | `erp-staging` | `AZURE_WEBAPP_PUBLISH_PROFILE_MAIN` | `erp` | `AZURE_WEBAPP_PUBLISH_PROFILE_MAIN_PROD` |
+  | Erp.Api | `erp-api-staging` | `AZURE_WEBAPP_PUBLISH_PROFILE_API` | `erp-api-prod` | `AZURE_WEBAPP_PUBLISH_PROFILE_API_PROD` |
+  | Erp.Identity | `identity-staging` | `AZURE_WEBAPP_PUBLISH_PROFILE_IDENTITY` | `identity-prod` | `AZURE_WEBAPP_PUBLISH_PROFILE_IDENTITY_PROD` |
+  | Erp.Main | `erp-staging` | `AZURE_WEBAPP_PUBLISH_PROFILE_MAIN` | `erp-prod` | `AZURE_WEBAPP_PUBLISH_PROFILE_MAIN_PROD` |
 
   Um secret vazio ou mal escrito não dá erro óbvio: a linha `publish-profile:` desaparece do log do passo (input vazio não é impresso) e a *action* falha com *"No credentials found"*, como se faltasse um `azure/login` que nunca existiu neste workflow.
 
@@ -757,6 +748,7 @@ Registo honesto do que ainda não está feito, para evitar surpresas:
 - **SMTP por configurar** — sem `Smtp:Host` e `Smtp:FromEmail`, o worker marca os emails como `Failed` com essa mensagem. É visível no backoffice de notificações e resolve-se com configuração, não com código.
 - **Constantes duplicadas** — os scopes, roles e claims vivem em [Erp.Common](src/Shared/Erp.Common/Constants.cs), usado pela `Erp.Api` e pelo `Erp.Main`, mas o Identity mantém a sua cópia em `Erp.Identity.Common`. Os valores coincidem, mas alterar só um dos lados põe o seed e a API em desacordo sem erro de compilação.
 - **Cobertura de testes desigual** — a lógica fiscal, a emissão, o stock e os serviços do Core estão cobertos; as camadas Storage (EF Core) e as páginas Blazor não têm testes.
+- **Deploy sem aprovação formal** — o job `deploy` (ver [Integração contínua e deploy](#integração-contínua-e-deploy)) só corre por `workflow_dispatch`, nunca por push, porque **Required reviewers em *environments* do GitHub exige plano Pro/Team/Enterprise para repositórios privados** — no Free essa opção não aparece. A autorização hoje é "só quem tem acesso ao repositório consegue clicar em Run workflow", não uma aprovação registada por outra pessoa. Corrige-se fazendo *upgrade* do plano do GitHub e voltando a gatilhar por `environment:` com *reviewers*.
 
 
 ### Segurança

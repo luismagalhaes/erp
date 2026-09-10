@@ -62,16 +62,13 @@ try
     await using (var scope = app.Services.CreateAsyncScope())
         await scope.ServiceProvider.GetRequiredService<AppDbContext>().Database.MigrateAsync();
 
-    if (app.Environment.IsDevelopment())
+    app.MapOpenApi();
+    app.MapScalarApiReference(options =>
     {
-        app.MapOpenApi();
-        app.MapScalarApiReference(options =>
-        {
-            options.Title = "ERP API";
-        });
+        options.Title = "ERP API";
+    });
 
-        app.MapGet("/", () => Results.Redirect("/scalar"));
-    }
+    app.MapGet("/", () => Results.Redirect("/scalar"));
 
     app.UseSerilogRequestLogging();
     app.UseHttpsRedirection();

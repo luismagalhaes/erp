@@ -75,18 +75,20 @@ jobs:
           path: "**/TestResults/**/*.trx"
           if-no-files-found: error
 
-  # Deploys to the "staging" slot of each Web App. The build is uploaded as an artifact so
-  # promote-to-production can deploy the exact same bits instead of rebuilding — what goes live is
-  # what was actually verified on staging, not a fresh compile of the same source.
+  # Deploys to 3 dedicated staging Web Apps — separate resources from production, not slots of them,
+  # because slots need a Standard tier or higher and these run on the Free tier. The build is
+  # uploaded as an artifact so promote-to-production can deploy the exact same bits instead of
+  # rebuilding — what goes live is what was actually verified on staging, not a fresh compile of the
+  # same source.
   #
   # One-time setup in Azure, outside this pipeline, before this job can run:
-  #   1. Create a "staging" deployment slot on each of the 3 Web Apps (needs Standard tier or higher).
-  #   2. On the staging slot's Configuration > Application settings, add ASPNETCORE_ENVIRONMENT=Staging
-  #      with "Deployment slot setting" checked, so it is *sticky* to that slot. Do the same on the
-  #      production slot with the value ASPNETCORE_ENVIRONMENT=Production. Set once; the pipeline
-  #      never touches it again.
-  #   3. Download the staging slot's own publish profile (Deployment slot > Get publish profile — it
-  #      is different from the production slot's) and add it as the *_STAGING secret below.
+  #   1. Create 3 Web Apps for staging (erp-api-staging, identity-staging, erp-staging — any Free/F1
+  #      plan works, they don't need to share a plan with production).
+  #   2. On each one's Configuration > Application settings, add ASPNETCORE_ENVIRONMENT=Staging.
+  #      Nothing to mark as "sticky" — these are separate apps, not slots, so there is no swap to
+  #      protect it from.
+  #   3. Download each app's publish profile (Overview > Get publish profile) and add it as the
+  #      secret below.
   # With that in place, appsettings.Staging.json / appsettings.Production.json are picked up exactly
   # as ASP.NET Core already does by default — see "Base de dados" and "Testes" in the README.
   publish:
@@ -129,11 +131,10 @@ jobs:
       - name: Publish
         run: dotnet publish ${{ matrix.project }} --configuration Release --no-restore --output ./publish/${{ matrix.name }}
 
-      - name: Deploy to Azure Web App staging slot
+      - name: Deploy to the staging Web App
         uses: azure/webapps-deploy@v3
         with:
           app-name: ${{ matrix.app-name }}
-          slot-name: staging
           publish-profile: ${{ secrets[matrix.secret-name] }}
           package: ./publish/${{ matrix.name }}
 
@@ -145,13 +146,17 @@ jobs:
           if-no-files-found: error
 
   # Promotes what is already verified on staging: downloads the same build publish just produced —
-  # no rebuild — and deploys it to each Web App's production slot with that slot's own publish
-  # profile. Gated by the "production" environment: add required reviewers to it once, in
-  # Settings > Environments > production, and this job pauses for approval before it runs.
+  # no rebuild — and deploys it to the 3 production Web Apps (separate resources from staging, see
+  # above) with their own publish profiles. Gated by the "production" environment: add required
+  # reviewers to it once, in Settings > Environments > production, and this job pauses for approval
+  # before it runs.
   #
-  # One-time setup in Azure, outside this pipeline, before this job can run: download each app's
-  # *production* slot publish profile (Deployment slot > Get publish profile, on the production slot
-  # this time) and add it as the secret below — separate from the *_STAGING ones publish uses.
+  # One-time setup in Azure, outside this pipeline, before this job can run:
+  #   1. On each production app's Configuration > Application settings, add
+  #      ASPNETCORE_ENVIRONMENT=Production (Azure defaults to this already, but setting it explicitly
+  #      means the pipeline doesn't depend on an implicit default).
+  #   2. Download each app's publish profile (Overview > Get publish profile — a different file from
+  #      the staging app's) and add it as the *_PROD secret below.
   promote-to-production:
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
@@ -163,13 +168,13 @@ jobs:
       matrix:
         include:
           - name: api
-            app-name: erp-api
+            app-name: erp-api-prod
             secret-name: AZURE_WEBAPP_PUBLISH_PROFILE_API_PROD
           - name: identity
-            app-name: identity
+            app-name: identity-prod
             secret-name: AZURE_WEBAPP_PUBLISH_PROFILE_IDENTITY_PROD
           - name: main
-            app-name: erp
+            app-name: erp-prod
             secret-name: AZURE_WEBAPP_PUBLISH_PROFILE_MAIN_PROD
 
     steps:
@@ -179,7 +184,7 @@ jobs:
           name: publish-${{ matrix.name }}
           path: ./publish/${{ matrix.name }}
 
-      - name: Deploy to Azure Web App production slot
+      - name: Deploy to the production Web App
         uses: azure/webapps-deploy@v3
         with:
           app-name: ${{ matrix.app-name }}

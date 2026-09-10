@@ -339,6 +339,74 @@ O CI ainda os exclui, com `--filter "Category!=Integration"`, porque o *runner* 
 
 ---
 
+## Integração contínua e deploy
+
+Tudo vive num workflow só, [dotnet-ci.yml](.github/workflows/dotnet-ci.yml), em três jobs em cadeia. Só o primeiro corre em *pull request*; os outros dois só em push para `main`, e cada um pode ficar parado à espera de aprovação humana antes de continuar.
+
+Staging e produção são **seis Web Apps distintas** no Azure (três por ambiente), não *slots* da mesma — o *deployment slot* exige tier Standard ou superior, e o objetivo aqui era o Free chegar. A diferença prática é que não há *swap* nem *sticky setting*: são recursos separados, cada um com o seu URL, o seu *publish profile* e as suas *Application settings*.
+
+```
+push/PR → build-and-test
+              │  (só em push a main, nunca em PR)
+              ▼
+          publish ──► publica nas 3 Web Apps de staging (*-staging)
+              │  (aprovação do environment "staging")
+              ▼
+promote-to-production ──► publica o MESMO artefacto nas 3 Web Apps de produção
+              (aprovação do environment "production")
+```
+
+**`build-and-test`** compila a solução inteira e corre os testes com `--filter "Category!=Integration"` — os de integração ficam de fora porque o *runner* não tem SQL Server (ver [Testes](#testes)). Publica o relatório e os `.trx` como artefactos, mesmo quando falha.
+
+**`publish`** só arranca se `build-and-test` passar, em push a `main` (nunca em PR — sem isto, cada PR chegava a fazer deploy). Para cada uma das três apps (`api`, `identity`, `main`) faz `dotnet publish` uma vez e:
+1. despacha o resultado para a **Web App de staging** (`erp-api-staging`, `identity-staging`, `erp-staging`), com `azure/webapps-deploy@v3` e o *publish profile* dessa app;
+2. sobe essa mesma pasta como *artifact* do workflow (`publish-api`, `publish-identity`, `publish-main`), para o job seguinte não voltar a compilar.
+
+**`promote-to-production`** corre depois do `publish`, **descarrega o artefacto que já foi para staging** — não recompila — e faz o mesmo `azure/webapps-deploy@v3` para as **Web Apps de produção** (`erp-api`, `identity`, `erp`), desta vez com o *publish profile* de cada uma. O que vai para produção é byte a byte o que já foi verificado em staging, nunca uma recompilação do mesmo código-fonte.
+
+Cada um dos dois jobs de deploy declara um `environment:` do GitHub (`staging`, `production`) — é aí, não no YAML, que se configuram os *reviewers* obrigatórios: o job fica parado à espera de aprovação manual antes do primeiro passo correr.
+
+### Configuração necessária, uma vez, fora da pipeline
+
+**No GitHub** (`Settings → Environments`):
+- Criar os *environments* `staging` e `production`, cada um com **Required reviewers** — sem isto os jobs não param para aprovação, só ficam com o nome do *environment* anexado.
+- Seis *secrets* com os *publish profiles*, um por Web App — descarregados no Azure em **Overview → Get publish profile** de cada app (são ficheiros diferentes, mesmo com o mesmo código por trás):
+
+  | App | Web App de staging | Secret | Web App de produção | Secret |
+  |---|---|---|---|---|
+  | Erp.Api | `erp-api-staging` | `AZURE_WEBAPP_PUBLISH_PROFILE_API` | `erp-api` | `AZURE_WEBAPP_PUBLISH_PROFILE_API_PROD` |
+  | Erp.Identity | `identity-staging` | `AZURE_WEBAPP_PUBLISH_PROFILE_IDENTITY` | `identity` | `AZURE_WEBAPP_PUBLISH_PROFILE_IDENTITY_PROD` |
+  | Erp.Main | `erp-staging` | `AZURE_WEBAPP_PUBLISH_PROFILE_MAIN` | `erp` | `AZURE_WEBAPP_PUBLISH_PROFILE_MAIN_PROD` |
+
+  Um secret vazio ou mal escrito não dá erro óbvio: a linha `publish-profile:` desaparece do log do passo (input vazio não é impresso) e a *action* falha com *"No credentials found"*, como se faltasse um `azure/login` que nunca existiu neste workflow.
+
+**No Azure** — isto é o que faz os `appsettings.Staging.json`/`appsettings.Production.json` (ver [Base de dados](#base-de-dados)) serem lidos de facto, e nada disto passa pela pipeline:
+- Criar as 6 Web Apps (qualquer tier serve para as de staging, incluindo Free/F1).
+- Em cada uma, definir a *Application setting* `ASPNETCORE_ENVIRONMENT` — `Staging` nas três de staging, `Production` nas três de produção. Sem *slot*, não há nada para marcar como *sticky*: é um recurso à parte, o valor fica só ali. É isto, e só isto, que decide qual `appsettings.*.json` a app lê no arranque: o `dotnet publish` leva sempre os quatro ficheiros (base + Development + Staging + Production, sem filtro nenhum no `.csproj`), e é a variável de ambiente do processo — não a pipeline — que escolhe qual se aplica por cima do base.
+
+  Pelo **Portal**, repetir em cada uma das 6 Web Apps:
+  1. Abrir a Web App em `portal.azure.com`.
+  2. Menu lateral → **Settings → Environment variables** (portais mais recentes) ou **Configuration** (portais mais antigos) — é o mesmo separador, chamado **App settings**.
+  3. **+ Add** / **New application setting**.
+  4. **Name**: `ASPNETCORE_ENVIRONMENT` — **Value**: `Staging` ou `Production`, conforme a app.
+  5. **Apply**/**OK**, depois **Save** no topo da página e confirmar em **Continue**.
+
+  Ou via **CLI**, para as seis de uma vez:
+  ```powershell
+  az login
+  $rg = "<resource-group>"
+  foreach ($app in "erp-api-staging","identity-staging","erp-staging") {
+    az webapp config appsettings set --resource-group $rg --name $app --settings ASPNETCORE_ENVIRONMENT=Staging
+  }
+  foreach ($app in "erp-api","identity","erp") {
+    az webapp config appsettings set --resource-group $rg --name $app --settings ASPNETCORE_ENVIRONMENT=Production
+  }
+  ```
+
+Os valores sensíveis (connection strings, segredos de cliente, password de SMTP) continuam fora do repositório — ver [Segurança](#segurança). Até existir o cofre planeado, ficam como *Application settings* do Azure em cada Web App, nunca commitados.
+
+---
+
 ## Endpoints do módulo Core
 
 | Método | Rota | Autorização |

@@ -29,6 +29,7 @@
     <ProjectReference Include="..\Erp.Identity.Domain\Erp.Identity.Domain.csproj" />
     <ProjectReference Include="..\Erp.Identity.Infrastructure\Erp.Identity.Infrastructure.csproj" />
     <ProjectReference Include="..\Erp.Identity.Storage\Erp.Identity.Storage.csproj" />
+    <ProjectReference Include="..\..\Shared\Erp.Common\Erp.Common.csproj" />
   </ItemGroup>
 
 </Project>

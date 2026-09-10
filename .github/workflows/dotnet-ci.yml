@@ -85,10 +85,18 @@ jobs:
         include:
           - name: api
             project: src/Erp.Api/Erp.Api.csproj
+            app-name: substitui-pelo-nome-da-app-api-no-azure
+            secret-name: AZURE_WEBAPP_PUBLISH_PROFILE_API
+
           - name: identity
             project: src/Identity/Erp.Identity/Erp.Identity.csproj
+            app-name: substitui-pelo-nome-da-app-identity-no-azure
+            secret-name: AZURE_WEBAPP_PUBLISH_PROFILE_IDENTITY
+
           - name: main
             project: src/UI/Erp.Main/Erp.Main.csproj
+            app-name: substitui-pelo-nome-da-app-main-no-azure
+            secret-name: AZURE_WEBAPP_PUBLISH_PROFILE_MAIN
 
     steps:
       - name: Checkout repository
@@ -105,10 +113,9 @@ jobs:
       - name: Publish
         run: dotnet publish ${{ matrix.project }} --configuration Release --no-restore --output ./publish/${{ matrix.name }}
 
-      - name: Upload published artifact
-        uses: actions/upload-artifact@v5
+      - name: Deploy to Azure Web App
+        uses: azure/webapps-deploy@v3
         with:
-          name: publish-${{ matrix.name }}
-          path: ./publish/${{ matrix.name }}
-          if-no-files-found: error
-
+          app-name: ${{ matrix.app-name }}
+          publish-profile: ${{ secrets[matrix.secret-name] }}
+          package: ./publish/${{ matrix.name }}

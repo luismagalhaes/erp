@@ -19,7 +19,7 @@ public class ApplicationServiceTests
     {
         var storage = Substitute.For<IUserStorage>();
         IReadOnlyList<UserListItem> users =
-            [new("user-1", "a@b.pt", "Ana Alves", true, DateTime.UtcNow, ["User"])];
+            [new("user-1", "a@b.pt", "Ana Alves", true, DateTime.UtcNow, ["User"], "pt-PT")];
         storage.GetUsersAsync(Arg.Any<CancellationToken>()).Returns(users);
 
         var result = await new UserService(storage).GetUsersAsync();

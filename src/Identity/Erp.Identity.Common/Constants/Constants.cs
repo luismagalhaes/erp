@@ -31,6 +31,21 @@
             public const string Role = "role";
             public const string Name = "name";
             public const string Subject = "sub";
+
+            /// <summary>
+            /// The user's preferred UI culture (e.g. "pt-PT", "en-US"), issued into the id_token so
+            /// every UI can localize without a round trip to the Identity host.
+            /// </summary>
+            public const string Locale = "locale";
+        }
+
+        /// <summary>
+        /// Supported UI cultures and the default one, matching <c>Erp.Common.Constants.Localization</c>
+        /// so the Identity host and every ERP UI stay consistent without sharing that project.
+        /// </summary>
+        public static class Localization
+        {
+            public const string DefaultCulture = "pt-PT";
         }
 
         public static class Scopes

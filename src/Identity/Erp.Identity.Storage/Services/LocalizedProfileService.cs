@@ -1,7 +1,7 @@
 using System.Security.Claims;
 using Duende.IdentityServer.AspNetIdentity;
 using Duende.IdentityServer.Models;
-using Erp.Common;
+using Erp.Identity.Common.Constants;
 using Erp.Identity.Data;
 using Microsoft.AspNetCore.Identity;
 

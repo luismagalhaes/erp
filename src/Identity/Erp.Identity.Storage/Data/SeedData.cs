@@ -26,8 +26,9 @@ public static class SeedData
         await scope.ServiceProvider.GetRequiredService<PersistedGrantDbContext>().Database.MigrateAsync();
     }
 
-    /// <summary>Seeds the clients, scopes, resources, roles and admin user. Assumes the schema is
-    /// already current — call <see cref="MigrateAsync"/> first.</summary>
+    /// <summary>Seeds the clients, scopes, resources, roles and admin user. Runs on every startup
+    /// in every environment, because the app cannot function without them. Overwrites any backoffice
+    /// changes made to these on the previous run — that's a known limitation.</summary>
     public static async Task InitializeAsync(IServiceProvider services)
     {
         await using var scope = services.CreateAsyncScope();

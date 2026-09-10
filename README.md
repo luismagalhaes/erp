@@ -230,9 +230,9 @@ O seed cria um utilizador administrador cujas credenciais estão definidas em `C
 dotnet restore Erp.slnx
 dotnet build Erp.slnx
 
-# 2. Arrancar os três processos (em terminais separados) — cada host migra a sua base de dados
-#    sozinho no arranque, em qualquer ambiente; não há passo manual de "dotnet ef database update"
-dotnet run --project .\src\Identity\Erp.Identity\Erp.Identity.csproj --launch-profile https -- --seed
+# 2. Arrancar os três processos (em terminais separados) — cada host aplica migrations e
+#    semeia os dados críticos (clients, scopes, roles, admin) sozinho no arranque
+dotnet run --project .\src\Identity\Erp.Identity\Erp.Identity.csproj --launch-profile https
 dotnet run --project .\src\Erp.Api\Erp.Api.csproj --launch-profile https
 dotnet run --project .\src\UI\Erp.Main\Erp.Main.csproj --launch-profile https
 
@@ -246,7 +246,7 @@ Abrir https://localhost:7019 — o acesso não autenticado é redirecionado para
 
 Em Visual Studio existem os perfis de arranque múltiplo **"All"** e **"All + Worker"** ([Erp.slnLaunch.user](Erp.slnLaunch.user)).
 
-**Migrações aplicam-se sozinhas.** O `Erp.Api` (`AppDbContext`) e o `Erp.Identity` (os seus três contextos) chamam `Database.MigrateAsync()` no arranque, em qualquer ambiente — [Program.cs](src/Erp.Api/Program.cs) e [SeedData.MigrateAsync](src/Identity/Erp.Identity.Storage/Data/SeedData.cs). É por isto que o *pipeline* de deploy (ver [Integração contínua e deploy](#integração-contínua-e-deploy)) não tem passo nenhum de migração: publicar código e arrancar a app já chega. Aplicar uma migração nunca é destrutivo, por isso corre sempre; **semear** é outra coisa — sobrescreve clients, scopes e resources — e continua a exigir `--seed` fora de Development, onde já corre sozinho no arranque (ver [Program.cs](src/Identity/Erp.Identity/Program.cs)). Criar uma migração nova continua a ser manual, com `dotnet ef migrations add` (ver [Base de dados](#base-de-dados)).
+**Migrações e seed aplicam-se sozinhas.** O `Erp.Api` e o `Erp.Identity` fazem duas coisas no arranque: aplicam as migrations pendentes (nunca é destrutivo) e semeiam clients, scopes, resources, roles e admin user (crítico para a app funcionar) — [Program.cs](src/Erp.Api/Program.cs) e [SeedData](src/Identity/Erp.Identity.Storage/Data/SeedData.cs). É por isto que o *pipeline* de deploy (ver [Integração contínua e deploy](#integração-contínua-e-deploy)) não tem passos de migração nem seed: publicar código e arrancar a app já chega. **Nota:** o seed sobrescreve o que foi editado no backoffice (clients, scopes, resources) — alterações feitas lá são perdidas no arranque seguinte. Criar uma migração nova continua manual, com `dotnet ef migrations add` (ver [Base de dados](#base-de-dados)).
 
 ---
 

@@ -101,13 +101,13 @@ try
 
     app.MapRazorComponents<Erp.Identity.Shell.App>()
         .AddInteractiveServerRenderMode();
-    // Applying pending migrations is never destructive, so it runs on every startup, in every
-    // environment — unlike the seed below, which overwrites the clients/scopes/resources configured
-    // in code and is only run where that is actually wanted.
+    // Both migrations and seeding run on every startup: migrations are never destructive, and the
+    // seed (clients, scopes, resources, roles, admin user) is critical for the app to function.
+    // The seed *overwrites* what's configured in code, so backoffice changes are lost on restart —
+    // that's a known limitation. If you need to preserve those changes, you'd need to store
+    // configuration in the database instead of in code.
     await SeedData.MigrateAsync(app.Services);
-
-    if (args.Contains("--seed") || app.Environment.IsDevelopment())
-        await SeedData.InitializeAsync(app.Services);
+    await SeedData.InitializeAsync(app.Services);
 
     await app.RunAsync();
 }

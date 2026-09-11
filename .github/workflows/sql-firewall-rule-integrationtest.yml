@@ -28,3 +28,4 @@ jobs:
             --server database-server-erp \
             --name "gh-actions-${{ github.run_id }}" \
             --start-ip-address ${{ github.event.inputs.ip_address }} \
+            --end-ip-address ${{ github.event.inputs.ip_address }}

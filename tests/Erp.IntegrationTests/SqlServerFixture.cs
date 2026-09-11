@@ -84,21 +84,29 @@ public sealed class SqlServerFixture : IAsyncLifetime
     private static async Task ClearAsync(AppDbContext context)
     {
         // Constraints off for the duration, so the tables need not be emptied in dependency order —
-        // an order that would have to be maintained by hand every time a foreign key is added.
+        // an order that would have to be maintained by hand every time a foreign key is added. Built
+        // from sys.tables rather than sp_MSforeachtable: that procedure only exists on a full SQL
+        // Server instance, not on the Azure SQL Database the CI pipeline runs these tests against.
         await context.Database.ExecuteSqlRawAsync(
             """
-            EXEC sp_MSforeachtable 'ALTER TABLE ? NOCHECK CONSTRAINT ALL';
-
             DECLARE @sql nvarchar(max) = N'';
+
+            SELECT @sql = @sql + N'ALTER TABLE ' + QUOTENAME(SCHEMA_NAME(schema_id)) + N'.' + QUOTENAME(name)
+                + N' NOCHECK CONSTRAINT ALL;'
+            FROM sys.tables
+            WHERE is_ms_shipped = 0;
 
             SELECT @sql = @sql + N'DELETE FROM ' + QUOTENAME(SCHEMA_NAME(schema_id)) + N'.' + QUOTENAME(name) + N';'
             FROM sys.tables
             WHERE is_ms_shipped = 0
               AND name <> '__EFMigrationsHistory';
 
-            EXEC sp_executesql @sql;
+            SELECT @sql = @sql + N'ALTER TABLE ' + QUOTENAME(SCHEMA_NAME(schema_id)) + N'.' + QUOTENAME(name)
+                + N' WITH CHECK CHECK CONSTRAINT ALL;'
+            FROM sys.tables
+            WHERE is_ms_shipped = 0;
 
-            EXEC sp_MSforeachtable 'ALTER TABLE ? WITH CHECK CHECK CONSTRAINT ALL';
+            EXEC sp_executesql @sql;
             """);
     }
 

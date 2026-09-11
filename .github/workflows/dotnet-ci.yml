@@ -86,6 +86,89 @@ jobs:
           path: "**/TestResults/**/*.trx"
           if-no-files-found: error
 
+  # Runs the 21 tests in Erp.IntegrationTests against a dedicated Azure SQL database — never
+  # staging's or production's own database, because SqlServerFixture wipes every table before each
+  # run (see tests/Erp.IntegrationTests/SqlServerFixture.cs) — pointing it at a shared environment's
+  # database would erase it on every run. Gates every deploy: `deploy` needs this job to pass, for
+  # both staging and production.
+  #
+  # The runner isn't on Azure's network, so it can't reach the SQL Server until its IP is let through
+  # the firewall — opened for just this job, under a name unique to the run, and always removed at
+  # the end (even on failure, via `if: always()`). Azure SQL firewall rules are per-server, not
+  # per-database: a rule left open permanently would also expose staging's own database on the same
+  # logical server, so the rule only exists for the lifetime of this job. `concurrency` serializes
+  # this job across runs — SqlServerFixture clears the whole database at the start, so two runs at
+  # once would corrupt each other.
+  #
+  # One-time setup in Azure, outside this pipeline:
+  #   1. Create a dedicated database on the same logical server (e.g. erp-integration-tests) — a
+  #      second, non-free database, since the Free tier only covers one.
+  #   2. Create a SQL login scoped to just that database (not sa-erp) with db_owner on it — the
+  #      tests apply their own migrations and need DDL rights.
+  #   3. Register an Azure AD App with a federated credential trusting this repo/workflow (no client
+  #      secret stored anywhere — see azure/login's OIDC docs), and assign it a role scoped to only
+  #      this SQL Server's firewall rules. Not Contributor, and nothing that can touch the Web Apps
+  #      or any other resource.
+  #   4. Add the 6 secrets referenced below.
+  integration-tests:
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    needs: build-and-test
+    concurrency:
+      group: erp-integration-tests-db
+    permissions:
+      id-token: write
+      contents: read
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Azure login (OIDC — no client secret stored)
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_SQL_TEST_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Allow this runner through the SQL Server firewall
+        run: |
+          RUNNER_IP=$(curl -s https://api.ipify.org)
+          az sql server firewall-rule create \
+            --resource-group "${{ secrets.AZURE_SQL_RESOURCE_GROUP }}" \
+            --server "${{ secrets.AZURE_SQL_SERVER_NAME }}" \
+            --name "github-runner-${{ github.run_id }}" \
+            --start-ip-address "$RUNNER_IP" \
+            --end-ip-address "$RUNNER_IP"
+
+      - name: Run integration tests
+        env:
+          ERP_TEST_SQL: ${{ secrets.INTEGRATION_TEST_SQL_CONNECTION }}
+        run: dotnet test tests/Erp.IntegrationTests/Erp.IntegrationTests.csproj --configuration Release --filter "Category=Integration" --results-directory ./TestResults --logger "trx;LogFilePrefix=integration-test-results" --logger "console;verbosity=detailed"
+
+      - name: Publish test report
+        if: always()
+        uses: dorny/test-reporter@v2
+        with:
+          name: Integration Test Results
+          path: "**/TestResults/**/*.trx"
+          reporter: dotnet-trx
+
+      # Runs even if the tests above failed, or the job was cancelled — an open firewall rule left
+      # behind is exactly the kind of thing that stops mattering to anyone until it's a problem.
+      - name: Remove this runner from the SQL Server firewall
+        if: always()
+        run: |
+          az sql server firewall-rule delete \
+            --resource-group "${{ secrets.AZURE_SQL_RESOURCE_GROUP }}" \
+            --server "${{ secrets.AZURE_SQL_SERVER_NAME }}" \
+            --name "github-runner-${{ github.run_id }}"
+
   # Deploys to whichever environment was picked on the "Run workflow" dropdown. Never triggered by
   # push or PR — GitHub's Required reviewers on environments needs a paid plan for a private repo
   # (see "Integração contínua e deploy" in the README), so authorization here is simply that nobody
@@ -116,7 +199,7 @@ jobs:
       github.event_name == 'workflow_dispatch' &&
       (github.event.inputs.environment == 'staging' || github.ref == 'refs/heads/main')
     runs-on: ubuntu-latest
-    needs: build-and-test
+    needs: [build-and-test, integration-tests]
     environment: ${{ github.event.inputs.environment }}
 
     strategy:

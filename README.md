@@ -355,13 +355,13 @@ dotnet test Erp.slnx --filter "Category=Integration"
 
 Cada teste cria **a sua própria empresa**. Quase tudo neste sistema tem âmbito de empresa, o que torna esse isolamento barato e verdadeiro, e evita esvaziar tabelas entre testes. O contentor de DI é construído com o mesmo `AddModules` que o `Program.cs` usa — um teste que montasse a sua própria versão estaria a testar a sua própria montagem, e continuaria a passar depois de a produção divergir.
 
-O CI ainda os exclui, com `--filter "Category!=Integration"`, porque o *runner* não tem SQL Server — ver [Estado atual e limitações conhecidas](#estado-atual-e-limitações-conhecidas).
+**No CI**, correm à parte, numa job dedicada (`integration-tests` em [dotnet-ci.yml](.github/workflows/dotnet-ci.yml)) que só existe em `workflow_dispatch` — nunca em PR — e nunca contra a base de dados de staging ou produção: apontam para uma Azure SQL dedicada só a isto, porque a limpeza no arranque (`ClearAsync`, acima) apagaria os dados de um ambiente a sério. Como o *runner* não está na rede do Azure, a job abre uma regra de *firewall* só para o seu próprio IP, corre os testes, e fecha a regra no fim — mesmo que falhem. `deploy` só avança depois desta job passar, em staging e em produção. Detalhes e configuração de uma vez, fora da pipeline, nos comentários da própria job.
 
 ---
 
 ## Integração contínua e deploy
 
-Tudo vive num workflow só, [dotnet-ci.yml](.github/workflows/dotnet-ci.yml), em dois jobs. **Só há um gatilho automático**: `pull_request` para `main`, que corre o `build-and-test` a cada PR, para dar retorno rápido antes do *merge*. Um push direto a `main` não corre nada sozinho — nem testes, nem *build*, nem deploy. Tudo o resto é `workflow_dispatch`: alguém vai a `Actions` e pede explicitamente.
+Tudo vive num workflow só, [dotnet-ci.yml](.github/workflows/dotnet-ci.yml), em três jobs. **Só há um gatilho automático**: `pull_request` para `main`, que corre o `build-and-test` a cada PR, para dar retorno rápido antes do *merge*. Um push direto a `main` não corre nada sozinho — nem testes, nem *build*, nem deploy. Tudo o resto é `workflow_dispatch`: alguém vai a `Actions` e pede explicitamente.
 
 O deploy usar `workflow_dispatch` em vez de `environment: staging/production` com **Required reviewers** também tem uma razão de plano: esse mecanismo só existe, para repositórios privados, nos planos GitHub Pro/Team/Enterprise — no Free, a página de configuração do *environment* nem mostra essa opção. Sem ele, a autorização é mais simples: só corre quem pedir. Ver [Estado atual e limitações conhecidas](#estado-atual-e-limitações-conhecidas).
 
@@ -370,13 +370,16 @@ Staging e produção são **seis Web Apps distintas** no Azure (três por ambien
 ```
 PR → main → build-and-test (automático, só isto)
 
-Actions → Run workflow → escolher "staging" ou "production" → build-and-test → deploy
+Actions → Run workflow → escolher "staging" ou "production"
+              → build-and-test → integration-tests → deploy
               (sempre a pedido; production também exige que o branch seja main)
 ```
 
-**`build-and-test`** compila a solução inteira e corre os testes com `--filter "Category!=Integration"` — os de integração ficam de fora porque o *runner* não tem SQL Server (ver [Testes](#testes)). Publica o relatório e os `.trx` como artefactos, mesmo quando falha. Corre em todo o PR, e também como primeiro passo de um `workflow_dispatch`.
+**`build-and-test`** compila a solução inteira e corre os testes com `--filter "Category!=Integration"` — os de integração ficam de fora porque precisam de SQL Server e correm à parte, na job seguinte (ver [Testes](#testes)). Publica o relatório e os `.trx` como artefactos, mesmo quando falha. Corre em todo o PR, e também como primeiro passo de um `workflow_dispatch`.
 
-**`deploy`** só corre por `workflow_dispatch` — em `Actions → Build and Test ERP Solution → Run workflow`, escolhendo `staging` ou `production` num menu — nunca por push nem PR. Depende de `build-and-test` ter passado, e para cada uma das três apps (`api`, `identity`, `main`) faz `dotnet publish` e despacha com `azure/webapps-deploy@v3` para a Web App do ambiente escolhido, com o *publish profile* correspondente. `staging` aceita qualquer *branch* escolhido no próprio `workflow_dispatch`, para testar antes do *merge*; `production` só corre se esse *branch* for `main`. Compila de novo em cada corrida — ao contrário de um modelo com *promote*, aqui staging e produção não partilham o mesmo binário, porque são duas execuções manuais independentes, normalmente em momentos diferentes.
+**`integration-tests`** só corre por `workflow_dispatch`, nunca em PR. Depende de `build-and-test` ter passado, abre uma regra de *firewall* na Azure SQL só para o IP do próprio *runner*, corre os 21 testes de integração contra uma base de dados dedicada — nunca a de staging/produção, ver [Testes](#testes) — e fecha a regra no fim, mesmo que os testes falhem. Detalhes de configuração nos comentários da própria job em [dotnet-ci.yml](.github/workflows/dotnet-ci.yml).
+
+**`deploy`** só corre por `workflow_dispatch` — em `Actions → Build and Test ERP Solution → Run workflow`, escolhendo `staging` ou `production` num menu — nunca por push nem PR. Depende de `build-and-test` e `integration-tests` terem passado, e para cada uma das três apps (`api`, `identity`, `main`) faz `dotnet publish` e despacha com `azure/webapps-deploy@v3` para a Web App do ambiente escolhido, com o *publish profile* correspondente. `staging` aceita qualquer *branch* escolhido no próprio `workflow_dispatch`, para testar antes do *merge*; `production` só corre se esse *branch* for `main`. Compila de novo em cada corrida — ao contrário de um modelo com *promote*, aqui staging e produção não partilham o mesmo binário, porque são duas execuções manuais independentes, normalmente em momentos diferentes.
 
 ### Configuração necessária, uma vez, fora da pipeline
 
@@ -388,6 +391,17 @@ Actions → Run workflow → escolher "staging" ou "production" → build-and-te
   | Erp.Api | `erp-api-staging` | `AZURE_WEBAPP_PUBLISH_PROFILE_API` | `erp-api-prod` | `AZURE_WEBAPP_PUBLISH_PROFILE_API_PROD` |
   | Erp.Identity | `identity-staging` | `AZURE_WEBAPP_PUBLISH_PROFILE_IDENTITY` | `identity-prod` | `AZURE_WEBAPP_PUBLISH_PROFILE_IDENTITY_PROD` |
   | Erp.Main | `erp-staging` | `AZURE_WEBAPP_PUBLISH_PROFILE_MAIN` | `erp-prod` | `AZURE_WEBAPP_PUBLISH_PROFILE_MAIN_PROD` |
+
+- Mais seis *secrets*, só para a job `integration-tests` — nenhum é um *publish profile*, e nenhum dá acesso a deploy nem às Web Apps:
+
+  | Secret | O que é |
+  |---|---|
+  | `AZURE_SQL_TEST_CLIENT_ID` | Client ID do Azure AD App registado para esta job — só tem permissão de gerir *firewall rules* deste SQL Server, nada mais |
+  | `AZURE_TENANT_ID` | Tenant do Azure AD |
+  | `AZURE_SUBSCRIPTION_ID` | Subscrição onde está o SQL Server |
+  | `AZURE_SQL_RESOURCE_GROUP` | Resource group do SQL Server |
+  | `AZURE_SQL_SERVER_NAME` | Nome do servidor lógico (ex. `database-server-erp`) |
+  | `INTEGRATION_TEST_SQL_CONNECTION` | *Connection string* completa da base de dados dedicada aos testes, com um login próprio (não o `sa-erp` da staging) |
 
   Um secret vazio ou mal escrito não dá erro óbvio: a linha `publish-profile:` desaparece do log do passo (input vazio não é impresso) e a *action* falha com *"No credentials found"*, como se faltasse um `azure/login` que nunca existiu neste workflow.
 
@@ -785,7 +799,7 @@ Registo honesto do que ainda não está feito, para evitar surpresas:
 - **Menu com links por escrever** — Contabilidade e Relatórios ainda não têm páginas: clicá-las leva a `/not-found`.
 - **Comunicação à AT é manual** — as séries, as guias de transporte e os ficheiros são preparados e validados pelo ERP, mas quem os submete é o utilizador: os *webservices* SOAP da AT não estão integrados. O código de validação da série e o código de circulação da guia registam-se à mão.
 - **Custeio: médio ponderado, não FIFO** — o stock é valorizado ao custo médio ponderado das compras, calculado a partir do razão. O FIFO exigiria guardar camadas de custo e consumi-las por ordem, que é outra estrutura; o médio ponderado tira-se do razão sem nada de novo. O custo da ficha do artigo sobreviveu apenas como recurso último, para artigos que nenhuma compra chegou a custear, e o ficheiro de inventário diz quantas linhas precisaram dele.
-- **Testes de integração só correm localmente** — existem ([Erp.IntegrationTests](tests/Erp.IntegrationTests/)) e correm contra um SQL Server a sério, mas o *runner* do CI não tem um, por isso o workflow exclui-os com `--filter "Category!=Integration"`. É dívida assumida: um teste que só corre na máquina de alguém acaba por apodrecer. Falta pôr um SQL Server em contentor no CI.
+- **Testes de integração só correm no deploy, não em cada PR** — desde que existe a job `integration-tests` (ver [Integração contínua e deploy](#integração-contínua-e-deploy)), [Erp.IntegrationTests](tests/Erp.IntegrationTests/) corre no CI contra uma Azure SQL dedicada, mas só em `workflow_dispatch` — um bug destes só aparece quando alguém pede um deploy, não no PR que o introduziu. Ficou assim porque a base de dados dedicada é paga (o Free tier só cobre uma) e a *fixture* apaga todas as tabelas no arranque, o que exclui usar staging ou correr em paralelo com outro PR. Um SQL Server em contentor no `build-and-test` resolveria isto — sem custo, sem *firewall*, isolado por natureza — mas exige rever a *fixture* (hoje pensada para uma base persistente, não uma efémera por corrida).
 - **DTOs copiados à mão** — o `Erp.Main` mantém a sua própria cópia dos contratos da API em vez de os partilhar. Um campo renomeado de um lado compila do outro e chega em silêncio como `null` ou `Guid.Empty`; já aconteceu mais do que uma vez.
 - **SMTP por configurar** — sem `Smtp:Host` e `Smtp:FromEmail`, o worker marca os emails como `Failed` com essa mensagem. É visível no backoffice de notificações e resolve-se com configuração, não com código.
 - **Constantes duplicadas** — os scopes, roles e claims vivem em [Erp.Common](src/Shared/Erp.Common/Constants.cs), usado pela `Erp.Api` e pelo `Erp.Main`, mas o Identity mantém a sua cópia em `Erp.Identity.Common`. Os valores coincidem, mas alterar só um dos lados põe o seed e a API em desacordo sem erro de compilação.

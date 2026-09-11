@@ -13,6 +13,30 @@ Correm em processo separado apenas os que têm razão para isso:
 | `Erp.Notification.Worker` | Processamento assíncrono em segundo plano |
 | `Erp.Main` | Interface web |
 
+## Índice
+
+- [Stack](#stack)
+- [Arquitetura](#arquitetura)
+- [Mapa da solução](#mapa-da-solução)
+- [Portas de desenvolvimento](#portas-de-desenvolvimento)
+- [Autenticação e autorização](#autenticação-e-autorização)
+- [Pré-requisitos](#pré-requisitos)
+- [Como executar](#como-executar)
+- [Base de dados](#base-de-dados)
+- [Testes](#testes)
+- [Integração contínua e deploy](#integração-contínua-e-deploy)
+  - [Checklist para pôr um ambiente novo](#checklist-para-pôr-um-ambiente-novo-stagingprodução-a-funcionar)
+- [Endpoints da API](#endpoints-da-api)
+  - [Core](#endpoints-do-módulo-core)
+  - [Sales](#endpoints-do-módulo-sales)
+  - [Inventory](#endpoints-do-módulo-inventory)
+  - [Purchasing](#endpoints-do-módulo-purchasing)
+- [API do Identity](#api-do-identity)
+- [Interface (Erp.Main)](#interface-erpmain)
+- [Documentação](#documentação)
+- [Convenções de desenvolvimento](#convenções-de-desenvolvimento)
+- [Estado atual e limitações conhecidas](#estado-atual-e-limitações-conhecidas)
+
 ---
 
 ## Stack
@@ -412,7 +436,11 @@ Fazer o deploy não chega para o login funcionar — três coisas têm de estar 
 
 ---
 
-## Endpoints do módulo Core
+## Endpoints da API
+
+Todos os módulos de negócio são servidos por um único host (`Erp.Api`) e um único audience (`erp-api`). A separação de acesso é feita por scope, não por resource — ver [Autenticação e autorização](#autenticação-e-autorização).
+
+### Endpoints do módulo Core
 
 | Método | Rota | Autorização |
 |---|---|---|
@@ -439,7 +467,7 @@ Fazer o deploy não chega para o login funcionar — três coisas têm de estar 
 
 ---
 
-## Endpoints do módulo Sales
+### Endpoints do módulo Sales
 
 Além da faturação, o módulo emite os **documentos de movimentação de mercadorias** — guias de remessa (`GR`), transporte (`GT`), ativos próprios (`GA`), consignação (`GC`) e devolução (`GD`), exportados no SAF-T em `MovementOfGoods`. Seguem exatamente as mesmas regras dos documentos de faturação: numeração sequencial por série, cadeia de assinatura, ATCUD, código QR e imutabilidade. Acrescentam o que o regime de bens em circulação exige: locais de carga e descarga, início do transporte, matrícula do veículo, e o **código que a AT devolve na comunicação prévia** — sem o qual a mercadoria não pode circular.
 
@@ -492,7 +520,7 @@ O acesso é por **scope** do token (políticas em [Policies.cs](src/Erp.Api/Serv
 
 ---
 
-## Endpoints do módulo Inventory
+### Endpoints do módulo Inventory
 
 O stock é gerido **ao nível do armazém** — uma empresa pode ter vários — e o registo é um **razão só de acrescentos**: nada se apaga nem se reescreve, e o saldo é uma projeção que se pode sempre reconstruir a partir dos movimentos. É isso que o teste de stock faz, comparando o saldo guardado com o razão recalculado; uma diferença significa que alguém escreveu fora do caminho normal.
 
@@ -526,7 +554,7 @@ Os armazéns são dados mestre e vivem no Core (`/api/warehouses`), ao lado dos 
 
 ---
 
-## Endpoints do módulo Purchasing
+### Endpoints do módulo Purchasing
 
 Do lado das compras **só um documento é fiscalmente relevante como documento nosso: a autofatura**. Uma encomenda é um compromisso interno, e uma fatura de fornecedor é um documento *dele* que nós escrituramos — sem série nossa, sem assinatura, sem ATCUD. Daí a diferença de regime que salta à vista ao ler os dois módulos: **o `Erp.Sales` é *append-only* e o `Erp.Purchasing` não é**, tirando a autofaturação, que obedece às regras da faturação. Um erro de escrituração corrige-se corrigindo, porque não fomos nós que emitimos nada. A análise completa está no [plano](docs/purchasing.md#que-documentos-de-compras-são-fiscalmente-relevantes).
 
@@ -629,7 +657,7 @@ Os utilizadores vivem no Identity, por isso o backoffice do `Erp.Main` lê-os da
 
 ---
 
-## Endpoints do módulo Notification
+### Endpoints do módulo Notification
 
 | Método | Rota | Autorização |
 |---|---|---|

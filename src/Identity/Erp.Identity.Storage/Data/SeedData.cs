@@ -26,42 +26,32 @@ public static class SeedData
         await scope.ServiceProvider.GetRequiredService<PersistedGrantDbContext>().Database.MigrateAsync();
     }
 
-    /// <summary>Seeds the clients, scopes, resources, roles and admin user. Runs on every startup
-    /// in every environment, because the app cannot function without them. Overwrites any backoffice
-    /// changes made to these on the previous run — that's a known limitation.</summary>
+    /// <summary>Seeds the clients, scopes, resources, roles and admin user that don't already exist.
+    /// Runs on every startup in every environment, because the app cannot function without them —
+    /// but only *creates*, never touches a record that's already there, so editing a client (its
+    /// redirect URIs, for instance) in the backoffice survives the next restart/deploy.</summary>
     public static async Task InitializeAsync(IServiceProvider services)
     {
         await using var scope = services.CreateAsyncScope();
 
         var configurationDbContext = scope.ServiceProvider.GetRequiredService<ConfigurationDbContext>();
 
-        var configuredClientIds = Clients.Select(c => c.ClientId).ToHashSet();
-        var configuredIdentityResourceNames = IdentityResources.Select(r => r.Name).ToHashSet();
-        var configuredApiScopeNames = ApiScopes.Select(s => s.Name).ToHashSet();
-        var configuredApiResourceNames = ApiResources.Select(r => r.Name).ToHashSet();
+        var existingClientIds = (await configurationDbContext.Clients.Select(c => c.ClientId).ToListAsync()).ToHashSet();
+        var newClients = Clients.Where(c => !existingClientIds.Contains(c.ClientId));
+        configurationDbContext.Clients.AddRange(newClients.Select(x => x.ToEntity()));
 
-        var existingClients = await configurationDbContext.Clients.Where(c => configuredClientIds.Contains(c.ClientId)).ToListAsync();
-        if (existingClients.Count > 0)
-            configurationDbContext.Clients.RemoveRange(existingClients);
+        var existingIdentityResourceNames = (await configurationDbContext.IdentityResources.Select(r => r.Name).ToListAsync()).ToHashSet();
+        var newIdentityResources = IdentityResources.Where(r => !existingIdentityResourceNames.Contains(r.Name));
+        configurationDbContext.IdentityResources.AddRange(newIdentityResources.Select(x => x.ToEntity()));
 
-        var existingIdentityResources = await configurationDbContext.IdentityResources.Where(r => configuredIdentityResourceNames.Contains(r.Name)).ToListAsync();
-        if (existingIdentityResources.Count > 0)
-            configurationDbContext.IdentityResources.RemoveRange(existingIdentityResources);
+        var existingApiScopeNames = (await configurationDbContext.ApiScopes.Select(s => s.Name).ToListAsync()).ToHashSet();
+        var newApiScopes = ApiScopes.Where(s => !existingApiScopeNames.Contains(s.Name));
+        configurationDbContext.ApiScopes.AddRange(newApiScopes.Select(x => x.ToEntity()));
 
-        var existingApiScopes = await configurationDbContext.ApiScopes.Where(s => configuredApiScopeNames.Contains(s.Name)).ToListAsync();
-        if (existingApiScopes.Count > 0)
-            configurationDbContext.ApiScopes.RemoveRange(existingApiScopes);
+        var existingApiResourceNames = (await configurationDbContext.ApiResources.Select(r => r.Name).ToListAsync()).ToHashSet();
+        var newApiResources = ApiResources.Where(r => !existingApiResourceNames.Contains(r.Name));
+        configurationDbContext.ApiResources.AddRange(newApiResources.Select(x => x.ToEntity()));
 
-        var existingApiResources = await configurationDbContext.ApiResources.Where(r => configuredApiResourceNames.Contains(r.Name)).ToListAsync();
-        if (existingApiResources.Count > 0)
-            configurationDbContext.ApiResources.RemoveRange(existingApiResources);
-
-        await configurationDbContext.SaveChangesAsync();
-
-        configurationDbContext.Clients.AddRange(Clients.Select(x => x.ToEntity()));
-        configurationDbContext.IdentityResources.AddRange(IdentityResources.Select(x => x.ToEntity()));
-        configurationDbContext.ApiScopes.AddRange(ApiScopes.Select(x => x.ToEntity()));
-        configurationDbContext.ApiResources.AddRange(ApiResources.Select(x => x.ToEntity()));
         await configurationDbContext.SaveChangesAsync();
 
         var userManager = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();

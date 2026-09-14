@@ -83,8 +83,12 @@ entirely in your browser, nothing is uploaded) or locally with:
 npx playwright show-trace tests/Erp.E2ETests/bin/Debug/net10.0/playwright-traces/<TestName>.zip
 ```
 
-In CI, the `e2e-tests` job uploads the whole folder as the `playwright-traces` artifact on every
-run — download it from the workflow run's **Summary** page.
+In CI, the `e2e-tests` job uploads each known test's trace as its **own** artifact (named after the
+file itself, e.g. `Anonymous_user_visiting_main_is_redirected_to_identity_login.zip`) — download
+one of those from the run's **Summary** page and drag it straight into trace.playwright.dev, no
+unzipping needed. There's also a `playwright-traces` artifact bundling every trace file found,
+kept as a safety net for a test added without a matching upload step in the workflow — that one
+needs unzipping twice (GitHub wraps the artifact, and each trace is already a `.zip`).
 
 For live, step-by-step debugging while a test runs locally (closer to Cypress's interactive
 mode), add `await page.PauseAsync();` at the point you want to inspect and run with headed mode

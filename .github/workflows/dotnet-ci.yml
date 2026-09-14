@@ -300,13 +300,36 @@ jobs:
           path: "**/TestResults/**/*.trx"
           if-no-files-found: error
 
-      # One trace per test, pass or fail — download the .zip and open it at
-      # https://trace.playwright.dev (or `npx playwright show-trace <file>`) to replay every step
-      # (DOM snapshots, network, console) the way Cypress's own run history would show it.
-      - name: Upload Playwright traces
+      # One trace per test, pass or fail — a safety net that always catches every trace file, even
+      # for a test added later without updating the two convenience uploads below. Downloading this
+      # one means unzipping twice (GitHub wraps the artifact, and each trace is already a .zip
+      # itself) — kept for completeness, not for day-to-day use.
+      - name: Upload Playwright traces (bundle)
         if: always()
         uses: actions/upload-artifact@v7
         with:
           name: playwright-traces
           path: "**/playwright-traces/**"
           if-no-files-found: error
+
+      # Convenience uploads, one per known test, with archive: false (needs actions/upload-artifact
+      # v7): GitHub serves these as the raw trace .zip with no outer wrapper, so downloading one and
+      # dragging it straight into https://trace.playwright.dev needs no unzipping at all. `name` is
+      # ignored when archive is false — the artifact is named after the uploaded file itself. Add a
+      # matching step here whenever a new E2E test is added — until then, its trace still exists in
+      # the bundle above, just less conveniently.
+      - name: Upload trace - Anonymous redirect
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          path: "**/playwright-traces/Anonymous_user_visiting_main_is_redirected_to_identity_login.zip"
+          archive: false
+          if-no-files-found: warn
+
+      - name: Upload trace - Sign in flow
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          path: "**/playwright-traces/User_can_sign_in_and_reach_the_dashboard.zip"
+          archive: false
+          if-no-files-found: warn

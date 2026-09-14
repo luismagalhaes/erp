@@ -73,7 +73,7 @@ jobs:
 
       - name: Publish test report
         if: always()
-        uses: dorny/test-reporter@v2
+        uses: dorny/test-reporter@v3
         with:
           name: Test Results
           path: "**/TestResults/**/*.trx"
@@ -81,7 +81,7 @@ jobs:
 
       - name: Upload test results
         if: always()
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v7
         with:
           name: test-results-trx
           path: "**/TestResults/**/*.trx"
@@ -131,7 +131,7 @@ jobs:
           dotnet-version: 10.0.x
 
       - name: Azure login (OIDC — no client secret stored)
-        uses: azure/login@v2
+        uses: azure/login@v3
         with:
           client-id: ${{ secrets.AZURE_CLIENT_ID }}
           tenant-id: ${{ secrets.AZURE_TENANT_ID }}
@@ -154,7 +154,7 @@ jobs:
 
       - name: Publish test report
         if: always()
-        uses: dorny/test-reporter@v2
+        uses: dorny/test-reporter@v3
         with:
           name: Integration Test Results
           path: "**/TestResults/**/*.trx"
@@ -286,7 +286,7 @@ jobs:
 
       - name: Publish test report
         if: always()
-        uses: dorny/test-reporter@v2
+        uses: dorny/test-reporter@v3
         with:
           name: E2E Test Results
           path: "**/TestResults/**/*.trx"
@@ -294,7 +294,7 @@ jobs:
 
       - name: Upload test results
         if: always()
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v7
         with:
           name: test-results-e2e-trx
           path: "**/TestResults/**/*.trx"

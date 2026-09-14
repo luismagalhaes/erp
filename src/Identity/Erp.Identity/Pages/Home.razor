@@ -1,17 +1,66 @@
 @page "/"
 @attribute [Authorize]
 @using Microsoft.AspNetCore.Components.Authorization
+@using Microsoft.AspNetCore.Identity
 @using MudBlazor
 @using Microsoft.Extensions.Localization
 @using Erp.Identity.Resources
+@inject UserManager<ApplicationUser> UserManager
 @inject IStringLocalizer<IdentityResources> Localizer
 
-<MudPaper Class="pa-6">
+<MudStack Spacing="4">
+    <MudPaper Class="pa-6 erp-card" Elevation="0">
+        <AuthorizeView>
+            <Authorized>
+                <MudText Typo="Typo.body1">@Localizer["Home_AuthenticatedUser", context.User.Identity?.Name ?? string.Empty]</MudText>
+                <MudText Typo="Typo.body2" Class="mt-2">@Localizer["Home_Status", Localizer["Home_StatusAuthenticated"]]</MudText>
+            </Authorized>
+        </AuthorizeView>
+    </MudPaper>
 
-    <AuthorizeView>
-        <Authorized>
-            <MudText Typo="Typo.body1">@Localizer["Home_AuthenticatedUser", context.User.Identity?.Name ?? string.Empty]</MudText>
-            <MudText Typo="Typo.body2" Class="mt-2">@Localizer["Home_Status", Localizer["Home_StatusAuthenticated"]]</MudText>
-        </Authorized>
-    </AuthorizeView>
-</MudPaper>
+    @if (_user is not null)
+    {
+        <MudCard Class="erp-card" Elevation="0">
+            <MudCardHeader>
+                <CardHeaderContent>
+                    <MudText Typo="Typo.h6">@Localizer["Home_Info_Heading"]</MudText>
+                </CardHeaderContent>
+            </MudCardHeader>
+            <MudCardContent>
+                <MudStack Spacing="2">
+                    <MudText><b>@Localizer["Home_Info_NameLabel"]:</b> @_user.FullName</MudText>
+                    <MudText><b>@Localizer["Home_Info_EmailLabel"]:</b> @_user.Email</MudText>
+                    <MudText><b>@Localizer["Home_Info_LanguageLabel"]:</b> @LanguageDisplayName(_user.PreferredLanguage)</MudText>
+                </MudStack>
+            </MudCardContent>
+            <MudCardActions>
+                <MudButton Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Filled.Edit"
+                           Href="/Profile">
+                    @Localizer["Home_Info_EditButton"]
+                </MudButton>
+            </MudCardActions>
+        </MudCard>
+    }
+</MudStack>
+
+@code {
+    [CascadingParameter] private Task<AuthenticationState>? AuthenticationStateTask { get; set; }
+
+    private ApplicationUser? _user;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (AuthenticationStateTask is null)
+            return;
+
+        var authState = await AuthenticationStateTask;
+        _user = await UserManager.GetUserAsync(authState.User);
+    }
+
+    private static string LanguageDisplayName(string culture) => culture switch
+    {
+        "pt-PT" => "Português",
+        "en-US" => "English",
+        _ => culture
+    };
+}

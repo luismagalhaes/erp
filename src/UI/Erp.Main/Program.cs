@@ -27,7 +27,8 @@ builder.Configuration.AddInfisicalSecrets(builder.Environment);
 builder.Configuration.EnsureConfigured(
     "Services:Api",
     "Services:IdentityApi",
-    "OidcConfiguration:Authority");
+    "OidcConfiguration:Authority",
+    "OidcConfiguration:ClientId");
 
 builder.Host.UseSerilog((ctx, lc) => lc
     .WriteTo.Console(outputTemplate: "[{Timestamp:HH:mm:ss} {Level}] {SourceContext}{NewLine}{Message:lj}{NewLine}{Exception}{NewLine}")

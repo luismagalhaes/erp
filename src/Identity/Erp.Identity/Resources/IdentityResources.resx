@@ -116,6 +116,23 @@
   <data name="Home_AuthenticatedUser" xml:space="preserve"><value>Utilizador autenticado: {0}</value></data>
   <data name="Home_Status" xml:space="preserve"><value>Estado: {0}</value></data>
   <data name="Home_StatusAuthenticated" xml:space="preserve"><value>Autenticado</value></data>
+  <data name="Home_Info_Heading" xml:space="preserve"><value>Informações</value></data>
+  <data name="Home_Info_NameLabel" xml:space="preserve"><value>Nome</value></data>
+  <data name="Home_Info_EmailLabel" xml:space="preserve"><value>Email</value></data>
+  <data name="Home_Info_LanguageLabel" xml:space="preserve"><value>Idioma</value></data>
+  <data name="Home_Info_EditButton" xml:space="preserve"><value>Alterar dados</value></data>
+
+  <data name="Profile_PageTitle" xml:space="preserve"><value>O Meu Perfil</value></data>
+  <data name="Profile_Heading" xml:space="preserve"><value>O Meu Perfil</value></data>
+  <data name="Profile_Tab_Info" xml:space="preserve"><value>Informações</value></data>
+  <data name="Profile_Tab_Password" xml:space="preserve"><value>Palavra-passe</value></data>
+  <data name="Profile_CurrentPasswordLabel" xml:space="preserve"><value>Palavra-passe atual</value></data>
+  <data name="Profile_NewPasswordLabel" xml:space="preserve"><value>Nova palavra-passe</value></data>
+  <data name="Profile_ConfirmNewPasswordLabel" xml:space="preserve"><value>Confirmar nova palavra-passe</value></data>
+  <data name="Profile_ChangePasswordButton" xml:space="preserve"><value>Alterar palavra-passe</value></data>
+  <data name="Profile_InfoUpdated" xml:space="preserve"><value>Dados atualizados.</value></data>
+  <data name="Profile_PasswordChanged" xml:space="preserve"><value>Palavra-passe alterada.</value></data>
+  <data name="Profile_ErrorPasswordsDontMatch" xml:space="preserve"><value>As palavras-passe não coincidem.</value></data>
 
   <data name="NavMenu_Home" xml:space="preserve"><value>Início</value></data>
   <data name="NavMenu_Backoffice" xml:space="preserve"><value>Backoffice</value></data>
@@ -162,6 +179,14 @@
   <data name="Backoffice_Users_ErrorAtLeastOneRole" xml:space="preserve"><value>É necessário pelo menos um perfil.</value></data>
   <data name="Backoffice_Users_Updated" xml:space="preserve"><value>Utilizador atualizado.</value></data>
   <data name="Backoffice_Common_SearchPlaceholder" xml:space="preserve"><value>Pesquisar...</value></data>
+  <data name="Backoffice_Common_NoRecords" xml:space="preserve"><value>Sem registos.</value></data>
+  <data name="Backoffice_Roles_ItemsLabel" xml:space="preserve"><value>perfis</value></data>
+  <data name="Backoffice_Users_ItemsLabel" xml:space="preserve"><value>utilizadores</value></data>
+  <data name="Backoffice_Clients_ItemsLabel" xml:space="preserve"><value>clientes</value></data>
+  <data name="Backoffice_ApiScopes_ItemsLabel" xml:space="preserve"><value>âmbitos</value></data>
+  <data name="Backoffice_ApiResources_ItemsLabel" xml:space="preserve"><value>recursos</value></data>
+  <data name="Backoffice_IdentityResourcesPage_ItemsLabel" xml:space="preserve"><value>recursos de identidade</value></data>
+  <data name="Backoffice_IdentityProviders_ItemsLabel" xml:space="preserve"><value>fornecedores</value></data>
 
   <data name="Backoffice_Common_SaveButton" xml:space="preserve"><value>Guardar</value></data>
   <data name="Backoffice_Common_CancelButton" xml:space="preserve"><value>Cancelar</value></data>

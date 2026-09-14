@@ -44,4 +44,7 @@
   <Folder Name="/tests/Identity/">
     <Project Path="tests/Erp.Identity.Tests/Erp.Identity.Tests.csproj" />
   </Folder>
+  <Folder Name="/tests/E2E/">
+    <Project Path="tests/Erp.E2ETests/Erp.E2ETests.csproj" />
+  </Folder>
 </Solution>

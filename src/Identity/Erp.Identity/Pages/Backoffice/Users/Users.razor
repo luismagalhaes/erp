@@ -12,75 +12,72 @@
 <MudStack Spacing="4">
     <PageHeader Title="@Localizer["Backoffice_Users_PageTitle"]" />
 
-    @if (_loading)
-    {
-        <MudProgressLinear Indeterminate="true" Color="Color.Primary" />
-    }
-    else
-    {
-        <MudPaper Elevation="0" Class="erp-card">
-            <MudTable Items="@_users" Hover="true" Striped="true" Dense="true" Class="erp-grid" Elevation="0"
-                      Filter="@FilterFunc">
-                <ToolBarContent>
-                    <MudTextField T="string" Placeholder="@Localizer["Backoffice_Common_SearchPlaceholder"]"
-                                  Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.Search"
-                                  Immediate="true" Class="erp-grid-search" ValueChanged="@((string s) => _search = s)" />
-                </ToolBarContent>
-                <HeaderContent>
-                    <MudTh>@Localizer["Backoffice_Users_EmailColumn"]</MudTh>
-                    <MudTh>@Localizer["Backoffice_Users_NameColumn"]</MudTh>
-                    <MudTh>@Localizer["Backoffice_Users_ActiveColumn"]</MudTh>
-                    <MudTh>@Localizer["Backoffice_Users_CreatedAtColumn"]</MudTh>
-                    <MudTh>@Localizer["Backoffice_Users_RolesLabel"]</MudTh>
-                    <MudTh Class="erp-numeric">@Localizer["Backoffice_Users_ActionsColumn"]</MudTh>
-                </HeaderContent>
-                <RowTemplate>
-                    <MudTd DataLabel="@Localizer["Backoffice_Users_EmailColumn"]">@context.Email</MudTd>
-                    <MudTd DataLabel="@Localizer["Backoffice_Users_NameColumn"]">@context.FullName</MudTd>
-                    <MudTd DataLabel="@Localizer["Backoffice_Users_ActiveColumn"]">
-                        <MudChip T="string" Size="Size.Small" Variant="Variant.Text"
-                                 Color="@(context.IsActive ? Color.Success : Color.Default)">
-                            @(context.IsActive ? Localizer["Backoffice_Users_Yes"] : Localizer["Backoffice_Users_No"])
-                        </MudChip>
-                    </MudTd>
-                    <MudTd DataLabel="@Localizer["Backoffice_Users_CreatedAtColumn"]">@context.CreatedAt.ToLocalTime().ToString("yyyy-MM-dd HH:mm")</MudTd>
-                    <MudTd DataLabel="@Localizer["Backoffice_Users_RolesLabel"]">
-                        @if (context.Roles.Count == 0)
+    <DataGrid T="UserListItem" Items="@_users" Loading="@_loading"
+              SearchFields="@_searchFields"
+              SearchPlaceholder="@Localizer["Backoffice_Common_SearchPlaceholder"]"
+              EmptyIcon="@Icons.Material.Filled.People"
+              EmptyTitle="@Localizer["Backoffice_Common_NoRecords"]"
+              ItemsLabel="@Localizer["Backoffice_Users_ItemsLabel"]"
+              OnRefresh="LoadAsync">
+        <Columns>
+            <PropertyColumn Property="x => x.Email" Title="@Localizer["Backoffice_Users_EmailColumn"]" />
+            <PropertyColumn Property="x => x.FullName" Title="@Localizer["Backoffice_Users_NameColumn"]" />
+            <PropertyColumn Property="x => x.IsActive" Title="@Localizer["Backoffice_Users_ActiveColumn"]">
+                <CellTemplate>
+                    <MudChip T="string" Size="Size.Small" Variant="Variant.Text"
+                             Color="@(context.Item.IsActive ? Color.Success : Color.Default)">
+                        @(context.Item.IsActive ? Localizer["Backoffice_Users_Yes"] : Localizer["Backoffice_Users_No"])
+                    </MudChip>
+                </CellTemplate>
+            </PropertyColumn>
+            <PropertyColumn Property="x => x.CreatedAt" Title="@Localizer["Backoffice_Users_CreatedAtColumn"]">
+                <CellTemplate>
+                    @context.Item.CreatedAt.ToLocalTime().ToString("yyyy-MM-dd HH:mm")
+                </CellTemplate>
+            </PropertyColumn>
+            <PropertyColumn Property="x => x.Roles" Title="@Localizer["Backoffice_Users_RolesLabel"]" Sortable="false" Filterable="false">
+                <CellTemplate>
+                    @if (context.Item.Roles.Count == 0)
+                    {
+                        <MudText Typo="Typo.body2" Class="mud-text-secondary">—</MudText>
+                    }
+                    else
+                    {
+                        @foreach (var role in context.Item.Roles)
                         {
-                            <MudText Typo="Typo.body2" Class="mud-text-secondary">—</MudText>
+                            <MudChip T="string" Size="Size.Small" Variant="Variant.Text" Color="Color.Info">@role</MudChip>
                         }
-                        else
-                        {
-                            @foreach (var role in context.Roles)
-                            {
-                                <MudChip T="string" Size="Size.Small" Variant="Variant.Text" Color="Color.Info">@role</MudChip>
-                            }
-                        }
-                    </MudTd>
-                    <MudTd Class="erp-numeric">
-                        <MudIconButton Icon="@Icons.Material.Filled.Edit" Size="Size.Small" Color="Color.Primary"
-                                       Href="@($"/Backoffice/Users/{Uri.EscapeDataString(context.Id)}")"
-                                       title="@Localizer["Backoffice_Users_EditAction"]" />
-                    </MudTd>
-                </RowTemplate>
-            </MudTable>
-        </MudPaper>
-    }
+                    }
+                </CellTemplate>
+            </PropertyColumn>
+            <TemplateColumn Title="" Sortable="false" Filterable="false" Hideable="false"
+                            StickyRight="true" CellClass="erp-numeric" HeaderClass="erp-numeric">
+                <CellTemplate>
+                    <MudMenu Icon="@Icons.Material.Filled.MoreVert" Size="Size.Small"
+                             AnchorOrigin="Origin.BottomRight" TransformOrigin="Origin.TopRight">
+                        <MudMenuItem Icon="@Icons.Material.Filled.Edit"
+                                     OnClick="@(() => Navigation.NavigateTo($"/Backoffice/Users/{Uri.EscapeDataString(context.Item.Id)}"))">
+                            @Localizer["Backoffice_Users_EditAction"]
+                        </MudMenuItem>
+                    </MudMenu>
+                </CellTemplate>
+            </TemplateColumn>
+        </Columns>
+    </DataGrid>
 </MudStack>
 
 @code {
+    private static readonly Func<UserListItem, string?>[] _searchFields = [x => x.Email, x => x.FullName];
+
     private List<UserListItem> _users = [];
     private bool _loading = true;
-    private string _search = string.Empty;
 
-    protected override async Task OnInitializedAsync()
+    protected override async Task OnInitializedAsync() => await LoadAsync();
+
+    private async Task LoadAsync()
     {
+        _loading = true;
         _users = (await UserService.GetUsersAsync()).ToList();
         _loading = false;
     }
-
-    private bool FilterFunc(UserListItem user) =>
-        string.IsNullOrWhiteSpace(_search)
-        || user.Email.Contains(_search, StringComparison.OrdinalIgnoreCase)
-        || user.FullName.Contains(_search, StringComparison.OrdinalIgnoreCase);
 }

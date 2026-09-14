@@ -22,46 +22,48 @@
         </Actions>
     </PageHeader>
 
-    @if (_loading)
-    {
-        <MudProgressLinear Indeterminate="true" Color="Color.Primary" />
-    }
-    else
-    {
-        <MudPaper Elevation="0" Class="erp-card">
-            <MudTable Items="@_items" Hover="true" Striped="true" Dense="true" Class="erp-grid" Elevation="0">
-                <HeaderContent>
-                    <MudTh>@Localizer["Backoffice_IdentityProviders_SchemeColumn"]</MudTh>
-                    <MudTh>@Localizer["Backoffice_Common_DisplayNameColumn"]</MudTh>
-                    <MudTh>@Localizer["Backoffice_IdentityProviders_TypeColumn"]</MudTh>
-                    <MudTh>@Localizer["Backoffice_Common_EnabledColumn"]</MudTh>
-                    <MudTh Class="erp-numeric">@Localizer["Backoffice_Common_ActionsColumn"]</MudTh>
-                </HeaderContent>
-                <RowTemplate>
-                    <MudTd DataLabel="@Localizer["Backoffice_IdentityProviders_SchemeColumn"]">@context.Scheme</MudTd>
-                    <MudTd DataLabel="@Localizer["Backoffice_Common_DisplayNameColumn"]">@context.DisplayName</MudTd>
-                    <MudTd DataLabel="@Localizer["Backoffice_IdentityProviders_TypeColumn"]">@context.Type</MudTd>
-                    <MudTd DataLabel="@Localizer["Backoffice_Common_EnabledColumn"]">
-                        <MudChip T="string" Size="Size.Small" Variant="Variant.Text"
-                                 Color="@(context.Enabled ? Color.Success : Color.Default)">
-                            @(context.Enabled ? Localizer["Backoffice_Common_Yes"] : Localizer["Backoffice_Common_No"])
-                        </MudChip>
-                    </MudTd>
-                    <MudTd Class="erp-numeric">
-                        <MudIconButton Icon="@Icons.Material.Filled.Edit" Size="Size.Small" Color="Color.Primary"
-                                       Href="@($"/Backoffice/IdentityProviders/{Uri.EscapeDataString(context.Scheme)}")"
-                                       title="@Localizer["Backoffice_Common_EditAction"]" />
-                        <MudIconButton Icon="@Icons.Material.Filled.Delete" Size="Size.Small" Color="Color.Error"
-                                       OnClick="@(() => DeleteAsync(context.Scheme))"
-                                       title="@Localizer["Backoffice_Common_DeleteAction"]" />
-                    </MudTd>
-                </RowTemplate>
-            </MudTable>
-        </MudPaper>
-    }
+    <DataGrid T="IdentityProviderListItem" Items="@_items" Loading="@_loading"
+              SearchFields="@_searchFields"
+              SearchPlaceholder="@Localizer["Backoffice_Common_SearchPlaceholder"]"
+              EmptyIcon="@Icons.Material.Filled.AccountTree"
+              EmptyTitle="@Localizer["Backoffice_Common_NoRecords"]"
+              ItemsLabel="@Localizer["Backoffice_IdentityProviders_ItemsLabel"]"
+              OnRefresh="LoadAsync">
+        <Columns>
+            <PropertyColumn Property="x => x.Scheme" Title="@Localizer["Backoffice_IdentityProviders_SchemeColumn"]" />
+            <PropertyColumn Property="x => x.DisplayName" Title="@Localizer["Backoffice_Common_DisplayNameColumn"]" />
+            <PropertyColumn Property="x => x.Type" Title="@Localizer["Backoffice_IdentityProviders_TypeColumn"]" />
+            <PropertyColumn Property="x => x.Enabled" Title="@Localizer["Backoffice_Common_EnabledColumn"]">
+                <CellTemplate>
+                    <MudChip T="string" Size="Size.Small" Variant="Variant.Text"
+                             Color="@(context.Item.Enabled ? Color.Success : Color.Default)">
+                        @(context.Item.Enabled ? Localizer["Backoffice_Common_Yes"] : Localizer["Backoffice_Common_No"])
+                    </MudChip>
+                </CellTemplate>
+            </PropertyColumn>
+            <TemplateColumn Title="" Sortable="false" Filterable="false" Hideable="false"
+                            StickyRight="true" CellClass="erp-numeric" HeaderClass="erp-numeric">
+                <CellTemplate>
+                    <MudMenu Icon="@Icons.Material.Filled.MoreVert" Size="Size.Small"
+                             AnchorOrigin="Origin.BottomRight" TransformOrigin="Origin.TopRight">
+                        <MudMenuItem Icon="@Icons.Material.Filled.Edit"
+                                     OnClick="@(() => Navigation.NavigateTo($"/Backoffice/IdentityProviders/{Uri.EscapeDataString(context.Item.Scheme)}"))">
+                            @Localizer["Backoffice_Common_EditAction"]
+                        </MudMenuItem>
+                        <MudMenuItem Icon="@Icons.Material.Filled.Delete"
+                                     OnClick="@(() => DeleteAsync(context.Item.Scheme))">
+                            @Localizer["Backoffice_Common_DeleteAction"]
+                        </MudMenuItem>
+                    </MudMenu>
+                </CellTemplate>
+            </TemplateColumn>
+        </Columns>
+    </DataGrid>
 </MudStack>
 
 @code {
+    private static readonly Func<IdentityProviderListItem, string?>[] _searchFields = [x => x.Scheme, x => x.DisplayName];
+
     private List<IdentityProviderListItem> _items = [];
     private bool _loading = true;
 

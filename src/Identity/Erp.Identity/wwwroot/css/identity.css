@@ -27,6 +27,14 @@ html, body {
     border-top: 6px solid var(--mud-palette-primary);
 }
 
+/* Height available for the data grid rows area, so the grid toolbar, its pager and the
+   page header all stay visible without producing a page level scrollbar.
+   64px app bar + 6px separator + 32px container top margin + 32px bottom margin
+   + 52px page header + 64px grid toolbar + 56px grid pager. */
+.erp-grid {
+    --erp-grid-height: calc(100vh - 306px);
+}
+
 .erp-drawer {
     border-right: 1px solid var(--mud-palette-divider);
 }
@@ -77,7 +85,85 @@ html, body {
     font-weight: 500;
 }
 
-/* Table (backoffice listings not yet converted to MudTable/MudDataGrid) */
+/* Dense forms: an admin screen must show as many fields as possible without scrolling. */
+.erp-form .mud-grid {
+    margin: -6px;
+    width: calc(100% + 12px);
+}
+
+.erp-form .mud-grid-item {
+    padding: 6px;
+}
+
+.erp-form .mud-input.mud-input-outlined .mud-input-slot {
+    padding-top: 8px;
+    padding-bottom: 8px;
+    font-size: 0.875rem;
+}
+
+.erp-form .mud-input-outlined-border {
+    border-radius: 8px;
+}
+
+.erp-form .mud-input-label-inputcontrol {
+    font-size: 0.875rem;
+}
+
+/* Keep the floating-label animation working on dense selects: the resting label must
+   be vertically centered against the smaller input slot, and the shrunk label must sit
+   on the outline like on text fields. */
+.erp-form .mud-input-label-outlined:not(.mud-input-label-margin-dense) {
+    transform: translate(14px, 10px) scale(1);
+}
+
+.erp-form .mud-input-label-outlined.mud-input-label-margin-dense {
+    transform: translate(14px, 10px) scale(1);
+}
+
+.erp-form .mud-input-label-outlined.mud-shrink,
+.erp-form .mud-input-label-outlined.mud-input-label-margin-dense.mud-shrink {
+    transform: translate(14px, -8px) scale(0.75);
+}
+
+.erp-form .mud-select .mud-input-outlined-border legend {
+    font-size: 0.75em;
+}
+
+.erp-form .mud-input-helper-text {
+    margin-top: 2px;
+    font-size: 0.72rem;
+    line-height: 1.2;
+}
+
+.erp-form .mud-switch {
+    margin: 0;
+}
+
+/* Data grid columns panel: keep it compact and scrollable when there are many columns. */
+.mud-data-grid-columns-panel {
+    min-width: 260px;
+    max-height: 420px;
+    overflow-y: auto;
+}
+
+.erp-grid .mud-toolbar {
+    border-bottom: 1px solid var(--mud-palette-divider);
+    min-height: 56px;
+}
+
+.erp-grid-search {
+    max-width: 640px;
+}
+
+.erp-grid-footer {
+    border-top: 1px solid var(--mud-palette-divider);
+}
+
+/* Every header cell is position:sticky because of FixedHeader, and browsers do not repaint the
+   border of a sticky element while it scrolls: the divider under the header flickers away on the
+   normal columns and behaves differently on the pinned one. A box-shadow is composited instead of
+   being part of the box, so it survives the scroll. It is applied to every header cell, not only
+   the sticky ones, so the whole divider is drawn the same way and stays aligned. */
 .erp-grid .mud-table-head .mud-table-cell {
     background-color: var(--mud-palette-surface);
     font-weight: 600;
@@ -95,6 +181,33 @@ html, body {
 .erp-grid .mud-table-cell {
     padding-top: 10px;
     padding-bottom: 10px;
+}
+
+/* MudBlazor paints sticky cells with --mud-palette-background-gray, which makes the pinned
+   actions column stand out from the rest of the table. These rules hand the cell back to the
+   colours the row and the header already use, so pinning changes the position and nothing else.
+   !important is required because identity.css is loaded before MudBlazor.min.css, so the framework
+   rule wins on equal specificity. The colour has to be repeated per row state because a sticky
+   cell scrolls over the others and therefore cannot be transparent. */
+.erp-grid .mud-table-head .mud-table-cell.sticky-left,
+.erp-grid .mud-table-head .mud-table-cell.sticky-right {
+    background-color: var(--mud-palette-surface) !important;
+}
+
+.erp-grid .mud-table-body .mud-table-row .mud-table-cell.sticky-left,
+.erp-grid .mud-table-body .mud-table-row .mud-table-cell.sticky-right {
+    background-color: var(--mud-palette-surface) !important;
+}
+
+/* Matches the framework zebra, which stripes the odd rows. */
+.erp-grid .mud-table-body .mud-table-row:nth-of-type(odd) .mud-table-cell.sticky-left,
+.erp-grid .mud-table-body .mud-table-row:nth-of-type(odd) .mud-table-cell.sticky-right {
+    background-color: var(--mud-palette-table-striped) !important;
+}
+
+.erp-grid .mud-table-body .mud-table-row:hover .mud-table-cell.sticky-left,
+.erp-grid .mud-table-body .mud-table-row:hover .mud-table-cell.sticky-right {
+    background-color: var(--mud-palette-table-hover) !important;
 }
 
 .erp-numeric {

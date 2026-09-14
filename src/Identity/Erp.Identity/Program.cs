@@ -24,17 +24,17 @@ try
 
     builder.Configuration.AddInfisicalSecrets(builder.Environment);
 
-    var requiredSettings = new List<string>
-    {
+
+    builder.Configuration.EnsureConfigured(
         "ConnectionStrings:IdentityDb",
         "IdentityServer:Authority",
         "AdminUser:Email",
-        "AdminUser:Password"
-    };
-    if (!builder.Environment.IsDevelopment())
-        requiredSettings.Add("ServiceAuthentication:ClientSecret");
-    builder.Configuration.EnsureConfigured([.. requiredSettings]);
-
+        "AdminUser:Password",
+        "NotificationService:BaseUrl",
+        "ServiceAuthentication:Authority",
+        "ServiceAuthentication:ClientId",
+        "ServiceAuthentication:ClientSecret");
+  
     builder.Host.UseSerilog((ctx, lc) => lc
         .WriteTo.Console(outputTemplate: "[{Timestamp:HH:mm:ss} {Level}] {SourceContext}{NewLine}{Message:lj}{NewLine}{Exception}{NewLine}")
         .Enrich.FromLogContext()

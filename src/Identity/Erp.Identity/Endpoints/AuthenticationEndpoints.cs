@@ -63,6 +63,20 @@ public static class AuthenticationEndpoints
             var errorType = result.IsLockedOut ? "locked" : "1";
             httpContext.Response.Redirect($"/Account/SignIn?error={errorType}&returnUrl={Uri.EscapeDataString(returnUrl)}");
         }).AllowAnonymous();
+
+        // A Blazor Server component can never write the auth cookie itself — the circuit is a
+        // long-lived SignalR connection, not a fresh request/response, so by the time a component
+        // runs the response has already started. Changing the password or the email bumps the
+        // security stamp the cookie is checked against, so after either the Profile page force-loads
+        // this plain endpoint, which runs in a normal request and can reissue the cookie.
+        app.MapGet("/authentication/refresh-sign-in", async (SignInManager<ApplicationUser> signInManager, HttpContext httpContext, string? returnUrl) =>
+        {
+            var user = await signInManager.UserManager.GetUserAsync(httpContext.User);
+            if (user is not null)
+                await signInManager.RefreshSignInAsync(user);
+
+            httpContext.Response.Redirect(SanitizeReturnUrl(returnUrl));
+        }).RequireAuthorization();
     }
 
     private static string SanitizeReturnUrl(string? returnUrl)

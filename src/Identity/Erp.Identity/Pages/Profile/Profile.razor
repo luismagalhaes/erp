@@ -1,0 +1,234 @@
+@page "/Profile"
+@attribute [Authorize]
+@using Microsoft.AspNetCore.Components.Authorization
+@using Microsoft.AspNetCore.Components.Web
+@using Microsoft.AspNetCore.Identity
+@using MudBlazor
+@using Microsoft.Extensions.Localization
+@using Erp.Identity.Resources
+@inject UserManager<ApplicationUser> UserManager
+@inject NavigationManager Navigation
+@inject ISnackbar Snackbar
+@inject IStringLocalizer<IdentityResources> Localizer
+
+<PageTitle>@Localizer["Profile_PageTitle"]</PageTitle>
+
+<MudStack Spacing="4">
+    <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center">
+        <MudText Typo="Typo.h4">@Localizer["Profile_Heading"]</MudText>
+
+        <MudButton Variant="Variant.Text" StartIcon="@Icons.Material.Filled.ArrowBack"
+                   OnClick="@(() => Navigation.NavigateTo("/"))">
+            @Localizer["Backoffice_Common_Back"]
+        </MudButton>
+    </MudStack>
+
+    @if (_loading)
+    {
+        <MudProgressLinear Indeterminate="true" Color="Color.Primary" />
+    }
+    else if (_user is null)
+    {
+        <MudAlert Severity="Severity.Error" Dense="true">@Localizer["Backoffice_Users_ErrorInvalidUser"]</MudAlert>
+    }
+    else
+    {
+        <MudPaper Elevation="1">
+            <MudTabs Elevation="0" ApplyEffectsToContainer="true" PanelClass="pa-4 erp-form">
+                <MudTabPanel Text="@Localizer["Profile_Tab_Info"].Value" Icon="@Icons.Material.Filled.Info">
+                    @if (!string.IsNullOrWhiteSpace(_infoError))
+                    {
+                        <MudAlert Severity="Severity.Error" Dense="true" Class="mb-4">@_infoError</MudAlert>
+                    }
+
+                    <MudGrid>
+                        <MudItem xs="12" md="6">
+                            <MudTextField @bind-Value="_firstName" Label="@Localizer["Account_SignUp_FirstNameLabel"]" Variant="Variant.Outlined" Required="true" />
+                        </MudItem>
+                        <MudItem xs="12" md="6">
+                            <MudTextField @bind-Value="_lastName" Label="@Localizer["Account_SignUp_LastNameLabel"]" Variant="Variant.Outlined" Required="true" />
+                        </MudItem>
+                        <MudItem xs="12" md="6">
+                            <MudTextField @bind-Value="_email" Label="@Localizer["Account_SignUp_EmailLabel"]" Variant="Variant.Outlined"
+                                          InputType="InputType.Email" Required="true" />
+                        </MudItem>
+                        <MudItem xs="12" md="6">
+                            <MudSelect T="string" @bind-Value="_preferredLanguage" Label="@Localizer["Home_Info_LanguageLabel"]" Variant="Variant.Outlined">
+                                <MudSelectItem T="string" Value="@("pt-PT")">Português</MudSelectItem>
+                                <MudSelectItem T="string" Value="@("en-US")">English</MudSelectItem>
+                            </MudSelect>
+                        </MudItem>
+                    </MudGrid>
+
+                    <MudStack Row="true" Justify="Justify.FlexEnd" Class="mt-4">
+                        <MudButton Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Filled.Save"
+                                   Disabled="@(_savingInfo || string.IsNullOrWhiteSpace(_firstName) || string.IsNullOrWhiteSpace(_lastName) || string.IsNullOrWhiteSpace(_email))"
+                                   OnClick="SaveInfoAsync">
+                            @Localizer["Backoffice_Common_SaveButton"]
+                        </MudButton>
+                    </MudStack>
+                </MudTabPanel>
+
+                <MudTabPanel Text="@Localizer["Profile_Tab_Password"].Value" Icon="@Icons.Material.Filled.Lock">
+                    @if (!string.IsNullOrWhiteSpace(_passwordError))
+                    {
+                        <MudAlert Severity="Severity.Error" Dense="true" Class="mb-4">@_passwordError</MudAlert>
+                    }
+
+                    <MudGrid>
+                        <MudItem xs="12" md="6">
+                            <MudTextField @bind-Value="_currentPassword" Label="@Localizer["Profile_CurrentPasswordLabel"]"
+                                          Variant="Variant.Outlined" InputType="InputType.Password" Required="true" />
+                        </MudItem>
+                        <MudItem xs="12" md="6"></MudItem>
+                        <MudItem xs="12" md="6">
+                            <MudTextField @bind-Value="_newPassword" Label="@Localizer["Profile_NewPasswordLabel"]"
+                                          Variant="Variant.Outlined" InputType="InputType.Password" Required="true" />
+                        </MudItem>
+                        <MudItem xs="12" md="6">
+                            <MudTextField @bind-Value="_confirmPassword" Label="@Localizer["Profile_ConfirmNewPasswordLabel"]"
+                                          Variant="Variant.Outlined" InputType="InputType.Password" Required="true" />
+                        </MudItem>
+                    </MudGrid>
+
+                    <MudStack Row="true" Justify="Justify.FlexEnd" Class="mt-4">
+                        <MudButton Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Filled.Lock"
+                                   Disabled="@(_savingPassword || string.IsNullOrWhiteSpace(_currentPassword) || string.IsNullOrWhiteSpace(_newPassword) || string.IsNullOrWhiteSpace(_confirmPassword))"
+                                   OnClick="ChangePasswordAsync">
+                            @Localizer["Profile_ChangePasswordButton"]
+                        </MudButton>
+                    </MudStack>
+                </MudTabPanel>
+            </MudTabs>
+        </MudPaper>
+    }
+</MudStack>
+
+@code {
+    [CascadingParameter] private Task<AuthenticationState>? AuthenticationStateTask { get; set; }
+
+    private ApplicationUser? _user;
+    private bool _loading = true;
+
+    private string _firstName = string.Empty;
+    private string _lastName = string.Empty;
+    private string _email = string.Empty;
+    private string _preferredLanguage = "pt-PT";
+    private bool _savingInfo;
+    private string? _infoError;
+
+    private string _currentPassword = string.Empty;
+    private string _newPassword = string.Empty;
+    private string _confirmPassword = string.Empty;
+    private bool _savingPassword;
+    private string? _passwordError;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (AuthenticationStateTask is not null)
+        {
+            var authState = await AuthenticationStateTask;
+            _user = await UserManager.GetUserAsync(authState.User);
+        }
+
+        if (_user is not null)
+        {
+            _firstName = _user.FirstName;
+            _lastName = _user.LastName;
+            _email = _user.Email ?? string.Empty;
+            _preferredLanguage = _user.PreferredLanguage;
+        }
+
+        _loading = false;
+    }
+
+    private async Task SaveInfoAsync()
+    {
+        if (_user is null)
+            return;
+
+        _savingInfo = true;
+        _infoError = null;
+
+        try
+        {
+            _user.FirstName = _firstName.Trim();
+            _user.LastName = _lastName.Trim();
+            _user.PreferredLanguage = _preferredLanguage;
+
+            var email = _email.Trim();
+            var emailChanged = !string.Equals(_user.Email, email, StringComparison.OrdinalIgnoreCase);
+
+            if (emailChanged)
+            {
+                var emailResult = await UserManager.SetEmailAsync(_user, email);
+                if (!emailResult.Succeeded)
+                {
+                    _infoError = string.Join(" ", emailResult.Errors.Select(e => e.Description));
+                    return;
+                }
+
+                var userNameResult = await UserManager.SetUserNameAsync(_user, email);
+                if (!userNameResult.Succeeded)
+                {
+                    _infoError = string.Join(" ", userNameResult.Errors.Select(e => e.Description));
+                    return;
+                }
+            }
+
+            var updateResult = await UserManager.UpdateAsync(_user);
+            if (!updateResult.Succeeded)
+            {
+                _infoError = string.Join(" ", updateResult.Errors.Select(e => e.Description));
+                return;
+            }
+
+            Snackbar.Add(Localizer["Profile_InfoUpdated"].Value, Severity.Success);
+
+            // The security stamp changes when the email/username changes, and the Name claim in the
+            // auth cookie is stale either way — a Blazor Server component can't rewrite that cookie
+            // itself (the circuit isn't a fresh request/response), so a full reload through the
+            // refresh-sign-in endpoint reissues it before landing back here.
+            Navigation.NavigateTo("/authentication/refresh-sign-in?returnUrl=%2FProfile", forceLoad: true);
+        }
+        finally
+        {
+            _savingInfo = false;
+        }
+    }
+
+    private async Task ChangePasswordAsync()
+    {
+        if (_user is null)
+            return;
+
+        if (_newPassword != _confirmPassword)
+        {
+            _passwordError = Localizer["Profile_ErrorPasswordsDontMatch"];
+            return;
+        }
+
+        _savingPassword = true;
+        _passwordError = null;
+
+        try
+        {
+            var result = await UserManager.ChangePasswordAsync(_user, _currentPassword, _newPassword);
+            if (!result.Succeeded)
+            {
+                _passwordError = string.Join(" ", result.Errors.Select(e => e.Description));
+                return;
+            }
+
+            Snackbar.Add(Localizer["Profile_PasswordChanged"].Value, Severity.Success);
+
+            // Same reason as SaveInfoAsync: ChangePasswordAsync bumps the security stamp, so the
+            // cookie has to be reissued through a plain endpoint, not from inside the circuit.
+            Navigation.NavigateTo("/authentication/refresh-sign-in?returnUrl=%2FProfile", forceLoad: true);
+        }
+        finally
+        {
+            _savingPassword = false;
+        }
+    }
+}

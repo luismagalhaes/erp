@@ -9,7 +9,15 @@ var builder = Host.CreateApplicationBuilder(args);
 
 builder.Configuration.AddInfisicalSecrets(builder.Environment);
 
-builder.Configuration.EnsureConfigured("ConnectionStrings:ErpDb");
+var requiredSettings = new List<string> { "ConnectionStrings:ErpDb" };
+if (!builder.Environment.IsDevelopment())
+    requiredSettings.AddRange([
+        "Smtp:Host",
+        "Smtp:UserName",
+        "Smtp:Password",
+        "Smtp:FromEmail"
+    ]);
+builder.Configuration.EnsureConfigured([.. requiredSettings]);
 
 builder.Services.AddSerilog((services, lc) => lc
     .WriteTo.Console()

@@ -22,46 +22,50 @@
         </Actions>
     </PageHeader>
 
-    @if (_loading)
-    {
-        <MudProgressLinear Indeterminate="true" Color="Color.Primary" />
-    }
-    else
-    {
-        <MudPaper Elevation="0" Class="erp-card">
-            <MudTable Items="@_items" Hover="true" Striped="true" Dense="true" Class="erp-grid" Elevation="0">
-                <HeaderContent>
-                    <MudTh>@Localizer["Backoffice_Common_NameColumn"]</MudTh>
-                    <MudTh>@Localizer["Backoffice_Common_DisplayNameColumn"]</MudTh>
-                    <MudTh>@Localizer["Backoffice_Common_EnabledColumn"]</MudTh>
-                    <MudTh>@Localizer["Backoffice_ApiResources_ScopesColumn"]</MudTh>
-                    <MudTh Class="erp-numeric">@Localizer["Backoffice_Common_ActionsColumn"]</MudTh>
-                </HeaderContent>
-                <RowTemplate>
-                    <MudTd DataLabel="@Localizer["Backoffice_Common_NameColumn"]">@context.Name</MudTd>
-                    <MudTd DataLabel="@Localizer["Backoffice_Common_DisplayNameColumn"]">@context.DisplayName</MudTd>
-                    <MudTd DataLabel="@Localizer["Backoffice_Common_EnabledColumn"]">
-                        <MudChip T="string" Size="Size.Small" Variant="Variant.Text"
-                                 Color="@(context.Enabled ? Color.Success : Color.Default)">
-                            @(context.Enabled ? Localizer["Backoffice_Common_Yes"] : Localizer["Backoffice_Common_No"])
-                        </MudChip>
-                    </MudTd>
-                    <MudTd DataLabel="@Localizer["Backoffice_ApiResources_ScopesColumn"]">@string.Join(", ", context.Scopes)</MudTd>
-                    <MudTd Class="erp-numeric">
-                        <MudIconButton Icon="@Icons.Material.Filled.Edit" Size="Size.Small" Color="Color.Primary"
-                                       Href="@($"/Backoffice/ApiResources/{Uri.EscapeDataString(context.Name)}")"
-                                       title="@Localizer["Backoffice_Common_EditAction"]" />
-                        <MudIconButton Icon="@Icons.Material.Filled.Delete" Size="Size.Small" Color="Color.Error"
-                                       OnClick="@(() => DeleteAsync(context.Name))"
-                                       title="@Localizer["Backoffice_Common_DeleteAction"]" />
-                    </MudTd>
-                </RowTemplate>
-            </MudTable>
-        </MudPaper>
-    }
+    <DataGrid T="ApiResourceListItem" Items="@_items" Loading="@_loading"
+              SearchFields="@_searchFields"
+              SearchPlaceholder="@Localizer["Backoffice_Common_SearchPlaceholder"]"
+              EmptyIcon="@Icons.Material.Filled.Api"
+              EmptyTitle="@Localizer["Backoffice_Common_NoRecords"]"
+              ItemsLabel="@Localizer["Backoffice_ApiResources_ItemsLabel"]"
+              OnRefresh="LoadAsync">
+        <Columns>
+            <PropertyColumn Property="x => x.Name" Title="@Localizer["Backoffice_Common_NameColumn"]" />
+            <PropertyColumn Property="x => x.DisplayName" Title="@Localizer["Backoffice_Common_DisplayNameColumn"]" />
+            <PropertyColumn Property="x => x.Enabled" Title="@Localizer["Backoffice_Common_EnabledColumn"]">
+                <CellTemplate>
+                    <MudChip T="string" Size="Size.Small" Variant="Variant.Text"
+                             Color="@(context.Item.Enabled ? Color.Success : Color.Default)">
+                        @(context.Item.Enabled ? Localizer["Backoffice_Common_Yes"] : Localizer["Backoffice_Common_No"])
+                    </MudChip>
+                </CellTemplate>
+            </PropertyColumn>
+            <PropertyColumn Property="x => x.Scopes" Title="@Localizer["Backoffice_ApiResources_ScopesColumn"]" Sortable="false" Filterable="false">
+                <CellTemplate>@string.Join(", ", context.Item.Scopes)</CellTemplate>
+            </PropertyColumn>
+            <TemplateColumn Title="" Sortable="false" Filterable="false" Hideable="false"
+                            StickyRight="true" CellClass="erp-numeric" HeaderClass="erp-numeric">
+                <CellTemplate>
+                    <MudMenu Icon="@Icons.Material.Filled.MoreVert" Size="Size.Small"
+                             AnchorOrigin="Origin.BottomRight" TransformOrigin="Origin.TopRight">
+                        <MudMenuItem Icon="@Icons.Material.Filled.Edit"
+                                     OnClick="@(() => Navigation.NavigateTo($"/Backoffice/ApiResources/{Uri.EscapeDataString(context.Item.Name)}"))">
+                            @Localizer["Backoffice_Common_EditAction"]
+                        </MudMenuItem>
+                        <MudMenuItem Icon="@Icons.Material.Filled.Delete"
+                                     OnClick="@(() => DeleteAsync(context.Item.Name))">
+                            @Localizer["Backoffice_Common_DeleteAction"]
+                        </MudMenuItem>
+                    </MudMenu>
+                </CellTemplate>
+            </TemplateColumn>
+        </Columns>
+    </DataGrid>
 </MudStack>
 
 @code {
+    private static readonly Func<ApiResourceListItem, string?>[] _searchFields = [x => x.Name, x => x.DisplayName];
+
     private List<ApiResourceListItem> _items = [];
     private bool _loading = true;
 

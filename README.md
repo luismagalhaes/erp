@@ -322,10 +322,10 @@ Criar uma migração continua a ser manual, com os comandos acima; **aplicá-la 
 ## Testes
 
 ```powershell
-dotnet test Erp.slnx
+dotnet test Erp.slnx --filter "Category!=E2E"
 ```
 
-**799 testes em nove projetos**, em duas famílias com propósitos diferentes.
+**799 testes em nove projetos**, em duas famílias com propósitos diferentes. Um décimo projeto, `Erp.E2ETests`, guarda testes de browser à parte — não correm neste comando porque precisam dos hosts a correr localmente (ver [abaixo](#testes-end-to-end--playwright-contra-a-ui-real)).
 
 ### Testes de unidade — 778, sem base de dados
 
@@ -358,11 +358,17 @@ Cada teste cria **a sua própria empresa**. Quase tudo neste sistema tem âmbito
 
 **No CI**, correm à parte, numa job dedicada (`integration-tests` em [dotnet-ci.yml](.github/workflows/dotnet-ci.yml)) que só existe em `workflow_dispatch` — nunca em PR — e nunca contra a base de dados de staging ou produção: apontam para uma Azure SQL dedicada só a isto, porque a limpeza no arranque (`ClearAsync`, acima) apagaria os dados de um ambiente a sério. Como o *runner* não está na rede do Azure, a job abre uma regra de *firewall* só para o seu próprio IP, corre os testes, e fecha a regra no fim — mesmo que falhem. `deploy` só avança depois desta job passar, em staging e em produção. Detalhes e configuração de uma vez, fora da pipeline, nos comentários da própria job.
 
+### Testes end-to-end — Playwright, contra a UI real
+
+`tests/Erp.E2ETests` conduz um browser real (Chromium, via [Playwright](https://playwright.dev/dotnet/)) contra o `Erp.Main` e, através do redireccionamento de login, o `Erp.Identity` — nada de substitutos: valida que as páginas renderizam, redirecionam e submetem tal como um utilizador experiencia. Não corre no `dotnet test Erp.slnx` normal (precisa de hosts a correr e dos browsers do Playwright instalados) — localmente serve sobretudo para ver o teste a correr num browser real e confirmar que um fluxo faz sentido antes de o consolidar. Instruções completas em [tests/Erp.E2ETests/README.md](tests/Erp.E2ETests/README.md).
+
+**No CI**, correm à parte do `dotnet test Erp.slnx`, numa job dedicada (`e2e-tests` em [dotnet-ci.yml](.github/workflows/dotnet-ci.yml)) que só existe por `workflow_dispatch`, depois de `deploy` ter posto o staging no ar — é o único ponto da pipeline que aponta a um browser real ao site já deployado, em vez de a um artefacto de build. Só corre para `staging`: os `RedirectUris` do client OIDC são registados manualmente por ambiente (fora desta pipeline), e a produção ainda não tem utilizador de teste próprio. Precisa de dois *secrets* — `E2E_STAGING_TEST_USER_EMAIL` e `E2E_STAGING_TEST_USER_PASSWORD` — com um utilizador real de staging; sem eles, o teste de login completo faz *skip* silencioso (ver [tests/Erp.E2ETests/README.md](tests/Erp.E2ETests/README.md)).
+
 ---
 
 ## Integração contínua e deploy
 
-Tudo vive num workflow só, [dotnet-ci.yml](.github/workflows/dotnet-ci.yml), em três jobs. **Só há um gatilho automático**: `pull_request` para `main`, que corre o `build-and-test` a cada PR, para dar retorno rápido antes do *merge*. Um push direto a `main` não corre nada sozinho — nem testes, nem *build*, nem deploy. Tudo o resto é `workflow_dispatch`: alguém vai a `Actions` e pede explicitamente.
+Tudo vive num workflow só, [dotnet-ci.yml](.github/workflows/dotnet-ci.yml), em quatro jobs. **Só há um gatilho automático**: `pull_request` para `main`, que corre o `build-and-test` a cada PR, para dar retorno rápido antes do *merge*. Um push direto a `main` não corre nada sozinho — nem testes, nem *build*, nem deploy. Tudo o resto é `workflow_dispatch`: alguém vai a `Actions` e pede explicitamente.
 
 O deploy usar `workflow_dispatch` em vez de `environment: staging/production` com **Required reviewers** também tem uma razão de plano: esse mecanismo só existe, para repositórios privados, nos planos GitHub Pro/Team/Enterprise — no Free, a página de configuração do *environment* nem mostra essa opção. Sem ele, a autorização é mais simples: só corre quem pedir. Ver [Estado atual e limitações conhecidas](#estado-atual-e-limitações-conhecidas).
 
@@ -372,7 +378,7 @@ Staging e produção são **seis Web Apps distintas** no Azure (três por ambien
 PR → main → build-and-test (automático, só isto)
 
 Actions → Run workflow → escolher "staging" ou "production"
-              → build-and-test → integration-tests → deploy
+              → build-and-test → integration-tests → deploy → e2e-tests (só em staging)
               (sempre a pedido; production também exige que o branch seja main)
 ```
 
@@ -381,6 +387,8 @@ Actions → Run workflow → escolher "staging" ou "production"
 **`integration-tests`** só corre por `workflow_dispatch`, nunca em PR. Depende de `build-and-test` ter passado, abre uma regra de *firewall* na Azure SQL só para o IP do próprio *runner*, corre os 21 testes de integração contra uma base de dados dedicada — nunca a de staging/produção, ver [Testes](#testes) — e fecha a regra no fim, mesmo que os testes falhem. Detalhes de configuração nos comentários da própria job em [dotnet-ci.yml](.github/workflows/dotnet-ci.yml).
 
 **`deploy`** só corre por `workflow_dispatch` — em `Actions → Build and Test ERP Solution → Run workflow`, escolhendo `staging` ou `production` num menu — nunca por push nem PR. Depende de `build-and-test` e `integration-tests` terem passado, e para cada uma das três apps (`api`, `identity`, `main`) faz `dotnet publish` e despacha com `azure/webapps-deploy@v3` para a Web App do ambiente escolhido, com o *publish profile* correspondente. `staging` aceita qualquer *branch* escolhido no próprio `workflow_dispatch`, para testar antes do *merge*; `production` só corre se esse *branch* for `main`. Compila de novo em cada corrida — ao contrário de um modelo com *promote*, aqui staging e produção não partilham o mesmo binário, porque são duas execuções manuais independentes, normalmente em momentos diferentes.
+
+**`e2e-tests`** só corre depois de `deploy` ter tido sucesso **e** o ambiente escolhido ter sido `staging` — nunca em produção, nunca por push nem PR. Corre os testes de `tests/Erp.E2ETests` (ver [Testes](#testes)) num Chromium real contra o URL já deployado do `Erp.Main`/`Erp.Identity` de staging, incluindo o login completo com um utilizador de teste guardado em *secrets*. É o único ponto da pipeline a validar o site a sério, já no ar — tudo antes disto valida código ou artefactos de build.
 
 ### Configuração necessária, uma vez, fora da pipeline
 
@@ -405,6 +413,15 @@ Actions → Run workflow → escolher "staging" ou "production"
   | `INTEGRATION_TEST_SQL_CONNECTION` | *Connection string* completa da base de dados dedicada aos testes, com um login próprio (não o `sa-erp` da staging) |
 
   Um secret vazio ou mal escrito não dá erro óbvio: a linha `publish-profile:` desaparece do log do passo (input vazio não é impresso) e a *action* falha com *"No credentials found"*, como se faltasse um `azure/login` que nunca existiu neste workflow.
+
+- Mais dois *secrets*, só para a job `e2e-tests` — as credenciais de um utilizador real de staging, para o teste de login completo (ver [Testes](#testes)):
+
+  | Secret | O que é |
+  |---|---|
+  | `E2E_STAGING_TEST_USER_EMAIL` | Email de um utilizador que existe (ou é criado) no `Erp.Identity` de staging |
+  | `E2E_STAGING_TEST_USER_PASSWORD` | Password desse utilizador |
+
+  Sem estes dois, a job não falha — o teste de login faz *skip* silencioso, só o smoke test do redireccionamento para o login é que corre.
 
 **No Azure** — isto é o que faz os `appsettings.Staging.json`/`appsettings.Production.json` (ver [Base de dados](#base-de-dados)) serem lidos de facto, e nada disto passa pela pipeline:
 - Criar as 6 Web Apps (qualquer tier serve para as de staging, incluindo Free/F1).

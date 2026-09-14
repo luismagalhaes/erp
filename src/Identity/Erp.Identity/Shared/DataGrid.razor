@@ -1,0 +1,100 @@
+@typeparam T
+@* The columns are written by the page but rendered inside MudDataGrid<T>. MudBlazor infers the
+   column type from the cascaded type parameter, which is matched by name, so the parameter has to
+   be called T exactly as in MudDataGrid. Same configuration as Erp.Main's Components/Common/
+   DataGrid.razor, minus the OData/company-scoping machinery: Identity's listings are small,
+   in-memory lists (clients, scopes, roles), not paginated API results, so this one takes Items
+   directly instead of a server-side LoadAsync delegate. *@
+@attribute [CascadingTypeParameter(nameof(T))]
+@using MudBlazor
+
+<MudPaper Elevation="0" Class="erp-card">
+    <MudDataGrid @ref="_grid" T="T" Items="@Items" Loading="@Loading"
+                 Class="erp-grid"
+                 Filterable="true" Hideable="true" ShowColumnOptions="false"
+                 ShowFilterIcons="true"
+                 FilterMode="DataGridFilterMode.ColumnFilterMenu"
+                 SortMode="SortMode.Multiple" Dense="true" Hover="true" Striped="true"
+                 DragDropColumnReordering="true" ColumnsPanelReordering="true"
+                 ColumnResizeMode="ResizeMode.Column" ShowMenuIcon="true"
+                 FixedHeader="true" Height="var(--erp-grid-height)"
+                 Virtualize="true" ItemSize="36" OverscanCount="12"
+                 QuickFilter="@QuickFilterFunc">
+        <ToolBarContent>
+            @if (SearchFields.Count > 0)
+            {
+                <MudTextField Value="_search" ValueChanged="@((string value) => _search = value)"
+                              T="string" Placeholder="@SearchPlaceholder"
+                              Variant="Variant.Text" Margin="Margin.Dense" Immediate="true" Clearable="true"
+                              DebounceInterval="300"
+                              Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.Search"
+                              Underline="false" Class="mt-0 erp-grid-search" />
+            }
+            @Filters
+            <MudSpacer />
+        </ToolBarContent>
+
+        <Columns>
+            @Columns
+        </Columns>
+
+        <NoRecordsContent>
+            <MudStack AlignItems="AlignItems.Center" Spacing="1" Class="pa-8">
+                <MudIcon Icon="@EmptyIcon" Size="Size.Large" Class="mud-text-secondary" />
+                <MudText Typo="Typo.subtitle1">@EmptyTitle</MudText>
+            </MudStack>
+        </NoRecordsContent>
+
+        <PagerContent>
+            <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween"
+                      Class="erp-grid-footer px-4 py-2">
+                <MudStack Row="true" Spacing="1" AlignItems="AlignItems.Center">
+                    <MudText Typo="Typo.body2" Class="mud-text-secondary">@Items.Count() @ItemsLabel</MudText>
+                    <MudIconButton Icon="@Icons.Material.Filled.Refresh" Size="Size.Small"
+                                   Color="Color.Primary" OnClick="@(() => OnRefresh.InvokeAsync())" />
+                </MudStack>
+            </MudStack>
+        </PagerContent>
+    </MudDataGrid>
+</MudPaper>
+
+@code {
+    /// <summary>The column definitions of the listing.</summary>
+    [Parameter, EditorRequired]
+    public RenderFragment Columns { get; set; } = default!;
+
+    [Parameter, EditorRequired]
+    public IEnumerable<T> Items { get; set; } = [];
+
+    [Parameter] public bool Loading { get; set; }
+
+    /// <summary>Selectors the toolbar search matches against. Empty hides the search box.</summary>
+    [Parameter] public IReadOnlyList<Func<T, string?>> SearchFields { get; set; } = [];
+
+    [Parameter] public string? SearchPlaceholder { get; set; }
+
+    /// <summary>Extra filter controls rendered in the toolbar next to the search box.</summary>
+    [Parameter] public RenderFragment? Filters { get; set; }
+
+    [Parameter] public string EmptyIcon { get; set; } = Icons.Material.Filled.Inbox;
+
+    [Parameter] public string? EmptyTitle { get; set; }
+
+    /// <summary>The noun shown next to the record count in the footer.</summary>
+    [Parameter] public string? ItemsLabel { get; set; }
+
+    /// <summary>Raised when the user clicks the footer refresh button, so the page can reload its list.</summary>
+    [Parameter] public EventCallback OnRefresh { get; set; }
+
+    private MudDataGrid<T>? _grid;
+    private string _search = string.Empty;
+
+    private bool QuickFilterFunc(T item)
+    {
+        if (string.IsNullOrWhiteSpace(_search))
+            return true;
+
+        return SearchFields.Any(selector =>
+            (selector(item) ?? string.Empty).Contains(_search, StringComparison.OrdinalIgnoreCase));
+    }
+}

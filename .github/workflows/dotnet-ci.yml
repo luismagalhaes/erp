@@ -44,9 +44,10 @@ jobs:
         run: dotnet build Erp.slnx --configuration Release --no-restore
 
       # The integration tests are left out: they need a real SQL Server, and this runner has none.
-      # They run locally against the database described under "Testes" in README.md.
+      # The E2E tests are left out too: they need Erp.Main/Erp.Identity running and Playwright's
+      # browsers installed. Both run locally as described under "Testes" in README.md.
       - name: Test
-        run: dotnet test Erp.slnx --configuration Release --no-build --filter "Category!=Integration" --results-directory ./TestResults --logger "trx;LogFilePrefix=test-results" --logger "console;verbosity=detailed"
+        run: dotnet test Erp.slnx --configuration Release --no-build --filter "Category!=Integration&Category!=E2E" --results-directory ./TestResults --logger "trx;LogFilePrefix=test-results" --logger "console;verbosity=detailed"
 
       - name: List failed tests
         if: failure()
@@ -248,3 +249,53 @@ jobs:
           app-name: ${{ github.event.inputs.environment == 'staging' && matrix.app-name-staging || matrix.app-name-production }}
           publish-profile: ${{ github.event.inputs.environment == 'staging' && secrets[matrix.secret-name-staging] || secrets[matrix.secret-name-production] }}
           package: ./publish/${{ matrix.name }}
+
+  # Drives a real Chromium browser against the staging Web Apps right after they go live — the one
+  # check here that exercises the actual deployed sites instead of a build artifact. Staging only:
+  # the OIDC client's allowed redirect URIs are registered manually per environment (not part of
+  # this pipeline), and production doesn't have its own test user configured yet.
+  e2e-tests:
+    if: >-
+      needs.deploy.result == 'success' &&
+      github.event.inputs.environment == 'staging'
+    runs-on: ubuntu-latest
+    needs: deploy
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Build
+        run: dotnet build tests/Erp.E2ETests/Erp.E2ETests.csproj --configuration Release
+
+      - name: Install Playwright browsers
+        run: pwsh tests/Erp.E2ETests/bin/Release/net10.0/playwright.ps1 install --with-deps chromium
+
+      - name: Run E2E tests against staging
+        env:
+          E2E__MainBaseUrl: https://erp-hbhhf5brg7a4agfk.westus3-01.azurewebsites.net
+          E2E__IdentityBaseUrl: https://identity-e8fmdrfxb8fqbwhh.westus3-01.azurewebsites.net
+          E2E__TestUser__Email: ${{ secrets.E2E_STAGING_TEST_USER_EMAIL }}
+          E2E__TestUser__Password: ${{ secrets.E2E_STAGING_TEST_USER_PASSWORD }}
+        run: dotnet test tests/Erp.E2ETests/Erp.E2ETests.csproj --configuration Release --no-build --filter "Category=E2E" --results-directory ./TestResults --logger "trx;LogFilePrefix=e2e-test-results" --logger "console;verbosity=detailed"
+
+      - name: Publish test report
+        if: always()
+        uses: dorny/test-reporter@v2
+        with:
+          name: E2E Test Results
+          path: "**/TestResults/**/*.trx"
+          reporter: dotnet-trx
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v5
+        with:
+          name: test-results-e2e-trx
+          path: "**/TestResults/**/*.trx"
+          if-no-files-found: error

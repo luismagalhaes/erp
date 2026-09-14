@@ -17,10 +17,14 @@ try
 
     builder.Configuration.AddInfisicalSecrets(builder.Environment);
 
-    var requiredSettings = new List<string> { "ConnectionStrings:ErpDb", "IdentityServer:Authority" };
-    if (!builder.Environment.IsDevelopment())
-        requiredSettings.Add("Fiscal:PrivateKeyPem");
-    builder.Configuration.EnsureConfigured([.. requiredSettings]);
+    builder.Configuration.EnsureConfigured(
+        "ConnectionStrings:ErpDb", 
+        "IdentityServer:Authority",
+        "Fiscal:PrivateKeyPem",
+        "Smtp:Host",
+        "Smtp:UserName",
+        "Smtp:Password",
+        "Smtp:FromEmail");
 
     builder.Host.UseSerilog((ctx, lc) => lc
         .WriteTo.Console()

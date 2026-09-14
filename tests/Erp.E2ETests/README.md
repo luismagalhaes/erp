@@ -67,3 +67,25 @@ against the real staging deployment right after `deploy` succeeds — staging on
 The double-underscore (`E2E__Key`) is the standard .NET convention for overriding a nested
 configuration section through an environment variable — a single underscore would land the value
 at the configuration root instead of under the `E2E` section this project binds to.
+
+## Watching a run — Trace Viewer
+
+.NET's Playwright has no equivalent to the TypeScript test runner's UI Mode, so this is the
+closest thing to Cypress's step-by-step run history: every test records a trace (screenshots
+before/after each action, DOM snapshots, network, console) to
+`bin/<Configuration>/net10.0/playwright-traces/<TestName>.zip` — pass or fail, not just on
+failure.
+
+Open one at [trace.playwright.dev](https://trace.playwright.dev) (drag the `.zip` in — it runs
+entirely in your browser, nothing is uploaded) or locally with:
+
+```
+npx playwright show-trace tests/Erp.E2ETests/bin/Debug/net10.0/playwright-traces/<TestName>.zip
+```
+
+In CI, the `e2e-tests` job uploads the whole folder as the `playwright-traces` artifact on every
+run — download it from the workflow run's **Summary** page.
+
+For live, step-by-step debugging while a test runs locally (closer to Cypress's interactive
+mode), add `await page.PauseAsync();` at the point you want to inspect and run with headed mode
+on (see `appsettings.local.json` above) — it opens the Playwright Inspector.

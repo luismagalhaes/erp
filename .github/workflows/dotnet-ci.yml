@@ -299,3 +299,14 @@ jobs:
           name: test-results-e2e-trx
           path: "**/TestResults/**/*.trx"
           if-no-files-found: error
+
+      # One trace per test, pass or fail — download the .zip and open it at
+      # https://trace.playwright.dev (or `npx playwright show-trace <file>`) to replay every step
+      # (DOM snapshots, network, console) the way Cypress's own run history would show it.
+      - name: Upload Playwright traces
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: playwright-traces
+          path: "**/playwright-traces/**"
+          if-no-files-found: error

@@ -300,6 +300,17 @@ jobs:
           path: "**/TestResults/**/*.trx"
           if-no-files-found: error
 
+      # actions/upload-artifact's archive:false mode names the artifact after the uploaded file
+      # itself (the `name:` input is ignored), so the C# test method name would otherwise end up as
+      # the artifact's display name on the run's Summary page. Renamed here instead, so it reads
+      # e2e-report-* — add a line here whenever a new E2E test is added.
+      - name: Rename traces for direct download
+        if: always()
+        run: |
+          cd tests/Erp.E2ETests/bin/Release/net10.0/playwright-traces 2>/dev/null || exit 0
+          [ -f Anonymous_user_visiting_main_is_redirected_to_identity_login.zip ] && mv Anonymous_user_visiting_main_is_redirected_to_identity_login.zip e2e-report-login-redirect.zip
+          [ -f User_can_sign_in_and_reach_the_dashboard.zip ] && mv User_can_sign_in_and_reach_the_dashboard.zip e2e-report-sign-in.zip
+
       # One trace per test, pass or fail — a safety net that always catches every trace file, even
       # for a test added later without updating the two convenience uploads below. Downloading this
       # one means unzipping twice (GitHub wraps the artifact, and each trace is already a .zip
@@ -314,15 +325,12 @@ jobs:
 
       # Convenience uploads, one per known test, with archive: false (needs actions/upload-artifact
       # v7): GitHub serves these as the raw trace .zip with no outer wrapper, so downloading one and
-      # dragging it straight into https://trace.playwright.dev needs no unzipping at all. `name` is
-      # ignored when archive is false — the artifact is named after the uploaded file itself. Add a
-      # matching step here whenever a new E2E test is added — until then, its trace still exists in
-      # the bundle above, just less conveniently.
+      # dragging it straight into https://trace.playwright.dev needs no unzipping at all.
       - name: Upload trace - Anonymous redirect
         if: always()
         uses: actions/upload-artifact@v7
         with:
-          path: "**/playwright-traces/Anonymous_user_visiting_main_is_redirected_to_identity_login.zip"
+          path: "**/playwright-traces/e2e-report-login-redirect.zip"
           archive: false
           if-no-files-found: warn
 
@@ -330,6 +338,6 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v7
         with:
-          path: "**/playwright-traces/User_can_sign_in_and_reach_the_dashboard.zip"
+          path: "**/playwright-traces/e2e-report-sign-in.zip"
           archive: false
           if-no-files-found: warn

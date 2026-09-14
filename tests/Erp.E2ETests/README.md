@@ -83,10 +83,12 @@ entirely in your browser, nothing is uploaded) or locally with:
 npx playwright show-trace tests/Erp.E2ETests/bin/Debug/net10.0/playwright-traces/<TestName>.zip
 ```
 
-In CI, the `e2e-tests` job uploads each known test's trace as its **own** artifact (named after the
-file itself, e.g. `Anonymous_user_visiting_main_is_redirected_to_identity_login.zip`) — download
-one of those from the run's **Summary** page and drag it straight into trace.playwright.dev, no
-unzipping needed. There's also a `playwright-traces` artifact bundling every trace file found,
+In CI, the `e2e-tests` job renames each known test's trace to `e2e-report-<name>.zip` (the
+C# test method name would otherwise leak into the artifact's display name — `archive: false`
+names the artifact after the file itself) and uploads it as its **own** artifact — download
+`e2e-report-login-redirect.zip` or `e2e-report-sign-in.zip` from the run's **Summary** page and
+drag it straight into trace.playwright.dev, no unzipping needed. There's also a `playwright-traces`
+artifact bundling every trace file found,
 kept as a safety net for a test added without a matching upload step in the workflow — that one
 needs unzipping twice (GitHub wraps the artifact, and each trace is already a `.zip`).
 

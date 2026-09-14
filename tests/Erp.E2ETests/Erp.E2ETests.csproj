@@ -17,13 +17,16 @@
     <PackageReference Include="coverlet.collector" Version="6.*" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.*" />
     <PackageReference Include="xunit" Version="2.*" />
-    <PackageReference Include="xunit.runner.visualstudio" Version="3.*" />
+    <!-- Pinned below xunit's usual 3.* here (unlike every other test project) because Allure.XUnit's
+         reporter hook isn't discovered by the v3 VSTest adapter — see allure-framework/allure-csharp#410. -->
+    <PackageReference Include="xunit.runner.visualstudio" Version="2.8.2" />
     <PackageReference Include="FluentAssertions" Version="7.*" />
     <PackageReference Include="Microsoft.Playwright" Version="1.*" />
     <PackageReference Include="Microsoft.Extensions.Configuration" Version="10.*" />
     <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="10.*" />
     <PackageReference Include="Microsoft.Extensions.Configuration.EnvironmentVariables" Version="10.*" />
     <PackageReference Include="Microsoft.Extensions.Configuration.Binder" Version="10.*" />
+    <PackageReference Include="Allure.XUnit" Version="2.15.0" />
   </ItemGroup>
 
   <ItemGroup>
@@ -33,6 +36,7 @@
   <ItemGroup>
     <None Include="appsettings.json" CopyToOutputDirectory="PreserveNewest" />
     <None Include="appsettings.local.json" CopyToOutputDirectory="PreserveNewest" Condition="Exists('appsettings.local.json')" />
+    <None Include="allureConfig.json" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
 </Project>

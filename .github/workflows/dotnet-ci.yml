@@ -282,7 +282,30 @@ jobs:
           E2E__IdentityBaseUrl: https://identity-e8fmdrfxb8fqbwhh.westus3-01.azurewebsites.net
           E2E__TestUser__Email: ${{ secrets.E2E_STAGING_TEST_USER_EMAIL }}
           E2E__TestUser__Password: ${{ secrets.E2E_STAGING_TEST_USER_PASSWORD }}
-        run: dotnet test tests/Erp.E2ETests/Erp.E2ETests.csproj --configuration Release --no-build --filter "Category=E2E" --results-directory ./TestResults --logger "trx;LogFilePrefix=e2e-test-results" --logger "console;verbosity=detailed"
+        run: dotnet test tests/Erp.E2ETests/Erp.E2ETests.csproj --configuration Release --no-build --filter "Category=E2E" --results-directory ./TestResults --logger "trx;LogFilePrefix=e2e-test-results" --logger "console;verbosity=detailed" -- xUnit.ReporterSwitch=allure
+
+      # Allure.XUnit attaches each test's Playwright trace as it runs (see PlaywrightFixture.
+      # SaveTraceAsync), so allure-results already has everything needed for a browsable report — no
+      # copying of trace files needed here. `xUnit.ReporterSwitch=allure` above is required: without
+      # it xunit silently skips the Allure reporter and allure-results stays empty.
+      #
+      # One-time setup in Azure, outside this pipeline:
+      #   1. Create the erp-e2e-dashboard Web App (Free tier, same as the others).
+      #   2. Download its publish profile and add it as the AZURE_WEBAPP_PUBLISH_PROFILE_DASHBOARD
+      #      secret.
+      - name: Generate Allure HTML report
+        if: always()
+        run: |
+          npm install -g allure-commandline
+          allure generate tests/Erp.E2ETests/bin/Release/net10.0/allure-results -o ./e2e-dashboard --clean
+
+      - name: Deploy dashboard to Azure App Service
+        if: always()
+        uses: azure/webapps-deploy@v3
+        with:
+          app-name: erp-e2e-dashboard
+          publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE_DASHBOARD }}
+          package: ./e2e-dashboard
 
       - name: Publish test report
         if: always()

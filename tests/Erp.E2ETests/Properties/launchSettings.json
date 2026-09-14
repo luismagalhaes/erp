@@ -1,0 +1,17 @@
+{
+  "$schema": "https://json.schemastore.org/launchsettings.json",
+  "profiles": {
+    "Headed (see the browser)": {
+      "commandName": "Project",
+      "environmentVariables": {
+        "E2E__Headless": "false"
+      }
+    },
+    "Headless (default)": {
+      "commandName": "Project",
+      "environmentVariables": {
+        "E2E__Headless": "true"
+      }
+    }
+  }
+}

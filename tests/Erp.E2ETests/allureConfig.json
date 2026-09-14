@@ -1,0 +1,6 @@
+{
+  "allure": {
+    "directory": "allure-results",
+    "title": "Erp E2E Tests"
+  }
+}

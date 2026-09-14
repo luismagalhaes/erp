@@ -8,11 +8,48 @@ Browser end-to-end tests for `Erp.Main` (and, through its login redirect, `Erp.I
 ```
 Configuration/   E2ESettings, TestUserSettings — binds appsettings.json + env vars
 Fixtures/        PlaywrightFixture (browser lifecycle), PlaywrightCollection (xunit collection)
-Identity/        Test specs for the Erp.Identity login flow (one folder per feature under test)
+Support/         Shared setup helpers (companies, series, MudSelect interaction) — see below
+Identity/        Login flow
+Core/            Companies, customers
+SeriesRegistry/  Series
+Sales/           Stock movements, invoices, ...
 ```
 
-A new feature area gets its own top-level folder next to `Identity/`, matching the app's own
-module boundaries — not one flat folder of test classes.
+A new feature area gets its own top-level folder, matching the app's own module boundaries — not
+one flat folder of test classes.
+
+### Support/ — shared setup
+
+Almost every business-flow page requires a company to already exist and be selected, and nothing
+is seeded by default. `Support/CompanyTestHelper.CreateCompanyWithAccessAsync` creates one and
+grants the current user access (creating a company does **not** do this automatically — see the
+comment there), and `Support/SeriesTestHelper.CreateSeriesAsync` creates and "communicates" a
+series (a new series can't issue anything until that step, even in a dev/staging environment with
+no real AT webservice call behind it — see the comment there). Every business test other than the
+one exercising creation itself should start from these instead of repeating the flow.
+
+`Support/MudSelectExtensions.cs` and `Support/TestData.cs` explain two MudBlazor/Playwright quirks
+worth knowing before writing a new test:
+
+- MudBlazor's MudSelect binds through a `type="hidden"` input, so `Page.GetByLabel` never finds
+  it — use `page.MudSelectByLabel(...)` / `page.SelectMudOptionAsync(...)` instead.
+- A `MudTextField` without `Immediate="true"` binds on blur, and `FillAsync` alone never triggers
+  that — call `.BlurAsync()` on the field after filling it, before moving on.
+- Test data must not collide across repeated runs against a shared, never-cleaned-up environment —
+  `TestData.UniqueSuffix()` / `UniqueDigits()` exist because a truncated timestamp collided within
+  minutes during development (a series code collision fails the whole request with a 500).
+
+### Known bug found by these tests
+
+Issuing a stock movement (and, by the same code path, any signed sales document — invoices,
+credit notes, receipts) currently fails against a real signing key: `Hash`/`PreviousHash` are
+`HasMaxLength(200)` in
+[SalesModelConfiguration.cs](../../src/Modules/Erp.Sales/Storage/Data/SalesModelConfiguration.cs),
+but a real RSA-2048 signature's Base64 encoding is 344 characters, so the save 500s. This is being
+addressed separately on the frontend/schema side, so
+`Signed_in_user_can_issue_a_stock_movement` only asserts the form fills in correctly and is ready
+to submit — not that issuing actually succeeds — until then. See the comment in
+`Sales/StockMovementTests.cs`.
 
 ## Setup
 
@@ -34,6 +71,13 @@ dotnet test tests/Erp.E2ETests
 ```
 
 Tests are tagged `Category=E2E` and excluded from the solution-wide `dotnet test Erp.slnx --filter "Category!=E2E"` used elsewhere, since they need the hosts running locally.
+
+**From VS Code**: `Ctrl+Shift+P` → `Tasks: Run Task` → **E2E: Run tests (headed)** opens a visible
+Chromium window and runs every test in it — no need to edit `appsettings.local.json` first, it
+overrides `Headless` for that run only via `-e E2E__Headless=false`. **E2E: Run tests (headless)**
+runs the same tests the way CI does. Both tasks restore from nuget.org explicitly first — on a
+machine where the default NuGet source is a corporate feed that 401s, plain `dotnet test` fails to
+restore. See [.vscode/tasks.json](../../.vscode/tasks.json).
 
 The sign-in redirect test needs no credentials. The full sign-in flow test needs a test user;
 configure it in an untracked `appsettings.local.json` next to `appsettings.json`:

@@ -1,6 +1,7 @@
 **/bin/
 **/obj/
 .vs/
+.vscode/
 **/TestResults/
 **/CoverageOut/
 **/appsettings.local.json

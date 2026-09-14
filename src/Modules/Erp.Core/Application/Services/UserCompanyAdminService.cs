@@ -24,7 +24,7 @@ public sealed class UserCompanyAdminService(IUserCompanyStorage storage) : IUser
         ArgumentException.ThrowIfNullOrWhiteSpace(request.UserId);
         ArgumentException.ThrowIfNullOrWhiteSpace(request.Role);
         if (request.CompanyId == Guid.Empty)
-            throw new ArgumentException("CompanyId is required.", nameof(request.CompanyId));
+            throw new ArgumentException("CompanyId is required.", nameof(request));
 
         var companyExists = await storage.CompanyExistsAsync(request.CompanyId, cancellationToken);
         if (!companyExists)

@@ -13,7 +13,7 @@ public class ApplicationUser : IdentityUser
     /// <summary>
     /// The user's preferred UI culture (e.g. "pt-PT", "en-US"). Issued as the "locale" claim so
     /// every ERP UI can localize without a round trip to the Identity host. Defaults to pt-PT,
-    /// matching Erp.Common.Constants.Localization.DefaultCulture.
+    /// matching <c>Constants.Localization.DefaultCulture</c> in <c>Erp.Identity.Common</c>.
     /// </summary>
     public string PreferredLanguage { get; set; } = "pt-PT";
 }

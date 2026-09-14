@@ -21,7 +21,10 @@ public sealed class FiscalOptions
     /// <summary>Version of the signing key, stored on each document as HashControl.</summary>
     public string KeyVersion { get; set; } = "1";
 
-    /// <summary>Producer RSA private key in PEM format. Never set this in appsettings.</summary>
+    /// <summary>
+    /// Producer RSA private key in PEM format. Never set this in appsettings — it's in the vault
+    /// as FISCAL__PRIVATEKEYPEM, one value per environment.
+    /// </summary>
     public string? PrivateKeyPem { get; set; }
 
     /// <summary>

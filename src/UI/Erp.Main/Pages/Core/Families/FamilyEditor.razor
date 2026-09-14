@@ -42,7 +42,7 @@
                 <MudItem xs="12" md="3">
                     <MudTextField @bind-Value="_code" Label="@L["FamilyEditor_CodeLabel"]" Variant="Variant.Outlined"
                                   Required="true" Disabled="@(!IsNew)"
-                                  HelperText="@(IsNew ? null : L["FamilyEditor_CodeHelperText"])" />
+                                  HelperText="@(IsNew ? null : (string?)L["FamilyEditor_CodeHelperText"])" />
                 </MudItem>
                 <MudItem xs="12" md="9">
                     <MudTextField @bind-Value="_name" Label="@L["FamilyEditor_NameLabel"]" Variant="Variant.Outlined" Required="true" />

@@ -1,147 +1,92 @@
 @page "/Backoffice/IdentityProviders"
-@page "/Backoffice/IdentityProviders/{Mode}"
 @using Microsoft.AspNetCore.Components.Web
 @using Microsoft.Extensions.Localization
 @using IdentityResourcesType = Erp.Identity.Resources.IdentityResources
 @attribute [Authorize(Roles = "SuperAdmin")]
 @inject IIdentityProviderService IdentityProviderService
 @inject NavigationManager Navigation
+@inject IDialogService DialogService
+@inject ISnackbar Snackbar
 @inject IStringLocalizer<IdentityResourcesType> Localizer
 
 <PageTitle>@Localizer["Backoffice_IdentityProviders_PageTitle"]</PageTitle>
 
-@if (IsCreateMode || IsEditMode)
-{
-    <div class="content-card mud-elevation-1">
-        <h2>@(IsCreateMode ? Localizer["Backoffice_IdentityProviders_CreateHeading"] : Localizer["Backoffice_IdentityProviders_EditHeading"])</h2>
-        @if (!string.IsNullOrWhiteSpace(ErrorMessage)) { <div class="auth-error">@ErrorMessage</div> }
+<MudStack Spacing="4">
+    <PageHeader Title="@Localizer["Backoffice_IdentityProviders_PageTitle"]">
+        <Actions>
+            <MudButton Variant="Variant.Filled" Color="Color.Primary"
+                       StartIcon="@Icons.Material.Filled.Add"
+                       OnClick="@(() => Navigation.NavigateTo("/Backoffice/IdentityProviders/new"))">
+                @Localizer["Backoffice_IdentityProviders_CreateAction"]
+            </MudButton>
+        </Actions>
+    </PageHeader>
 
-        <EditForm Model="Form" OnSubmit="SaveAsync" FormName="identity-providers-form">
-            <div class="auth-field"><label>@Localizer["Backoffice_IdentityProviders_SchemeLabel"]</label><InputText @bind-Value="Form.Scheme" /></div>
-            <div class="auth-field"><label>@Localizer["Backoffice_Common_DisplayNameLabel"]</label><InputText @bind-Value="Form.DisplayName" /></div>
-            <div class="auth-field"><label>@Localizer["Backoffice_IdentityProviders_TypeLabel"]</label><InputText @bind-Value="Form.Type" /></div>
-            <div class="auth-field"><label><InputCheckbox @bind-Value="Form.Enabled" /> @Localizer["Backoffice_Common_EnabledLabel"]</label></div>
-            <div class="form-actions">
-                <button type="submit" class="action-btn primary">@Localizer["Backoffice_Common_SaveButton"]</button>
-                <a class="action-btn" href="/Backoffice/IdentityProviders">@Localizer["Backoffice_Common_CancelButton"]</a>
-            </div>
-        </EditForm>
-    </div>
-}
-else if (IsDeleteMode)
-{
-    <div class="content-card mud-elevation-1">
-        <h2>@Localizer["Backoffice_IdentityProviders_DeleteHeading"]</h2>
-        <p>@Localizer["Backoffice_Common_DeleteConfirm", Scheme]</p>
-        <div class="form-actions">
-            <button class="action-btn danger" @onclick="DeleteAsync">@Localizer["Backoffice_Common_DeleteButton"]</button>
-            <a class="action-btn" href="/Backoffice/IdentityProviders">@Localizer["Backoffice_Common_CancelButton"]</a>
-        </div>
-    </div>
-}
-else
-{
-    <div class="content-card mud-elevation-1">
-        <div class="list-header">
-            <h2>@Localizer["Backoffice_IdentityProviders_ListHeading", Items.Count]</h2>
-            <div class="list-actions">
-                <MudIconButton Icon="@Icons.Material.Filled.AddCircle" Href="/Backoffice/IdentityProviders/Create" Color="Color.Primary" Size="Size.Small" title="@Localizer["Backoffice_IdentityProviders_CreateAction"]" aria-label="@Localizer["Backoffice_IdentityProviders_CreateAction"]" />
-            </div>
-        </div>
-        <table class="backoffice-table">
-            <thead><tr><th>@Localizer["Backoffice_IdentityProviders_SchemeColumn"]</th><th>@Localizer["Backoffice_Common_DisplayNameColumn"]</th><th>@Localizer["Backoffice_IdentityProviders_TypeColumn"]</th><th>@Localizer["Backoffice_Common_EnabledColumn"]</th><th class="actions-col">@Localizer["Backoffice_Common_ActionsColumn"]</th></tr></thead>
-            <tbody>
-            @foreach (var item in Items)
-            {
-                <tr>
-                    <td>@item.Scheme</td><td>@item.DisplayName</td><td>@item.Type</td>
-                    <td><span class="@(item.Enabled ? "ok" : "off")">@(item.Enabled ? Localizer["Backoffice_Common_Yes"] : Localizer["Backoffice_Common_No"])</span></td>
-                    <td class="actions-col">
-                        <div class="table-actions">
-                            <MudIconButton Icon="@Icons.Material.Filled.Edit" Href="@($"/Backoffice/IdentityProviders/Edit?scheme={Uri.EscapeDataString(item.Scheme)}")" Color="Color.Primary" Size="Size.Small" title="@Localizer["Backoffice_Common_EditAction"]" aria-label="@Localizer["Backoffice_Common_EditAction"]" />
-                            <MudIconButton Icon="@Icons.Material.Filled.Delete" Href="@($"/Backoffice/IdentityProviders/Delete?scheme={Uri.EscapeDataString(item.Scheme)}")" Color="Color.Error" Size="Size.Small" title="@Localizer["Backoffice_Common_DeleteAction"]" aria-label="@Localizer["Backoffice_Common_DeleteAction"]" />
-                        </div>
-                    </td>
-                </tr>
-            }
-            </tbody>
-        </table>
-    </div>
-}
+    @if (_loading)
+    {
+        <MudProgressLinear Indeterminate="true" Color="Color.Primary" />
+    }
+    else
+    {
+        <MudPaper Elevation="0" Class="erp-card">
+            <MudTable Items="@_items" Hover="true" Striped="true" Dense="true" Class="erp-grid" Elevation="0">
+                <HeaderContent>
+                    <MudTh>@Localizer["Backoffice_IdentityProviders_SchemeColumn"]</MudTh>
+                    <MudTh>@Localizer["Backoffice_Common_DisplayNameColumn"]</MudTh>
+                    <MudTh>@Localizer["Backoffice_IdentityProviders_TypeColumn"]</MudTh>
+                    <MudTh>@Localizer["Backoffice_Common_EnabledColumn"]</MudTh>
+                    <MudTh Class="erp-numeric">@Localizer["Backoffice_Common_ActionsColumn"]</MudTh>
+                </HeaderContent>
+                <RowTemplate>
+                    <MudTd DataLabel="@Localizer["Backoffice_IdentityProviders_SchemeColumn"]">@context.Scheme</MudTd>
+                    <MudTd DataLabel="@Localizer["Backoffice_Common_DisplayNameColumn"]">@context.DisplayName</MudTd>
+                    <MudTd DataLabel="@Localizer["Backoffice_IdentityProviders_TypeColumn"]">@context.Type</MudTd>
+                    <MudTd DataLabel="@Localizer["Backoffice_Common_EnabledColumn"]">
+                        <MudChip T="string" Size="Size.Small" Variant="Variant.Text"
+                                 Color="@(context.Enabled ? Color.Success : Color.Default)">
+                            @(context.Enabled ? Localizer["Backoffice_Common_Yes"] : Localizer["Backoffice_Common_No"])
+                        </MudChip>
+                    </MudTd>
+                    <MudTd Class="erp-numeric">
+                        <MudIconButton Icon="@Icons.Material.Filled.Edit" Size="Size.Small" Color="Color.Primary"
+                                       Href="@($"/Backoffice/IdentityProviders/{Uri.EscapeDataString(context.Scheme)}")"
+                                       title="@Localizer["Backoffice_Common_EditAction"]" />
+                        <MudIconButton Icon="@Icons.Material.Filled.Delete" Size="Size.Small" Color="Color.Error"
+                                       OnClick="@(() => DeleteAsync(context.Scheme))"
+                                       title="@Localizer["Backoffice_Common_DeleteAction"]" />
+                    </MudTd>
+                </RowTemplate>
+            </MudTable>
+        </MudPaper>
+    }
+</MudStack>
 
 @code {
-    [Parameter] public string? Mode { get; set; }
-    [SupplyParameterFromQuery] public string? Scheme { get; set; }
+    private List<IdentityProviderListItem> _items = [];
+    private bool _loading = true;
 
-    private bool IsCreateMode => string.Equals(Mode, "Create", StringComparison.OrdinalIgnoreCase);
-    private bool IsEditMode => string.Equals(Mode, "Edit", StringComparison.OrdinalIgnoreCase);
-    private bool IsDeleteMode => string.Equals(Mode, "Delete", StringComparison.OrdinalIgnoreCase);
+    protected override async Task OnInitializedAsync() => await LoadAsync();
 
-    private List<IdentityProviderListItem> Items { get; set; } = [];
-    private IdentityProviderInput Form { get; set; } = new() { Enabled = true };
-    private string? ErrorMessage { get; set; }
-
-    protected override async Task OnParametersSetAsync()
+    private async Task LoadAsync()
     {
-        ErrorMessage = null;
+        _loading = true;
+        _items = (await IdentityProviderService.GetIdentityProvidersAsync()).ToList();
+        _loading = false;
+    }
 
-        if (IsEditMode)
-        {
-            if (string.IsNullOrWhiteSpace(Scheme)) { Navigation.NavigateTo("/Backoffice/IdentityProviders"); return; }
-            var item = await IdentityProviderService.GetIdentityProviderAsync(Scheme);
-            if (item is null) { Navigation.NavigateTo("/Backoffice/IdentityProviders"); return; }
-            Form = IdentityProviderInput.From(item);
+    private async Task DeleteAsync(string scheme)
+    {
+        var confirmed = await DialogService.ShowMessageBox(
+            Localizer["Backoffice_IdentityProviders_DeleteHeading"].Value,
+            string.Format(Localizer["Backoffice_Common_DeleteConfirm"], scheme),
+            yesText: Localizer["Backoffice_Common_DeleteButton"].Value,
+            cancelText: Localizer["Backoffice_Common_CancelButton"].Value);
+
+        if (confirmed != true)
             return;
-        }
 
-        if (!IsCreateMode && !IsDeleteMode)
-            Items = (await IdentityProviderService.GetIdentityProvidersAsync()).ToList();
-    }
-
-    private async Task SaveAsync(EditContext _)
-    {
-        if (string.IsNullOrWhiteSpace(Form.Scheme) || string.IsNullOrWhiteSpace(Form.Type))
-        {
-            ErrorMessage = Localizer["Backoffice_IdentityProviders_ErrorSchemeTypeRequired"];
-            return;
-        }
-
-        var request = new IdentityProviderUpsertRequest(
-            Form.Scheme.Trim(),
-            (Form.DisplayName ?? string.Empty).Trim(),
-            Form.Type.Trim(),
-            Form.Enabled);
-
-        if (IsCreateMode) await IdentityProviderService.CreateIdentityProviderAsync(request);
-        else
-        {
-            if (string.IsNullOrWhiteSpace(Scheme)) { Navigation.NavigateTo("/Backoffice/IdentityProviders"); return; }
-            await IdentityProviderService.UpdateIdentityProviderAsync(Scheme, request);
-        }
-
-        Navigation.NavigateTo("/Backoffice/IdentityProviders");
-    }
-
-    private async Task DeleteAsync()
-    {
-        if (!string.IsNullOrWhiteSpace(Scheme))
-            await IdentityProviderService.DeleteIdentityProviderAsync(Scheme);
-        Navigation.NavigateTo("/Backoffice/IdentityProviders");
-    }
-
-    private sealed class IdentityProviderInput
-    {
-        public string Scheme { get; set; } = string.Empty;
-        public string? DisplayName { get; set; }
-        public string Type { get; set; } = string.Empty;
-        public bool Enabled { get; set; }
-
-        public static IdentityProviderInput From(IdentityProviderEditItem item) => new()
-        {
-            Scheme = item.Scheme,
-            DisplayName = item.DisplayName,
-            Type = item.Type,
-            Enabled = item.Enabled
-        };
+        await IdentityProviderService.DeleteIdentityProviderAsync(scheme);
+        Snackbar.Add(Localizer["Backoffice_IdentityProviders_Deleted"].Value, Severity.Success);
+        await LoadAsync();
     }
 }

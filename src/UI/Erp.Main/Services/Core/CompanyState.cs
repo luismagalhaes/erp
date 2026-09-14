@@ -54,7 +54,7 @@ public sealed class CompanyState(CoreApiClient coreApi, IStringLocalizer<MainRes
             {
                 Companies = await coreApi.GetMyCompaniesAsync(cancellationToken);
                 SelectedCompanyId = Companies.FirstOrDefault()?.CompanyId ?? Guid.Empty;
-                LoadError = Companies.Count == 0 ? localizer["CompanyState_NoCompanyAssociated"] : null;
+                LoadError = Companies.Count == 0 ? (string?)localizer["CompanyState_NoCompanyAssociated"] : null;
             }
             catch (Exception ex)
             {

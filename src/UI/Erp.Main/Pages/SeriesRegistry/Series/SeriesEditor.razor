@@ -19,7 +19,7 @@
 <MudStack Spacing="4">
     <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center">
         <MudStack Spacing="0">
-            <MudText Typo="Typo.h4">@(IsNew ? L["SeriesEditor_NewSeriesTitle"] : L["SeriesEditor_SeriesTitleWithCode", _series?.SeriesCode])</MudText>
+            <MudText Typo="Typo.h4">@(IsNew ? L["SeriesEditor_NewSeriesTitle"] : L["SeriesEditor_SeriesTitleWithCode", _series?.SeriesCode ?? string.Empty])</MudText>
             <MudText Typo="Typo.body2" Color="Color.Secondary">
                 @L["SeriesEditor_Subtitle"]
             </MudText>

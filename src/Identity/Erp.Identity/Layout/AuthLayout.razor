@@ -1,7 +1,8 @@
 @inherits LayoutComponentBase
 @using MudBlazor
+@using Erp.Identity.Theme
 
-<MudThemeProvider />
+<MudThemeProvider Theme="AppTheme.Default" />
 @* Required by every component that opens an overlay: selects, date pickers and menus. *@
 <MudPopoverProvider />
 <MudDialogProvider />

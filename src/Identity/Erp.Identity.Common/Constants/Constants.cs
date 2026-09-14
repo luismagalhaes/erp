@@ -14,14 +14,6 @@
             ];
         }
 
-        public static class AdminUser
-        {
-            public const string Email = "lmagalhaes@cegid.com";
-            public const string FirstName = "Administrator";
-            public const string LastName = "System";
-            public const string Password = "Activex.01!";
-        }
-
         /// <summary>
         /// Claim types as Duende emits them. The APIs read the short names, so their JWT
         /// validation is configured with these instead of the WS-Federation defaults.
@@ -40,12 +32,20 @@
         }
 
         /// <summary>
-        /// Supported UI cultures and the default one, matching <c>Erp.Common.Constants.Localization</c>
-        /// so the Identity host and every ERP UI stay consistent without sharing that project.
+        /// Supported UI cultures and the default one. Deliberately duplicated from
+        /// <c>Erp.Common.Constants.Localization</c> — the Identity host and its projects never
+        /// reference <c>Erp.Common</c> — so keep the two in agreement by hand if either changes.
         /// </summary>
         public static class Localization
         {
             public const string DefaultCulture = "pt-PT";
+            public const string PtPt = "pt-PT";
+            public const string EnUs = "en-US";
+
+            public static readonly string[] SupportedCultures = [PtPt, EnUs];
+
+            /// <summary>Name of the cookie used to remember the culture of an unauthenticated visitor.</summary>
+            public const string CultureCookieName = ".Erp.Culture";
         }
 
         public static class Scopes

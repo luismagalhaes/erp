@@ -4,11 +4,12 @@ using Erp.Identity.Endpoints;
 using Erp.Identity.Data;
 using Erp.Identity.Dependencies;
 using Erp.Identity.Storage;
+using Erp.Identity.Common.Configuration;
 using Duende.IdentityServer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Localization;
 using MudBlazor.Services;
-using Erp.Common.Localization;
+using Erp.Identity.Common.Localization;
 using Serilog;
 
 Log.Logger = new LoggerConfiguration()
@@ -20,6 +21,19 @@ Log.Information("Starting Erp.Identity...");
 try
 {
     var builder = WebApplication.CreateBuilder(args);
+
+    builder.Configuration.AddInfisicalSecrets(builder.Environment);
+
+    var requiredSettings = new List<string>
+    {
+        "ConnectionStrings:IdentityDb",
+        "IdentityServer:Authority",
+        "AdminUser:Email",
+        "AdminUser:Password"
+    };
+    if (!builder.Environment.IsDevelopment())
+        requiredSettings.Add("ServiceAuthentication:ClientSecret");
+    builder.Configuration.EnsureConfigured([.. requiredSettings]);
 
     builder.Host.UseSerilog((ctx, lc) => lc
         .WriteTo.Console(outputTemplate: "[{Timestamp:HH:mm:ss} {Level}] {SourceContext}{NewLine}{Message:lj}{NewLine}{Exception}{NewLine}")
@@ -37,9 +51,9 @@ try
     builder.Services.AddLocalization();
     builder.Services.Configure<RequestLocalizationOptions>(options =>
     {
-        var supportedCultures = Erp.Common.Constants.Localization.SupportedCultures;
+        var supportedCultures = Constants.Localization.SupportedCultures;
 
-        options.SetDefaultCulture(Erp.Common.Constants.Localization.DefaultCulture);
+        options.SetDefaultCulture(Constants.Localization.DefaultCulture);
         options.AddSupportedCultures(supportedCultures);
         options.AddSupportedUICultures(supportedCultures);
 
@@ -48,7 +62,7 @@ try
         options.RequestCultureProviders =
         [
             new ClaimsRequestCultureProvider(),
-            new CookieRequestCultureProvider { CookieName = Erp.Common.Constants.Localization.CultureCookieName },
+            new CookieRequestCultureProvider { CookieName = Constants.Localization.CultureCookieName },
             new AcceptLanguageHeaderRequestCultureProvider()
         ];
     });

@@ -18,9 +18,14 @@ public sealed class InventoryCountStorage(AppDbContext dbContext) : IInventoryCo
                 Id = x.Id,
                 WarehouseId = x.WarehouseId,
                 Reference = x.Reference,
+                // A switch expression can't be used here: this lambda compiles to an expression
+                // tree for EF Core to translate to SQL, and the C# compiler refuses a switch
+                // expression inside one (CS8514). The nested ternary is EF-translatable, so it stays.
+#pragma warning disable S3358
                 Scope = x.Scope == InventoryCountScope.Total
                     ? "Total"
                     : x.Scope == InventoryCountScope.Warehouse ? "Warehouse" : "Products",
+#pragma warning restore S3358
                 Status = x.Status == InventoryCountStatus.Open ? "Open" : "Closed",
                 CountDate = x.CountDate,
                 CreatedAtUtc = x.CreatedAtUtc,

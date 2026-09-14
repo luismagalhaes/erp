@@ -26,6 +26,7 @@ Correm em processo separado apenas os que têm razão para isso:
 - [Testes](#testes)
 - [Integração contínua e deploy](#integração-contínua-e-deploy)
   - [Checklist para pôr um ambiente novo](#checklist-para-pôr-um-ambiente-novo-stagingprodução-a-funcionar)
+- [Configuração e segredos](#configuração-e-segredos)
 - [Endpoints da API](#endpoints-da-api)
   - [Core](#endpoints-do-módulo-core)
   - [Sales](#endpoints-do-módulo-sales)
@@ -235,7 +236,7 @@ Os pontos 2 e 3 andam aos pares: definir o `RoleClaimType` sem desligar o mapeam
 
 Depois de alterar isto é preciso reiniciar o Identity (para o seed atualizar os resources) **e voltar a autenticar**, porque o token em cache foi emitido antes. O endpoint `GET /api/access/me/claims` mostra o que a API vê no token e diz de imediato qual dos três pontos falhou.
 
-O seed cria um utilizador administrador cujas credenciais estão definidas em `Constants.AdminUser` — ver [nota de segurança](#segurança) abaixo.
+O seed cria um utilizador administrador cujas credenciais vêm de `AdminUser:Email`/`AdminUser:Password` — ver [Configuração e segredos](#configuração-e-segredos) abaixo.
 
 ---
 
@@ -428,7 +429,7 @@ Actions → Run workflow → escolher "staging" ou "production"
   }
   ```
 
-Os valores sensíveis (connection strings, segredos de cliente, password de SMTP) continuam fora do repositório — ver [Segurança](#segurança). Até existir o cofre planeado, ficam como *Application settings* do Azure em cada Web App, nunca commitados.
+Os valores sensíveis (connection strings, segredos de cliente, password de SMTP) continuam fora do repositório — ver [Configuração e segredos](#configuração-e-segredos). Só as três variáveis de arranque do Infisical (`Infisical:ClientId`/`ClientSecret`/`ProjectId`) ficam como *Application settings* do Azure em cada Web App; todo o resto vem do próprio cofre.
 
 ### Checklist para pôr um ambiente novo (staging/produção) a funcionar
 
@@ -436,17 +437,19 @@ Fazer o deploy não chega para o login funcionar — três coisas têm de estar 
 
 1. **Fazer o deploy** — `Actions → Run workflow`, escolher `staging` ou `production` (ver acima).
 
-2. **Preencher os `appsettings.{Ambiente}.json`** dos três hosts com os valores reais desse ambiente — nunca ficam vazios nem apontam para `localhost`:
+2. **Preencher os `appsettings.{Ambiente}.json`** dos três hosts com os URLs reais desse ambiente — nunca ficam vazios nem apontam para `localhost` (ver [Configuração e segredos](#configuração-e-segredos) para saber quais chaves vivem em appsettings e quais vêm do cofre):
 
-   | Host | Chaves a preencher |
+   | Host | Chaves a preencher em appsettings |
    |---|---|
-   | Erp.Api | `ConnectionStrings:ErpDb`, `IdentityServer:Authority`, `AT:*` (webservices da Finanças), `Smtp:*` |
-   | Erp.Identity | `ConnectionStrings:IdentityDb`, `IdentityServer:Authority`, `NotificationService:BaseUrl`, `ServiceAuthentication:*` |
+   | Erp.Api | `IdentityServer:Authority`, `AT:WebserviceUrl`/`AtcudUrl` |
+   | Erp.Identity | `IdentityServer:Authority`, `NotificationService:BaseUrl`, `ServiceAuthentication:Authority`/`ClientId`/`Scope` |
    | Erp.Main | `OidcConfiguration:Authority`/`RedirectUri`/`PostLogoutRedirectUri`, `Services:Api`/`IdentityApi` |
 
    Todas apontam para o **URL real** da Web App de cada peça nesse ambiente (ex. `https://erp-api-staging.azurewebsites.net`), nunca para `localhost` nem para o URL de outro ambiente.
 
-3. **Registar esse mesmo URL do Erp.Main como cliente autorizado no Identity.** Este é o passo que falta hoje, e que faz o login falhar em staging mesmo com o passo 2 feito: o `RedirectUris`, `PostLogoutRedirectUris` e `AllowedCorsOrigins` do client `blazor-wasm` **não vêm de configuração** — estão fixos em código, em [`Constants.Clients`](src/Identity/Erp.Identity.Common/Constants/Constants.cs#L103-L111) (só `HttpsLocalhost7019`/`HttpLocalhost5191`) e usados em [`SeedData.cs`](src/Identity/Erp.Identity.Storage/Data/SeedData.cs#L160-L162). Como o seed corre em todo o arranque (ver [Como executar](#como-executar)), só esses dois `localhost` ficam autorizados em qualquer ambiente — o Duende recusa qualquer outro `redirect_uri` com *invalid_redirect_uri*, mesmo que o `appsettings.Staging.json` do Erp.Main já aponte para o URL certo. Para um ambiente novo funcionar, isto tem de mudar em código (acrescentar o URL desse ambiente à lista de `Constants.Clients`, ou tornar isto configurável por `appsettings` em vez de fixo) e o Identity tem de ser publicado de novo.
+3. **Registar os segredos desse ambiente no cofre** (`ConnectionStrings:*`, `Smtp:*`, `Fiscal:PrivateKeyPem`, `ServiceAuthentication:ClientSecret`, `AdminUser:*`) e as três variáveis de arranque do Infisical como *Application setting* nas Web Apps desse ambiente — ver [Configuração e segredos](#configuração-e-segredos).
+
+4. **Registar esse mesmo URL do Erp.Main como cliente autorizado no Identity.** Este é o passo que falta hoje, e que faz o login falhar em staging mesmo com o passo 2 feito: o `RedirectUris`, `PostLogoutRedirectUris` e `AllowedCorsOrigins` do client `blazor-wasm` **não vêm de configuração** — estão fixos em código, em [`Constants.Clients`](src/Identity/Erp.Identity.Common/Constants/Constants.cs#L103-L111) (só `HttpsLocalhost7019`/`HttpLocalhost5191`) e usados em [`SeedData.cs`](src/Identity/Erp.Identity.Storage/Data/SeedData.cs#L160-L162). Como o seed corre em todo o arranque (ver [Como executar](#como-executar)), só esses dois `localhost` ficam autorizados em qualquer ambiente — o Duende recusa qualquer outro `redirect_uri` com *invalid_redirect_uri*, mesmo que o `appsettings.Staging.json` do Erp.Main já aponte para o URL certo. Para um ambiente novo funcionar, isto tem de mudar em código (acrescentar o URL desse ambiente à lista de `Constants.Clients`, ou tornar isto configurável por `appsettings` em vez de fixo) e o Identity tem de ser publicado de novo.
 
 ---
 
@@ -684,7 +687,7 @@ O enfileiramento é chamado serviço a serviço (o Identity, na recuperação de
 
 O scope de envio é deliberadamente separado de `erp.read` e `erp.write`: o cliente da UI tem os dois últimos, para consultar e reenviar, mas **não** pode enfileirar email — caso contrário qualquer utilizador autenticado poderia mandar mensagens em nome do ERP.
 
-O segredo do `identity-service` vem de `ServiceAuthentication:ClientSecret` (user secrets ou cofre). Em desenvolvimento, se não estiver configurado, é usado o valor semeado em `Constants` para a máquina local funcionar sem preparação.
+O segredo que o Identity apresenta vem de `ServiceAuthentication:ClientSecret` (user secrets ou cofre — ver [Configuração e segredos](#configuração-e-segredos)). Em desenvolvimento, se não estiver configurado, cai no valor de `Constants.Clients.IdentityServiceSecret` para a máquina local funcionar sem preparação. **O lado do Identity Server não segue essa mesma regra**: o [SeedData](src/Identity/Erp.Identity.Storage/Data/SeedData.cs) cria o client `identity-service` sem nenhum secret — tem de ser definido manualmente no backoffice (Clients → identity-service) em cada ambiente, com o mesmo valor que for registado em `ServiceAuthentication:ClientSecret` nesse ambiente. Sem isto, o envio de email por recuperação de password falha com 401.
 
 O envio efetivo é feito pelo [Erp.Notification.Worker](src/Notification/Erp.Notification.Worker/), que drena a fila no intervalo definido em `NotificationWorker:PollingIntervalSeconds`. Uma falha de entrega marca a notificação como `Failed` com o erro e incrementa as tentativas, sem parar o ciclo.
 
@@ -808,16 +811,78 @@ Registo honesto do que ainda não está feito, para evitar surpresas:
 - **Client do Identity só aceita `localhost`** — o `RedirectUris`/`PostLogoutRedirectUris`/`AllowedCorsOrigins` do client `blazor-wasm` está fixo em código ([Constants.Clients](src/Identity/Erp.Identity.Common/Constants/Constants.cs#L103-L111), usado em [SeedData.cs](src/Identity/Erp.Identity.Storage/Data/SeedData.cs#L160-L162)), não vem de `appsettings`. Um Erp.Main publicado em staging/produção tenta redirecionar para o seu URL real depois do login, e o Identity recusa por não estar na lista — falha com *invalid_redirect_uri*, mesmo que o `appsettings.Staging.json` do Erp.Main já esteja correto (ver [Checklist para pôr um ambiente novo](#checklist-para-pôr-um-ambiente-novo-stagingprodução-a-funcionar)). Falta acrescentar o URL de cada ambiente a essa lista, ou tornar isto configurável.
 
 
-### Segurança
+## Configuração e segredos
 
-Há segredos em código e em configuração versionada que têm de sair antes de qualquer ambiente partilhado:
+Os `appsettings.*.json` de cada host guardam só o que **não é segredo** — autoridades OIDC, URLs de outros serviços, flags. Os valores sensíveis vêm do [Infisical](https://infisical.com) através de um `IConfigurationProvider` próprio, acrescentado à configuração **depois** do `appsettings.*.json` e das variáveis de ambiente — por isso ganha sempre a qualquer valor local com a mesma chave. Existe **em duplicado, de propósito**, em dois sítios que não se referenciam um ao outro: [`Erp.Common/Configuration`](src/Shared/Erp.Common/Configuration/), usado por `Erp.Api`, `Erp.Main` e `Erp.Notification.Worker`, e [`Erp.Identity.Common/Configuration`](src/Identity/Erp.Identity.Common/Configuration/), usado só pelo `Erp.Identity` — os projetos do Identity não dependem do `Erp.Common`, mesmo à custa desta duplicação.
 
-- Credenciais do utilizador administrador em [Constants.cs](src/Identity/Erp.Identity.Common/Constants/Constants.cs) (`Constants.AdminUser`).
-- Segredo do client `identity-service` no mesmo ficheiro, usado como recurso em desenvolvimento quando `ServiceAuthentication:ClientSecret` não está definido.
+> **Regra do repositório:** sempre que se acrescenta um segredo novo (no cofre ou em `appsettings.*.json`), esta secção tem de ser atualizada — chave, para que serve e onde vive. Um segredo que só existe na cabeça de quem o criou não sobrevive à próxima pessoa a mexer no deploy.
 
-Mover para *user secrets* em desenvolvimento e para variáveis de ambiente ou um cofre de segredos em produção.
+### Como funciona o cofre
 
-A chave privada de assinatura dos documentos do Sales segue já esta regra: vem de `Fiscal:PrivateKeyPem` (user secrets ou cofre) e nunca do repositório. Em desenvolvimento, se não estiver configurada, é gerada uma chave local em `%LOCALAPPDATA%\Erp\Sales\` — válida para testar, nunca para certificação.
+`builder.Configuration.AddInfisicalSecrets(builder.Environment)` — chamado logo a seguir a `CreateBuilder`/`Host.CreateApplicationBuilder` nos quatro hosts (`Erp.Api`, `Erp.Identity`, `Erp.Main`, `Erp.Notification.Worker`) — lê três variáveis de arranque e, só se as três estiverem definidas, autentica-se no Infisical (Universal Auth, uma *machine identity*) e carrega os secrets do ambiente correspondente:
+
+| Variável de arranque | Onde vive | Obrigatória |
+|---|---|---|
+| `Infisical:ClientId` | Variável de ambiente local, ou Azure App Setting — **nunca** em `appsettings.*.json` | Sim, para usar o cofre |
+| `Infisical:ClientSecret` | idem | Sim |
+| `Infisical:ProjectId` | idem | Sim |
+| `Infisical:Environment` | idem | Não — por omissão `Development`→`dev`, `Staging`→`staging`, `Production`→`prod` |
+| `Infisical:SecretPath` | idem | Não — por omissão `/` |
+| `Infisical:SiteUrl` | idem | Não — só para instância self-hosted do Infisical |
+
+Sem as três primeiras, a integração é ignorada silenciosamente — é assim que um `Erp.Api` local continua a arrancar contra o LocalDB sem ninguém precisar de credenciais do Infisical. **Uma vez configuradas**, porém, todas as chaves marcadas como "cofre" abaixo passam a ser obrigatórias — não há *fallback* de desenvolvimento embutido no código para nenhuma delas (à exceção da única listada na tabela seguinte).
+
+Os nomes dos secrets no Infisical seguem a convenção de variável de ambiente do .NET — `:` vira `__` — por isso `ConnectionStrings:ErpDb` é `CONNECTIONSTRINGS__ERPDB` no cofre.
+
+### Chaves por host
+
+| Host | Fica em `appsettings.*.json` (não secreto) | Vem do cofre |
+|---|---|---|
+| Erp.Api | `IdentityServer:Authority`, `AT:WebserviceUrl`, `AT:AtcudUrl`, `Smtp:Host`/`Port`/`UseSsl`/`FromEmail`/`FromName`, `Fiscal:IssuerTaxId`/`CertificateNumber`/`KeyVersion` | `ConnectionStrings:ErpDb`, `Smtp:UserName`, `Smtp:Password`, `AT:CertificateBase64`, `AT:CertificatePassword`, `Fiscal:PrivateKeyPem` |
+| Erp.Identity | `IdentityServer:Authority`, `NotificationService:BaseUrl`, `ServiceAuthentication:Authority`/`ClientId`/`Scope` | `ConnectionStrings:IdentityDb`, `ServiceAuthentication:ClientSecret`, `AdminUser:Email`/`FirstName`/`LastName`/`Password` |
+| Erp.Main | `OidcConfiguration:*`, `Services:Api`/`IdentityApi` | — (`blazor-wasm` é um client público, sem secret) |
+| Erp.Notification.Worker | `NotificationWorker:BatchSize`/`PollingIntervalSeconds`, `Smtp:Host`/`Port`/`UseSsl`/`FromEmail`/`FromName` | `ConnectionStrings:ErpDb`, `Smtp:UserName`, `Smtp:Password` |
+
+`Fiscal:PrivateKeyPem` e `AT:CertificateBase64`/`CertificatePassword` estão documentados em [`FiscalOptions`](src/Shared/Erp.FiscalPT/FiscalOptions.cs) e [`AtOptions`](src/Shared/Erp.FiscalPT/AtOptions.cs) — cada propriedade que vem do cofre tem um comentário a apontar a chave exata. `AT:CertificateBase64`/`CertificatePassword` ainda não são lidas por código nenhum: são o contrato já preparado para quando a integração com os *webservices* da AT for implementada (ver [Estado atual e limitações conhecidas](#estado-atual-e-limitações-conhecidas)).
+
+A única exceção com *fallback* de desenvolvimento é `ServiceAuthentication:ClientSecret`: se não estiver configurada, o [Program.cs](src/Identity/Erp.Identity/Program.cs) do Identity usa `Constants.Clients.IdentityServiceSecret` **só quando `IsDevelopment()`**, para a máquina local funcionar sem preparação nenhuma. Fora de Development esta chave é obrigatória.
+
+**O secret do client `identity-service` não é semeado na base de dados.** Ao contrário do `blazor-wasm`, o [SeedData](src/Identity/Erp.Identity.Storage/Data/SeedData.cs) cria este client **sem** `ClientSecrets` — porque o seed nunca atualiza um registo já existente, só cria, e um valor gravado ali ficaria preso para sempre em todos os ambientes. Depois do primeiro deploy de um ambiente novo, é preciso:
+
+1. Abrir o backoffice do Identity → Clients → `identity-service` → adicionar um secret.
+2. Registar esse mesmo valor em texto simples como `ServiceAuthentication:ClientSecret` no cofre desse ambiente.
+
+Sem os dois passos, o Identity não consegue chamar o `Erp.Api` para enfileirar emails — a recuperação de password falha em silêncio do lado do utilizador e em 401 nos logs.
+
+### Chaves a registar no cofre
+
+Environments do Infisical: `dev`, `staging` e (quando existir) `prod` — os mesmos slugs que `Infisical:Environment` deriva de `Development`/`Staging`/`Production` (ver tabela acima).
+
+**`dev`** — nenhuma é obrigatória enquanto o `Erp.Api` local não tiver `Infisical:ClientId`/`ClientSecret`/`ProjectId` definidos; ficam aqui para quem quiser espelhar dev no cofre também:
+
+| Key | Value |
+|---|---|
+| `CONNECTIONSTRINGS__ERPDB` | `Server=(localdb)\MSSQLLocalDB;Database=ErpPortugal;Integrated Security=true;TrustServerCertificate=true;` |
+| `CONNECTIONSTRINGS__IDENTITYDB` | `Server=(localdb)\MSSQLLocalDB;Database=ErpPortugal_Identity;Integrated Security=true;TrustServerCertificate=true;` |
+| `SMTP__USERNAME` / `SMTP__PASSWORD` | Vazio, ou uma conta de teste |
+| `AT__CERTIFICATEBASE64` / `AT__CERTIFICATEPASSWORD` | Vazio até a integração AT existir |
+| `SERVICEAUTHENTICATION__CLIENTSECRET` | `identity-service-secret` (o mesmo do *fallback* de código) |
+| `ADMINUSER__EMAIL` / `FIRSTNAME` / `LASTNAME` / `PASSWORD` | À escolha de quem administra o ambiente de dev |
+| `FISCAL__PRIVATEKEYPEM` | Vazio — gera/reutiliza sozinho uma chave local em `%LOCALAPPDATA%\Erp\Sales\` |
+
+**`staging`** — todas obrigatórias assim que `Infisical:*` estiver configurado nas Web Apps de staging:
+
+| Key | Value |
+|---|---|
+| `CONNECTIONSTRINGS__ERPDB` | Connection string da base `free-sql-db-erp`, com uma password **nova** — nunca a que esteve exposta no histórico do git |
+| `CONNECTIONSTRINGS__IDENTITYDB` | idem, base `free-sql-db-erp-identity` |
+| `SMTP__USERNAME` / `SMTP__PASSWORD` | Caixa de correio real de staging |
+| `AT__CERTIFICATEBASE64` / `AT__CERTIFICATEPASSWORD` | Quando a integração AT existir |
+| `SERVICEAUTHENTICATION__CLIENTSECRET` | Segredo novo e forte, igual ao que for definido no backoffice para o client `identity-service` (ver acima) |
+| `ADMINUSER__EMAIL` / `FIRSTNAME` / `LASTNAME` / `PASSWORD` | Conta real de quem administra staging, password forte |
+| `FISCAL__PRIVATEKEYPEM` | Chave RSA 1024 bit própria de staging (`openssl genrsa -out staging-key.pem 1024`), nunca partilhada com produção |
+
+`prod` segue a mesma lista, com os seus próprios valores — nunca os mesmos de staging.
 
 # TODO: Sistema de Impressão (Agente Local + Fallback)
 

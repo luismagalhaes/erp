@@ -22,7 +22,7 @@ public sealed class PurchasingApiClient(HttpClient http) : ApiClientBase(http)
         if (supplierId is { } supplier)
             url += $"&supplierId={supplier}";
 
-        var response = await http.GetAsync(url, cancellationToken);
+        var response = await Http.GetAsync(url, cancellationToken);
 
         if (!response.IsSuccessStatusCode)
             return ([], await ApiResponse.ReadErrorAsync(response, cancellationToken));
@@ -38,7 +38,7 @@ public sealed class PurchasingApiClient(HttpClient http) : ApiClientBase(http)
 
     public async Task<PurchaseOrder?> GetOrderAsync(Guid id, CancellationToken cancellationToken = default)
     {
-        var response = await http.GetAsync($"api/purchase-orders/{id}", cancellationToken);
+        var response = await Http.GetAsync($"api/purchase-orders/{id}", cancellationToken);
         return response.IsSuccessStatusCode
             ? await response.Content.ReadFromJsonAsync<PurchaseOrder>(cancellationToken)
             : null;
@@ -55,7 +55,7 @@ public sealed class PurchasingApiClient(HttpClient http) : ApiClientBase(http)
         if (supplierId is { } supplier)
             url += $"&supplierId={supplier}";
 
-        var response = await http.GetAsync(url, cancellationToken);
+        var response = await Http.GetAsync(url, cancellationToken);
 
         if (!response.IsSuccessStatusCode)
             return ([], await ApiResponse.ReadErrorAsync(response, cancellationToken));
@@ -68,7 +68,7 @@ public sealed class PurchasingApiClient(HttpClient http) : ApiClientBase(http)
         CreatePurchaseOrderRequest request,
         CancellationToken cancellationToken = default)
     {
-        var response = await http.PostAsJsonAsync("api/purchase-orders", request, cancellationToken);
+        var response = await Http.PostAsJsonAsync("api/purchase-orders", request, cancellationToken);
 
         if (!response.IsSuccessStatusCode)
             return (null, await ApiResponse.ReadErrorAsync(response, cancellationToken));
@@ -81,7 +81,7 @@ public sealed class PurchasingApiClient(HttpClient http) : ApiClientBase(http)
         UpdatePurchaseOrderRequest request,
         CancellationToken cancellationToken = default)
     {
-        var response = await http.PutAsJsonAsync($"api/purchase-orders/{id}", request, cancellationToken);
+        var response = await Http.PutAsJsonAsync($"api/purchase-orders/{id}", request, cancellationToken);
 
         if (!response.IsSuccessStatusCode)
             return (null, await ApiResponse.ReadErrorAsync(response, cancellationToken));
@@ -118,7 +118,7 @@ public sealed class PurchasingApiClient(HttpClient http) : ApiClientBase(http)
         if (supplierId is { } supplier)
             url += $"&supplierId={supplier}";
 
-        var response = await http.GetAsync(url, cancellationToken);
+        var response = await Http.GetAsync(url, cancellationToken);
 
         if (!response.IsSuccessStatusCode)
             return ([], await ApiResponse.ReadErrorAsync(response, cancellationToken));
@@ -134,7 +134,7 @@ public sealed class PurchasingApiClient(HttpClient http) : ApiClientBase(http)
 
     public async Task<GoodsReceipt?> GetReceiptAsync(Guid id, CancellationToken cancellationToken = default)
     {
-        var response = await http.GetAsync($"api/goods-receipts/{id}", cancellationToken);
+        var response = await Http.GetAsync($"api/goods-receipts/{id}", cancellationToken);
         return response.IsSuccessStatusCode
             ? await response.Content.ReadFromJsonAsync<GoodsReceipt>(cancellationToken)
             : null;
@@ -144,7 +144,7 @@ public sealed class PurchasingApiClient(HttpClient http) : ApiClientBase(http)
         CreateGoodsReceiptRequest request,
         CancellationToken cancellationToken = default)
     {
-        var response = await http.PostAsJsonAsync("api/goods-receipts", request, cancellationToken);
+        var response = await Http.PostAsJsonAsync("api/goods-receipts", request, cancellationToken);
 
         if (!response.IsSuccessStatusCode)
             return (null, await ApiResponse.ReadErrorAsync(response, cancellationToken));
@@ -157,7 +157,7 @@ public sealed class PurchasingApiClient(HttpClient http) : ApiClientBase(http)
         string reason,
         CancellationToken cancellationToken = default)
     {
-        var response = await http.PostAsJsonAsync(
+        var response = await Http.PostAsJsonAsync(
             $"api/goods-receipts/{id}/void", new VoidGoodsReceiptRequest(reason), cancellationToken);
 
         if (!response.IsSuccessStatusCode)
@@ -178,7 +178,7 @@ public sealed class PurchasingApiClient(HttpClient http) : ApiClientBase(http)
         if (supplierId is { } supplier)
             url += $"&supplierId={supplier}";
 
-        var response = await http.GetAsync(url, cancellationToken);
+        var response = await Http.GetAsync(url, cancellationToken);
 
         if (!response.IsSuccessStatusCode)
             return ([], await ApiResponse.ReadErrorAsync(response, cancellationToken));
@@ -194,7 +194,7 @@ public sealed class PurchasingApiClient(HttpClient http) : ApiClientBase(http)
 
     public async Task<PurchaseInvoice?> GetInvoiceAsync(Guid id, CancellationToken cancellationToken = default)
     {
-        var response = await http.GetAsync($"api/purchase-invoices/{id}", cancellationToken);
+        var response = await Http.GetAsync($"api/purchase-invoices/{id}", cancellationToken);
         return response.IsSuccessStatusCode
             ? await response.Content.ReadFromJsonAsync<PurchaseInvoice>(cancellationToken)
             : null;
@@ -211,7 +211,7 @@ public sealed class PurchasingApiClient(HttpClient http) : ApiClientBase(http)
         if (supplierId is { } supplier)
             url += $"&supplierId={supplier}";
 
-        var response = await http.GetAsync(url, cancellationToken);
+        var response = await Http.GetAsync(url, cancellationToken);
 
         if (!response.IsSuccessStatusCode)
             return ([], await ApiResponse.ReadErrorAsync(response, cancellationToken));
@@ -224,7 +224,7 @@ public sealed class PurchasingApiClient(HttpClient http) : ApiClientBase(http)
         RecordPurchaseInvoiceRequest request,
         CancellationToken cancellationToken = default)
     {
-        var response = await http.PostAsJsonAsync("api/purchase-invoices", request, cancellationToken);
+        var response = await Http.PostAsJsonAsync("api/purchase-invoices", request, cancellationToken);
 
         if (!response.IsSuccessStatusCode)
             return (null, await ApiResponse.ReadErrorAsync(response, cancellationToken));
@@ -237,7 +237,7 @@ public sealed class PurchasingApiClient(HttpClient http) : ApiClientBase(http)
         string reason,
         CancellationToken cancellationToken = default)
     {
-        var response = await http.PostAsJsonAsync(
+        var response = await Http.PostAsJsonAsync(
             $"api/purchase-invoices/{id}/void", new VoidPurchaseInvoiceRequest(reason), cancellationToken);
 
         if (!response.IsSuccessStatusCode)
@@ -258,7 +258,7 @@ public sealed class PurchasingApiClient(HttpClient http) : ApiClientBase(http)
         if (supplierId is { } supplier)
             url += $"&supplierId={supplier}";
 
-        var response = await http.GetAsync(url, cancellationToken);
+        var response = await Http.GetAsync(url, cancellationToken);
 
         if (!response.IsSuccessStatusCode)
             return ([], await ApiResponse.ReadErrorAsync(response, cancellationToken));
@@ -274,7 +274,7 @@ public sealed class PurchasingApiClient(HttpClient http) : ApiClientBase(http)
 
     public async Task<SupplierReturn?> GetReturnAsync(Guid id, CancellationToken cancellationToken = default)
     {
-        var response = await http.GetAsync($"api/supplier-returns/{id}", cancellationToken);
+        var response = await Http.GetAsync($"api/supplier-returns/{id}", cancellationToken);
         return response.IsSuccessStatusCode
             ? await response.Content.ReadFromJsonAsync<SupplierReturn>(cancellationToken)
             : null;
@@ -291,7 +291,7 @@ public sealed class PurchasingApiClient(HttpClient http) : ApiClientBase(http)
         if (supplierId is { } supplier)
             url += $"&supplierId={supplier}";
 
-        var response = await http.GetAsync(url, cancellationToken);
+        var response = await Http.GetAsync(url, cancellationToken);
 
         if (!response.IsSuccessStatusCode)
             return ([], await ApiResponse.ReadErrorAsync(response, cancellationToken));
@@ -304,7 +304,7 @@ public sealed class PurchasingApiClient(HttpClient http) : ApiClientBase(http)
         CreateSupplierReturnRequest request,
         CancellationToken cancellationToken = default)
     {
-        var response = await http.PostAsJsonAsync("api/supplier-returns", request, cancellationToken);
+        var response = await Http.PostAsJsonAsync("api/supplier-returns", request, cancellationToken);
 
         if (!response.IsSuccessStatusCode)
             return (null, await ApiResponse.ReadErrorAsync(response, cancellationToken));
@@ -317,7 +317,7 @@ public sealed class PurchasingApiClient(HttpClient http) : ApiClientBase(http)
         string reason,
         CancellationToken cancellationToken = default)
     {
-        var response = await http.PostAsJsonAsync(
+        var response = await Http.PostAsJsonAsync(
             $"api/supplier-returns/{id}/void", new VoidGoodsReceiptRequest(reason), cancellationToken);
 
         if (!response.IsSuccessStatusCode)
@@ -338,7 +338,7 @@ public sealed class PurchasingApiClient(HttpClient http) : ApiClientBase(http)
         if (supplierId is { } supplier)
             url += $"&supplierId={supplier}";
 
-        var response = await http.GetAsync(url, cancellationToken);
+        var response = await Http.GetAsync(url, cancellationToken);
 
         if (!response.IsSuccessStatusCode)
             return ([], await ApiResponse.ReadErrorAsync(response, cancellationToken));
@@ -356,7 +356,7 @@ public sealed class PurchasingApiClient(HttpClient http) : ApiClientBase(http)
         Guid id,
         CancellationToken cancellationToken = default)
     {
-        var response = await http.GetAsync($"api/self-billed-invoices/{id}", cancellationToken);
+        var response = await Http.GetAsync($"api/self-billed-invoices/{id}", cancellationToken);
         return response.IsSuccessStatusCode
             ? await response.Content.ReadFromJsonAsync<SelfBilledInvoice>(cancellationToken)
             : null;
@@ -373,7 +373,7 @@ public sealed class PurchasingApiClient(HttpClient http) : ApiClientBase(http)
         if (supplierId is { } supplier)
             url += $"&supplierId={supplier}";
 
-        var response = await http.GetAsync(url, cancellationToken);
+        var response = await Http.GetAsync(url, cancellationToken);
 
         if (!response.IsSuccessStatusCode)
             return ([], await ApiResponse.ReadErrorAsync(response, cancellationToken));
@@ -386,7 +386,7 @@ public sealed class PurchasingApiClient(HttpClient http) : ApiClientBase(http)
         IssueSelfBilledInvoiceRequest request,
         CancellationToken cancellationToken = default)
     {
-        var response = await http.PostAsJsonAsync("api/self-billed-invoices", request, cancellationToken);
+        var response = await Http.PostAsJsonAsync("api/self-billed-invoices", request, cancellationToken);
 
         if (!response.IsSuccessStatusCode)
             return (null, await ApiResponse.ReadErrorAsync(response, cancellationToken));
@@ -398,7 +398,7 @@ public sealed class PurchasingApiClient(HttpClient http) : ApiClientBase(http)
         Guid id,
         CancellationToken cancellationToken = default)
     {
-        var response = await http.PostAsync($"api/self-billed-invoices/{id}/accept", null, cancellationToken);
+        var response = await Http.PostAsync($"api/self-billed-invoices/{id}/accept", null, cancellationToken);
 
         if (!response.IsSuccessStatusCode)
             return (null, await ApiResponse.ReadErrorAsync(response, cancellationToken));
@@ -411,7 +411,7 @@ public sealed class PurchasingApiClient(HttpClient http) : ApiClientBase(http)
         string reason,
         CancellationToken cancellationToken = default)
     {
-        var response = await http.PostAsJsonAsync(
+        var response = await Http.PostAsJsonAsync(
             $"api/self-billed-invoices/{id}/void", new VoidSelfBilledInvoiceRequest(reason), cancellationToken);
 
         if (!response.IsSuccessStatusCode)
@@ -426,8 +426,8 @@ public sealed class PurchasingApiClient(HttpClient http) : ApiClientBase(http)
         CancellationToken cancellationToken)
     {
         var response = content is null
-            ? await http.PostAsync(url, content: null, cancellationToken)
-            : await http.PostAsJsonAsync(url, content, cancellationToken);
+            ? await Http.PostAsync(url, content: null, cancellationToken)
+            : await Http.PostAsJsonAsync(url, content, cancellationToken);
 
         if (!response.IsSuccessStatusCode)
             return (null, await ApiResponse.ReadErrorAsync(response, cancellationToken));

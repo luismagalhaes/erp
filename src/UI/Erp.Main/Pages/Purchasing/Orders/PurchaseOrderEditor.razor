@@ -56,7 +56,7 @@
                     <MudSelect T="Guid?" @bind-Value="_supplierId" Label="@L["PurchaseOrderEditor_SupplierLabel"]"
                                Variant="Variant.Outlined" Required="true"
                                Disabled="@(!IsNew)"
-                               HelperText="@(IsNew ? null : L["PurchaseOrderEditor_SupplierHelperText"])">
+                               HelperText="@(IsNew ? null : (string?)L["PurchaseOrderEditor_SupplierHelperText"])">
                         @foreach (var supplier in _suppliers)
                         {
                             <MudSelectItem T="Guid?" Value="@supplier.Id">

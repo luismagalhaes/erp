@@ -1,212 +1,86 @@
 @page "/Backoffice/Users"
-@page "/Backoffice/Users/{Mode}"
 @using Microsoft.AspNetCore.Components.Web
 @using Microsoft.Extensions.Localization
-@using Erp.Identity.Resources
+@using IdentityResourcesType = Erp.Identity.Resources.IdentityResources
 @attribute [Authorize(Roles = "SuperAdmin")]
 @inject IUserService UserService
 @inject NavigationManager Navigation
-@inject IStringLocalizer<IdentityResources> Localizer
+@inject IStringLocalizer<IdentityResourcesType> Localizer
 
 <PageTitle>@Localizer["Backoffice_Users_PageTitle"]</PageTitle>
 
-@if (IsEditMode)
-{
-    <div class="content-card mud-elevation-1">
-        <h2>@Localizer["Backoffice_Users_EditHeading"]</h2>
+<MudStack Spacing="4">
+    <PageHeader Title="@Localizer["Backoffice_Users_PageTitle"]" />
 
-        @if (!string.IsNullOrWhiteSpace(ErrorMessage))
-        {
-            <div class="auth-error">@ErrorMessage</div>
-        }
-
-        @if (Form is null)
-        {
-            <p>@Localizer["Backoffice_Users_Loading"]</p>
-        }
-        else
-        {
-            <EditForm Model="Form" OnSubmit="SaveAsync" FormName="users-edit-form">
-                <div class="tab-strip">
-                    <button type="button" class="tab-btn @(ActiveTab == "MainInfo" ? "active" : null)" @onclick='() => SelectTab("MainInfo")'>@Localizer["Backoffice_Users_Tab_MainInfo"]</button>
-                    <button type="button" class="tab-btn @(ActiveTab == "Roles" ? "active" : null)" @onclick='() => SelectTab("Roles")'>@Localizer["Backoffice_Users_Tab_Roles"]</button>
-                </div>
-
-                <div class="tab-panel @(ActiveTab == "MainInfo" ? "active" : null)">
-                    <div class="auth-field"><label>@Localizer["Backoffice_Users_EmailLabel"]</label><InputText @bind-Value="Form.Email" disabled /></div>
-                    <div class="auth-field"><label>@Localizer["Backoffice_Users_NameLabel"]</label><InputText @bind-Value="Form.FullName" disabled /></div>
-                    <div class="auth-field">
-                        <label>@Localizer["Backoffice_Users_LanguageLabel"]</label>
-                        <InputSelect @bind-Value="Form.PreferredLanguage">
-                            <option value="pt-PT">Português</option>
-                            <option value="en-US">English</option>
-                        </InputSelect>
-                    </div>
-                </div>
-
-                <div class="tab-panel @(ActiveTab == "Roles" ? "active" : null)">
-                    <div class="auth-field">
-                        <label>@Localizer["Backoffice_Users_RolesLabel"]</label>
-                        <table class="backoffice-table">
-                            <thead><tr><th>@Localizer["Backoffice_Users_RoleColumn"]</th><th class="actions-col">@Localizer["Backoffice_Users_ActionsColumn"]</th></tr></thead>
-                            <tbody>
-                            @for (var i = 0; i < Form.Roles.Count; i++)
-                            {
-                                var index = i;
-                                <tr>
-                                    <td><InputText @bind-Value="Form.Roles[index]" /></td>
-                                    <td class="actions-col"><button type="button" class="action-btn danger" @onclick="() => RemoveRole(index)">@Localizer["Backoffice_Users_RemoveButton"]</button></td>
-                                </tr>
-                            }
-                            </tbody>
-                        </table>
-                        <button type="button" class="action-btn" @onclick="AddRole">@Localizer["Backoffice_Users_AddRoleButton"]</button>
-                    </div>
-                </div>
-
-                <div class="form-actions">
-                    <button class="action-btn primary" type="submit">@Localizer["Backoffice_Users_SaveButton"]</button>
-                    <a class="action-btn" href="/Backoffice/Users">@Localizer["Backoffice_Users_CancelButton"]</a>
-                </div>
-            </EditForm>
-        }
-    </div>
-}
-else
-{
-    <div class="content-card mud-elevation-1">
-        <div class="list-header">
-            <h2>@Localizer["Backoffice_Users_ListHeading", UserItems.Count]</h2>
-        </div>
-        <table class="backoffice-table">
-            <thead>
-                <tr>
-                    <th>@Localizer["Backoffice_Users_EmailColumn"]</th><th>@Localizer["Backoffice_Users_NameColumn"]</th><th>@Localizer["Backoffice_Users_ActiveColumn"]</th><th>@Localizer["Backoffice_Users_CreatedAtColumn"]</th><th>@Localizer["Backoffice_Users_RolesLabel"]</th><th class="actions-col">@Localizer["Backoffice_Users_ActionsColumn"]</th>
-                </tr>
-            </thead>
-            <tbody>
-            @foreach (var user in UserItems)
-            {
-                <tr>
-                    <td>@user.Email</td>
-                    <td>@user.FullName</td>
-                    <td><span class="@(user.IsActive ? "ok" : "off")">@(user.IsActive ? Localizer["Backoffice_Users_Yes"] : Localizer["Backoffice_Users_No"])</span></td>
-                    <td>@user.CreatedAt.ToLocalTime().ToString("yyyy-MM-dd HH:mm")</td>
-                    <td>
-                        @if (user.Roles.Count == 0)
+    @if (_loading)
+    {
+        <MudProgressLinear Indeterminate="true" Color="Color.Primary" />
+    }
+    else
+    {
+        <MudPaper Elevation="0" Class="erp-card">
+            <MudTable Items="@_users" Hover="true" Striped="true" Dense="true" Class="erp-grid" Elevation="0"
+                      Filter="@FilterFunc">
+                <ToolBarContent>
+                    <MudTextField T="string" Placeholder="@Localizer["Backoffice_Common_SearchPlaceholder"]"
+                                  Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.Search"
+                                  Immediate="true" Class="erp-grid-search" ValueChanged="@((string s) => _search = s)" />
+                </ToolBarContent>
+                <HeaderContent>
+                    <MudTh>@Localizer["Backoffice_Users_EmailColumn"]</MudTh>
+                    <MudTh>@Localizer["Backoffice_Users_NameColumn"]</MudTh>
+                    <MudTh>@Localizer["Backoffice_Users_ActiveColumn"]</MudTh>
+                    <MudTh>@Localizer["Backoffice_Users_CreatedAtColumn"]</MudTh>
+                    <MudTh>@Localizer["Backoffice_Users_RolesLabel"]</MudTh>
+                    <MudTh Class="erp-numeric">@Localizer["Backoffice_Users_ActionsColumn"]</MudTh>
+                </HeaderContent>
+                <RowTemplate>
+                    <MudTd DataLabel="@Localizer["Backoffice_Users_EmailColumn"]">@context.Email</MudTd>
+                    <MudTd DataLabel="@Localizer["Backoffice_Users_NameColumn"]">@context.FullName</MudTd>
+                    <MudTd DataLabel="@Localizer["Backoffice_Users_ActiveColumn"]">
+                        <MudChip T="string" Size="Size.Small" Variant="Variant.Text"
+                                 Color="@(context.IsActive ? Color.Success : Color.Default)">
+                            @(context.IsActive ? Localizer["Backoffice_Users_Yes"] : Localizer["Backoffice_Users_No"])
+                        </MudChip>
+                    </MudTd>
+                    <MudTd DataLabel="@Localizer["Backoffice_Users_CreatedAtColumn"]">@context.CreatedAt.ToLocalTime().ToString("yyyy-MM-dd HH:mm")</MudTd>
+                    <MudTd DataLabel="@Localizer["Backoffice_Users_RolesLabel"]">
+                        @if (context.Roles.Count == 0)
                         {
-                            <span>-</span>
+                            <MudText Typo="Typo.body2" Class="mud-text-secondary">—</MudText>
                         }
                         else
                         {
-                            @foreach (var role in user.Roles)
+                            @foreach (var role in context.Roles)
                             {
-                                <span class="tag">@role</span>
+                                <MudChip T="string" Size="Size.Small" Variant="Variant.Text" Color="Color.Info">@role</MudChip>
                             }
                         }
-                    </td>
-                    <td class="actions-col">
-                        <div class="table-actions">
-                            <MudIconButton Icon="@Icons.Material.Filled.Edit" Href="@($"/Backoffice/Users/Edit?userId={Uri.EscapeDataString(user.Id)}")" Color="Color.Primary" Size="Size.Small" title="@Localizer["Backoffice_Users_EditAction"]" aria-label="@Localizer["Backoffice_Users_EditAction"]" />
-                        </div>
-                    </td>
-                </tr>
-            }
-            </tbody>
-        </table>
-    </div>
-}
+                    </MudTd>
+                    <MudTd Class="erp-numeric">
+                        <MudIconButton Icon="@Icons.Material.Filled.Edit" Size="Size.Small" Color="Color.Primary"
+                                       Href="@($"/Backoffice/Users/{Uri.EscapeDataString(context.Id)}")"
+                                       title="@Localizer["Backoffice_Users_EditAction"]" />
+                    </MudTd>
+                </RowTemplate>
+            </MudTable>
+        </MudPaper>
+    }
+</MudStack>
 
 @code {
-    [Parameter] public string? Mode { get; set; }
-    [SupplyParameterFromQuery] public string? UserId { get; set; }
+    private List<UserListItem> _users = [];
+    private bool _loading = true;
+    private string _search = string.Empty;
 
-    private bool IsEditMode => string.Equals(Mode, "Edit", StringComparison.OrdinalIgnoreCase);
-    private List<UserListItem> UserItems { get; set; } = [];
-    private EditUserInput? Form { get; set; }
-    private string? ErrorMessage { get; set; }
-    private string ActiveTab { get; set; } = "MainInfo";
-
-    protected override async Task OnParametersSetAsync()
+    protected override async Task OnInitializedAsync()
     {
-        ErrorMessage = null;
-
-        if (IsEditMode)
-        {
-            if (string.IsNullOrWhiteSpace(UserId))
-            {
-                Navigation.NavigateTo("/Backoffice/Users");
-                return;
-            }
-
-            var user = await UserService.GetUserAsync(UserId);
-            if (user is null)
-            {
-                Navigation.NavigateTo("/Backoffice/Users");
-                return;
-            }
-
-            Form = new EditUserInput
-            {
-                Email = user.Email,
-                FullName = user.FullName,
-                PreferredLanguage = user.PreferredLanguage,
-                Roles = user.Roles
-                    .Where(x => !string.IsNullOrWhiteSpace(x))
-                    .Select(x => x.Trim())
-                    .Distinct(StringComparer.OrdinalIgnoreCase)
-                    .ToList()
-            };
-
-            return;
-        }
-
-        UserItems = (await UserService.GetUsersAsync()).ToList();
+        _users = (await UserService.GetUsersAsync()).ToList();
+        _loading = false;
     }
 
-    private async Task SaveAsync(EditContext _)
-    {
-        if (string.IsNullOrWhiteSpace(UserId) || Form is null)
-        {
-            ErrorMessage = Localizer["Backoffice_Users_ErrorInvalidUser"];
-            return;
-        }
-
-        var roles = Form.Roles
-            .Where(x => !string.IsNullOrWhiteSpace(x))
-            .Select(x => x.Trim())
-            .Distinct(StringComparer.OrdinalIgnoreCase)
-            .ToList();
-
-        if (roles.Count == 0)
-        {
-            ErrorMessage = Localizer["Backoffice_Users_ErrorAtLeastOneRole"];
-            return;
-        }
-
-        await UserService.UpdateUserRolesAsync(UserId, roles);
-        await UserService.UpdateUserLanguageAsync(UserId, Form.PreferredLanguage);
-        Navigation.NavigateTo("/Backoffice/Users");
-    }
-
-    private void SelectTab(string tabKey) => ActiveTab = tabKey;
-
-    private void AddRole() => Form?.Roles.Add(string.Empty);
-
-    private void RemoveRole(int index)
-    {
-        if (Form is null)
-            return;
-
-        if (index >= 0 && index < Form.Roles.Count)
-            Form.Roles.RemoveAt(index);
-    }
-
-    private sealed class EditUserInput
-    {
-        public string Email { get; set; } = string.Empty;
-        public string FullName { get; set; } = string.Empty;
-        public string PreferredLanguage { get; set; } = "pt-PT";
-        public List<string> Roles { get; set; } = [];
-    }
+    private bool FilterFunc(UserListItem user) =>
+        string.IsNullOrWhiteSpace(_search)
+        || user.Email.Contains(_search, StringComparison.OrdinalIgnoreCase)
+        || user.FullName.Contains(_search, StringComparison.OrdinalIgnoreCase);
 }

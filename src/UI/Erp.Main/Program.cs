@@ -8,6 +8,7 @@ using Erp.Main;
 using Erp.Main.Endpoints;
 using Erp.Main.Services;
 using Erp.Common;
+using Erp.Common.Configuration;
 using Erp.Common.Localization;
 using Serilog;
 
@@ -20,6 +21,13 @@ Log.Information("Starting Erp.Main...");
 try
 {
 var builder = WebApplication.CreateBuilder(args);
+
+builder.Configuration.AddInfisicalSecrets(builder.Environment);
+
+builder.Configuration.EnsureConfigured(
+    "Services:Api",
+    "Services:IdentityApi",
+    "OidcConfiguration:Authority");
 
 builder.Host.UseSerilog((ctx, lc) => lc
     .WriteTo.Console(outputTemplate: "[{Timestamp:HH:mm:ss} {Level}] {SourceContext}{NewLine}{Message:lj}{NewLine}{Exception}{NewLine}")

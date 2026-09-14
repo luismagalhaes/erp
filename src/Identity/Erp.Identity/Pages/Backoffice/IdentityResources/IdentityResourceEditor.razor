@@ -1,0 +1,174 @@
+@page "/Backoffice/IdentityResources/new"
+@page "/Backoffice/IdentityResources/{Name}"
+@using Microsoft.AspNetCore.Components.Web
+@using Microsoft.Extensions.Localization
+@using IdentityResourcesType = Erp.Identity.Resources.IdentityResources
+@attribute [Authorize(Roles = "SuperAdmin")]
+@inject IIdentityResourceService IdentityResourceService
+@inject NavigationManager Navigation
+@inject ISnackbar Snackbar
+@inject IStringLocalizer<IdentityResourcesType> Localizer
+
+<PageTitle>@(IsNew ? Localizer["Backoffice_IdentityResourcesPage_CreateHeading"] : Localizer["Backoffice_IdentityResourcesPage_EditHeading"])</PageTitle>
+
+<MudStack Spacing="4">
+    <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center">
+        <MudText Typo="Typo.h4">@(IsNew ? Localizer["Backoffice_IdentityResourcesPage_CreateHeading"] : Localizer["Backoffice_IdentityResourcesPage_EditHeading"])</MudText>
+
+        <MudButton Variant="Variant.Text" StartIcon="@Icons.Material.Filled.ArrowBack"
+                   OnClick="@(() => Navigation.NavigateTo("/Backoffice/IdentityResources"))">
+            @Localizer["Backoffice_Common_Back"]
+        </MudButton>
+    </MudStack>
+
+    @if (!string.IsNullOrWhiteSpace(_error))
+    {
+        <MudAlert Severity="Severity.Error" Dense="true">@_error</MudAlert>
+    }
+
+    @if (_loading)
+    {
+        <MudProgressLinear Indeterminate="true" Color="Color.Primary" />
+    }
+    else
+    {
+        <MudPaper Elevation="1" Class="pa-4 erp-form">
+            <MudTabs Rounded="true" Color="Color.Primary" ApplyEffectsToContainer="true">
+                <MudTabPanel Text="@Localizer["Backoffice_ApiScopes_Tab_MainInfo"].Value">
+                    <MudGrid Class="pt-4">
+                        <MudItem xs="12" md="6">
+                            <MudTextField @bind-Value="_name" Label="@Localizer["Backoffice_Common_NameLabel"]" Variant="Variant.Outlined" Required="true" Disabled="@(!IsNew)" />
+                        </MudItem>
+                        <MudItem xs="12" md="6">
+                            <MudTextField @bind-Value="_displayName" Label="@Localizer["Backoffice_Common_DisplayNameLabel"]" Variant="Variant.Outlined" />
+                        </MudItem>
+                        <MudItem xs="12">
+                            <MudTextField @bind-Value="_description" Label="@Localizer["Backoffice_Common_DescriptionLabel"]" Variant="Variant.Outlined" Lines="2" />
+                        </MudItem>
+                        <MudItem xs="12" md="3">
+                            <MudSwitch @bind-Value="_enabled" Color="Color.Primary" Label="@Localizer["Backoffice_Common_EnabledLabel"]" />
+                        </MudItem>
+                        <MudItem xs="12" md="3">
+                            <MudSwitch @bind-Value="_required" Color="Color.Primary" Label="@Localizer["Backoffice_Common_RequiredLabel"]" />
+                        </MudItem>
+                        <MudItem xs="12" md="3">
+                            <MudSwitch @bind-Value="_emphasize" Color="Color.Primary" Label="@Localizer["Backoffice_Common_EmphasizeLabel"]" />
+                        </MudItem>
+                        <MudItem xs="12" md="3">
+                            <MudSwitch @bind-Value="_showInDiscoveryDocument" Color="Color.Primary" Label="@Localizer["Backoffice_Common_ShowInDiscoveryDocumentLabel"]" />
+                        </MudItem>
+                    </MudGrid>
+                </MudTabPanel>
+
+                <MudTabPanel Text="@Localizer["Backoffice_ApiScopes_Tab_UserClaims"].Value">
+                    <MudText Typo="Typo.body2" Class="mud-text-secondary pt-4 pb-2">@Localizer["Backoffice_ApiScopes_UserClaimsLabel"]</MudText>
+                    <StringListEditor Items="_userClaims" AddLabel="@Localizer["Backoffice_ApiScopes_AddClaimButton"].Value" />
+                </MudTabPanel>
+            </MudTabs>
+
+            <MudStack Row="true" Justify="Justify.FlexEnd" Class="mt-4">
+                <MudButton Variant="Variant.Filled" Color="Color.Primary"
+                           StartIcon="@Icons.Material.Filled.Save"
+                           Disabled="@(_saving || string.IsNullOrWhiteSpace(_name))"
+                           OnClick="SaveAsync">
+                    @Localizer["Backoffice_Common_SaveButton"]
+                </MudButton>
+            </MudStack>
+        </MudPaper>
+    }
+</MudStack>
+
+@code {
+    [Parameter] public string? Name { get; set; }
+
+    private bool IsNew => string.IsNullOrEmpty(Name);
+
+    private bool _loading;
+    private bool _saving;
+    private string? _error;
+
+    private string _name = string.Empty;
+    private string? _displayName;
+    private string? _description;
+    private bool _enabled = true;
+    private bool _required;
+    private bool _emphasize;
+    private bool _showInDiscoveryDocument = true;
+    private List<string> _userClaims = [];
+
+    protected override async Task OnParametersSetAsync()
+    {
+        _error = null;
+
+        if (IsNew)
+            return;
+
+        _loading = true;
+
+        try
+        {
+            var item = await IdentityResourceService.GetIdentityResourceAsync(Name!);
+            if (item is null)
+            {
+                _error = Localizer["Backoffice_Common_ErrorNameRequired"];
+                return;
+            }
+
+            _name = item.Name;
+            _displayName = item.DisplayName;
+            _description = item.Description;
+            _enabled = item.Enabled;
+            _required = item.Required;
+            _emphasize = item.Emphasize;
+            _showInDiscoveryDocument = item.ShowInDiscoveryDocument;
+            _userClaims = SanitizeList(item.UserClaims);
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private async Task SaveAsync()
+    {
+        _saving = true;
+        _error = null;
+
+        try
+        {
+            var request = new IdentityResourceUpsertRequest(
+                _name.Trim(),
+                (_displayName ?? string.Empty).Trim(),
+                (_description ?? string.Empty).Trim(),
+                _enabled,
+                _required,
+                _emphasize,
+                _showInDiscoveryDocument,
+                SanitizeList(_userClaims));
+
+            if (IsNew)
+            {
+                await IdentityResourceService.CreateIdentityResourceAsync(request);
+                Snackbar.Add(Localizer["Backoffice_IdentityResourcesPage_Created"].Value, Severity.Success);
+            }
+            else
+            {
+                await IdentityResourceService.UpdateIdentityResourceAsync(Name!, request);
+                Snackbar.Add(Localizer["Backoffice_IdentityResourcesPage_Updated"].Value, Severity.Success);
+            }
+
+            Navigation.NavigateTo("/Backoffice/IdentityResources");
+        }
+        finally
+        {
+            _saving = false;
+        }
+    }
+
+    private static List<string> SanitizeList(IEnumerable<string> values)
+        => values
+            .Where(x => !string.IsNullOrWhiteSpace(x))
+            .Select(x => x.Trim())
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToList();
+}

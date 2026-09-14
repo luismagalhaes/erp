@@ -1,5 +1,6 @@
 using Erp.Identity.Data;
 using Erp.Identity.Infrastructure.Storage;
+using Erp.Identity.Storage.Configuration;
 using Erp.Identity.Storage.Services;
 using Erp.Identity.Storage.Storage;
 using Duende.IdentityServer.EntityFramework.DbContexts;
@@ -13,7 +14,9 @@ namespace Erp.Identity.Storage;
 
 public static class DependencyInjection
 {
-    public static IServiceCollection AddIdentityStorage(this IServiceCollection services, IConfiguration configuration)
+    public static IServiceCollection AddIdentityStorage(
+        this IServiceCollection services,
+        IConfiguration configuration)
     {
         var connectionString = configuration.GetConnectionString("IdentityDb")
             ?? throw new InvalidOperationException("Connection string 'IdentityDb' not found.");
@@ -75,6 +78,8 @@ public static class DependencyInjection
             options => options.UseSqlServer(connectionString,
                 sql => sql.MigrationsAssembly("Erp.Identity.Storage")),
             ServiceLifetime.Scoped);
+
+        services.Configure<AdminUserSeedOptions>(configuration.GetSection(AdminUserSeedOptions.SectionName));
 
         services.AddScoped<IUserStorage, UserStorage>();
         services.AddScoped<IClientStorage, ClientStorage>();

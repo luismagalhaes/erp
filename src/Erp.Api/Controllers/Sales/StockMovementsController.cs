@@ -6,7 +6,6 @@ using Erp.Sales.Infrastructure.Contracts;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.OData.Query;
-using Microsoft.AspNetCore.OData.Query;
 
 namespace Erp.Api.Controllers.Sales;
 

@@ -187,16 +187,19 @@
     /// </summary>
     private async Task ApplyFamilyFilterAsync(FilterContext<ProductListItem> context)
     {
+        if (context.FilterDefinition is not { } filterDefinition)
+            return;
+
         if (_familyFilter.Count == 0)
         {
-            await context.Actions.ClearFilterAsync(context.FilterDefinition);
+            await context.Actions.ClearFilterAsync(filterDefinition);
             return;
         }
 
-        context.FilterDefinition.Operator = FilterOperator.String.Equal;
-        context.FilterDefinition.Value = _familyFilter.ToArray();
+        filterDefinition.Operator = FilterOperator.String.Equal;
+        filterDefinition.Value = _familyFilter.ToArray();
 
-        await context.Actions.ApplyFilterAsync(context.FilterDefinition);
+        await context.Actions.ApplyFilterAsync(filterDefinition);
     }
 
     public void Dispose() => Company.Changed -= OnCompanyChanged;

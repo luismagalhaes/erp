@@ -121,25 +121,22 @@ public class SeedDataTests
         client.AllowedCorsOrigins.Should().Contain(Constants.Clients.HttpsLocalhost7019);
     }
 
+    /// <summary>
+    /// The seed deliberately does not create a secret for this client — it only *creates*
+    /// records, it never updates one, so a secret baked in here would be the same in every
+    /// environment forever. It must be set from the backoffice after first deploy.
+    /// </summary>
     [Theory]
     [InlineData("identity-service")]
-    public void Machine_clients_use_client_credentials_with_a_secret_and_no_redirects(string clientId)
+    public void Machine_clients_use_client_credentials_and_start_with_no_seeded_secret(string clientId)
     {
         var client = SeedData.Clients.Single(x => x.ClientId == clientId);
 
         client.AllowedGrantTypes.Should().Contain("client_credentials");
-        client.ClientSecrets.Should().NotBeEmpty();
+        client.RequireClientSecret.Should().BeTrue();
+        client.ClientSecrets.Should().BeEmpty("the secret is set from the backoffice, not seeded");
         client.RedirectUris.Should().BeEmpty();
         client.AllowedScopes.Should().NotContain(Constants.Scopes.OpenId);
-    }
-
-    [Fact]
-    public void Machine_client_secrets_are_hashed_not_stored_in_clear_text()
-    {
-        var client = SeedData.Clients.Single(x => x.ClientId == Constants.Clients.IdentityServiceClientId);
-
-        client.ClientSecrets.Should().AllSatisfy(secret =>
-            secret.Value.Should().NotBe(Constants.Clients.IdentityServiceSecret));
     }
 
     [Fact]

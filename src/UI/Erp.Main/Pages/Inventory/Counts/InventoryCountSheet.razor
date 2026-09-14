@@ -213,7 +213,7 @@
                 <MudSelect T="Guid?" @bind-Value="_addWarehouseId" @bind-Value:after="StateHasChanged"
                            Label="@Localizer["InventoryCountSheet_AddWarehouseLabel"]" Variant="Variant.Outlined" Required="true"
                            Disabled="@(_count?.WarehouseId is not null)"
-                           HelperText="@(_count?.WarehouseId is not null ? Localizer["InventoryCountSheet_AddWarehouseHelperText"] : null)">
+                           HelperText="@(_count?.WarehouseId is not null ? (string?)Localizer["InventoryCountSheet_AddWarehouseHelperText"] : null)">
                     @foreach (var warehouse in _warehouses)
                     {
                         <MudSelectItem T="Guid?" Value="@warehouse.Id">

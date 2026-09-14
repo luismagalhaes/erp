@@ -21,7 +21,7 @@ public sealed class StockApiClient(HttpClient http) : ApiClientBase(http)
         Guid companyId,
         CancellationToken cancellationToken = default)
     {
-        var response = await http.GetAsync($"api/warehouses?companyId={companyId}", cancellationToken);
+        var response = await Http.GetAsync($"api/warehouses?companyId={companyId}", cancellationToken);
 
         if (!response.IsSuccessStatusCode)
             return ([], await ApiResponse.ReadErrorAsync(response, cancellationToken));
@@ -32,7 +32,7 @@ public sealed class StockApiClient(HttpClient http) : ApiClientBase(http)
 
     public async Task<Warehouse?> GetWarehouseAsync(Guid id, CancellationToken cancellationToken = default)
     {
-        var response = await http.GetAsync($"api/warehouses/{id}", cancellationToken);
+        var response = await Http.GetAsync($"api/warehouses/{id}", cancellationToken);
         return response.IsSuccessStatusCode
             ? await response.Content.ReadFromJsonAsync<Warehouse>(cancellationToken)
             : null;
@@ -42,7 +42,7 @@ public sealed class StockApiClient(HttpClient http) : ApiClientBase(http)
         CreateWarehouseRequest request,
         CancellationToken cancellationToken = default)
     {
-        var response = await http.PostAsJsonAsync("api/warehouses", request, cancellationToken);
+        var response = await Http.PostAsJsonAsync("api/warehouses", request, cancellationToken);
         return response.IsSuccessStatusCode ? null : await ApiResponse.ReadErrorAsync(response, cancellationToken);
     }
 
@@ -51,7 +51,7 @@ public sealed class StockApiClient(HttpClient http) : ApiClientBase(http)
         UpdateWarehouseRequest request,
         CancellationToken cancellationToken = default)
     {
-        var response = await http.PutAsJsonAsync($"api/warehouses/{id}", request, cancellationToken);
+        var response = await Http.PutAsJsonAsync($"api/warehouses/{id}", request, cancellationToken);
         return response.IsSuccessStatusCode ? null : await ApiResponse.ReadErrorAsync(response, cancellationToken);
     }
 
@@ -71,7 +71,7 @@ public sealed class StockApiClient(HttpClient http) : ApiClientBase(http)
         if (!string.IsNullOrWhiteSpace(productCode))
             url += $"&productCode={Uri.EscapeDataString(productCode)}";
 
-        var response = await http.GetAsync(url, cancellationToken);
+        var response = await Http.GetAsync(url, cancellationToken);
 
         if (!response.IsSuccessStatusCode)
             return ([], await ApiResponse.ReadErrorAsync(response, cancellationToken));
@@ -86,7 +86,7 @@ public sealed class StockApiClient(HttpClient http) : ApiClientBase(http)
         string productCode,
         CancellationToken cancellationToken = default)
     {
-        var response = await http.GetAsync(
+        var response = await Http.GetAsync(
             $"api/stock/ledger?companyId={companyId}&warehouseId={warehouseId}&productCode={Uri.EscapeDataString(productCode)}",
             cancellationToken);
 
@@ -107,7 +107,7 @@ public sealed class StockApiClient(HttpClient http) : ApiClientBase(http)
         if (!string.IsNullOrWhiteSpace(productCode))
             url += $"&productCode={Uri.EscapeDataString(productCode)}";
 
-        var response = await http.GetAsync(url, cancellationToken);
+        var response = await Http.GetAsync(url, cancellationToken);
 
         if (!response.IsSuccessStatusCode)
             return (null, await ApiResponse.ReadErrorAsync(response, cancellationToken));
@@ -117,7 +117,7 @@ public sealed class StockApiClient(HttpClient http) : ApiClientBase(http)
 
     public async Task<string?> AdjustAsync(AdjustStockRequest request, CancellationToken cancellationToken = default)
     {
-        var response = await http.PostAsJsonAsync("api/stock/adjustments", request, cancellationToken);
+        var response = await Http.PostAsJsonAsync("api/stock/adjustments", request, cancellationToken);
         return response.IsSuccessStatusCode ? null : await ApiResponse.ReadErrorAsync(response, cancellationToken);
     }
 
@@ -132,7 +132,7 @@ public sealed class StockApiClient(HttpClient http) : ApiClientBase(http)
         Guid companyId,
         CancellationToken cancellationToken = default)
     {
-        var response = await http.GetAsync($"api/inventory-counts?companyId={companyId}", cancellationToken);
+        var response = await Http.GetAsync($"api/inventory-counts?companyId={companyId}", cancellationToken);
 
         if (!response.IsSuccessStatusCode)
             return ([], await ApiResponse.ReadErrorAsync(response, cancellationToken));
@@ -145,7 +145,7 @@ public sealed class StockApiClient(HttpClient http) : ApiClientBase(http)
         Guid id,
         CancellationToken cancellationToken = default)
     {
-        var response = await http.GetAsync($"api/inventory-counts/{id}", cancellationToken);
+        var response = await Http.GetAsync($"api/inventory-counts/{id}", cancellationToken);
         return response.IsSuccessStatusCode
             ? await response.Content.ReadFromJsonAsync<InventoryCount>(cancellationToken)
             : null;
@@ -155,7 +155,7 @@ public sealed class StockApiClient(HttpClient http) : ApiClientBase(http)
         OpenInventoryCountRequest request,
         CancellationToken cancellationToken = default)
     {
-        var response = await http.PostAsJsonAsync("api/inventory-counts", request, cancellationToken);
+        var response = await Http.PostAsJsonAsync("api/inventory-counts", request, cancellationToken);
 
         if (!response.IsSuccessStatusCode)
             return (null, await ApiResponse.ReadErrorAsync(response, cancellationToken));
@@ -172,7 +172,7 @@ public sealed class StockApiClient(HttpClient http) : ApiClientBase(http)
         AddCountLineRequest request,
         CancellationToken cancellationToken = default)
     {
-        var response = await http.PostAsJsonAsync(
+        var response = await Http.PostAsJsonAsync(
             $"api/inventory-counts/{countId}/lines", request, cancellationToken);
 
         if (!response.IsSuccessStatusCode)
@@ -187,7 +187,7 @@ public sealed class StockApiClient(HttpClient http) : ApiClientBase(http)
         IReadOnlyList<CountedLineRequest> lines,
         CancellationToken cancellationToken = default)
     {
-        var response = await http.PutAsJsonAsync(
+        var response = await Http.PutAsJsonAsync(
             $"api/inventory-counts/{countId}/lines", lines, cancellationToken);
 
         if (!response.IsSuccessStatusCode)
@@ -200,7 +200,7 @@ public sealed class StockApiClient(HttpClient http) : ApiClientBase(http)
         Guid countId,
         CancellationToken cancellationToken = default)
     {
-        var response = await http.PostAsync(
+        var response = await Http.PostAsync(
             $"api/inventory-counts/{countId}/close", content: null, cancellationToken);
 
         if (!response.IsSuccessStatusCode)
@@ -222,7 +222,7 @@ public sealed class StockApiClient(HttpClient http) : ApiClientBase(http)
         bool valued = true,
         CancellationToken cancellationToken = default)
     {
-        var response = await http.GetAsync(
+        var response = await Http.GetAsync(
             $"api/inventory-file/summary?companyId={companyId}&fiscalYear={fiscalYear}&endDate={endDate:yyyy-MM-dd}&valued={valued}",
             cancellationToken);
 
@@ -239,7 +239,7 @@ public sealed class StockApiClient(HttpClient http) : ApiClientBase(http)
         bool valued = true,
         CancellationToken cancellationToken = default)
     {
-        var response = await http.GetAsync(
+        var response = await Http.GetAsync(
             $"api/inventory-file?companyId={companyId}&fiscalYear={fiscalYear}&endDate={endDate:yyyy-MM-dd}&valued={valued}",
             cancellationToken);
 

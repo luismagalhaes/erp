@@ -1,0 +1,39 @@
+@using MudBlazor
+
+@* Standard header for every page: title, supporting text and right aligned actions. Same shape
+   as Erp.Main's Components/Common/PageHeader.razor, duplicated here since Erp.Identity does not
+   reference Erp.Main. *@
+<MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center" Class="mb-1 gap-4">
+    <MudStack Spacing="0">
+        @if (Breadcrumbs is not null && Breadcrumbs.Count > 0)
+        {
+            @* On detail pages the breadcrumb already states the page, so the title is redundant. *@
+            <MudBreadcrumbs Items="Breadcrumbs" Class="erp-breadcrumbs pa-0" Separator="/" />
+        }
+        else
+        {
+            <MudText Typo="Typo.h4">@Title</MudText>
+        }
+        @if (!string.IsNullOrWhiteSpace(Description))
+        {
+            <MudText Typo="Typo.body2" Class="mud-text-secondary">@Description</MudText>
+        }
+    </MudStack>
+
+    @if (Actions is not null)
+    {
+        <MudStack Row="true" Spacing="2" AlignItems="AlignItems.Center">
+            @Actions
+        </MudStack>
+    }
+</MudStack>
+
+@code {
+    [Parameter, EditorRequired] public string Title { get; set; } = string.Empty;
+
+    [Parameter] public string? Description { get; set; }
+
+    [Parameter] public List<BreadcrumbItem>? Breadcrumbs { get; set; }
+
+    [Parameter] public RenderFragment? Actions { get; set; }
+}

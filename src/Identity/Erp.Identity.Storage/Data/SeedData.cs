@@ -3,9 +3,11 @@ using Duende.IdentityServer.EntityFramework.Mappers;
 using Duende.IdentityServer.Models;
 using Erp.Identity.Common.Constants;
 using Erp.Identity.Data;
+using Erp.Identity.Storage.Configuration;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Options;
 
 namespace Erp.Identity.Data
 {
@@ -64,20 +66,25 @@ public static class SeedData
                 await roleManager.CreateAsync(new IdentityRole(role));
         }
 
-        const string adminEmail = Constants.AdminUser.Email;
-        if (await userManager.FindByEmailAsync(adminEmail) is null)
+        var adminUser = scope.ServiceProvider.GetRequiredService<IOptions<AdminUserSeedOptions>>().Value;
+        if (string.IsNullOrWhiteSpace(adminUser.Email) || string.IsNullOrWhiteSpace(adminUser.Password))
+            throw new InvalidOperationException(
+                $"{AdminUserSeedOptions.SectionName}:Email and {AdminUserSeedOptions.SectionName}:Password are " +
+                "not configured; cannot seed the SuperAdmin account.");
+
+        if (await userManager.FindByEmailAsync(adminUser.Email) is null)
         {
             var admin = new ApplicationUser
             {
-                UserName = adminEmail,
-                Email = adminEmail,
+                UserName = adminUser.Email,
+                Email = adminUser.Email,
                 EmailConfirmed = true,
-                FirstName = Constants.AdminUser.FirstName,
-                LastName = Constants.AdminUser.LastName,
+                FirstName = adminUser.FirstName,
+                LastName = adminUser.LastName,
                 IsActive = true
             };
 
-            var result = await userManager.CreateAsync(admin, Constants.AdminUser.Password);
+            var result = await userManager.CreateAsync(admin, adminUser.Password);
             if (result.Succeeded)
                 await userManager.AddToRoleAsync(admin, Constants.Roles.SuperAdmin);
         }
@@ -169,7 +176,11 @@ public static class SeedData
             ClientId = Constants.Clients.IdentityServiceClientId,
             ClientName = Constants.Clients.IdentityServiceClientName,
             AllowedGrantTypes = GrantTypes.ClientCredentials,
-            ClientSecrets = { new Secret(Constants.Clients.IdentityServiceSecret.Sha256()) },
+            // No secret is seeded here on purpose: the seed only creates, it never updates an
+            // existing client, so a value baked in here would either be the same in every
+            // environment or, once seeded, impossible to rotate by changing config. Set the
+            // secret for this client from the backoffice after first deploy, one per environment.
+            RequireClientSecret = true,
             AllowedScopes = { Constants.Scopes.ErpNotificationSend },
             AccessTokenLifetime = 3600
         },

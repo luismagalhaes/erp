@@ -1,3 +1,4 @@
+using Erp.Common.Configuration;
 using Erp.Notification.Application;
 using Erp.Notification.Storage;
 using Erp.Notification.Worker;
@@ -5,6 +6,10 @@ using Erp.Storage;
 using Serilog;
 
 var builder = Host.CreateApplicationBuilder(args);
+
+builder.Configuration.AddInfisicalSecrets(builder.Environment);
+
+builder.Configuration.EnsureConfigured("ConnectionStrings:ErpDb");
 
 builder.Services.AddSerilog((services, lc) => lc
     .WriteTo.Console()

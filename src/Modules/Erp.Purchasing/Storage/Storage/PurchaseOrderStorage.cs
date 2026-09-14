@@ -44,12 +44,17 @@ public sealed class PurchaseOrderStorage(AppDbContext dbContext) : IPurchaseOrde
             {
                 Id = x.Id,
                 Number = x.Number,
+                // A switch expression can't be used here: this lambda compiles to an expression
+                // tree for EF Core to translate to SQL, and the C# compiler refuses a switch
+                // expression inside one (CS8514). The nested ternary is EF-translatable, so it stays.
+#pragma warning disable S3358
                 Status = x.Status == PurchaseOrderStatus.Draft ? "Draft"
                     : x.Status == PurchaseOrderStatus.Placed ? "Placed"
                     : x.Status == PurchaseOrderStatus.PartiallyReceived ? "PartiallyReceived"
                     : x.Status == PurchaseOrderStatus.Received ? "Received"
                     : x.Status == PurchaseOrderStatus.Closed ? "Closed"
                     : "Cancelled",
+#pragma warning restore S3358
                 OrderDate = x.OrderDate,
                 ExpectedDate = x.ExpectedDate,
                 SupplierName = x.Supplier.Name,

@@ -1,0 +1,120 @@
+@page "/Backoffice/Roles/new"
+@page "/Backoffice/Roles/{Name}"
+@using Microsoft.AspNetCore.Components.Web
+@using Microsoft.Extensions.Localization
+@using IdentityResourcesType = Erp.Identity.Resources.IdentityResources
+@attribute [Authorize(Roles = "SuperAdmin")]
+@inject IRoleService RoleService
+@inject NavigationManager Navigation
+@inject ISnackbar Snackbar
+@inject IStringLocalizer<IdentityResourcesType> Localizer
+
+<PageTitle>@(IsNew ? Localizer["Backoffice_Roles_CreateHeading"] : Localizer["Backoffice_Roles_EditHeading"])</PageTitle>
+
+<MudStack Spacing="4">
+    <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center">
+        <MudText Typo="Typo.h4">@(IsNew ? Localizer["Backoffice_Roles_CreateHeading"] : Localizer["Backoffice_Roles_EditHeading"])</MudText>
+
+        <MudButton Variant="Variant.Text" StartIcon="@Icons.Material.Filled.ArrowBack"
+                   OnClick="@(() => Navigation.NavigateTo("/Backoffice/Roles"))">
+            @Localizer["Backoffice_Common_Back"]
+        </MudButton>
+    </MudStack>
+
+    @if (!string.IsNullOrWhiteSpace(_error))
+    {
+        <MudAlert Severity="Severity.Error" Dense="true">@_error</MudAlert>
+    }
+
+    @if (_loading)
+    {
+        <MudProgressLinear Indeterminate="true" Color="Color.Primary" />
+    }
+    else
+    {
+        <MudPaper Elevation="1" Class="pa-4 erp-form">
+            <MudGrid>
+                <MudItem xs="12" md="6">
+                    <MudTextField @bind-Value="_name" Label="@Localizer["Backoffice_Common_NameLabel"]" Variant="Variant.Outlined" Required="true" />
+                </MudItem>
+            </MudGrid>
+
+            <MudStack Row="true" Justify="Justify.FlexEnd" Class="mt-4">
+                <MudButton Variant="Variant.Filled" Color="Color.Primary"
+                           StartIcon="@Icons.Material.Filled.Save"
+                           Disabled="@(_saving || string.IsNullOrWhiteSpace(_name))"
+                           OnClick="SaveAsync">
+                    @Localizer["Backoffice_Common_SaveButton"]
+                </MudButton>
+            </MudStack>
+        </MudPaper>
+    }
+</MudStack>
+
+@code {
+    [Parameter] public string? Name { get; set; }
+
+    private bool IsNew => string.IsNullOrEmpty(Name);
+
+    private bool _loading;
+    private bool _saving;
+    private string? _error;
+    private string _name = string.Empty;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        _error = null;
+
+        if (IsNew)
+            return;
+
+        _loading = true;
+
+        try
+        {
+            var role = await RoleService.GetRoleAsync(Uri.UnescapeDataString(Name!));
+
+            if (role is null)
+            {
+                _error = Localizer["Backoffice_Roles_NotFound"];
+                return;
+            }
+
+            _name = role.Name;
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private async Task SaveAsync()
+    {
+        _saving = true;
+        _error = null;
+
+        try
+        {
+            if (IsNew)
+            {
+                await RoleService.CreateRoleAsync(new RoleUpsertRequest(_name.Trim()));
+                Snackbar.Add(Localizer["Backoffice_Roles_Created"].Value, Severity.Success);
+            }
+            else
+            {
+                await RoleService.UpdateRoleAsync(Uri.UnescapeDataString(Name!), new RoleUpsertRequest(_name.Trim()));
+                Snackbar.Add(Localizer["Backoffice_Roles_Updated"].Value, Severity.Success);
+            }
+
+            Navigation.NavigateTo("/Backoffice/Roles");
+        }
+        catch (Exception ex)
+        {
+            _error = ex.Message;
+        }
+        finally
+        {
+            _saving = false;
+        }
+    }
+}

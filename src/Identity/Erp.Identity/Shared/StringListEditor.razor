@@ -1,0 +1,37 @@
+@using MudBlazor
+
+@* A list of free-text values the admin can add to or remove from — redirect URIs, scopes, grant
+   types. Used wherever the Backoffice edits one of Duende's string collections, so every tab that
+   edits one of these looks and behaves the same. *@
+<MudStack Spacing="2">
+    @for (var i = 0; i < Items.Count; i++)
+    {
+        var index = i;
+        <MudStack Row="true" Spacing="2" AlignItems="AlignItems.Center">
+            <MudTextField T="string" Value="@Items[index]" ValueChanged="@(value => OnItemChanged(index, value))"
+                          Variant="Variant.Outlined" Margin="Margin.Dense" Class="flex-grow-1" />
+            <MudIconButton Icon="@Icons.Material.Filled.Delete" Color="Color.Error" Size="Size.Small"
+                           OnClick="@(() => RemoveAt(index))" />
+        </MudStack>
+    }
+    <MudButton Variant="Variant.Text" Color="Color.Primary" StartIcon="@Icons.Material.Filled.Add"
+               Size="Size.Small" OnClick="Add">
+        @AddLabel
+    </MudButton>
+</MudStack>
+
+@code {
+    [Parameter, EditorRequired] public List<string> Items { get; set; } = [];
+
+    [Parameter, EditorRequired] public string AddLabel { get; set; } = string.Empty;
+
+    private void OnItemChanged(int index, string value) => Items[index] = value;
+
+    private void Add() => Items.Add(string.Empty);
+
+    private void RemoveAt(int index)
+    {
+        if (index >= 0 && index < Items.Count)
+            Items.RemoveAt(index);
+    }
+}

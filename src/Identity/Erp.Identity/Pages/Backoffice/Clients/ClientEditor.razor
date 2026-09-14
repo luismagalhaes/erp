@@ -1,0 +1,272 @@
+@page "/Backoffice/Clients/{ClientId}"
+@using Microsoft.AspNetCore.Components.Web
+@using Microsoft.Extensions.Localization
+@using IdentityResourcesType = Erp.Identity.Resources.IdentityResources
+@attribute [Authorize(Roles = "SuperAdmin")]
+@inject IClientService ClientService
+@inject NavigationManager Navigation
+@inject ISnackbar Snackbar
+@inject IStringLocalizer<IdentityResourcesType> Localizer
+
+<PageTitle>@Localizer["Backoffice_Clients_EditHeading"]</PageTitle>
+
+<MudStack Spacing="4">
+    <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center">
+        <MudText Typo="Typo.h4">@Localizer["Backoffice_Clients_EditHeading"]</MudText>
+
+        <MudButton Variant="Variant.Text" StartIcon="@Icons.Material.Filled.ArrowBack"
+                   OnClick="@(() => Navigation.NavigateTo("/Backoffice/Clients"))">
+            @Localizer["Backoffice_Common_Back"]
+        </MudButton>
+    </MudStack>
+
+    @if (!string.IsNullOrWhiteSpace(_error))
+    {
+        <MudAlert Severity="Severity.Error" Dense="true">@_error</MudAlert>
+    }
+
+    @if (_loading || _form is null)
+    {
+        <MudProgressLinear Indeterminate="true" Color="Color.Primary" />
+    }
+    else
+    {
+        <MudPaper Elevation="1" Class="pa-4 erp-form">
+            <MudTabs Rounded="true" Color="Color.Primary" ApplyEffectsToContainer="true">
+                <MudTabPanel Text="@Localizer["Backoffice_Clients_Tab_MainInfo"].Value">
+                    <MudGrid Class="pt-4">
+                        <MudItem xs="12" md="6">
+                            <MudTextField Value="@_form.ClientId" Label="@Localizer["Backoffice_Clients_ClientIdLabel"]" Variant="Variant.Outlined" ReadOnly="true" />
+                        </MudItem>
+                        <MudItem xs="12" md="6">
+                            <MudTextField @bind-Value="_form.ClientName" Label="@Localizer["Backoffice_Clients_ClientNameLabel"]" Variant="Variant.Outlined" />
+                        </MudItem>
+                        <MudItem xs="12" md="4">
+                            <MudNumericField @bind-Value="_form.AccessTokenLifetime" Label="@Localizer["Backoffice_Clients_AccessTokenLifetimeLabel"]" Variant="Variant.Outlined" />
+                        </MudItem>
+                        <MudItem xs="12" md="4">
+                            <MudNumericField @bind-Value="_form.SlidingRefreshTokenLifetime" Label="@Localizer["Backoffice_Clients_SlidingRefreshTokenLifetimeLabel"]" Variant="Variant.Outlined" />
+                        </MudItem>
+                        <MudItem xs="12" md="4">
+                            <MudNumericField @bind-Value="_form.AbsoluteRefreshTokenLifetime" Label="@Localizer["Backoffice_Clients_AbsoluteRefreshTokenLifetimeLabel"]" Variant="Variant.Outlined" />
+                        </MudItem>
+                        <MudItem xs="12" md="6">
+                            <MudTextField @bind-Value="_form.RefreshTokenUsage" Label="@Localizer["Backoffice_Clients_RefreshTokenUsageLabel"]" Variant="Variant.Outlined" />
+                        </MudItem>
+                        <MudItem xs="12" md="6">
+                            <MudTextField @bind-Value="_form.RefreshTokenExpiration" Label="@Localizer["Backoffice_Clients_RefreshTokenExpirationLabel"]" Variant="Variant.Outlined" />
+                        </MudItem>
+                        <MudItem xs="12" md="3">
+                            <MudSwitch @bind-Value="_form.Enabled" Color="Color.Primary" Label="@Localizer["Backoffice_Common_EnabledLabel"]" />
+                        </MudItem>
+                        <MudItem xs="12" md="3">
+                            <MudSwitch @bind-Value="_form.RequirePkce" Color="Color.Primary" Label="@Localizer["Backoffice_Clients_RequirePkceLabel"]" />
+                        </MudItem>
+                        <MudItem xs="12" md="3">
+                            <MudSwitch @bind-Value="_form.RequireClientSecret" Color="Color.Primary" Label="@Localizer["Backoffice_Clients_RequireClientSecretLabel"]" />
+                        </MudItem>
+                        <MudItem xs="12" md="3">
+                            <MudSwitch @bind-Value="_form.AllowOfflineAccess" Color="Color.Primary" Label="@Localizer["Backoffice_Clients_AllowOfflineAccessLabel"]" />
+                        </MudItem>
+                    </MudGrid>
+                </MudTabPanel>
+
+                <MudTabPanel Text="@Localizer["Backoffice_Clients_Tab_AllowedGrantTypes"].Value">
+                    <MudText Typo="Typo.body2" Class="mud-text-secondary pt-4 pb-2">@Localizer["Backoffice_Clients_AllowedGrantTypesLabel"]</MudText>
+                    <StringListEditor Items="_form.AllowedGrantTypes" AddLabel="@Localizer["Backoffice_Clients_AddGrantTypeButton"].Value" />
+                </MudTabPanel>
+
+                <MudTabPanel Text="@Localizer["Backoffice_Clients_Tab_RedirectUris"].Value">
+                    <MudText Typo="Typo.body2" Class="mud-text-secondary pt-4 pb-2">@Localizer["Backoffice_Clients_RedirectUrisLabel"]</MudText>
+                    <StringListEditor Items="_form.RedirectUris" AddLabel="@Localizer["Backoffice_Clients_AddRedirectUriButton"].Value" />
+                </MudTabPanel>
+
+                <MudTabPanel Text="@Localizer["Backoffice_Clients_Tab_PostLogoutRedirectUris"].Value">
+                    <MudText Typo="Typo.body2" Class="mud-text-secondary pt-4 pb-2">@Localizer["Backoffice_Clients_PostLogoutRedirectUrisLabel"]</MudText>
+                    <StringListEditor Items="_form.PostLogoutRedirectUris" AddLabel="@Localizer["Backoffice_Clients_AddPostLogoutRedirectUriButton"].Value" />
+                </MudTabPanel>
+
+                <MudTabPanel Text="@Localizer["Backoffice_Clients_Tab_AllowedCorsOrigins"].Value">
+                    <MudText Typo="Typo.body2" Class="mud-text-secondary pt-4 pb-2">@Localizer["Backoffice_Clients_AllowedCorsOriginsLabel"]</MudText>
+                    <StringListEditor Items="_form.AllowedCorsOrigins" AddLabel="@Localizer["Backoffice_Clients_AddOriginButton"].Value" />
+                </MudTabPanel>
+
+                <MudTabPanel Text="@Localizer["Backoffice_Clients_Tab_AllowedScopes"].Value">
+                    <MudText Typo="Typo.body2" Class="mud-text-secondary pt-4 pb-2">@Localizer["Backoffice_Clients_AllowedScopesLabel"]</MudText>
+                    <StringListEditor Items="_form.AllowedScopes" AddLabel="@Localizer["Backoffice_Clients_AddScopeButton"].Value" />
+                </MudTabPanel>
+
+                <MudTabPanel Text="@Localizer["Backoffice_Clients_Tab_ClientSecrets"].Value">
+                    <MudStack Spacing="2" Class="pt-4">
+                        @for (var i = 0; i < _form.ClientSecrets.Count; i++)
+                        {
+                            var index = i;
+                            var secret = _form.ClientSecrets[index];
+                            <MudStack Row="true" Spacing="2" AlignItems="AlignItems.Center">
+                                <MudTextField T="string" Value="@secret.Value" ValueChanged="@(v => secret.Value = v)"
+                                              Label="@Localizer["Backoffice_Clients_ValueColumn"].Value" Variant="Variant.Outlined" Margin="Margin.Dense" Class="flex-grow-1" />
+                                <MudTextField T="string" Value="@secret.Description" ValueChanged="@(v => secret.Description = v)"
+                                              Label="@Localizer["Backoffice_Common_DescriptionLabel"].Value" Variant="Variant.Outlined" Margin="Margin.Dense" Class="flex-grow-1" />
+                                <MudCheckBox T="bool" Value="@secret.IsHashed" ValueChanged="@(v => secret.IsHashed = v)"
+                                             Label="@Localizer["Backoffice_Clients_IsHashedColumn"].Value" Color="Color.Primary" />
+                                <MudIconButton Icon="@Icons.Material.Filled.Delete" Color="Color.Error" Size="Size.Small"
+                                               OnClick="@(() => _form.ClientSecrets.RemoveAt(index))" />
+                            </MudStack>
+                        }
+                        <MudButton Variant="Variant.Text" Color="Color.Primary" StartIcon="@Icons.Material.Filled.Add"
+                                   Size="Size.Small" OnClick="@(() => _form.ClientSecrets.Add(new ClientSecretInput()))">
+                            @Localizer["Backoffice_Clients_AddSecretButton"]
+                        </MudButton>
+                    </MudStack>
+                </MudTabPanel>
+            </MudTabs>
+
+            <MudStack Row="true" Justify="Justify.FlexEnd" Class="mt-4">
+                <MudButton Variant="Variant.Filled" Color="Color.Primary"
+                           StartIcon="@Icons.Material.Filled.Save"
+                           Disabled="@_saving"
+                           OnClick="SaveAsync">
+                    @Localizer["Backoffice_Common_SaveButton"]
+                </MudButton>
+            </MudStack>
+        </MudPaper>
+    }
+</MudStack>
+
+@code {
+    [Parameter] public string ClientId { get; set; } = string.Empty;
+
+    private bool _loading = true;
+    private bool _saving;
+    private string? _error;
+    private ClientInput? _form;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        _loading = true;
+        _error = null;
+
+        var client = await ClientService.GetClientAsync(ClientId);
+        if (client is null)
+        {
+            _error = Localizer["Backoffice_Clients_ErrorInvalidClient"];
+            _loading = false;
+            return;
+        }
+
+        _form = ClientInput.From(client);
+        _loading = false;
+    }
+
+    private async Task SaveAsync()
+    {
+        if (_form is null)
+            return;
+
+        _saving = true;
+        _error = null;
+
+        try
+        {
+            var request = new ClientUpsertRequest(
+                ClientId,
+                (_form.ClientName ?? string.Empty).Trim(),
+                _form.Enabled,
+                _form.RequirePkce,
+                _form.RequireClientSecret,
+                _form.AllowOfflineAccess,
+                _form.AccessTokenLifetime,
+                _form.SlidingRefreshTokenLifetime,
+                _form.AbsoluteRefreshTokenLifetime,
+                _form.RefreshTokenUsage,
+                _form.RefreshTokenExpiration,
+                SanitizeList(_form.AllowedGrantTypes),
+                SanitizeList(_form.RedirectUris),
+                SanitizeList(_form.PostLogoutRedirectUris),
+                SanitizeList(_form.AllowedCorsOrigins),
+                SanitizeList(_form.AllowedScopes),
+                BuildSecrets(_form.ClientSecrets));
+
+            await ClientService.UpdateClientAsync(ClientId, request);
+
+            Snackbar.Add(Localizer["Backoffice_Clients_Updated"].Value, Severity.Success);
+            Navigation.NavigateTo("/Backoffice/Clients");
+        }
+        finally
+        {
+            _saving = false;
+        }
+    }
+
+    private static List<string> SanitizeList(IEnumerable<string> values)
+        => values
+            .Where(x => !string.IsNullOrWhiteSpace(x))
+            .Select(x => x.Trim())
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToList();
+
+    private static List<ClientSecretItem> BuildSecrets(IEnumerable<ClientSecretInput> secrets)
+        => secrets
+            .Where(x => !string.IsNullOrWhiteSpace(x.Value))
+            .Select(x => new ClientSecretItem(
+                x.Value.Trim(),
+                string.IsNullOrWhiteSpace(x.Description) ? null : x.Description.Trim(),
+                x.IsHashed))
+            .ToList();
+
+    private sealed class ClientInput
+    {
+        public string ClientId { get; set; } = string.Empty;
+        public string? ClientName { get; set; }
+        public bool Enabled { get; set; }
+        public bool RequirePkce { get; set; }
+        public bool RequireClientSecret { get; set; }
+        public bool AllowOfflineAccess { get; set; }
+        public int AccessTokenLifetime { get; set; }
+        public int SlidingRefreshTokenLifetime { get; set; }
+        public int AbsoluteRefreshTokenLifetime { get; set; }
+        public string RefreshTokenUsage { get; set; } = "ReUse";
+        public string RefreshTokenExpiration { get; set; } = "Sliding";
+        public List<string> AllowedGrantTypes { get; set; } = [];
+        public List<string> RedirectUris { get; set; } = [];
+        public List<string> PostLogoutRedirectUris { get; set; } = [];
+        public List<string> AllowedCorsOrigins { get; set; } = [];
+        public List<string> AllowedScopes { get; set; } = [];
+        public List<ClientSecretInput> ClientSecrets { get; set; } = [];
+
+        public static ClientInput From(ClientEditItem client) => new()
+        {
+            ClientId = client.ClientId,
+            ClientName = client.ClientName,
+            Enabled = client.Enabled,
+            RequirePkce = client.RequirePkce,
+            RequireClientSecret = client.RequireClientSecret,
+            AllowOfflineAccess = client.AllowOfflineAccess,
+            AccessTokenLifetime = client.AccessTokenLifetime,
+            SlidingRefreshTokenLifetime = client.SlidingRefreshTokenLifetime,
+            AbsoluteRefreshTokenLifetime = client.AbsoluteRefreshTokenLifetime,
+            RefreshTokenUsage = string.IsNullOrWhiteSpace(client.RefreshTokenUsage) ? "ReUse" : client.RefreshTokenUsage,
+            RefreshTokenExpiration = string.IsNullOrWhiteSpace(client.RefreshTokenExpiration) ? "Sliding" : client.RefreshTokenExpiration,
+            AllowedGrantTypes = (client.AllowedGrantTypes ?? []).ToList(),
+            RedirectUris = (client.RedirectUris ?? []).ToList(),
+            PostLogoutRedirectUris = (client.PostLogoutRedirectUris ?? []).ToList(),
+            AllowedCorsOrigins = (client.AllowedCorsOrigins ?? []).ToList(),
+            AllowedScopes = (client.AllowedScopes ?? []).ToList(),
+            ClientSecrets = (client.ClientSecrets ?? [])
+                .Select(x => new ClientSecretInput
+                {
+                    Value = x.Value,
+                    Description = x.Description,
+                    IsHashed = x.IsHashed
+                })
+                .ToList()
+        };
+    }
+
+    private sealed class ClientSecretInput
+    {
+        public string Value { get; set; } = string.Empty;
+        public string? Description { get; set; }
+        public bool IsHashed { get; set; }
+    }
+}

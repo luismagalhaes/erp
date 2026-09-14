@@ -1,0 +1,141 @@
+@page "/Backoffice/Users/{Id}"
+@using Microsoft.AspNetCore.Components.Web
+@using Microsoft.Extensions.Localization
+@using IdentityResourcesType = Erp.Identity.Resources.IdentityResources
+@attribute [Authorize(Roles = "SuperAdmin")]
+@inject IUserService UserService
+@inject IRoleService RoleService
+@inject NavigationManager Navigation
+@inject ISnackbar Snackbar
+@inject IStringLocalizer<IdentityResourcesType> Localizer
+
+<PageTitle>@Localizer["Backoffice_Users_EditHeading"]</PageTitle>
+
+<MudStack Spacing="4">
+    <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center">
+        <MudText Typo="Typo.h4">@Localizer["Backoffice_Users_EditHeading"]</MudText>
+
+        <MudButton Variant="Variant.Text" StartIcon="@Icons.Material.Filled.ArrowBack"
+                   OnClick="@(() => Navigation.NavigateTo("/Backoffice/Users"))">
+            @Localizer["Backoffice_Common_Back"]
+        </MudButton>
+    </MudStack>
+
+    @if (!string.IsNullOrWhiteSpace(_error))
+    {
+        <MudAlert Severity="Severity.Error" Dense="true">@_error</MudAlert>
+    }
+
+    @if (_loading)
+    {
+        <MudProgressLinear Indeterminate="true" Color="Color.Primary" />
+    }
+    else
+    {
+        <MudPaper Elevation="1" Class="pa-4 erp-form">
+            <MudTabs Rounded="true" Color="Color.Primary" ApplyEffectsToContainer="true">
+                <MudTabPanel Text="@Localizer["Backoffice_Users_Tab_MainInfo"].Value">
+                    <MudGrid Class="pt-4">
+                        <MudItem xs="12" md="6">
+                            <MudTextField Value="@_email" Label="@Localizer["Backoffice_Users_EmailLabel"]" Variant="Variant.Outlined" ReadOnly="true" />
+                        </MudItem>
+                        <MudItem xs="12" md="6">
+                            <MudTextField Value="@_fullName" Label="@Localizer["Backoffice_Users_NameLabel"]" Variant="Variant.Outlined" ReadOnly="true" />
+                        </MudItem>
+                        <MudItem xs="12" md="6">
+                            <MudSelect T="string" @bind-Value="_preferredLanguage" Label="@Localizer["Backoffice_Users_LanguageLabel"]" Variant="Variant.Outlined">
+                                <MudSelectItem T="string" Value="@("pt-PT")">Português</MudSelectItem>
+                                <MudSelectItem T="string" Value="@("en-US")">English</MudSelectItem>
+                            </MudSelect>
+                        </MudItem>
+                    </MudGrid>
+                </MudTabPanel>
+                <MudTabPanel Text="@Localizer["Backoffice_Users_Tab_Roles"].Value">
+                    <MudSelect T="string" Label="@Localizer["Backoffice_Users_RolesLabel"]" Variant="Variant.Outlined"
+                               MultiSelection="true" SelectedValues="_selectedRoles" SelectedValuesChanged="OnRolesChanged"
+                               Class="pt-4">
+                        @foreach (var role in _availableRoles)
+                        {
+                            <MudSelectItem T="string" Value="@role">@role</MudSelectItem>
+                        }
+                    </MudSelect>
+                </MudTabPanel>
+            </MudTabs>
+
+            <MudStack Row="true" Justify="Justify.FlexEnd" Class="mt-4">
+                <MudButton Variant="Variant.Filled" Color="Color.Primary"
+                           StartIcon="@Icons.Material.Filled.Save"
+                           Disabled="@(_saving || !_selectedRoles.Any())"
+                           OnClick="SaveAsync">
+                    @Localizer["Backoffice_Users_SaveButton"]
+                </MudButton>
+            </MudStack>
+        </MudPaper>
+    }
+</MudStack>
+
+@code {
+    [Parameter] public string Id { get; set; } = string.Empty;
+
+    private bool _loading = true;
+    private bool _saving;
+    private string? _error;
+
+    private string _email = string.Empty;
+    private string _fullName = string.Empty;
+    private string _preferredLanguage = "pt-PT";
+    private IEnumerable<string> _selectedRoles = [];
+    private List<string> _availableRoles = [];
+
+    protected override async Task OnParametersSetAsync()
+    {
+        _loading = true;
+        _error = null;
+
+        _availableRoles = (await RoleService.GetRolesAsync()).Select(r => r.Name).ToList();
+
+        var user = await UserService.GetUserAsync(Id);
+        if (user is null)
+        {
+            _error = Localizer["Backoffice_Users_ErrorInvalidUser"];
+            _loading = false;
+            return;
+        }
+
+        _email = user.Email;
+        _fullName = user.FullName;
+        _preferredLanguage = user.PreferredLanguage;
+        _selectedRoles = user.Roles.Distinct(StringComparer.OrdinalIgnoreCase).ToList();
+
+        _loading = false;
+    }
+
+    private void OnRolesChanged(IEnumerable<string> roles) => _selectedRoles = roles.ToList();
+
+    private async Task SaveAsync()
+    {
+        var roles = _selectedRoles.ToList();
+
+        if (roles.Count == 0)
+        {
+            _error = Localizer["Backoffice_Users_ErrorAtLeastOneRole"];
+            return;
+        }
+
+        _saving = true;
+        _error = null;
+
+        try
+        {
+            await UserService.UpdateUserRolesAsync(Id, roles);
+            await UserService.UpdateUserLanguageAsync(Id, _preferredLanguage);
+
+            Snackbar.Add(Localizer["Backoffice_Users_Updated"].Value, Severity.Success);
+            Navigation.NavigateTo("/Backoffice/Users");
+        }
+        finally
+        {
+            _saving = false;
+        }
+    }
+}

@@ -1,5 +1,6 @@
 using Erp.Api.Services;
 using Erp.Common;
+using Erp.Common.Configuration;
 using Erp.Storage;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.OData;
@@ -13,6 +14,13 @@ Log.Information("Starting Erp.Api...");
 try
 {
     var builder = WebApplication.CreateBuilder(args);
+
+    builder.Configuration.AddInfisicalSecrets(builder.Environment);
+
+    var requiredSettings = new List<string> { "ConnectionStrings:ErpDb", "IdentityServer:Authority" };
+    if (!builder.Environment.IsDevelopment())
+        requiredSettings.Add("Fiscal:PrivateKeyPem");
+    builder.Configuration.EnsureConfigured([.. requiredSettings]);
 
     builder.Host.UseSerilog((ctx, lc) => lc
         .WriteTo.Console()

@@ -42,7 +42,7 @@
                 <MudItem xs="12" md="3">
                     <MudTextField @bind-Value="_code" Label="@Localizer["Common_CodeColumn"]" Variant="Variant.Outlined"
                                   Required="true" Disabled="@(!IsNew)"
-                                  HelperText="@(IsNew ? null : Localizer["BrandEditor_CodeHelperText"])" />
+                                  HelperText="@(IsNew ? null : (string?)Localizer["BrandEditor_CodeHelperText"])" />
                 </MudItem>
                 <MudItem xs="12" md="9">
                     <MudTextField @bind-Value="_name" Label="@Localizer["Common_NameColumn"]" Variant="Variant.Outlined" Required="true" />

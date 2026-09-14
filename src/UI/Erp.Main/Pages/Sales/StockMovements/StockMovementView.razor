@@ -190,7 +190,7 @@
                 else
                 {
                     <MudAlert Severity="Severity.Success" Dense="true">
-                        @L["StockMovementView_CommunicatedNotice", _movement.CommunicatedAtUtc?.ToString("yyyy-MM-dd HH:mm")]
+                        @L["StockMovementView_CommunicatedNotice", _movement.CommunicatedAtUtc?.ToString("yyyy-MM-dd HH:mm") ?? string.Empty]
                         <strong>@_movement.AtDocCodeId</strong>.
                     </MudAlert>
                 }

@@ -128,6 +128,9 @@
   <data name="NavMenu_IdentityProviders" xml:space="preserve"><value>Identity Providers</value></data>
 
   <data name="Layout_AppTitle" xml:space="preserve"><value>ERP - ID</value></data>
+  <data name="Layout_LightMode" xml:space="preserve"><value>Light mode</value></data>
+  <data name="Layout_DarkMode" xml:space="preserve"><value>Dark mode</value></data>
+  <data name="Layout_Logout" xml:space="preserve"><value>Log out</value></data>
 
   <data name="Backoffice_Index_PageTitle" xml:space="preserve"><value>Backoffice</value></data>
   <data name="Backoffice_Index_Heading" xml:space="preserve"><value>Backoffice</value></data>
@@ -157,6 +160,8 @@
   <data name="Backoffice_Users_EditAction" xml:space="preserve"><value>Edit</value></data>
   <data name="Backoffice_Users_ErrorInvalidUser" xml:space="preserve"><value>Invalid user.</value></data>
   <data name="Backoffice_Users_ErrorAtLeastOneRole" xml:space="preserve"><value>At least one role is required.</value></data>
+  <data name="Backoffice_Users_Updated" xml:space="preserve"><value>User updated.</value></data>
+  <data name="Backoffice_Common_SearchPlaceholder" xml:space="preserve"><value>Search...</value></data>
 
   <data name="Backoffice_Common_SaveButton" xml:space="preserve"><value>Save</value></data>
   <data name="Backoffice_Common_CancelButton" xml:space="preserve"><value>Cancel</value></data>
@@ -176,6 +181,11 @@
   <data name="Backoffice_Roles_CreateAction" xml:space="preserve"><value>Create role</value></data>
   <data name="Backoffice_Roles_ErrorNameRequired" xml:space="preserve"><value>Role name is required.</value></data>
   <data name="Backoffice_Roles_ErrorInvalidRole" xml:space="preserve"><value>Invalid role.</value></data>
+  <data name="Backoffice_Roles_Created" xml:space="preserve"><value>Role created.</value></data>
+  <data name="Backoffice_Roles_Updated" xml:space="preserve"><value>Role updated.</value></data>
+  <data name="Backoffice_Roles_Deleted" xml:space="preserve"><value>Role deleted.</value></data>
+  <data name="Backoffice_Roles_NotFound" xml:space="preserve"><value>Role not found.</value></data>
+  <data name="Backoffice_Common_Back" xml:space="preserve"><value>Back</value></data>
 
   <data name="Backoffice_Common_DisplayNameLabel" xml:space="preserve"><value>Display name</value></data>
   <data name="Backoffice_Common_DisplayNameColumn" xml:space="preserve"><value>Display name</value></data>
@@ -203,6 +213,9 @@
   <data name="Backoffice_ApiScopes_ClaimColumn" xml:space="preserve"><value>Claim</value></data>
   <data name="Backoffice_ApiScopes_AddClaimButton" xml:space="preserve"><value>Add claim</value></data>
   <data name="Backoffice_ApiScopes_ClaimsColumn" xml:space="preserve"><value>Claims</value></data>
+  <data name="Backoffice_ApiScopes_Created" xml:space="preserve"><value>API scope created.</value></data>
+  <data name="Backoffice_ApiScopes_Updated" xml:space="preserve"><value>API scope updated.</value></data>
+  <data name="Backoffice_ApiScopes_Deleted" xml:space="preserve"><value>API scope deleted.</value></data>
 
   <data name="Backoffice_ApiResources_PageTitle" xml:space="preserve"><value>Backoffice - API Resources</value></data>
   <data name="Backoffice_ApiResources_CreateHeading" xml:space="preserve"><value>Create API Resource</value></data>
@@ -221,6 +234,9 @@
   <data name="Backoffice_ApiResources_ClaimColumn" xml:space="preserve"><value>Claim</value></data>
   <data name="Backoffice_ApiResources_AddClaimButton" xml:space="preserve"><value>Add claim</value></data>
   <data name="Backoffice_ApiResources_ScopesColumn" xml:space="preserve"><value>Scopes</value></data>
+  <data name="Backoffice_ApiResources_Created" xml:space="preserve"><value>API resource created.</value></data>
+  <data name="Backoffice_ApiResources_Updated" xml:space="preserve"><value>API resource updated.</value></data>
+  <data name="Backoffice_ApiResources_Deleted" xml:space="preserve"><value>API resource deleted.</value></data>
 
   <data name="Backoffice_IdentityResourcesPage_PageTitle" xml:space="preserve"><value>Backoffice - Identity Resources</value></data>
   <data name="Backoffice_IdentityResourcesPage_CreateHeading" xml:space="preserve"><value>Create Identity Resource</value></data>
@@ -228,6 +244,9 @@
   <data name="Backoffice_IdentityResourcesPage_DeleteHeading" xml:space="preserve"><value>Delete Identity Resource</value></data>
   <data name="Backoffice_IdentityResourcesPage_ListHeading" xml:space="preserve"><value>Identity Resources ({0})</value></data>
   <data name="Backoffice_IdentityResourcesPage_CreateAction" xml:space="preserve"><value>Create Identity Resource</value></data>
+  <data name="Backoffice_IdentityResourcesPage_Created" xml:space="preserve"><value>Identity resource created.</value></data>
+  <data name="Backoffice_IdentityResourcesPage_Updated" xml:space="preserve"><value>Identity resource updated.</value></data>
+  <data name="Backoffice_IdentityResourcesPage_Deleted" xml:space="preserve"><value>Identity resource deleted.</value></data>
 
   <data name="Backoffice_IdentityProviders_PageTitle" xml:space="preserve"><value>Backoffice - Identity Providers</value></data>
   <data name="Backoffice_IdentityProviders_CreateHeading" xml:space="preserve"><value>Create Identity Provider</value></data>
@@ -240,6 +259,9 @@
   <data name="Backoffice_IdentityProviders_TypeLabel" xml:space="preserve"><value>Type</value></data>
   <data name="Backoffice_IdentityProviders_TypeColumn" xml:space="preserve"><value>Type</value></data>
   <data name="Backoffice_IdentityProviders_ErrorSchemeTypeRequired" xml:space="preserve"><value>Scheme and Type are required.</value></data>
+  <data name="Backoffice_IdentityProviders_Created" xml:space="preserve"><value>Identity provider created.</value></data>
+  <data name="Backoffice_IdentityProviders_Updated" xml:space="preserve"><value>Identity provider updated.</value></data>
+  <data name="Backoffice_IdentityProviders_Deleted" xml:space="preserve"><value>Identity provider deleted.</value></data>
 
   <data name="Backoffice_Clients_PageTitle" xml:space="preserve"><value>Backoffice - Clients</value></data>
   <data name="Backoffice_Clients_EditHeading" xml:space="preserve"><value>Edit Client</value></data>
@@ -288,4 +310,6 @@
   <data name="Backoffice_Clients_ActiveColumn" xml:space="preserve"><value>Active</value></data>
   <data name="Backoffice_Clients_RedirectUrisColumn" xml:space="preserve"><value>Redirect URIs</value></data>
   <data name="Backoffice_Clients_ScopesColumn" xml:space="preserve"><value>Scopes</value></data>
+  <data name="Backoffice_Clients_Updated" xml:space="preserve"><value>Client updated.</value></data>
+  <data name="Backoffice_Clients_Deleted" xml:space="preserve"><value>Client deleted.</value></data>
 </root>

@@ -37,6 +37,10 @@ public sealed class SeriesStorage(AppDbContext dbContext) : ISeriesStorage
                 SeriesCode = x.SeriesCode,
                 CurrentSequence = x.CurrentSequence,
                 ValidationCode = x.ValidationCode,
+                // A switch expression can't be used here: this lambda compiles to an expression
+                // tree for EF Core to translate to SQL, and the C# compiler refuses a switch
+                // expression inside one (CS8514). The nested ternary is EF-translatable, so it stays.
+#pragma warning disable S3358
                 Status = x.Status == SeriesStatus.Created ? "Created"
                     : x.Status == SeriesStatus.Communicated ? "Communicated"
                     : x.Status == SeriesStatus.Active ? "Active"
@@ -47,6 +51,7 @@ public sealed class SeriesStorage(AppDbContext dbContext) : ISeriesStorage
                 StockEffect = x.StockEffect == StockEffect.In ? "In"
                     : x.StockEffect == StockEffect.Out ? "Out"
                     : "None",
+#pragma warning restore S3358
                 SelfBilling = x.SelfBilling
             });
     }

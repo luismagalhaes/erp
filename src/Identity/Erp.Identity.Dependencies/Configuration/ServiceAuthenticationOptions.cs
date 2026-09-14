@@ -16,6 +16,7 @@ public sealed class ServiceAuthenticationOptions
 
     public string ClientId { get; set; } = string.Empty;
 
+    /// <summary>In the vault as SERVICEAUTHENTICATION__CLIENTSECRET, one value per environment.</summary>
     public string ClientSecret { get; set; } = string.Empty;
 
     /// <summary>Scope requested for outgoing service calls.</summary>

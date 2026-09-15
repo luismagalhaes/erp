@@ -855,10 +855,12 @@ Os nomes dos secrets no Infisical seguem a convenção de variável de ambiente 
 
 | Host | Fica em `appsettings.*.json` (não secreto) | Vem do cofre |
 |---|---|---|
-| Erp.Api | `IdentityServer:Authority`, `AT:WebserviceUrl`, `AT:AtcudUrl`, `Smtp:Host`/`Port`/`UseSsl`/`FromEmail`/`FromName`, `Fiscal:IssuerTaxId`/`CertificateNumber`/`KeyVersion` | `ConnectionStrings:ErpDb`, `Smtp:UserName`, `Smtp:Password`, `AT:CertificateBase64`, `AT:CertificatePassword`, `Fiscal:PrivateKeyPem` |
-| Erp.Identity | `IdentityServer:Authority`, `NotificationService:BaseUrl`, `ServiceAuthentication:Authority`/`ClientId`/`Scope` | `ConnectionStrings:IdentityDb`, `ServiceAuthentication:ClientSecret`, `AdminUser:Email`/`FirstName`/`LastName`/`Password` |
+| Erp.Api | `IdentityServer:Authority`, `AT:WebserviceUrl`, `AT:AtcudUrl`, `Smtp:Host`/`Port`/`UseSsl`/`FromEmail`/`FromName`, `Fiscal:IssuerTaxId`/`CertificateNumber`/`KeyVersion` | `ConnectionStrings:ErpDb`, `Smtp:UserName`, `Smtp:Password`, `AT:CertificateBase64`, `AT:CertificatePassword`, `Fiscal:PrivateKeyPem`, `ApplicationInsights:ConnectionString` |
+| Erp.Identity | `IdentityServer:Authority`, `NotificationService:BaseUrl`, `ServiceAuthentication:Authority`/`ClientId`/`Scope` | `ConnectionStrings:IdentityDb`, `ServiceAuthentication:ClientSecret`, `AdminUser:Email`/`FirstName`/`LastName`/`Password`, `ApplicationInsights:ConnectionString` |
 | Erp.Main | `OidcConfiguration:*`, `Services:Api`/`IdentityApi` | — (`blazor-wasm` é um client público, sem secret) |
 | Erp.Notification.Worker | `NotificationWorker:BatchSize`/`PollingIntervalSeconds`, `Smtp:Host`/`Port`/`UseSsl`/`FromEmail`/`FromName` | `ConnectionStrings:ErpDb`, `Smtp:UserName`, `Smtp:Password` |
+
+`ApplicationInsights:ConnectionString` é opcional em `Erp.Api` e `Erp.Identity`: os dois hosts usam `ILogger`/OpenTelemetry nativos (ver [`Telemetry/OpenTelemetryExtensions.cs`](src/Erp.Api/Telemetry/OpenTelemetryExtensions.cs) em cada um), e só ligam o exportador para o Azure Monitor quando esta chave está preenchida — vazia (como em `appsettings.json`), a app funciona igual, só sem exportar para o Application Insights.
 
 `Fiscal:PrivateKeyPem` e `AT:CertificateBase64`/`CertificatePassword` estão documentados em [`FiscalOptions`](src/Shared/Erp.FiscalPT/FiscalOptions.cs) e [`AtOptions`](src/Shared/Erp.FiscalPT/AtOptions.cs) — cada propriedade que vem do cofre tem um comentário a apontar a chave exata. `AT:CertificateBase64`/`CertificatePassword` ainda não são lidas por código nenhum: são o contrato já preparado para quando a integração com os *webservices* da AT for implementada (ver [Estado atual e limitações conhecidas](#estado-atual-e-limitações-conhecidas)).
 
@@ -886,6 +888,7 @@ Environments do Infisical: `dev`, `staging` e (quando existir) `prod` — os mes
 | `SERVICEAUTHENTICATION__CLIENTSECRET` | `identity-service-secret` (o mesmo do *fallback* de código) |
 | `ADMINUSER__EMAIL` / `FIRSTNAME` / `LASTNAME` / `PASSWORD` | À escolha de quem administra o ambiente de dev |
 | `FISCAL__PRIVATEKEYPEM` | Vazio — gera/reutiliza sozinho uma chave local em `%LOCALAPPDATA%\Erp\Sales\` |
+| `APPLICATIONINSIGHTS__CONNECTIONSTRING` | Vazio — sem Application Insights em dev |
 
 **`staging`** — todas obrigatórias assim que `Infisical:*` estiver configurado nas Web Apps de staging:
 
@@ -898,6 +901,7 @@ Environments do Infisical: `dev`, `staging` e (quando existir) `prod` — os mes
 | `SERVICEAUTHENTICATION__CLIENTSECRET` | Segredo novo e forte, igual ao que for definido no backoffice para o client `identity-service` (ver acima) |
 | `ADMINUSER__EMAIL` / `FIRSTNAME` / `LASTNAME` / `PASSWORD` | Conta real de quem administra staging, password forte |
 | `FISCAL__PRIVATEKEYPEM` | Chave RSA 1024 bit própria de staging (`openssl genrsa -out staging-key.pem 1024`), nunca partilhada com produção |
+| `APPLICATIONINSIGHTS__CONNECTIONSTRING` | Connection string do recurso Application Insights de staging |
 
 `prod` segue a mesma lista, com os seus próprios valores — nunca os mesmos de staging.
 

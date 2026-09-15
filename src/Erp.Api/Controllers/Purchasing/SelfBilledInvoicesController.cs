@@ -24,7 +24,8 @@ namespace Erp.Api.Controllers.Purchasing;
 [Produces("application/json")]
 public sealed class SelfBilledInvoicesController(
     ISelfBilledInvoiceService invoiceService,
-    ISupplierService supplierService) : ControllerBase
+    ISupplierService supplierService,
+    ILogger<SelfBilledInvoicesController> logger) : ControllerBase
 {
     [HttpGet]
     [Authorize(Policy = Policies.Read)]
@@ -133,12 +134,14 @@ public sealed class SelfBilledInvoicesController(
         }
         catch (ArgumentException ex)
         {
+            logger.LogWarning(ex, "{Controller}.{Method} rejected an invalid request.", nameof(SelfBilledInvoicesController), nameof(Issue));
             return BadRequest(new { error = ex.Message });
         }
         catch (InvalidOperationException ex)
         {
             // A series with no validation code, or more billed than was received. Both are
             // conflicts: the request was well formed, the books had moved on.
+            logger.LogWarning(ex, "{Controller}.{Method} could not complete due to a conflict.", nameof(SelfBilledInvoicesController), nameof(Issue));
             return Conflict(new { error = ex.Message });
         }
     }
@@ -160,6 +163,7 @@ public sealed class SelfBilledInvoicesController(
         }
         catch (InvalidOperationException ex)
         {
+            logger.LogWarning(ex, "{Controller}.{Method} could not complete due to a conflict.", nameof(SelfBilledInvoicesController), nameof(Accept));
             return Conflict(new { error = ex.Message });
         }
     }
@@ -189,6 +193,7 @@ public sealed class SelfBilledInvoicesController(
         }
         catch (InvalidOperationException ex)
         {
+            logger.LogWarning(ex, "{Controller}.{Method} could not complete due to a conflict.", nameof(SelfBilledInvoicesController), nameof(Void));
             return Conflict(new { error = ex.Message });
         }
     }

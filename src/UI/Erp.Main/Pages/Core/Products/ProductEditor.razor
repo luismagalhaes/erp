@@ -119,12 +119,13 @@
                                    Label="@Localizer["ProductEditor_TaxLabel"]" Variant="Variant.Outlined" Margin="Margin.Dense">
                             @foreach (var rate in TaxRates)
                             {
-                                <MudSelectItem T="string" Value="@rate.Code">@rate.Label</MudSelectItem>
+                                <MudSelectItem T="string" Value="@rate.Code">@rate.Label (@rate.Percentage.ToString("0.##")%)</MudSelectItem>
                             }
                         </MudSelect>
                     </MudItem>
                     <MudItem xs="12" sm="2" md="2">
-                        <MudSelect @bind-Value="_taxCountryRegion" Label="@Localizer["ProductEditor_TaxRegionLabel"]" Variant="Variant.Outlined"
+                        <MudSelect T="string" Value="_taxCountryRegion" ValueChanged="OnRegionChanged"
+                                   Label="@Localizer["ProductEditor_TaxRegionLabel"]" Variant="Variant.Outlined"
                                    Margin="Margin.Dense">
                             <MudSelectItem T="string" Value="@("PT")">@Localizer["ProductEditor_TaxRegionMainland"]</MudSelectItem>
                             <MudSelectItem T="string" Value="@("PT-AC")">@Localizer["ProductEditor_TaxRegionAzores"]</MudSelectItem>
@@ -169,13 +170,10 @@
         new(IsNew ? Localizer["ProductEditor_NewTitle"].Value : Localizer["ProductEditor_EditTitle"].Value, href: null, disabled: true)
     ];
 
-    private TaxRateOption[] TaxRates =>
-    [
-        new("NOR", 23m, Localizer["ProductEditor_TaxRateNormal"]),
-        new("INT", 13m, Localizer["ProductEditor_TaxRateIntermediate"]),
-        new("RED", 6m, Localizer["ProductEditor_TaxRateReduced"]),
-        new("ISE", 0m, Localizer["ProductEditor_TaxRateExempt"])
-    ];
+    private List<VatRate> _allTaxRates = [];
+
+    /// <summary>Only the rates for the region currently selected below — Açores and Madeira have their own percentages.</summary>
+    private IEnumerable<VatRate> TaxRates => _allTaxRates.Where(rate => rate.FiscalRegion == _taxCountryRegion && rate.IsActive);
 
     [Parameter]
     public Guid? Id { get; set; }
@@ -284,7 +282,18 @@
         var (brands, _) = await Catalog.GetBrandsAsync(Company.SelectedCompanyId);
         _brands = [.. brands.Where(brand => brand.IsActive)];
 
+        var (rates, _) = await Catalog.GetVatRatesAsync();
+        _allTaxRates = [.. rates];
+
         _error = familiesError;
+    }
+
+    /// <summary>Açores and Madeira set their own percentage for the same rate code, so switching
+    /// region keeps the chosen code but must re-price it.</summary>
+    private void OnRegionChanged(string region)
+    {
+        _taxCountryRegion = region;
+        _taxPercentage = TaxRates.FirstOrDefault(rate => rate.Code == _taxCode)?.Percentage ?? _taxPercentage;
     }
 
     /// <summary>Changing the family clears a subfamily that no longer belongs to it.</summary>
@@ -363,5 +372,4 @@
         }
     }
 
-    private sealed record TaxRateOption(string Code, decimal Percentage, string Label);
 }

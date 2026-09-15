@@ -24,7 +24,8 @@ namespace Erp.Api.Controllers.Purchasing;
 public sealed class GoodsReceiptsController(
     IGoodsReceiptService receiptService,
     ISupplierService supplierService,
-    IWarehouseService warehouseService) : ControllerBase
+    IWarehouseService warehouseService,
+    ILogger<GoodsReceiptsController> logger) : ControllerBase
 {
     [HttpGet]
     [Authorize(Policy = Policies.Read)]
@@ -121,10 +122,12 @@ public sealed class GoodsReceiptsController(
         }
         catch (ArgumentException ex)
         {
+            logger.LogWarning(ex, "{Controller}.{Method} rejected an invalid request.", nameof(GoodsReceiptsController), nameof(Create));
             return BadRequest(new { error = ex.Message });
         }
         catch (InvalidOperationException ex)
         {
+            logger.LogWarning(ex, "{Controller}.{Method} could not complete due to a conflict.", nameof(GoodsReceiptsController), nameof(Create));
             // Receiving more than the order still owes. A conflict rather than a bad request: the
             // request was well formed, the order had moved on.
             return Conflict(new { error = ex.Message });
@@ -153,6 +156,7 @@ public sealed class GoodsReceiptsController(
         }
         catch (InvalidOperationException ex)
         {
+            logger.LogWarning(ex, "{Controller}.{Method} could not complete due to a conflict.", nameof(GoodsReceiptsController), nameof(Void));
             return Conflict(new { error = ex.Message });
         }
     }

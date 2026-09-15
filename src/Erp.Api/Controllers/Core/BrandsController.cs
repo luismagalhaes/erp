@@ -12,7 +12,7 @@ namespace Erp.Api.Controllers.Core;
 [Route("api/brands")]
 [Authorize(Policy = Policies.Read)]
 [Produces("application/json")]
-public sealed class BrandsController(IBrandService brandService) : ControllerBase
+public sealed class BrandsController(IBrandService brandService, ILogger<BrandsController> logger) : ControllerBase
 {
     [HttpGet]
     [ProducesResponseType<IReadOnlyList<BrandDto>>(StatusCodes.Status200OK)]
@@ -68,10 +68,12 @@ public sealed class BrandsController(IBrandService brandService) : ControllerBas
         }
         catch (ArgumentException ex)
         {
+            logger.LogWarning(ex, "{Controller}.{Method} rejected an invalid request.", nameof(BrandsController), nameof(Create));
             return BadRequest(new { error = ex.Message });
         }
         catch (InvalidOperationException ex)
         {
+            logger.LogWarning(ex, "{Controller}.{Method} could not complete due to a conflict.", nameof(BrandsController), nameof(Create));
             return Conflict(new { error = ex.Message });
         }
     }
@@ -93,6 +95,7 @@ public sealed class BrandsController(IBrandService brandService) : ControllerBas
         }
         catch (ArgumentException ex)
         {
+            logger.LogWarning(ex, "{Controller}.{Method} rejected an invalid request.", nameof(BrandsController), nameof(Update));
             return BadRequest(new { error = ex.Message });
         }
     }

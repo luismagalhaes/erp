@@ -12,7 +12,7 @@ namespace Erp.Api.Controllers.Core;
 [Route("api/suppliers")]
 [Authorize(Policy = Policies.Read)]
 [Produces("application/json")]
-public sealed class SuppliersController(ISupplierService supplierService) : ControllerBase
+public sealed class SuppliersController(ISupplierService supplierService, ILogger<SuppliersController> logger) : ControllerBase
 {
     [HttpGet]
     [ProducesResponseType<IReadOnlyList<PartnerDto>>(StatusCodes.Status200OK)]
@@ -69,10 +69,12 @@ public sealed class SuppliersController(ISupplierService supplierService) : Cont
         }
         catch (ArgumentException ex)
         {
+            logger.LogWarning(ex, "{Controller}.{Method} rejected an invalid request.", nameof(SuppliersController), nameof(Create));
             return BadRequest(new { error = ex.Message });
         }
         catch (InvalidOperationException ex)
         {
+            logger.LogWarning(ex, "{Controller}.{Method} could not complete due to a conflict.", nameof(SuppliersController), nameof(Create));
             return Conflict(new { error = ex.Message });
         }
     }
@@ -94,6 +96,7 @@ public sealed class SuppliersController(ISupplierService supplierService) : Cont
         }
         catch (ArgumentException ex)
         {
+            logger.LogWarning(ex, "{Controller}.{Method} rejected an invalid request.", nameof(SuppliersController), nameof(Update));
             return BadRequest(new { error = ex.Message });
         }
     }

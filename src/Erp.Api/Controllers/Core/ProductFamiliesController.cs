@@ -12,7 +12,7 @@ namespace Erp.Api.Controllers.Core;
 [Route("api/product-families")]
 [Authorize(Policy = Policies.Read)]
 [Produces("application/json")]
-public sealed class ProductFamiliesController(IProductFamilyService familyService) : ControllerBase
+public sealed class ProductFamiliesController(IProductFamilyService familyService, ILogger<ProductFamiliesController> logger) : ControllerBase
 {
     [HttpGet]
     [ProducesResponseType<IReadOnlyList<ProductFamilyDto>>(StatusCodes.Status200OK)]
@@ -69,10 +69,12 @@ public sealed class ProductFamiliesController(IProductFamilyService familyServic
         }
         catch (ArgumentException ex)
         {
+            logger.LogWarning(ex, "{Controller}.{Method} rejected an invalid request.", nameof(ProductFamiliesController), nameof(Create));
             return BadRequest(new { error = ex.Message });
         }
         catch (InvalidOperationException ex)
         {
+            logger.LogWarning(ex, "{Controller}.{Method} could not complete due to a conflict.", nameof(ProductFamiliesController), nameof(Create));
             return Conflict(new { error = ex.Message });
         }
     }
@@ -94,6 +96,7 @@ public sealed class ProductFamiliesController(IProductFamilyService familyServic
         }
         catch (ArgumentException ex)
         {
+            logger.LogWarning(ex, "{Controller}.{Method} rejected an invalid request.", nameof(ProductFamiliesController), nameof(Update));
             return BadRequest(new { error = ex.Message });
         }
     }

@@ -1,5 +1,6 @@
 @using MudBlazor
 @using Erp.Main.Models
+@using Erp.Main.Models.Core
 @using Microsoft.Extensions.Localization
 @using Erp.Main.Resources
 @inject IStringLocalizer<MainResources> Localizer
@@ -12,50 +13,55 @@
     Model.IsValid, for one — would stay frozen at whatever it was on first render.
 
     The three fields that decide validity are Immediate so the parent reacts as the user types,
-    instead of only when the field loses focus.
+    instead of only when the field loses focus. The grid sticks to multiples of 3 columns (md) on
+    every row, so the boxes line up instead of one row being split 4-and-4 and the next 6-and-3.
 *@
-<MudGrid>
-    <MudItem xs="12" md="3">
+<MudGrid Spacing="3">
+    <MudItem xs="12" sm="6" md="3">
         <MudTextField @bind-Value="Model.Code" @bind-Value:after="NotifyChangedAsync" Immediate="true"
-                      Label="@Localizer["PartnerForm_CodeLabel"]" Variant="Variant.Outlined"
-                      Required="true" Disabled="@(!AllowCodeEdit)"
-                      HelperText="@(AllowCodeEdit ? null : Localizer["PartnerForm_CodeHelperText"].Value)" />
+                      Label="@Localizer["PartnerForm_CodeLabel"]" Variant="Variant.Outlined" Margin="Margin.Dense"
+                      Required="@RequireCode" Disabled="@(!AllowCodeEdit)"
+                      HelperText="@CodeHelperText" />
     </MudItem>
-    <MudItem xs="12" md="6">
+    <MudItem xs="12" sm="6" md="6">
         <MudTextField @bind-Value="Model.Name" @bind-Value:after="NotifyChangedAsync" Immediate="true"
-                      Label="@Localizer["PartnerForm_NameLabel"]" Variant="Variant.Outlined" Required="true" />
+                      Label="@Localizer["PartnerForm_NameLabel"]" Variant="Variant.Outlined" Margin="Margin.Dense" Required="true" />
     </MudItem>
-    <MudItem xs="12" md="3">
+    <MudItem xs="12" sm="6" md="3">
         <MudTextField @bind-Value="Model.TaxId" @bind-Value:after="NotifyChangedAsync" Immediate="true"
-                      Label="@Localizer["PartnerForm_TaxIdLabel"]" Variant="Variant.Outlined" Required="true"
-                      HelperText="@Localizer["PartnerForm_TaxIdHelperText"]" />
+                      Label="@Localizer["PartnerForm_TaxIdLabel"]" Variant="Variant.Outlined" Margin="Margin.Dense"
+                      Required="@RequireTaxId" HelperText="@TaxIdHelperText" />
     </MudItem>
 
-    <MudItem xs="12" md="6">
+    <MudItem xs="12" sm="6" md="6">
         <MudTextField @bind-Value="Model.Address" @bind-Value:after="NotifyChangedAsync"
-                      Label="@Localizer["PartnerForm_AddressLabel"]" Variant="Variant.Outlined" />
+                      Label="@Localizer["PartnerForm_AddressLabel"]" Variant="Variant.Outlined" Margin="Margin.Dense" />
     </MudItem>
-    <MudItem xs="12" md="2">
+    <MudItem xs="12" sm="3" md="3">
         <MudTextField @bind-Value="Model.PostalCode" @bind-Value:after="NotifyChangedAsync"
-                      Label="@Localizer["PartnerForm_PostalCodeLabel"]" Variant="Variant.Outlined" />
+                      Label="@Localizer["PartnerForm_PostalCodeLabel"]" Variant="Variant.Outlined" Margin="Margin.Dense" />
     </MudItem>
-    <MudItem xs="12" md="2">
+    <MudItem xs="12" sm="3" md="3">
         <MudTextField @bind-Value="Model.City" @bind-Value:after="NotifyChangedAsync"
-                      Label="@Localizer["PartnerForm_CityLabel"]" Variant="Variant.Outlined" />
-    </MudItem>
-    <MudItem xs="12" md="2">
-        <MudTextField @bind-Value="Model.Country" @bind-Value:after="NotifyChangedAsync"
-                      Label="@Localizer["PartnerForm_CountryLabel"]" Variant="Variant.Outlined"
-                      HelperText="@Localizer["PartnerForm_CountryHelperText"]" />
+                      Label="@Localizer["PartnerForm_CityLabel"]" Variant="Variant.Outlined" Margin="Margin.Dense" />
     </MudItem>
 
-    <MudItem xs="12" md="6">
-        <MudTextField @bind-Value="Model.Email" @bind-Value:after="NotifyChangedAsync"
-                      Label="@Localizer["PartnerForm_EmailLabel"]" Variant="Variant.Outlined" InputType="InputType.Email" />
+    <MudItem xs="12" sm="4" md="3">
+        <MudSelect @bind-Value="Model.Country" @bind-Value:after="NotifyChangedAsync"
+                   Label="@Localizer["PartnerForm_CountryLabel"]" Variant="Variant.Outlined" Margin="Margin.Dense">
+            @foreach (var country in Countries.All)
+            {
+                <MudSelectItem T="string" Value="@country.Code">@country.Name</MudSelectItem>
+            }
+        </MudSelect>
     </MudItem>
-    <MudItem xs="12" md="6">
+    <MudItem xs="12" sm="4" md="6">
+        <MudTextField @bind-Value="Model.Email" @bind-Value:after="NotifyChangedAsync"
+                      Label="@Localizer["PartnerForm_EmailLabel"]" Variant="Variant.Outlined" Margin="Margin.Dense" InputType="InputType.Email" />
+    </MudItem>
+    <MudItem xs="12" sm="4" md="3">
         <MudTextField @bind-Value="Model.Phone" @bind-Value:after="NotifyChangedAsync"
-                      Label="@Localizer["PartnerForm_PhoneLabel"]" Variant="Variant.Outlined" />
+                      Label="@Localizer["PartnerForm_PhoneLabel"]" Variant="Variant.Outlined" Margin="Margin.Dense" />
     </MudItem>
 
     @if (ShowActive)
@@ -81,11 +87,25 @@
     [Parameter]
     public bool AllowCodeEdit { get; set; } = true;
 
+    /// <summary>False for a customer: a blank code is filled in automatically on save.</summary>
+    [Parameter]
+    public bool RequireCode { get; set; } = true;
+
+    /// <summary>False for a customer: a blank tax id defaults to the final-consumer id on save.</summary>
+    [Parameter]
+    public bool RequireTaxId { get; set; } = true;
+
     [Parameter]
     public bool ShowActive { get; set; }
 
     [Parameter]
     public string? ActiveLabel { get; set; }
+
+    private string? CodeHelperText => !AllowCodeEdit
+        ? Localizer["PartnerForm_CodeHelperText"].Value
+        : (RequireCode ? null : Localizer["PartnerForm_CodeOptionalHelperText"].Value);
+
+    private string TaxIdHelperText => Localizer["PartnerForm_TaxIdHelperText"].Value;
 
     private Task NotifyChangedAsync() => ModelChanged.InvokeAsync(Model);
 }

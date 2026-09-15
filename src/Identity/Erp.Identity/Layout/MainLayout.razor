@@ -4,8 +4,10 @@
 @using Microsoft.Extensions.Localization
 @using Erp.Identity.Resources
 @using Erp.Identity.Theme
+@using System.Reflection
 @inject NavigationManager Navigation
 @inject IStringLocalizer<IdentityResources> Localizer
+@inject IDialogService DialogService
 
 <MudThemeProvider Theme="AppTheme.Default" @bind-IsDarkMode="_isDarkMode" />
 @* Required by every component that opens an overlay: selects, date pickers and menus. *@
@@ -35,19 +37,27 @@
 
         <AuthorizeView>
             <Authorized>
-                <MudMenu AnchorOrigin="Origin.BottomRight" TransformOrigin="Origin.TopRight"
-                         ActivationEvent="MouseEvent.LeftClick" Class="ml-2">
-                    <ActivatorContent>
-                        <MudTooltip Text="@context.User.Identity?.Name">
-                            <MudAvatar Color="Color.Primary" Size="Size.Medium" Class="erp-user-avatar">
-                                @Initials(context.User.Identity?.Name)
-                            </MudAvatar>
-                        </MudTooltip>
-                    </ActivatorContent>
-                    <ChildContent>
-                        <MudMenuItem Icon="@Icons.Material.Filled.Logout" OnClick="@Logout">@Localizer["Layout_Logout"]</MudMenuItem>
-                    </ChildContent>
-                </MudMenu>
+                <div class="erp-account-panel">
+                    <MudButton Variant="Variant.Text" Size="Size.Small" StartIcon="@Icons.Material.Filled.Info"
+                               Class="erp-account-panel-about" OnClick="OpenAbout">
+                        @Localizer["Layout_About"]
+                    </MudButton>
+
+                    <MudMenu AnchorOrigin="Origin.BottomRight" TransformOrigin="Origin.TopRight"
+                             ActivationEvent="MouseEvent.LeftClick" Class="erp-account-panel-user">
+                        <ActivatorContent>
+                            <div class="erp-account-panel-user-activator">
+                                <MudAvatar Color="Color.Primary" Size="Size.Small" Class="erp-user-avatar">
+                                    @Initials(context.User.Identity?.Name)
+                                </MudAvatar>
+                                <span class="erp-account-panel-user-name">@context.User.Identity?.Name</span>
+                            </div>
+                        </ActivatorContent>
+                        <ChildContent>
+                            <MudMenuItem Icon="@Icons.Material.Filled.Logout" OnClick="@Logout">@Localizer["Layout_Logout"]</MudMenuItem>
+                        </ChildContent>
+                    </MudMenu>
+                </div>
             </Authorized>
         </AuthorizeView>
     </MudAppBar>
@@ -77,6 +87,15 @@
 
     private void Logout()
         => Navigation.NavigateTo("/authentication/logout?returnUrl=/", forceLoad: true);
+
+    private Task OpenAbout()
+    {
+        var version = Assembly.GetEntryAssembly()?.GetName().Version?.ToString(3) ?? "-";
+        return DialogService.ShowMessageBox(
+            Localizer["Layout_About"].Value,
+            string.Format(Localizer["Layout_AboutVersion"].Value, version),
+            yesText: Localizer["Layout_CloseButton"].Value);
+    }
 
     private void SetCulture(string culture)
     {

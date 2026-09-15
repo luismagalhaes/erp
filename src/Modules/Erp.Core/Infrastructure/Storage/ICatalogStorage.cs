@@ -86,3 +86,11 @@ public interface ISupplierStorage
     Task AddAsync(Supplier supplier, CancellationToken cancellationToken = default);
     Task SaveChangesAsync(CancellationToken cancellationToken = default);
 }
+
+/// <summary>Not company scoped — the rows are seeded once by migration, never created through this.</summary>
+public interface IVatRateStorage
+{
+    Task<IReadOnlyList<VatRate>> GetAllAsync(CancellationToken cancellationToken = default);
+    Task<VatRate?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default);
+    Task SaveChangesAsync(CancellationToken cancellationToken = default);
+}

@@ -24,7 +24,8 @@ namespace Erp.Api.Controllers.Purchasing;
 [Produces("application/json")]
 public sealed class SupplierReturnsController(
     ISupplierReturnService returnService,
-    ISupplierService supplierService) : ControllerBase
+    ISupplierService supplierService,
+    ILogger<SupplierReturnsController> logger) : ControllerBase
 {
     [HttpGet]
     [Authorize(Policy = Policies.Read)]
@@ -128,12 +129,14 @@ public sealed class SupplierReturnsController(
         }
         catch (ArgumentException ex)
         {
+            logger.LogWarning(ex, "{Controller}.{Method} rejected an invalid request.", nameof(SupplierReturnsController), nameof(Create));
             return BadRequest(new { error = ex.Message });
         }
         catch (InvalidOperationException ex)
         {
             // Sending back more than is still in hand. A conflict: the request was well formed,
             // the warehouse had moved on.
+            logger.LogWarning(ex, "{Controller}.{Method} could not complete due to a conflict.", nameof(SupplierReturnsController), nameof(Create));
             return Conflict(new { error = ex.Message });
         }
     }
@@ -160,6 +163,7 @@ public sealed class SupplierReturnsController(
         }
         catch (InvalidOperationException ex)
         {
+            logger.LogWarning(ex, "{Controller}.{Method} could not complete due to a conflict.", nameof(SupplierReturnsController), nameof(Void));
             return Conflict(new { error = ex.Message });
         }
     }

@@ -21,6 +21,69 @@ html, body {
     font-weight: 600;
 }
 
+/* Account panel: company / About / user, stacked in the app bar's top-right corner */
+.erp-account-panel {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 2px;
+    margin-left: 12px;
+    padding: 4px 0;
+}
+
+.erp-account-panel-company {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    max-width: 220px;
+    color: var(--mud-palette-text-secondary);
+    font-size: 0.75rem;
+}
+
+.erp-account-panel-company .mud-icon-root {
+    font-size: 1rem;
+}
+
+.erp-account-panel-company span {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.erp-account-panel-company-select {
+    max-width: 220px;
+}
+
+.erp-account-panel-company-select .mud-input-slot,
+.erp-account-panel-company-select .mud-input-adornment .mud-icon-root,
+.erp-account-panel-company-select .mud-select-input .mud-input-slot {
+    color: var(--mud-palette-text-primary);
+}
+
+.erp-account-panel-about.mud-button-root {
+    min-width: 0;
+    padding: 0 4px;
+    font-size: 0.72rem;
+    line-height: 1.4;
+    color: var(--mud-palette-text-secondary);
+}
+
+.erp-account-panel-user-activator {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    cursor: pointer;
+}
+
+.erp-account-panel-user-name {
+    max-width: 140px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: 0.78rem;
+    font-weight: 500;
+}
+
 /* Side menu */
 .erp-main {
     border-top: 6px solid var(--mud-palette-primary);

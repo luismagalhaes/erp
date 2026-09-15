@@ -75,10 +75,12 @@ public sealed class CompaniesController(
         }
         catch (ArgumentException ex)
         {
+            logger.LogWarning(ex, "{Controller}.{Method} rejected an invalid request.", nameof(CompaniesController), nameof(Create));
             return BadRequest(new { error = ex.Message });
         }
         catch (InvalidOperationException ex)
         {
+            logger.LogWarning(ex, "{Controller}.{Method} could not complete due to a conflict.", nameof(CompaniesController), nameof(Create));
             return Conflict(new { error = ex.Message });
         }
     }
@@ -127,10 +129,12 @@ public sealed class CompaniesController(
         }
         catch (ArgumentException ex)
         {
+            logger.LogWarning(ex, "{Controller}.{Method} rejected an invalid request.", nameof(CompaniesController), nameof(Update));
             return BadRequest(new { error = ex.Message });
         }
         catch (InvalidOperationException ex)
         {
+            logger.LogWarning(ex, "{Controller}.{Method} could not complete due to a conflict.", nameof(CompaniesController), nameof(Update));
             return Conflict(new { error = ex.Message });
         }
     }

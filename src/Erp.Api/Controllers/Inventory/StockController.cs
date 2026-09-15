@@ -12,7 +12,7 @@ namespace Erp.Api.Controllers.Inventory;
 [Route("api/stock")]
 [Authorize]
 [Produces("application/json")]
-public sealed class StockController(IStockService stockService) : ControllerBase
+public sealed class StockController(IStockService stockService, ILogger<StockController> logger) : ControllerBase
 {
     /// <summary>Current stock, optionally narrowed to one warehouse or one product.</summary>
     [HttpGet]
@@ -82,6 +82,7 @@ public sealed class StockController(IStockService stockService) : ControllerBase
         }
         catch (ArgumentException ex)
         {
+            logger.LogWarning(ex, "{Controller}.{Method} rejected an invalid request.", nameof(StockController), nameof(Adjust));
             return BadRequest(new { error = ex.Message });
         }
     }

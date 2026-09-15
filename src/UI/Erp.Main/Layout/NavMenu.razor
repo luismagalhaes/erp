@@ -59,12 +59,14 @@
 
     <MudNavGroup Title="@Localizer["NavMenu_SettingsGroup"]" Icon="@Icons.Material.Filled.Settings" Expanded="false">
         <MudNavLink Href="series" Icon="@Icons.Material.Filled.FormatListNumbered">@Localizer["NavMenu_Series"]</MudNavLink>
-        <MudNavLink Href="vat-rates" Icon="@Icons.Material.Filled.TableView">@Localizer["NavMenu_VatRates"]</MudNavLink>
     </MudNavGroup>
 
+    @* VAT rates are set by law, the same for every tenant — editing them is a backoffice-only
+       concern, not a per-company setting. *@
     <AuthorizeView Roles="@Constants.Roles.SuperAdmin">
         <MudNavGroup Title="@Localizer["NavMenu_BackofficeGroup"]" Icon="@Icons.Material.Filled.AdminPanelSettings" Expanded="false">
             <MudNavLink Href="companies" Icon="@Icons.Material.Filled.Domain">@Localizer["NavMenu_Companies"]</MudNavLink>
+            <MudNavLink Href="vat-rates" Icon="@Icons.Material.Filled.TableView">@Localizer["NavMenu_VatRates"]</MudNavLink>
             <MudNavLink Href="notifications" Icon="@Icons.Material.Filled.Email">@Localizer["NavMenu_Notifications"]</MudNavLink>
         </MudNavGroup>
     </AuthorizeView>

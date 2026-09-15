@@ -14,7 +14,7 @@ namespace Erp.Api.Controllers.SeriesRegistry;
 [Route("api/series")]
 [Authorize]
 [Produces("application/json")]
-public sealed class SeriesController(ISeriesService seriesService) : ControllerBase
+public sealed class SeriesController(ISeriesService seriesService, ILogger<SeriesController> logger) : ControllerBase
 {
     /// <summary>Lists the series of a company.</summary>
     [HttpGet]
@@ -79,10 +79,12 @@ public sealed class SeriesController(ISeriesService seriesService) : ControllerB
         }
         catch (ArgumentException ex)
         {
+            logger.LogWarning(ex, "{Controller}.{Method} rejected an invalid request.", nameof(SeriesController), nameof(Create));
             return BadRequest(new { error = ex.Message });
         }
         catch (InvalidOperationException ex)
         {
+            logger.LogWarning(ex, "{Controller}.{Method} could not complete due to a conflict.", nameof(SeriesController), nameof(Create));
             return Conflict(new { error = ex.Message });
         }
     }
@@ -112,6 +114,7 @@ public sealed class SeriesController(ISeriesService seriesService) : ControllerB
         }
         catch (ArgumentException ex)
         {
+            logger.LogWarning(ex, "{Controller}.{Method} rejected an invalid request.", nameof(SeriesController), nameof(Update));
             return BadRequest(new { error = ex.Message });
         }
     }
@@ -141,6 +144,7 @@ public sealed class SeriesController(ISeriesService seriesService) : ControllerB
         }
         catch (InvalidOperationException ex)
         {
+            logger.LogWarning(ex, "{Controller}.{Method} could not complete due to a conflict.", nameof(SeriesController), nameof(Communicate));
             return Conflict(new { error = ex.Message });
         }
     }

@@ -5,6 +5,7 @@
 @using Microsoft.AspNetCore.Components.Web
 @using MudBlazor
 @using Erp.Main.Components
+@using Erp.Main.Components.Common
 @using Erp.Main.Models
 @using Erp.Main.Services
 @using Erp.Main.Resources
@@ -17,23 +18,16 @@
 
 <PageTitle>@(IsNew ? Localizer["CustomerEditor_NewTitle"] : Localizer["CustomerEditor_EditTitle"])</PageTitle>
 
-<MudStack Spacing="4">
-    <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center">
-        <MudStack Spacing="0">
-            <MudText Typo="Typo.h4">@(IsNew ? Localizer["CustomerEditor_NewTitle"] : Localizer["CustomerEditor_EditTitle"])</MudText>
-            @if (!IsNew)
-            {
-                <MudText Typo="Typo.body2" Color="Color.Secondary">
-                    @Localizer["CustomerEditor_UpdateHint"]
-                </MudText>
-            }
-        </MudStack>
-
-        <MudButton Variant="Variant.Text" StartIcon="@Icons.Material.Filled.ArrowBack"
-                   OnClick="@(() => Navigation.NavigateTo("customers"))">
-            @Localizer["Common_Back"]
-        </MudButton>
-    </MudStack>
+<MudStack Spacing="3">
+    <PageHeader Title="@(IsNew ? Localizer["CustomerEditor_NewTitle"] : Localizer["CustomerEditor_EditTitle"])"
+                Breadcrumbs="Breadcrumbs">
+        <Actions>
+            <MudButton Variant="Variant.Text" StartIcon="@Icons.Material.Filled.ArrowBack"
+                       OnClick="@(() => Navigation.NavigateTo("customers"))">
+                @Localizer["Common_Back"]
+            </MudButton>
+        </Actions>
+    </PageHeader>
 
     @if (!string.IsNullOrWhiteSpace(_error))
     {
@@ -54,20 +48,25 @@
     }
     else
     {
-        <MudPaper Elevation="1" Class="pa-4">
-            @* ModelChanged is what re-renders this page, so the save button follows what is typed. *@
-            <PartnerFormFields Model="_model" ModelChanged="OnModelChanged"
-                               AllowCodeEdit="IsNew" ShowActive="@(!IsNew)" ActiveLabel="@Localizer["CustomerEditor_ActiveLabel"]" />
+        <EditorCard Title="@Localizer["CustomerEditor_CardTitle"]" Icon="@Icons.Material.Filled.PersonOutline"
+                    Description="@(IsNew ? null : Localizer["CustomerEditor_UpdateHint"].Value)">
+            <HeaderActions>
+                @if (!IsNew)
+                {
+                    <MudSwitch @bind-Value="_model.IsActive" Color="Color.Primary" Size="Size.Small" Label="@Localizer["CustomerEditor_ActiveLabel"]" />
+                }
+            </HeaderActions>
+            <ChildContent>
+                @* ModelChanged is what re-renders this page, so the save button follows what is typed. *@
+                <PartnerFormFields Model="_model" ModelChanged="OnModelChanged"
+                                   AllowCodeEdit="IsNew" RequireCode="false" RequireTaxId="false" />
+            </ChildContent>
+        </EditorCard>
 
-            <MudStack Row="true" Justify="Justify.FlexEnd" Class="mt-4">
-                <MudButton Variant="Variant.Filled" Color="Color.Primary"
-                           StartIcon="@Icons.Material.Filled.Save"
-                           Disabled="@(_saving || !_model.IsValid || !Company.HasCompany)"
-                           OnClick="SaveAsync">
-                    @Localizer["Common_SaveButton"]
-                </MudButton>
-            </MudStack>
-        </MudPaper>
+        <FormActions Busy="_saving" Disabled="@(!_model.IsValid(requireCode: false, requireTaxId: false) || !Company.HasCompany)"
+                     Hint="@(Company.HasCompany ? null : Localizer["CustomerEditor_NoCompanyWarning"].Value)"
+                     OnSubmit="SaveAsync"
+                     OnCancel="@(() => Navigation.NavigateTo("customers"))" />
     }
 </MudStack>
 
@@ -76,6 +75,12 @@
     public Guid? Id { get; set; }
 
     private bool IsNew => Id is null;
+
+    private List<BreadcrumbItem> Breadcrumbs =>
+    [
+        new(Localizer["Customers_PageTitle"].Value, href: "customers"),
+        new(IsNew ? Localizer["CustomerEditor_NewTitle"].Value : Localizer["CustomerEditor_EditTitle"].Value, href: null, disabled: true)
+    ];
 
     private bool _loading;
     private bool _saving;
@@ -140,6 +145,10 @@
 
         try
         {
+            // Code and tax id are optional in this form — fill in a generated code and the
+            // final-consumer tax id before sending, since the API still requires both.
+            _model.ApplyDefaults();
+
             var error = IsNew
                 ? await Catalog.CreateCustomerAsync(_model.ToCreateRequest(Company.SelectedCompanyId))
                 : await Catalog.UpdateCustomerAsync(Id!.Value, _model.ToUpdateRequest());

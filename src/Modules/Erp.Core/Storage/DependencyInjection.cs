@@ -25,6 +25,7 @@ public static class DependencyInjection
         services.AddScoped<ICustomerStorage, CustomerStorage>();
         services.AddScoped<ISupplierStorage, SupplierStorage>();
         services.AddScoped<IWarehouseStorage, WarehouseStorage>();
+        services.AddScoped<IVatRateStorage, VatRateStorage>();
 
         return services;
     }

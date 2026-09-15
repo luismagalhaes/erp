@@ -23,6 +23,40 @@ html, body {
     font-weight: 600;
 }
 
+/* Account panel: About / user, stacked in the app bar's top-right corner */
+.erp-account-panel {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 2px;
+    margin-left: 12px;
+    padding: 4px 0;
+}
+
+.erp-account-panel-about.mud-button-root {
+    min-width: 0;
+    padding: 0 4px;
+    font-size: 0.72rem;
+    line-height: 1.4;
+    color: var(--mud-palette-text-secondary);
+}
+
+.erp-account-panel-user-activator {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    cursor: pointer;
+}
+
+.erp-account-panel-user-name {
+    max-width: 140px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: 0.78rem;
+    font-weight: 500;
+}
+
 .erp-main {
     border-top: 6px solid var(--mud-palette-primary);
 }

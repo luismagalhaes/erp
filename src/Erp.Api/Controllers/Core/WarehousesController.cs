@@ -14,7 +14,7 @@ namespace Erp.Api.Controllers.Core;
 [Route("api/warehouses")]
 [Authorize(Policy = Policies.Read)]
 [Produces("application/json")]
-public sealed class WarehousesController(IWarehouseService warehouseService) : ControllerBase
+public sealed class WarehousesController(IWarehouseService warehouseService, ILogger<WarehousesController> logger) : ControllerBase
 {
     [HttpGet]
     [ProducesResponseType<IReadOnlyList<WarehouseDto>>(StatusCodes.Status200OK)]
@@ -53,10 +53,12 @@ public sealed class WarehousesController(IWarehouseService warehouseService) : C
         }
         catch (ArgumentException ex)
         {
+            logger.LogWarning(ex, "{Controller}.{Method} rejected an invalid request.", nameof(WarehousesController), nameof(Create));
             return BadRequest(new { error = ex.Message });
         }
         catch (InvalidOperationException ex)
         {
+            logger.LogWarning(ex, "{Controller}.{Method} could not complete due to a conflict.", nameof(WarehousesController), nameof(Create));
             return Conflict(new { error = ex.Message });
         }
     }
@@ -79,10 +81,12 @@ public sealed class WarehousesController(IWarehouseService warehouseService) : C
         }
         catch (ArgumentException ex)
         {
+            logger.LogWarning(ex, "{Controller}.{Method} rejected an invalid request.", nameof(WarehousesController), nameof(Update));
             return BadRequest(new { error = ex.Message });
         }
         catch (InvalidOperationException ex)
         {
+            logger.LogWarning(ex, "{Controller}.{Method} could not complete due to a conflict.", nameof(WarehousesController), nameof(Update));
             return Conflict(new { error = ex.Message });
         }
     }

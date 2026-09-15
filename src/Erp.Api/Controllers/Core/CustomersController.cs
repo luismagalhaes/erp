@@ -12,7 +12,7 @@ namespace Erp.Api.Controllers.Core;
 [Route("api/customers")]
 [Authorize(Policy = Policies.Read)]
 [Produces("application/json")]
-public sealed class CustomersController(ICustomerService customerService) : ControllerBase
+public sealed class CustomersController(ICustomerService customerService, ILogger<CustomersController> logger) : ControllerBase
 {
     [HttpGet]
     [ProducesResponseType<IReadOnlyList<PartnerDto>>(StatusCodes.Status200OK)]
@@ -69,10 +69,12 @@ public sealed class CustomersController(ICustomerService customerService) : Cont
         }
         catch (ArgumentException ex)
         {
+            logger.LogWarning(ex, "{Controller}.{Method} rejected an invalid request.", nameof(CustomersController), nameof(Create));
             return BadRequest(new { error = ex.Message });
         }
         catch (InvalidOperationException ex)
         {
+            logger.LogWarning(ex, "{Controller}.{Method} could not complete due to a conflict.", nameof(CustomersController), nameof(Create));
             return Conflict(new { error = ex.Message });
         }
     }
@@ -94,6 +96,7 @@ public sealed class CustomersController(ICustomerService customerService) : Cont
         }
         catch (ArgumentException ex)
         {
+            logger.LogWarning(ex, "{Controller}.{Method} rejected an invalid request.", nameof(CustomersController), nameof(Update));
             return BadRequest(new { error = ex.Message });
         }
     }

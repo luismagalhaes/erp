@@ -148,9 +148,9 @@
                         <MudSelect T="string" Value="context.TaxCode"
                                    ValueChanged="@(code => OnTaxCodeChanged(context, code))"
                                    Margin="Margin.Dense">
-                            @foreach (var rate in TaxRates)
+                            @foreach (var rate in _taxRates)
                             {
-                                <MudSelectItem T="string" Value="@rate.Code">@rate.Label</MudSelectItem>
+                                <MudSelectItem T="string" Value="@rate.Code">@rate.Label (@rate.Percentage.ToString("0.##")%)</MudSelectItem>
                             }
                         </MudSelect>
                     </MudTd>
@@ -205,13 +205,7 @@
 </MudStack>
 
 @code {
-    private TaxRateOption[] TaxRates =>
-    [
-        new("NOR", 23m, L["PurchaseOrderEditor_TaxRateNormal"]),
-        new("INT", 13m, L["PurchaseOrderEditor_TaxRateIntermediate"]),
-        new("RED", 6m, L["PurchaseOrderEditor_TaxRateReduced"]),
-        new("ISE", 0m, L["PurchaseOrderEditor_TaxRateExempt"])
-    ];
+    private List<VatRate> _taxRates = [];
 
     [Parameter]
     public Guid? Id { get; set; }
@@ -295,6 +289,10 @@
 
             var (products, productsError) = await Catalog.GetProductsAsync(Company.SelectedCompanyId);
             _products = [.. products.Where(product => product.IsActive)];
+
+            // Mainland rates — this document has no fiscal-region selector of its own.
+            var (rates, _) = await Catalog.GetVatRatesAsync();
+            _taxRates = [.. rates.Where(x => x.FiscalRegion == "PT" && x.IsActive)];
 
             _error = suppliersError ?? warehousesError ?? productsError;
 
@@ -391,7 +389,7 @@
     private void OnTaxCodeChanged(LineEditor line, string taxCode)
     {
         line.TaxCode = taxCode;
-        line.TaxPercentage = TaxRates.FirstOrDefault(rate => rate.Code == taxCode)?.Percentage ?? 0m;
+        line.TaxPercentage = _taxRates.FirstOrDefault(rate => rate.Code == taxCode)?.Percentage ?? 0m;
     }
 
     private async Task SaveAsync(bool place)
@@ -463,7 +461,6 @@
 
     private static decimal Round(decimal value) => Math.Round(value, 2, MidpointRounding.AwayFromZero);
 
-    private sealed record TaxRateOption(string Code, decimal Percentage, string Label);
 
     private sealed class LineEditor
     {

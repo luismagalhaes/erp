@@ -15,7 +15,7 @@ namespace Erp.Api.Controllers.Core;
 [Route("api/products")]
 [Authorize(Policy = Policies.Read)]
 [Produces("application/json")]
-public sealed class ProductsController(IProductService productService) : ControllerBase
+public sealed class ProductsController(IProductService productService, ILogger<ProductsController> logger) : ControllerBase
 {
     /// <summary>Lists the products of a company.</summary>
     [HttpGet]
@@ -74,10 +74,12 @@ public sealed class ProductsController(IProductService productService) : Control
         }
         catch (ArgumentException ex)
         {
+            logger.LogWarning(ex, "{Controller}.{Method} rejected an invalid request.", nameof(ProductsController), nameof(Create));
             return BadRequest(new { error = ex.Message });
         }
         catch (InvalidOperationException ex)
         {
+            logger.LogWarning(ex, "{Controller}.{Method} could not complete due to a conflict.", nameof(ProductsController), nameof(Create));
             return Conflict(new { error = ex.Message });
         }
     }
@@ -100,6 +102,7 @@ public sealed class ProductsController(IProductService productService) : Control
         }
         catch (ArgumentException ex)
         {
+            logger.LogWarning(ex, "{Controller}.{Method} rejected an invalid request.", nameof(ProductsController), nameof(Update));
             return BadRequest(new { error = ex.Message });
         }
     }

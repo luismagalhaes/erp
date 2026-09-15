@@ -85,6 +85,7 @@ public sealed class InventoryFileController(
         }
         catch (ArgumentException ex)
         {
+            logger.LogWarning(ex, "{Controller}.{Method} rejected an invalid request.", nameof(InventoryFileController), nameof(Build));
             return BadRequest(new { error = ex.Message });
         }
     }
@@ -146,6 +147,7 @@ public sealed class InventoryFileController(
         }
         catch (ArgumentException ex)
         {
+            logger.LogWarning(ex, "{Controller}.{Method} rejected an invalid request.", nameof(InventoryFileController), nameof(GetSummary));
             return BadRequest(new { error = ex.Message });
         }
     }

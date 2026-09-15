@@ -24,7 +24,8 @@ namespace Erp.Api.Controllers.Purchasing;
 public sealed class PurchaseOrdersController(
     IPurchaseOrderService orderService,
     ISupplierService supplierService,
-    IWarehouseService warehouseService) : ControllerBase
+    IWarehouseService warehouseService,
+    ILogger<PurchaseOrdersController> logger) : ControllerBase
 {
     [HttpGet]
     [Authorize(Policy = Policies.Read)]
@@ -134,6 +135,7 @@ public sealed class PurchaseOrdersController(
         }
         catch (ArgumentException ex)
         {
+            logger.LogWarning(ex, "{Controller}.{Method} rejected an invalid request.", nameof(PurchaseOrdersController), nameof(Create));
             return BadRequest(new { error = ex.Message });
         }
     }
@@ -213,10 +215,12 @@ public sealed class PurchaseOrdersController(
         }
         catch (ArgumentException ex)
         {
+            logger.LogWarning(ex, "{Controller}.{Method} rejected an invalid request.", nameof(PurchaseOrdersController), nameof(RunAsync));
             return BadRequest(new { error = ex.Message });
         }
         catch (InvalidOperationException ex)
         {
+            logger.LogWarning(ex, "{Controller}.{Method} could not complete due to a conflict.", nameof(PurchaseOrdersController), nameof(RunAsync));
             return Conflict(new { error = ex.Message });
         }
     }

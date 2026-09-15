@@ -9,7 +9,7 @@ namespace Erp.Api.Controllers.Core;
 [ApiController]
 [Route("api/user-companies")]
 [Authorize(Policy = Policies.Read)]
-public sealed class UserCompaniesController(IUserCompanyAdminService userCompanyAdminService) : ControllerBase
+public sealed class UserCompaniesController(IUserCompanyAdminService userCompanyAdminService, ILogger<UserCompaniesController> logger) : ControllerBase
 {
     /// <summary>Lists user memberships, optionally limited to one company.</summary>
     [HttpGet]
@@ -39,10 +39,12 @@ public sealed class UserCompaniesController(IUserCompanyAdminService userCompany
         }
         catch (ArgumentException ex)
         {
+            logger.LogWarning(ex, "{Controller}.{Method} rejected an invalid request.", nameof(UserCompaniesController), nameof(Create));
             return BadRequest(new { error = ex.Message });
         }
         catch (InvalidOperationException ex)
         {
+            logger.LogWarning(ex, "{Controller}.{Method} could not complete due to a conflict.", nameof(UserCompaniesController), nameof(Create));
             return Conflict(new { error = ex.Message });
         }
     }
@@ -58,6 +60,7 @@ public sealed class UserCompaniesController(IUserCompanyAdminService userCompany
         }
         catch (ArgumentException ex)
         {
+            logger.LogWarning(ex, "{Controller}.{Method} rejected an invalid request.", nameof(UserCompaniesController), nameof(Update));
             return BadRequest(new { error = ex.Message });
         }
     }

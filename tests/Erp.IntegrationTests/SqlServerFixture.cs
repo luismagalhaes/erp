@@ -118,32 +118,53 @@ public sealed class SqlServerFixture : IAsyncLifetime
         (_provider ?? throw new InvalidOperationException("The fixture has not been initialised."))
             .CreateAsyncScope();
 
+    /// <summary>How many times to retry the first connection before giving up.</summary>
+    private const int ReachabilityAttempts = 5;
+
     /// <summary>
     /// Fails early and says exactly what to do, rather than letting every test fail with a
     /// connection error that says nothing about the test suite needing a database of its own.
     /// </summary>
+    /// <remarks>
+    /// Retries on a timeout: a free-tier Azure SQL Database auto-pauses after inactivity, and the
+    /// connection that wakes it back up can itself time out during the post-login phase before the
+    /// database has finished resuming. A longer <c>Connect Timeout</c> plus a couple of retries
+    /// covers that wake-up instead of failing the whole run on what is otherwise a healthy database.
+    /// </remarks>
     private async Task EnsureReachableAsync()
     {
-        try
+        ConnectionString = new SqlConnectionStringBuilder(ConnectionString) { ConnectTimeout = 30 }.ConnectionString;
+
+        for (var attempt = 1; attempt <= ReachabilityAttempts; attempt++)
         {
-            await using var connection = new SqlConnection(ConnectionString);
-            await connection.OpenAsync();
-        }
-        catch (SqlException ex)
-        {
-            throw new InvalidOperationException(
-                $"""
-                 The integration tests need a database of their own and could not open one.
+            try
+            {
+                await using var connection = new SqlConnection(ConnectionString);
+                await connection.OpenAsync();
+                return;
+            }
+            catch (SqlException ex)
+            {
+                if (attempt < ReachabilityAttempts)
+                {
+                    await Task.Delay(TimeSpan.FromSeconds(10));
+                    continue;
+                }
 
-                 Tried: {Redact(ConnectionString)}
+                throw new InvalidOperationException(
+                    $"""
+                     The integration tests need a database of their own and could not open one.
 
-                 Create it once:
-                     sqlcmd -S "(localdb)\MSSQLLocalDB" -Q "CREATE DATABASE [{DatabaseName}]"
+                     Tried: {Redact(ConnectionString)}
 
-                 The tests migrate it themselves and never drop it. To point them somewhere else,
-                 set {ConnectionVariable} to a full connection string.
-                 """,
-                ex);
+                     Create it once:
+                         sqlcmd -S "(localdb)\MSSQLLocalDB" -Q "CREATE DATABASE [{DatabaseName}]"
+
+                     The tests migrate it themselves and never drop it. To point them somewhere else,
+                     set {ConnectionVariable} to a full connection string.
+                     """,
+                    ex);
+            }
         }
     }
 

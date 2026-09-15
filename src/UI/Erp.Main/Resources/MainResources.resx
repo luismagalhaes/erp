@@ -69,6 +69,7 @@
   <data name="Common_NameColumn" xml:space="preserve"><value>Nome</value></data>
   <data name="Common_DescriptionColumn" xml:space="preserve"><value>Descrição</value></data>
   <data name="Common_CodeColumn" xml:space="preserve"><value>Código</value></data>
+  <data name="Common_CodeOptionalHelperText" xml:space="preserve"><value>Opcional — gerado automaticamente se ficar em branco</value></data>
   <data name="Common_StatusColumn" xml:space="preserve"><value>Estado</value></data>
   <data name="Common_DateColumn" xml:space="preserve"><value>Data</value></data>
   <data name="Common_TotalColumn" xml:space="preserve"><value>Total</value></data>
@@ -96,6 +97,7 @@
 
   <data name="PartnerForm_CodeLabel" xml:space="preserve"><value>Código</value></data>
   <data name="PartnerForm_CodeHelperText" xml:space="preserve"><value>O código não pode ser alterado</value></data>
+  <data name="PartnerForm_CodeOptionalHelperText" xml:space="preserve"><value>Opcional — gerado automaticamente se ficar em branco</value></data>
   <data name="PartnerForm_NameLabel" xml:space="preserve"><value>Nome</value></data>
   <data name="PartnerForm_TaxIdLabel" xml:space="preserve"><value>NIF</value></data>
   <data name="PartnerForm_TaxIdHelperText" xml:space="preserve"><value>999999990 para consumidor final</value></data>
@@ -119,6 +121,8 @@
   <data name="Layout_LightMode" xml:space="preserve"><value>Modo claro</value></data>
   <data name="Layout_DarkMode" xml:space="preserve"><value>Modo escuro</value></data>
   <data name="Layout_Logout" xml:space="preserve"><value>Terminar sessão</value></data>
+  <data name="Layout_About" xml:space="preserve"><value>Sobre</value></data>
+  <data name="Layout_AboutVersion" xml:space="preserve"><value>Versão instalada: {0}</value></data>
 
   <data name="NavMenu_Dashboard" xml:space="preserve"><value>Dashboard</value></data>
   <data name="NavMenu_PartnersGroup" xml:space="preserve"><value>Clientes e Fornecedores</value></data>
@@ -220,7 +224,6 @@
   <data name="CompanyEditor_DataTab" xml:space="preserve"><value>Dados</value></data>
   <data name="CompanyEditor_LegalNameLabel" xml:space="preserve"><value>Designação legal</value></data>
   <data name="CompanyEditor_AddressSectionHint" xml:space="preserve"><value>Sede — o cabeçalho do SAF-T exige a morada, por isso sem ela o ficheiro sai incompleto.</value></data>
-  <data name="CompanyEditor_CountryHelperText" xml:space="preserve"><value>Código de 2 letras</value></data>
   <data name="CompanyEditor_ActiveLabel" xml:space="preserve"><value>Empresa ativa</value></data>
   <data name="CompanyEditor_UsersTab" xml:space="preserve"><value>Utilizadores</value></data>
   <data name="CompanyEditor_UsersTabDisabledHint" xml:space="preserve"><value>Guarde a empresa antes de associar utilizadores</value></data>
@@ -264,6 +267,21 @@
   <data name="CompanyEditor_AccessDeactivated" xml:space="preserve"><value>Acesso desativado.</value></data>
   <data name="CompanyEditor_UserLostAccess" xml:space="preserve"><value>{0} deixou de ter acesso a esta empresa.</value></data>
   <data name="CompanyEditor_OperationError" xml:space="preserve"><value>Não foi possível concluir a operação: {0}</value></data>
+
+  <data name="VatRates_PageTitle" xml:space="preserve"><value>Taxas de IVA</value></data>
+  <data name="VatRates_PageDescription" xml:space="preserve"><value>Definidas por lei para cada espaço fiscal — só o backoffice pode alterar a percentagem.</value></data>
+  <data name="VatRates_RegionColumn" xml:space="preserve"><value>Espaço fiscal</value></data>
+  <data name="VatRates_LabelColumn" xml:space="preserve"><value>Taxa</value></data>
+  <data name="VatRates_PercentageColumn" xml:space="preserve"><value>Percentagem</value></data>
+  <data name="VatRates_LoadError" xml:space="preserve"><value>Não foi possível carregar as taxas de IVA: {0}</value></data>
+  <data name="VatRateEditor_Title" xml:space="preserve"><value>Editar taxa de IVA</value></data>
+  <data name="VatRateEditor_ImmutableNotice" xml:space="preserve"><value>O espaço fiscal e o código não se alteram — só a percentagem e o estado.</value></data>
+  <data name="VatRateEditor_ActiveLabel" xml:space="preserve"><value>Taxa ativa</value></data>
+  <data name="VatRateEditor_NotFound" xml:space="preserve"><value>Taxa de IVA não encontrada.</value></data>
+  <data name="VatRateEditor_LoadError" xml:space="preserve"><value>Não foi possível carregar a taxa de IVA: {0}</value></data>
+  <data name="VatRateEditor_Updated" xml:space="preserve"><value>Taxa de IVA atualizada.</value></data>
+  <data name="VatRateEditor_SaveError" xml:space="preserve"><value>Não foi possível guardar a taxa de IVA: {0}</value></data>
+
   <data name="Customers_PageTitle" xml:space="preserve"><value>Clientes</value></data>
   <data name="Customers_NewButton" xml:space="preserve"><value>Novo cliente</value></data>
   <data name="Customers_SearchPlaceholder" xml:space="preserve"><value>Procurar por código, nome ou NIF</value></data>
@@ -290,6 +308,7 @@
   <data name="Suppliers_LoadError" xml:space="preserve"><value>Não foi possível carregar os fornecedores</value></data>
   <data name="CustomerEditor_NewTitle" xml:space="preserve"><value>Novo cliente</value></data>
   <data name="CustomerEditor_EditTitle" xml:space="preserve"><value>Editar cliente</value></data>
+  <data name="CustomerEditor_CardTitle" xml:space="preserve"><value>Cliente</value></data>
   <data name="CustomerEditor_UpdateHint" xml:space="preserve"><value>Alterar o cliente não muda documentos já emitidos: cada um guarda a sua própria cópia.</value></data>
   <data name="CustomerEditor_NoCompanyWarning" xml:space="preserve"><value>Escolha uma empresa no cabeçalho antes de criar clientes.</value></data>
   <data name="CustomerEditor_ActiveLabel" xml:space="preserve"><value>Cliente ativo</value></data>
@@ -300,6 +319,7 @@
   <data name="CustomerEditor_SaveError" xml:space="preserve"><value>Não foi possível guardar o cliente: {0}</value></data>
   <data name="SupplierEditor_NewTitle" xml:space="preserve"><value>Novo fornecedor</value></data>
   <data name="SupplierEditor_EditTitle" xml:space="preserve"><value>Editar fornecedor</value></data>
+  <data name="SupplierEditor_CardTitle" xml:space="preserve"><value>Fornecedor</value></data>
   <data name="SupplierEditor_UpdateHint" xml:space="preserve"><value>Alterar o fornecedor não muda documentos já emitidos: cada um guarda a sua própria cópia.</value></data>
   <data name="SupplierEditor_NoCompanyWarning" xml:space="preserve"><value>Escolha uma empresa no cabeçalho antes de criar fornecedores.</value></data>
   <data name="SupplierEditor_ActiveLabel" xml:space="preserve"><value>Fornecedor ativo</value></data>
@@ -382,10 +402,6 @@
   <data name="ProductEditor_InventoryCategoryLabel" xml:space="preserve"><value>Cat. inventário</value></data>
   <data name="ProductEditor_BiologicalAssetsNotice" xml:space="preserve"><value>Ativos biológicos só existem no formato valorizado (2_01). Numa comunicação só com quantidades, este artigo vai como mercadoria.</value></data>
   <data name="ProductEditor_SaveHint" xml:space="preserve"><value>Preencha o código e a descrição para poder guardar.</value></data>
-  <data name="ProductEditor_TaxRateNormal" xml:space="preserve"><value>Normal - 23%</value></data>
-  <data name="ProductEditor_TaxRateIntermediate" xml:space="preserve"><value>Intermédia - 13%</value></data>
-  <data name="ProductEditor_TaxRateReduced" xml:space="preserve"><value>Reduzida - 6%</value></data>
-  <data name="ProductEditor_TaxRateExempt" xml:space="preserve"><value>Isento</value></data>
   <data name="ProductEditor_NotFound" xml:space="preserve"><value>Artigo não encontrado.</value></data>
   <data name="ProductEditor_LoadError" xml:space="preserve"><value>Não foi possível carregar o artigo: {0}</value></data>
   <data name="ProductEditor_Created" xml:space="preserve"><value>Artigo criado.</value></data>
@@ -834,10 +850,6 @@
   <data name="PurchaseOrderEditor_SaveDraftButton" xml:space="preserve"><value>Guardar rascunho</value></data>
   <data name="PurchaseOrderEditor_SaveButton" xml:space="preserve"><value>Guardar</value></data>
   <data name="PurchaseOrderEditor_SaveAndPlaceButton" xml:space="preserve"><value>Guardar e colocar</value></data>
-  <data name="PurchaseOrderEditor_TaxRateNormal" xml:space="preserve"><value>Normal - 23%</value></data>
-  <data name="PurchaseOrderEditor_TaxRateIntermediate" xml:space="preserve"><value>Intermédia - 13%</value></data>
-  <data name="PurchaseOrderEditor_TaxRateReduced" xml:space="preserve"><value>Reduzida - 6%</value></data>
-  <data name="PurchaseOrderEditor_TaxRateExempt" xml:space="preserve"><value>Isento</value></data>
   <data name="PurchaseOrderEditor_SaveFailed" xml:space="preserve"><value>Não foi possível guardar a encomenda.</value></data>
   <data name="PurchaseOrderEditor_SavedSuccess" xml:space="preserve"><value>Encomenda {0} guardada.</value></data>
   <data name="PurchaseOrderEditor_SaveError" xml:space="preserve"><value>Não foi possível guardar a encomenda: {0}</value></data>
@@ -971,10 +983,6 @@
   <data name="NewInvoice_TotalLabel" xml:space="preserve"><value>Total</value></data>
   <data name="NewInvoice_IssuingButton" xml:space="preserve"><value>A emitir...</value></data>
   <data name="NewInvoice_IssueButton" xml:space="preserve"><value>Emitir fatura</value></data>
-  <data name="NewInvoice_TaxRateNormal" xml:space="preserve"><value>Normal - 23%</value></data>
-  <data name="NewInvoice_TaxRateIntermediate" xml:space="preserve"><value>Intermédia - 13%</value></data>
-  <data name="NewInvoice_TaxRateReduced" xml:space="preserve"><value>Reduzida - 6%</value></data>
-  <data name="NewInvoice_TaxRateExempt" xml:space="preserve"><value>Isento</value></data>
   <data name="NewInvoice_LoadError" xml:space="preserve"><value>Não foi possível preparar a emissão: {0}</value></data>
   <data name="NewInvoice_IssueFailed" xml:space="preserve"><value>Não foi possível emitir o documento.</value></data>
   <data name="NewInvoice_IssuedSuccess" xml:space="preserve"><value>{0} {1} emitida.</value></data>
@@ -1318,10 +1326,6 @@
   <data name="NewStockMovement_TotalLabel" xml:space="preserve"><value>Total</value></data>
   <data name="NewStockMovement_IssuingButton" xml:space="preserve"><value>A emitir...</value></data>
   <data name="NewStockMovement_IssueButton" xml:space="preserve"><value>Emitir guia</value></data>
-  <data name="NewStockMovement_TaxRateNormal" xml:space="preserve"><value>Normal - 23%</value></data>
-  <data name="NewStockMovement_TaxRateIntermediate" xml:space="preserve"><value>Intermédia - 13%</value></data>
-  <data name="NewStockMovement_TaxRateReduced" xml:space="preserve"><value>Reduzida - 6%</value></data>
-  <data name="NewStockMovement_TaxRateExempt" xml:space="preserve"><value>Isento</value></data>
   <data name="NewStockMovement_LoadError" xml:space="preserve"><value>Não foi possível preparar a emissão: {0}</value></data>
   <data name="NewStockMovement_IssueFallbackError" xml:space="preserve"><value>Não foi possível emitir a guia.</value></data>
   <data name="NewStockMovement_IssueSuccess" xml:space="preserve"><value>Guia {0} emitida. Falta comunicar à AT.</value></data>
@@ -1433,10 +1437,6 @@
   <data name="NewSelfBilledInvoice_CancelButton" xml:space="preserve"><value>Cancelar</value></data>
   <data name="NewSelfBilledInvoice_IssuingButton" xml:space="preserve"><value>A emitir...</value></data>
   <data name="NewSelfBilledInvoice_IssueButton" xml:space="preserve"><value>Emitir</value></data>
-  <data name="NewSelfBilledInvoice_TaxRateNormal" xml:space="preserve"><value>Normal - 23%</value></data>
-  <data name="NewSelfBilledInvoice_TaxRateIntermediate" xml:space="preserve"><value>Intermédia - 13%</value></data>
-  <data name="NewSelfBilledInvoice_TaxRateReduced" xml:space="preserve"><value>Reduzida - 6%</value></data>
-  <data name="NewSelfBilledInvoice_TaxRateExempt" xml:space="preserve"><value>Isento</value></data>
   <data name="NewSelfBilledInvoice_LoadError" xml:space="preserve"><value>Não foi possível preparar a emissão: {0}</value></data>
   <data name="NewSelfBilledInvoice_UnbilledLoadError" xml:space="preserve"><value>Não foi possível carregar o que está por faturar: {0}</value></data>
   <data name="NewSelfBilledInvoice_IssueFallbackError" xml:space="preserve"><value>Não foi possível emitir a autofatura.</value></data>
@@ -1516,10 +1516,6 @@
   <data name="NewSupplierInvoice_CancelButton" xml:space="preserve"><value>Cancelar</value></data>
   <data name="NewSupplierInvoice_SavingButton" xml:space="preserve"><value>A registar...</value></data>
   <data name="NewSupplierInvoice_SaveButton" xml:space="preserve"><value>Registar</value></data>
-  <data name="NewSupplierInvoice_TaxRateNormal" xml:space="preserve"><value>Normal - 23%</value></data>
-  <data name="NewSupplierInvoice_TaxRateIntermediate" xml:space="preserve"><value>Intermédia - 13%</value></data>
-  <data name="NewSupplierInvoice_TaxRateReduced" xml:space="preserve"><value>Reduzida - 6%</value></data>
-  <data name="NewSupplierInvoice_TaxRateExempt" xml:space="preserve"><value>Isento</value></data>
   <data name="NewSupplierInvoice_LoadError" xml:space="preserve"><value>Não foi possível preparar o registo: {0}</value></data>
   <data name="NewSupplierInvoice_UnbilledLoadError" xml:space="preserve"><value>Não foi possível carregar o que está por faturar: {0}</value></data>
   <data name="NewSupplierInvoice_SaveFallbackError" xml:space="preserve"><value>Não foi possível registar a fatura.</value></data>

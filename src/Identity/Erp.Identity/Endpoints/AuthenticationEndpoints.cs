@@ -10,8 +10,16 @@ public static class AuthenticationEndpoints
 {
     public static void MapAuthenticationEndpoints(this WebApplication app)
     {
+        // app.Logger — rather than an injected ILogger<T> — is what the lambdas below use: this
+        // static class can never be a generic type argument, and a plain WebApplication.Logger
+        // already carries the right category without one.
+        var logger = app.Logger;
+
         app.MapGet("/authentication/logout", async (SignInManager<ApplicationUser> signInManager, IIdentityServerInteractionService interaction, HttpContext httpContext, string? returnUrl, string? logoutId) =>
         {
+            logger.LogInformation(
+                "{Class}.{Method} called with logoutId={LogoutId}", nameof(AuthenticationEndpoints), "Logout", logoutId);
+
             var target = SanitizeReturnUrl(returnUrl);
 
             await signInManager.SignOutAsync();
@@ -34,6 +42,10 @@ public static class AuthenticationEndpoints
 
         app.MapPost("/authentication/login", async (SignInManager<ApplicationUser> signInManager, IIdentityServerInteractionService interaction, HttpContext httpContext) =>
         {
+            // Email and password never reach the log — only the outcome and, on success, the
+            // signed-in user's id.
+            logger.LogInformation("{Class}.{Method} called", nameof(AuthenticationEndpoints), "Login");
+
             var form = await httpContext.Request.ReadFormAsync();
             var email = (form["email"].ToString() ?? string.Empty).Trim();
             var password = form["password"].ToString() ?? string.Empty;
@@ -48,6 +60,10 @@ public static class AuthenticationEndpoints
             var result = await signInManager.PasswordSignInAsync(email, password, isPersistent: true, lockoutOnFailure: true);
             if (result.Succeeded)
             {
+                var user = await signInManager.UserManager.FindByEmailAsync(email);
+                logger.LogInformation(
+                    "{Class}.{Method} succeeded for userId={UserId}", nameof(AuthenticationEndpoints), "Login", user?.Id);
+
                 if (interaction.IsValidReturnUrl(returnUrl))
                 {
                     httpContext.Response.Redirect(returnUrl);
@@ -60,6 +76,9 @@ public static class AuthenticationEndpoints
                 return;
             }
 
+            logger.LogWarning(
+                "{Class}.{Method} failed, lockedOut={LockedOut}", nameof(AuthenticationEndpoints), "Login", result.IsLockedOut);
+
             var errorType = result.IsLockedOut ? "locked" : "1";
             httpContext.Response.Redirect($"/Account/SignIn?error={errorType}&returnUrl={Uri.EscapeDataString(returnUrl)}");
         }).AllowAnonymous();
@@ -71,6 +90,8 @@ public static class AuthenticationEndpoints
         // this plain endpoint, which runs in a normal request and can reissue the cookie.
         app.MapGet("/authentication/refresh-sign-in", async (SignInManager<ApplicationUser> signInManager, HttpContext httpContext, string? returnUrl) =>
         {
+            logger.LogInformation("{Class}.{Method} called", nameof(AuthenticationEndpoints), "RefreshSignIn");
+
             var user = await signInManager.UserManager.GetUserAsync(httpContext.User);
             if (user is not null)
                 await signInManager.RefreshSignInAsync(user);

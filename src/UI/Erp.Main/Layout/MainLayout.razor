@@ -6,9 +6,11 @@
 @using Erp.Main.Services
 @using Erp.Main.Theme
 @using Erp.Main.Resources
+@using System.Reflection
 @inject NavigationManager Navigation
 @inject CompanyState Company
 @inject IStringLocalizer<MainResources> Localizer
+@inject IDialogService DialogService
 
 <MudThemeProvider Theme="AppTheme.Default" @bind-IsDarkMode="_isDarkMode" />
 @* Required by every component that opens an overlay: selects, date pickers and menus. *@
@@ -24,23 +26,6 @@
 
         <MudSpacer />
 
-        <AuthorizeView>
-            <Authorized>
-                @if (Company.Companies.Count > 0)
-                {
-                    <MudSelect T="Guid" Value="Company.SelectedCompanyId" ValueChanged="OnCompanyChanged"
-                               Dense="true" Margin="Margin.Dense" Variant="Variant.Outlined"
-                               Class="company-picker" Style="min-width: 260px;"
-                               AdornmentIcon="@Icons.Material.Filled.Domain" Adornment="Adornment.Start">
-                        @foreach (var company in Company.Companies)
-                        {
-                            <MudSelectItem T="Guid" Value="@company.CompanyId">@company.CompanyName</MudSelectItem>
-                        }
-                    </MudSelect>
-                }
-            </Authorized>
-        </AuthorizeView>
-
         <MudTooltip Text="@(_isDarkMode ? Localizer["Layout_LightMode"] : Localizer["Layout_DarkMode"])">
             <MudIconButton Color="Color.Inherit"
                            Icon="@(_isDarkMode ? Icons.Material.Filled.LightMode : Icons.Material.Filled.DarkMode)"
@@ -55,19 +40,47 @@
 
         <AuthorizeView>
             <Authorized>
-                <MudMenu AnchorOrigin="Origin.BottomRight" TransformOrigin="Origin.TopRight"
-                         ActivationEvent="MouseEvent.LeftClick" Class="ml-2">
-                    <ActivatorContent>
-                        <MudTooltip Text="@context.User.Identity?.Name">
-                            <MudAvatar Color="Color.Primary" Size="Size.Medium" Class="erp-user-avatar">
-                                @Initials(context.User.Identity?.Name)
-                            </MudAvatar>
-                        </MudTooltip>
-                    </ActivatorContent>
-                    <ChildContent>
-                        <MudMenuItem Icon="@Icons.Material.Filled.Logout" OnClick="@Logout">@Localizer["Layout_Logout"]</MudMenuItem>
-                    </ChildContent>
-                </MudMenu>
+                <div class="erp-account-panel">
+                    @if (Company.Companies.Count == 1)
+                    {
+                        <div class="erp-account-panel-company" title="@Company.Companies[0].CompanyName">
+                            <MudIcon Icon="@Icons.Material.Filled.Domain" Size="Size.Small" />
+                            <span>@Company.Companies[0].CompanyName</span>
+                        </div>
+                    }
+                    else if (Company.Companies.Count > 1)
+                    {
+                        <MudSelect T="Guid" Value="Company.SelectedCompanyId" ValueChanged="OnCompanyChanged"
+                                   Dense="true" Margin="Margin.Dense" Variant="Variant.Outlined"
+                                   Class="erp-account-panel-company-select"
+                                   AdornmentIcon="@Icons.Material.Filled.Domain" Adornment="Adornment.Start">
+                            @foreach (var company in Company.Companies)
+                            {
+                                <MudSelectItem T="Guid" Value="@company.CompanyId">@company.CompanyName</MudSelectItem>
+                            }
+                        </MudSelect>
+                    }
+
+                    <MudButton Variant="Variant.Text" Size="Size.Small" StartIcon="@Icons.Material.Filled.Info"
+                               Class="erp-account-panel-about" OnClick="OpenAbout">
+                        @Localizer["Layout_About"]
+                    </MudButton>
+
+                    <MudMenu AnchorOrigin="Origin.BottomRight" TransformOrigin="Origin.TopRight"
+                             ActivationEvent="MouseEvent.LeftClick" Class="erp-account-panel-user">
+                        <ActivatorContent>
+                            <div class="erp-account-panel-user-activator">
+                                <MudAvatar Color="Color.Primary" Size="Size.Small" Class="erp-user-avatar">
+                                    @Initials(context.User.Identity?.Name)
+                                </MudAvatar>
+                                <span class="erp-account-panel-user-name">@context.User.Identity?.Name</span>
+                            </div>
+                        </ActivatorContent>
+                        <ChildContent>
+                            <MudMenuItem Icon="@Icons.Material.Filled.Logout" OnClick="@Logout">@Localizer["Layout_Logout"]</MudMenuItem>
+                        </ChildContent>
+                    </MudMenu>
+                </div>
             </Authorized>
         </AuthorizeView>
     </MudAppBar>
@@ -83,14 +96,6 @@
         </MudContainer>
     </MudMainContent>
 </MudLayout>
-
-<style>
-    .company-picker .mud-input-slot,
-    .company-picker .mud-input-adornment .mud-icon-root,
-    .company-picker .mud-select-input .mud-input-slot {
-        color: var(--mud-palette-text-primary);
-    }
-</style>
 
 @code {
     private bool _drawerOpen = true;
@@ -112,6 +117,15 @@
     private void OnCompanyChanged(Guid companyId) => Company.Select(companyId);
 
     private void OnCompanyStateChanged() => InvokeAsync(StateHasChanged);
+
+    private Task OpenAbout()
+    {
+        var version = Assembly.GetEntryAssembly()?.GetName().Version?.ToString(3) ?? "-";
+        return DialogService.ShowMessageBox(
+            Localizer["Layout_About"].Value,
+            string.Format(Localizer["Layout_AboutVersion"].Value, version),
+            yesText: Localizer["Common_Close"].Value);
+    }
 
     private void Logout()
     {

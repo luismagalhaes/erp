@@ -7,6 +7,7 @@
 @using MudBlazor
 @using Erp.Common
 @using Erp.Main.Models
+@using Erp.Main.Models.Core
 @using Erp.Main.Resources
 @using Erp.Main.Services
 @inject CoreApiClient CoreApi
@@ -48,21 +49,21 @@
         <MudPaper Elevation="1">
             <MudTabs Elevation="0" ApplyEffectsToContainer="true" PanelClass="pa-4">
                 <MudTabPanel Text="@Localizer["CompanyEditor_DataTab"]" Icon="@Icons.Material.Filled.Domain">
-                    <MudGrid>
-                        <MudItem xs="12" md="6">
-                            <MudTextField @bind-Value="_name" Label="@Localizer["Common_NameColumn"]" Variant="Variant.Outlined" Required="true" />
+                    <MudGrid Spacing="3">
+                        <MudItem xs="12" sm="6" md="6">
+                            <MudTextField @bind-Value="_name" Label="@Localizer["Common_NameColumn"]" Variant="Variant.Outlined" Margin="Margin.Dense" Required="true" />
                         </MudItem>
-                        <MudItem xs="12" md="6">
-                            <MudTextField @bind-Value="_legalName" Label="@Localizer["CompanyEditor_LegalNameLabel"]" Variant="Variant.Outlined" />
+                        <MudItem xs="12" sm="6" md="6">
+                            <MudTextField @bind-Value="_legalName" Label="@Localizer["CompanyEditor_LegalNameLabel"]" Variant="Variant.Outlined" Margin="Margin.Dense" />
                         </MudItem>
-                        <MudItem xs="12" md="4">
-                            <MudTextField @bind-Value="_taxId" Label="@Localizer["Companies_TaxIdColumn"]" Variant="Variant.Outlined" Required="true" />
+                        <MudItem xs="12" sm="4" md="3">
+                            <MudTextField @bind-Value="_taxId" Label="@Localizer["Companies_TaxIdColumn"]" Variant="Variant.Outlined" Margin="Margin.Dense" Required="true" />
                         </MudItem>
-                        <MudItem xs="12" md="4">
-                            <MudTextField @bind-Value="_email" Label="@Localizer["CompanyEditor_EmailColumn"]" Variant="Variant.Outlined" InputType="InputType.Email" />
+                        <MudItem xs="12" sm="4" md="3">
+                            <MudTextField @bind-Value="_email" Label="@Localizer["CompanyEditor_EmailColumn"]" Variant="Variant.Outlined" Margin="Margin.Dense" InputType="InputType.Email" />
                         </MudItem>
-                        <MudItem xs="12" md="4">
-                            <MudTextField @bind-Value="_phone" Label="@Localizer["PartnerForm_PhoneLabel"]" Variant="Variant.Outlined" />
+                        <MudItem xs="12" sm="4" md="3">
+                            <MudTextField @bind-Value="_phone" Label="@Localizer["PartnerForm_PhoneLabel"]" Variant="Variant.Outlined" Margin="Margin.Dense" />
                         </MudItem>
 
                         <MudItem xs="12">
@@ -70,18 +71,22 @@
                                 @Localizer["CompanyEditor_AddressSectionHint"]
                             </MudText>
                         </MudItem>
-                        <MudItem xs="12" md="6">
-                            <MudTextField @bind-Value="_address" Label="@Localizer["PartnerForm_AddressLabel"]" Variant="Variant.Outlined" />
+                        <MudItem xs="12" sm="6" md="6">
+                            <MudTextField @bind-Value="_address" Label="@Localizer["PartnerForm_AddressLabel"]" Variant="Variant.Outlined" Margin="Margin.Dense" />
                         </MudItem>
-                        <MudItem xs="12" md="2">
-                            <MudTextField @bind-Value="_postalCode" Label="@Localizer["PartnerForm_PostalCodeLabel"]" Variant="Variant.Outlined" />
+                        <MudItem xs="12" sm="3" md="3">
+                            <MudTextField @bind-Value="_postalCode" Label="@Localizer["PartnerForm_PostalCodeLabel"]" Variant="Variant.Outlined" Margin="Margin.Dense" />
                         </MudItem>
-                        <MudItem xs="12" md="2">
-                            <MudTextField @bind-Value="_city" Label="@Localizer["CompanyEditor_CityColumn"]" Variant="Variant.Outlined" />
+                        <MudItem xs="12" sm="3" md="3">
+                            <MudTextField @bind-Value="_city" Label="@Localizer["CompanyEditor_CityColumn"]" Variant="Variant.Outlined" Margin="Margin.Dense" />
                         </MudItem>
-                        <MudItem xs="12" md="2">
-                            <MudTextField @bind-Value="_country" Label="@Localizer["PartnerForm_CountryLabel"]" Variant="Variant.Outlined"
-                                          HelperText="@Localizer["CompanyEditor_CountryHelperText"]" />
+                        <MudItem xs="12" sm="4" md="3">
+                            <MudSelect @bind-Value="_country" Label="@Localizer["PartnerForm_CountryLabel"]" Variant="Variant.Outlined" Margin="Margin.Dense">
+                                @foreach (var country in Countries.All)
+                                {
+                                    <MudSelectItem T="string" Value="@country.Code">@country.Name</MudSelectItem>
+                                }
+                            </MudSelect>
                         </MudItem>
 
                         @if (!IsNew)
@@ -264,33 +269,37 @@
         <MudText Typo="Typo.h6">@(_warehouseId is null ? Localizer["CompanyEditor_NewWarehouseTitle"] : Localizer["CompanyEditor_EditWarehouseTitle"])</MudText>
     </TitleContent>
     <DialogContent>
-        <MudGrid>
-            <MudItem xs="12" md="3">
+        <MudGrid Spacing="3">
+            <MudItem xs="12" sm="3" md="3">
                 <MudTextField @bind-Value="_warehouseCode" @bind-Value:after="StateHasChanged" Immediate="true"
-                              Label="@Localizer["Common_CodeColumn"]" Variant="Variant.Outlined" Required="true"
+                              Label="@Localizer["Common_CodeColumn"]" Variant="Variant.Outlined" Margin="Margin.Dense" Required="true"
                               Disabled="@(_warehouseId is not null)"
                               HelperText="@(_warehouseId is null ? Localizer["CompanyEditor_WarehouseCodeUniqueHint"].Value : Localizer["CompanyEditor_WarehouseCodeHelperText"].Value)" />
             </MudItem>
-            <MudItem xs="12" md="9">
+            <MudItem xs="12" sm="9" md="9">
                 <MudTextField @bind-Value="_warehouseName" @bind-Value:after="StateHasChanged" Immediate="true"
-                              Label="@Localizer["Common_NameColumn"]" Variant="Variant.Outlined" Required="true" />
+                              Label="@Localizer["Common_NameColumn"]" Variant="Variant.Outlined" Margin="Margin.Dense" Required="true" />
             </MudItem>
 
-            <MudItem xs="12" md="6">
-                <MudTextField @bind-Value="_warehouseAddress" Label="@Localizer["PartnerForm_AddressLabel"]" Variant="Variant.Outlined" />
+            <MudItem xs="12" sm="6" md="6">
+                <MudTextField @bind-Value="_warehouseAddress" Label="@Localizer["PartnerForm_AddressLabel"]" Variant="Variant.Outlined" Margin="Margin.Dense" />
             </MudItem>
-            <MudItem xs="12" md="2">
-                <MudTextField @bind-Value="_warehousePostalCode" Label="@Localizer["PartnerForm_PostalCodeLabel"]" Variant="Variant.Outlined" />
+            <MudItem xs="12" sm="3" md="3">
+                <MudTextField @bind-Value="_warehousePostalCode" Label="@Localizer["PartnerForm_PostalCodeLabel"]" Variant="Variant.Outlined" Margin="Margin.Dense" />
             </MudItem>
-            <MudItem xs="12" md="2">
-                <MudTextField @bind-Value="_warehouseCity" Label="@Localizer["CompanyEditor_CityColumn"]" Variant="Variant.Outlined" />
+            <MudItem xs="12" sm="3" md="3">
+                <MudTextField @bind-Value="_warehouseCity" Label="@Localizer["CompanyEditor_CityColumn"]" Variant="Variant.Outlined" Margin="Margin.Dense" />
             </MudItem>
-            <MudItem xs="12" md="2">
-                <MudTextField @bind-Value="_warehouseCountry" Label="@Localizer["PartnerForm_CountryLabel"]" Variant="Variant.Outlined"
-                              HelperText="@Localizer["CompanyEditor_CountryHelperText"]" />
+            <MudItem xs="12" sm="4" md="3">
+                <MudSelect @bind-Value="_warehouseCountry" Label="@Localizer["PartnerForm_CountryLabel"]" Variant="Variant.Outlined" Margin="Margin.Dense">
+                    @foreach (var country in Countries.All)
+                    {
+                        <MudSelectItem T="string" Value="@country.Code">@country.Name</MudSelectItem>
+                    }
+                </MudSelect>
             </MudItem>
 
-            <MudItem xs="12" md="6">
+            <MudItem xs="12" sm="4" md="4">
                 <MudSwitch @bind-Value="_warehouseIsDefault" Color="Color.Primary" Label="@Localizer["CompanyEditor_WarehouseIsDefaultLabel"]" />
                 <MudText Typo="Typo.caption" Color="Color.Secondary">
                     @Localizer["CompanyEditor_WarehouseIsDefaultHint"]
@@ -299,7 +308,7 @@
 
             @if (_warehouseId is not null)
             {
-                <MudItem xs="12" md="6">
+                <MudItem xs="12" sm="4" md="4">
                     <MudSwitch @bind-Value="_warehouseIsActive" Color="Color.Primary" Label="@Localizer["CompanyEditor_WarehouseActiveLabel"]" />
                 </MudItem>
             }

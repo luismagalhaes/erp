@@ -19,7 +19,8 @@ namespace Erp.Api.Controllers.Sales;
 [Produces("application/json")]
 public sealed class StockMovementsController(
     IStockMovementService stockMovementService,
-    IWarehouseService warehouseService) : ControllerBase
+    IWarehouseService warehouseService,
+    ILogger<StockMovementsController> logger) : ControllerBase
 {
     /// <summary>
     /// Falls back to the company's default warehouse when the caller names none. The warehouse
@@ -108,10 +109,12 @@ public sealed class StockMovementsController(
         }
         catch (ArgumentException ex)
         {
+            logger.LogWarning(ex, "{Controller}.{Method} rejected an invalid request.", nameof(StockMovementsController), nameof(Issue));
             return BadRequest(new { error = ex.Message });
         }
         catch (InvalidOperationException ex)
         {
+            logger.LogWarning(ex, "{Controller}.{Method} could not complete due to a conflict.", nameof(StockMovementsController), nameof(Issue));
             return Conflict(new { error = ex.Message });
         }
     }
@@ -141,6 +144,7 @@ public sealed class StockMovementsController(
         }
         catch (InvalidOperationException ex)
         {
+            logger.LogWarning(ex, "{Controller}.{Method} could not complete due to a conflict.", nameof(StockMovementsController), nameof(Communicate));
             return Conflict(new { error = ex.Message });
         }
     }
@@ -170,6 +174,7 @@ public sealed class StockMovementsController(
         }
         catch (InvalidOperationException ex)
         {
+            logger.LogWarning(ex, "{Controller}.{Method} could not complete due to a conflict.", nameof(StockMovementsController), nameof(Void));
             return Conflict(new { error = ex.Message });
         }
     }

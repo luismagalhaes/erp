@@ -129,6 +129,16 @@ public sealed class CoreModelConfiguration : IModuleModelConfiguration
 
         modelBuilder.Entity<Customer>(entity => ConfigurePartner(entity));
         modelBuilder.Entity<Supplier>(entity => ConfigurePartner(entity));
+
+        modelBuilder.Entity<VatRate>(entity =>
+        {
+            entity.HasKey(x => x.Id);
+            entity.Property(x => x.FiscalRegion).HasMaxLength(5).IsRequired();
+            entity.Property(x => x.Code).HasMaxLength(10).IsRequired();
+            entity.Property(x => x.Label).HasMaxLength(60).IsRequired();
+            entity.Property(x => x.Percentage).HasPrecision(5, 2);
+            entity.HasIndex(x => new { x.FiscalRegion, x.Code }).IsUnique();
+        });
     }
 
     /// <summary>Customers and suppliers share the same columns, so they share the same mapping.</summary>

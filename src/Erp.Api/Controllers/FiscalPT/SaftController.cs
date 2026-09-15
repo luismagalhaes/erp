@@ -48,6 +48,7 @@ public sealed class SaftController(
         }
         catch (ArgumentException ex)
         {
+            logger.LogWarning(ex, "{Controller}.{Method} rejected an invalid request.", nameof(SaftController), nameof(GetSummary));
             return BadRequest(new { error = ex.Message });
         }
     }
@@ -165,6 +166,7 @@ public sealed class SaftController(
         }
         catch (ArgumentException ex)
         {
+            logger.LogWarning(ex, "{Controller}.{Method} rejected an invalid request.", nameof(SaftController), nameof(ExportAsync));
             return BadRequest(new { error = ex.Message });
         }
     }

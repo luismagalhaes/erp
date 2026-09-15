@@ -1,0 +1,131 @@
+@page "/vat-rates/{Id:guid}"
+@attribute [Authorize]
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.Extensions.Localization
+@using MudBlazor
+@using Erp.Main.Components.Common
+@using Erp.Main.Models.Core
+@using Erp.Main.Resources
+@using Erp.Main.Services
+@inject CatalogApiClient Catalog
+@inject NavigationManager Navigation
+@inject ISnackbar Snackbar
+@inject IStringLocalizer<MainResources> Localizer
+
+<PageTitle>@Localizer["VatRateEditor_Title"]</PageTitle>
+
+<MudStack Spacing="3">
+    <PageHeader Title="@Localizer["VatRateEditor_Title"]" Breadcrumbs="Breadcrumbs">
+        <Actions>
+            <MudButton Variant="Variant.Text" StartIcon="@Icons.Material.Filled.ArrowBack"
+                       OnClick="@(() => Navigation.NavigateTo("vat-rates"))">
+                @Localizer["Common_Back"]
+            </MudButton>
+        </Actions>
+    </PageHeader>
+
+    @if (!string.IsNullOrWhiteSpace(_error))
+    {
+        <MudAlert Severity="Severity.Error" Dense="true">@_error</MudAlert>
+    }
+
+    @if (_loading)
+    {
+        <MudProgressLinear Indeterminate="true" Color="Color.Primary" />
+    }
+    else if (_rate is not null)
+    {
+        <EditorCard Title="@($"{FiscalRegions.Describe(_rate.FiscalRegion)} — {_rate.Label}")"
+                    Icon="@Icons.Material.Filled.TableView"
+                    Description="@Localizer["VatRateEditor_ImmutableNotice"]">
+            <ChildContent>
+                <MudGrid Spacing="3">
+                    <MudItem xs="12" sm="6" md="3">
+                        <MudNumericField @bind-Value="_percentage" Label="@Localizer["VatRates_PercentageColumn"]"
+                                         Variant="Variant.Outlined" Margin="Margin.Dense" Min="0" Max="100" Format="N2"
+                                         Adornment="Adornment.End" AdornmentText="%" />
+                    </MudItem>
+                    <MudItem xs="12" sm="6" md="9" Class="d-flex align-center">
+                        <MudSwitch @bind-Value="_isActive" Color="Color.Primary" Label="@Localizer["VatRateEditor_ActiveLabel"]" />
+                    </MudItem>
+                </MudGrid>
+            </ChildContent>
+        </EditorCard>
+
+        <FormActions Busy="_saving" OnSubmit="SaveAsync" OnCancel="@(() => Navigation.NavigateTo("vat-rates"))" />
+    }
+</MudStack>
+
+@code {
+    [Parameter]
+    public Guid Id { get; set; }
+
+    private List<BreadcrumbItem> Breadcrumbs =>
+    [
+        new(Localizer["VatRates_PageTitle"].Value, href: "vat-rates"),
+        new(Localizer["VatRateEditor_Title"].Value, href: null, disabled: true)
+    ];
+
+    private bool _loading = true;
+    private bool _saving;
+    private string? _error;
+
+    private VatRate? _rate;
+    private decimal _percentage;
+    private bool _isActive = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            var (rates, error) = await Catalog.GetVatRatesAsync();
+            _rate = rates.FirstOrDefault(r => r.Id == Id);
+            _error = error;
+
+            if (_rate is null)
+            {
+                _error ??= Localizer["VatRateEditor_NotFound"];
+                return;
+            }
+
+            _percentage = _rate.Percentage;
+            _isActive = _rate.IsActive;
+        }
+        catch (Exception ex)
+        {
+            _error = string.Format(Localizer["VatRateEditor_LoadError"], ex.Message);
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private async Task SaveAsync()
+    {
+        _saving = true;
+        _error = null;
+
+        try
+        {
+            var error = await Catalog.UpdateVatRateAsync(Id, new UpdateVatRateRequest(_percentage, _isActive));
+
+            if (error is not null)
+            {
+                _error = error;
+                return;
+            }
+
+            Snackbar.Add(Localizer["VatRateEditor_Updated"].Value, Severity.Success);
+            Navigation.NavigateTo("vat-rates");
+        }
+        catch (Exception ex)
+        {
+            _error = string.Format(Localizer["VatRateEditor_SaveError"], ex.Message);
+        }
+        finally
+        {
+            _saving = false;
+        }
+    }
+}

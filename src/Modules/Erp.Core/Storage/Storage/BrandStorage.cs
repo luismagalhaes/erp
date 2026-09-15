@@ -233,6 +233,22 @@ public sealed class CustomerStorage(AppDbContext dbContext) : ICustomerStorage
         dbContext.SaveChangesAsync(cancellationToken);
 }
 
+public sealed class VatRateStorage(AppDbContext dbContext) : IVatRateStorage
+{
+    public async Task<IReadOnlyList<VatRate>> GetAllAsync(CancellationToken cancellationToken = default) =>
+        await dbContext.Set<VatRate>()
+            .AsNoTracking()
+            .OrderBy(x => x.FiscalRegion)
+            .ThenBy(x => x.Code)
+            .ToListAsync(cancellationToken);
+
+    public Task<VatRate?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default) =>
+        dbContext.Set<VatRate>().FirstOrDefaultAsync(x => x.Id == id, cancellationToken);
+
+    public Task SaveChangesAsync(CancellationToken cancellationToken = default) =>
+        dbContext.SaveChangesAsync(cancellationToken);
+}
+
 public sealed class SupplierStorage(AppDbContext dbContext) : ISupplierStorage
 {
     public async Task<IReadOnlyList<Supplier>> GetAllAsync(Guid companyId, CancellationToken cancellationToken = default) =>

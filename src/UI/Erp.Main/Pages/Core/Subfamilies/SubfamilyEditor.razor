@@ -5,6 +5,7 @@
 @using Microsoft.AspNetCore.Components.Web
 @using MudBlazor
 @using Erp.Main.Models
+@using Erp.Main.Models.Core
 @using Erp.Main.Services
 @using Erp.Main.Resources
 @using Microsoft.Extensions.Localization
@@ -45,22 +46,22 @@
     else
     {
         <MudPaper Elevation="1" Class="pa-4">
-            <MudGrid>
-                <MudItem xs="12" md="4">
-                    <MudSelect @bind-Value="_familyId" Label="@Localizer["SubfamilyEditor_FamilyLabel"]" Variant="Variant.Outlined" Required="true">
+            <MudGrid Spacing="3">
+                <MudItem xs="12" sm="6" md="3">
+                    <MudSelect @bind-Value="_familyId" Label="@Localizer["SubfamilyEditor_FamilyLabel"]" Variant="Variant.Outlined" Margin="Margin.Dense" Required="true">
                         @foreach (var family in _families)
                         {
                             <MudSelectItem T="Guid" Value="@family.Id">@family.Name</MudSelectItem>
                         }
                     </MudSelect>
                 </MudItem>
-                <MudItem xs="12" md="3">
-                    <MudTextField @bind-Value="_code" Label="@Localizer["SubfamilyEditor_CodeLabel"]" Variant="Variant.Outlined"
-                                  Required="true" Disabled="@(!IsNew)"
-                                  HelperText="@(IsNew ? null : Localizer["SubfamilyEditor_CodeHelperText"].Value)" />
+                <MudItem xs="12" sm="3" md="3">
+                    <MudTextField @bind-Value="_code" Label="@Localizer["SubfamilyEditor_CodeLabel"]" Variant="Variant.Outlined" Margin="Margin.Dense"
+                                  Disabled="@(!IsNew)"
+                                  HelperText="@(!IsNew ? Localizer["SubfamilyEditor_CodeHelperText"].Value : Localizer["Common_CodeOptionalHelperText"].Value)" />
                 </MudItem>
-                <MudItem xs="12" md="5">
-                    <MudTextField @bind-Value="_name" Label="@Localizer["SubfamilyEditor_NameLabel"]" Variant="Variant.Outlined" Required="true" />
+                <MudItem xs="12" sm="3" md="6">
+                    <MudTextField @bind-Value="_name" Label="@Localizer["SubfamilyEditor_NameLabel"]" Variant="Variant.Outlined" Margin="Margin.Dense" Required="true" />
                 </MudItem>
 
                 @if (!IsNew)
@@ -106,7 +107,6 @@
     private bool CanSave =>
         Company.HasCompany
         && _familyId != Guid.Empty
-        && !string.IsNullOrWhiteSpace(_code)
         && !string.IsNullOrWhiteSpace(_name);
 
     protected override async Task OnParametersSetAsync()
@@ -166,6 +166,9 @@
 
         try
         {
+            if (IsNew && string.IsNullOrWhiteSpace(_code))
+                _code = CodeGenerator.Generate();
+
             var error = IsNew
                 ? await Catalog.CreateSubfamilyAsync(new CreateProductSubfamilyRequest(
                     Company.SelectedCompanyId, _familyId, _code.Trim(), _name.Trim()))

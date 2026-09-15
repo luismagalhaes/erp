@@ -16,7 +16,7 @@ namespace Erp.Api.Controllers.Inventory;
 [Route("api/inventory-counts")]
 [Authorize]
 [Produces("application/json")]
-public sealed class InventoryCountsController(IInventoryCountService countService) : ControllerBase
+public sealed class InventoryCountsController(IInventoryCountService countService, ILogger<InventoryCountsController> logger) : ControllerBase
 {
     [HttpGet]
     [Authorize(Policy = Policies.Read)]
@@ -78,10 +78,12 @@ public sealed class InventoryCountsController(IInventoryCountService countServic
         }
         catch (ArgumentException ex)
         {
+            logger.LogWarning(ex, "{Controller}.{Method} rejected an invalid request.", nameof(InventoryCountsController), nameof(Open));
             return BadRequest(new { error = ex.Message });
         }
         catch (InvalidOperationException ex)
         {
+            logger.LogWarning(ex, "{Controller}.{Method} could not complete due to a conflict.", nameof(InventoryCountsController), nameof(Open));
             return Conflict(new { error = ex.Message });
         }
     }
@@ -111,10 +113,12 @@ public sealed class InventoryCountsController(IInventoryCountService countServic
         }
         catch (ArgumentException ex)
         {
+            logger.LogWarning(ex, "{Controller}.{Method} rejected an invalid request.", nameof(InventoryCountsController), nameof(AddLine));
             return BadRequest(new { error = ex.Message });
         }
         catch (InvalidOperationException ex)
         {
+            logger.LogWarning(ex, "{Controller}.{Method} could not complete due to a conflict.", nameof(InventoryCountsController), nameof(AddLine));
             // Already on the sheet, or the count is closed. Both are conflicts: the request was
             // well formed, the sheet had moved on.
             return Conflict(new { error = ex.Message });
@@ -140,10 +144,12 @@ public sealed class InventoryCountsController(IInventoryCountService countServic
         }
         catch (ArgumentException ex)
         {
+            logger.LogWarning(ex, "{Controller}.{Method} rejected an invalid request.", nameof(InventoryCountsController), nameof(SetCounted));
             return BadRequest(new { error = ex.Message });
         }
         catch (InvalidOperationException ex)
         {
+            logger.LogWarning(ex, "{Controller}.{Method} could not complete due to a conflict.", nameof(InventoryCountsController), nameof(SetCounted));
             return Conflict(new { error = ex.Message });
         }
     }
@@ -166,6 +172,7 @@ public sealed class InventoryCountsController(IInventoryCountService countServic
         }
         catch (InvalidOperationException ex)
         {
+            logger.LogWarning(ex, "{Controller}.{Method} could not complete due to a conflict.", nameof(InventoryCountsController), nameof(Close));
             return Conflict(new { error = ex.Message });
         }
     }

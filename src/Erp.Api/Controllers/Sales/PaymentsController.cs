@@ -16,7 +16,7 @@ namespace Erp.Api.Controllers.Sales;
 [Route("api/payments")]
 [Authorize]
 [Produces("application/json")]
-public sealed class PaymentsController(IPaymentService paymentService) : ControllerBase
+public sealed class PaymentsController(IPaymentService paymentService, ILogger<PaymentsController> logger) : ControllerBase
 {
     /// <summary>Lists the receipts issued by a company, most recent first.</summary>
     [HttpGet]
@@ -102,10 +102,12 @@ public sealed class PaymentsController(IPaymentService paymentService) : Control
         }
         catch (ArgumentException ex)
         {
+            logger.LogWarning(ex, "{Controller}.{Method} rejected an invalid request.", nameof(PaymentsController), nameof(Issue));
             return BadRequest(new { error = ex.Message });
         }
         catch (InvalidOperationException ex)
         {
+            logger.LogWarning(ex, "{Controller}.{Method} could not complete due to a conflict.", nameof(PaymentsController), nameof(Issue));
             return Conflict(new { error = ex.Message });
         }
     }
@@ -135,6 +137,7 @@ public sealed class PaymentsController(IPaymentService paymentService) : Control
         }
         catch (InvalidOperationException ex)
         {
+            logger.LogWarning(ex, "{Controller}.{Method} could not complete due to a conflict.", nameof(PaymentsController), nameof(Void));
             return Conflict(new { error = ex.Message });
         }
     }

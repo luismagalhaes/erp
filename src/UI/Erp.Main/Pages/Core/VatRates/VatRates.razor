@@ -1,0 +1,80 @@
+@page "/vat-rates"
+@attribute [Authorize]
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.Extensions.Localization
+@using MudBlazor
+@using Erp.Main.Components.Common
+@using Erp.Main.Models.Core
+@using Erp.Main.Resources
+@using Erp.Main.Services
+@inject CatalogApiClient Catalog
+@inject NavigationManager Navigation
+@inject IStringLocalizer<MainResources> Localizer
+
+<PageTitle>@Localizer["VatRates_PageTitle"]</PageTitle>
+
+<MudStack Spacing="4">
+    <PageHeader Title="@Localizer["VatRates_PageTitle"]" Description="@Localizer["VatRates_PageDescription"]" />
+
+    @if (!string.IsNullOrWhiteSpace(_error))
+    {
+        <MudAlert Severity="Severity.Error" Dense="true">@_error</MudAlert>
+    }
+
+    <MudTable Items="_rates" Loading="_loading" Hover="true" Striped="true" Dense="true" Breakpoint="Breakpoint.Sm">
+        <HeaderContent>
+            <MudTh>@Localizer["VatRates_RegionColumn"]</MudTh>
+            <MudTh>@Localizer["Common_CodeColumn"]</MudTh>
+            <MudTh>@Localizer["VatRates_LabelColumn"]</MudTh>
+            <MudTh Style="text-align: right;">@Localizer["VatRates_PercentageColumn"]</MudTh>
+            <MudTh>@Localizer["Common_StatusColumn"]</MudTh>
+            <MudTh Style="text-align: right;">@Localizer["CompanyEditor_ActionsColumn"]</MudTh>
+        </HeaderContent>
+        <RowTemplate>
+            <MudTd DataLabel="@Localizer["VatRates_RegionColumn"]">@FiscalRegions.Describe(context.FiscalRegion)</MudTd>
+            <MudTd DataLabel="@Localizer["Common_CodeColumn"]">
+                <MudText Style="font-family: monospace;">@context.Code</MudText>
+            </MudTd>
+            <MudTd DataLabel="@Localizer["VatRates_LabelColumn"]">@context.Label</MudTd>
+            <MudTd DataLabel="@Localizer["VatRates_PercentageColumn"]" Style="text-align: right;">@context.Percentage.ToString("N2")%</MudTd>
+            <MudTd DataLabel="@Localizer["Common_StatusColumn"]">
+                @if (context.IsActive)
+                {
+                    <MudChip T="string" Size="Size.Small" Color="Color.Success" Variant="Variant.Text">@Localizer["Common_Active"]</MudChip>
+                }
+                else
+                {
+                    <MudChip T="string" Size="Size.Small" Color="Color.Default" Variant="Variant.Text">@Localizer["Common_Inactive"]</MudChip>
+                }
+            </MudTd>
+            <MudTd DataLabel="@Localizer["CompanyEditor_ActionsColumn"]" Style="text-align: right;">
+                <MudIconButton Icon="@Icons.Material.Filled.Edit" Size="Size.Small"
+                               OnClick="@(() => Navigation.NavigateTo($"vat-rates/{context.Id}"))" />
+            </MudTd>
+        </RowTemplate>
+    </MudTable>
+</MudStack>
+
+@code {
+    private bool _loading = true;
+    private string? _error;
+    private List<VatRate> _rates = [];
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            var (rates, error) = await Catalog.GetVatRatesAsync();
+            _rates = [.. rates];
+            _error = error;
+        }
+        catch (Exception ex)
+        {
+            _error = string.Format(Localizer["VatRates_LoadError"], ex.Message);
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+}

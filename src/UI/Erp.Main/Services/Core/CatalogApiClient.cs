@@ -152,4 +152,12 @@ public sealed class CatalogApiClient(HttpClient http) : ApiClientBase(http)
 
     public Task<string?> UpdateSupplierAsync(Guid id, UpdatePartnerRequest request, CancellationToken ct = default) =>
         SendAsync(() => Http.PutAsJsonAsync($"api/suppliers/{id}", request, ct), ct);
+
+    // --- VAT rates (not company scoped — set by law, the same for every tenant) ---
+
+    public Task<(IReadOnlyList<VatRate> Items, string? Error)> GetVatRatesAsync(CancellationToken ct = default) =>
+        GetListAsync<VatRate>("api/vat-rates", ct);
+
+    public Task<string?> UpdateVatRateAsync(Guid id, UpdateVatRateRequest request, CancellationToken ct = default) =>
+        SendAsync(() => Http.PutAsJsonAsync($"api/vat-rates/{id}", request, ct), ct);
 }

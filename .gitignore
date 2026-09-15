@@ -2,6 +2,7 @@
 **/obj/
 .vs/
 .vscode/
+.playwright-mcp/
 **/TestResults/
 **/CoverageOut/
 **/appsettings.local.json

@@ -299,3 +299,20 @@ public sealed record UpdatePartnerRequest(
     string? Email,
     string? Phone,
     bool IsActive);
+
+// --- VAT rates ---
+
+/// <summary>
+/// One VAT rate for one fiscal region — mainland Portugal and the two autonomous regions each set
+/// their own percentage for the same rate tier, so the pair is what identifies a row, not the code
+/// alone.
+/// </summary>
+public sealed record VatRateDto(
+    Guid Id,
+    string FiscalRegion,
+    string Code,
+    string Label,
+    decimal Percentage,
+    bool IsActive);
+
+public sealed record UpdateVatRateRequest(decimal Percentage, bool IsActive);

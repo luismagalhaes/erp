@@ -256,9 +256,9 @@
                                 <MudSelect T="string" Value="context.TaxCode"
                                            ValueChanged="@(code => OnTaxCodeChanged(context, code))"
                                            Margin="Margin.Dense">
-                                    @foreach (var rate in TaxRates)
+                                    @foreach (var rate in _taxRates)
                                     {
-                                        <MudSelectItem T="string" Value="@rate.Code">@rate.Label</MudSelectItem>
+                                        <MudSelectItem T="string" Value="@rate.Code">@rate.Label (@rate.Percentage.ToString("0.##")%)</MudSelectItem>
                                     }
                                 </MudSelect>
                             </MudTd>
@@ -327,13 +327,6 @@
 </MudStack>
 
 @code {
-    private TaxRateOption[] TaxRates => [
-        new("NOR", 23m, L["NewSupplierInvoice_TaxRateNormal"]),
-        new("INT", 13m, L["NewSupplierInvoice_TaxRateIntermediate"]),
-        new("RED", 6m, L["NewSupplierInvoice_TaxRateReduced"]),
-        new("ISE", 0m, L["NewSupplierInvoice_TaxRateExempt"])
-    ];
-
     private bool _saving;
     private string? _error;
 
@@ -350,6 +343,7 @@
     private List<Partner> _suppliers = [];
     private List<Warehouse> _warehouses = [];
     private List<ProductListItem> _products = [];
+    private List<VatRate> _taxRates = [];
     private List<UninvoicedReceiptLine> _uninvoiced = [];
 
     private readonly List<ChosenLine> _chosen = [];
@@ -419,6 +413,10 @@
 
             var (products, productsError) = await Catalog.GetProductsAsync(Company.SelectedCompanyId);
             _products = [.. products.Where(product => product.IsActive)];
+
+            // Mainland rates — this document has no fiscal-region selector of its own.
+            var (rates, _) = await Catalog.GetVatRatesAsync();
+            _taxRates = [.. rates.Where(x => x.FiscalRegion == "PT" && x.IsActive)];
 
             _error = suppliersError ?? warehousesError ?? productsError;
 
@@ -534,7 +532,7 @@
     private void OnTaxCodeChanged(FreeLine line, string taxCode)
     {
         line.TaxCode = taxCode;
-        line.TaxPercentage = TaxRates.FirstOrDefault(rate => rate.Code == taxCode)?.Percentage ?? 0m;
+        line.TaxPercentage = _taxRates.FirstOrDefault(rate => rate.Code == taxCode)?.Percentage ?? 0m;
         StateHasChanged();
     }
 
@@ -605,8 +603,6 @@
     }
 
     private static decimal Round(decimal value) => Math.Round(value, 2, MidpointRounding.AwayFromZero);
-
-    private sealed record TaxRateOption(string Code, decimal Percentage, string Label);
 
     private sealed class ChosenLine
     {

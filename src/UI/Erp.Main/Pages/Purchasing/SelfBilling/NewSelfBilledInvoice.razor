@@ -214,9 +214,9 @@
                                 <MudSelect T="string" Value="context.TaxCode"
                                            ValueChanged="@(code => OnTaxCodeChanged(context, code))"
                                            Margin="Margin.Dense">
-                                    @foreach (var rate in TaxRates)
+                                    @foreach (var rate in _taxRates)
                                     {
-                                        <MudSelectItem T="string" Value="@rate.Code">@rate.Label</MudSelectItem>
+                                        <MudSelectItem T="string" Value="@rate.Code">@rate.Label (@rate.Percentage.ToString("0.##")%)</MudSelectItem>
                                     }
                                 </MudSelect>
                             </MudTd>
@@ -278,13 +278,6 @@
 </MudStack>
 
 @code {
-    private TaxRateOption[] TaxRates => [
-        new("NOR", 23m, L["NewSelfBilledInvoice_TaxRateNormal"]),
-        new("INT", 13m, L["NewSelfBilledInvoice_TaxRateIntermediate"]),
-        new("RED", 6m, L["NewSelfBilledInvoice_TaxRateReduced"]),
-        new("ISE", 0m, L["NewSelfBilledInvoice_TaxRateExempt"])
-    ];
-
     private bool _saving;
     private string? _error;
 
@@ -298,6 +291,7 @@
     private List<ProductListItem> _products = [];
     private List<SalesSeries> _series = [];
     private List<UnbilledReceiptLine> _unbilled = [];
+    private List<VatRate> _taxRates = [];
 
     private readonly List<ChosenLine> _chosen = [];
     private readonly List<FreeLine> _lines = [];
@@ -357,6 +351,10 @@
 
             var (products, productsError) = await Catalog.GetProductsAsync(Company.SelectedCompanyId);
             _products = [.. products.Where(product => product.IsActive)];
+
+            // Mainland rates — this document has no fiscal-region selector of its own.
+            var (rates, _) = await Catalog.GetVatRatesAsync();
+            _taxRates = [.. rates.Where(x => x.FiscalRegion == "PT" && x.IsActive)];
 
             // Only series marked for self-billing, and only those the tax authority has validated:
             // anything else would put these documents in the wrong chain and the wrong file.
@@ -462,7 +460,7 @@
     private void OnTaxCodeChanged(FreeLine line, string taxCode)
     {
         line.TaxCode = taxCode;
-        line.TaxPercentage = TaxRates.FirstOrDefault(rate => rate.Code == taxCode)?.Percentage ?? 0m;
+        line.TaxPercentage = _taxRates.FirstOrDefault(rate => rate.Code == taxCode)?.Percentage ?? 0m;
         StateHasChanged();
     }
 
@@ -530,7 +528,6 @@
 
     private static decimal Round(decimal value) => Math.Round(value, 2, MidpointRounding.AwayFromZero);
 
-    private sealed record TaxRateOption(string Code, decimal Percentage, string Label);
 
     private sealed class ChosenLine
     {

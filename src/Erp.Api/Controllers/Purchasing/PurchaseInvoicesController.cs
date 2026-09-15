@@ -25,7 +25,8 @@ namespace Erp.Api.Controllers.Purchasing;
 public sealed class PurchaseInvoicesController(
     IPurchaseInvoiceService invoiceService,
     ISupplierService supplierService,
-    IWarehouseService warehouseService) : ControllerBase
+    IWarehouseService warehouseService,
+    ILogger<PurchaseInvoicesController> logger) : ControllerBase
 {
     [HttpGet]
     [Authorize(Policy = Policies.Read)]
@@ -139,10 +140,12 @@ public sealed class PurchaseInvoicesController(
         }
         catch (ArgumentException ex)
         {
+            logger.LogWarning(ex, "{Controller}.{Method} rejected an invalid request.", nameof(PurchaseInvoicesController), nameof(Record));
             return BadRequest(new { error = ex.Message });
         }
         catch (InvalidOperationException ex)
         {
+            logger.LogWarning(ex, "{Controller}.{Method} could not complete due to a conflict.", nameof(PurchaseInvoicesController), nameof(Record));
             // A duplicate, or more invoiced than was received. Both are conflicts: the request was
             // well formed, the books had moved on.
             return Conflict(new { error = ex.Message });
@@ -179,10 +182,12 @@ public sealed class PurchaseInvoicesController(
         }
         catch (ArgumentException ex)
         {
+            logger.LogWarning(ex, "{Controller}.{Method} rejected an invalid request.", nameof(PurchaseInvoicesController), nameof(Update));
             return BadRequest(new { error = ex.Message });
         }
         catch (InvalidOperationException ex)
         {
+            logger.LogWarning(ex, "{Controller}.{Method} could not complete due to a conflict.", nameof(PurchaseInvoicesController), nameof(Update));
             return Conflict(new { error = ex.Message });
         }
     }
@@ -209,6 +214,7 @@ public sealed class PurchaseInvoicesController(
         }
         catch (InvalidOperationException ex)
         {
+            logger.LogWarning(ex, "{Controller}.{Method} could not complete due to a conflict.", nameof(PurchaseInvoicesController), nameof(Void));
             return Conflict(new { error = ex.Message });
         }
     }

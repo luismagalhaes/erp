@@ -148,6 +148,9 @@
   <data name="Layout_LightMode" xml:space="preserve"><value>Modo claro</value></data>
   <data name="Layout_DarkMode" xml:space="preserve"><value>Modo escuro</value></data>
   <data name="Layout_Logout" xml:space="preserve"><value>Terminar sessão</value></data>
+  <data name="Layout_About" xml:space="preserve"><value>Sobre</value></data>
+  <data name="Layout_AboutVersion" xml:space="preserve"><value>Versão instalada: {0}</value></data>
+  <data name="Layout_CloseButton" xml:space="preserve"><value>Fechar</value></data>
 
   <data name="Backoffice_Index_PageTitle" xml:space="preserve"><value>Backoffice</value></data>
   <data name="Backoffice_Index_Heading" xml:space="preserve"><value>Backoffice</value></data>

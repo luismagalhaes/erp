@@ -140,9 +140,9 @@
                         <MudSelect T="string" Value="context.TaxCode"
                                    ValueChanged="@(code => OnTaxCodeChanged(context, code))"
                                    Margin="Margin.Dense">
-                            @foreach (var rate in TaxRates)
+                            @foreach (var rate in _taxRates)
                             {
-                                <MudSelectItem T="string" Value="@rate.Code">@rate.Label</MudSelectItem>
+                                <MudSelectItem T="string" Value="@rate.Code">@rate.Label (@rate.Percentage.ToString("0.##")%)</MudSelectItem>
                             }
                         </MudSelect>
                     </MudTd>
@@ -195,14 +195,6 @@
 @code {
     private const string ExemptCode = "ISE";
 
-    private TaxRateOption[] TaxRates =>
-    [
-        new("NOR", 23m, L["NewInvoice_TaxRateNormal"]),
-        new("INT", 13m, L["NewInvoice_TaxRateIntermediate"]),
-        new("RED", 6m, L["NewInvoice_TaxRateReduced"]),
-        new(ExemptCode, 0m, L["NewInvoice_TaxRateExempt"])
-    ];
-
     private bool _loading = true;
     private bool _issuing;
     private string? _error;
@@ -216,6 +208,7 @@
 
     private List<SalesSeries> _series = [];
     private List<ProductListItem> _products = [];
+    private List<VatRate> _taxRates = [];
     private readonly List<LineEditor> _lines = [new()];
 
     private decimal NetTotal => _lines.Sum(LineTotal);
@@ -267,6 +260,10 @@
             // The catalogue is master data served by the Core module, not by Sales.
             var (products, _) = await Catalog.GetProductsAsync(Company.SelectedCompanyId);
             _products = [.. products.Where(x => x.IsActive)];
+
+            // Mainland rates — this document has no fiscal-region selector of its own.
+            var (rates, _) = await Catalog.GetVatRatesAsync();
+            _taxRates = [.. rates.Where(x => x.FiscalRegion == "PT" && x.IsActive)];
         }
         catch (Exception ex)
         {
@@ -305,7 +302,7 @@
     private void OnTaxCodeChanged(LineEditor line, string taxCode)
     {
         line.TaxCode = taxCode;
-        line.TaxPercentage = TaxRates.First(rate => rate.Code == taxCode).Percentage;
+        line.TaxPercentage = _taxRates.First(rate => rate.Code == taxCode).Percentage;
     }
 
     private static decimal LineTotal(LineEditor line) =>
@@ -355,8 +352,6 @@
             _issuing = false;
         }
     }
-
-    private sealed record TaxRateOption(string Code, decimal Percentage, string Label);
 
     private sealed class LineEditor
     {

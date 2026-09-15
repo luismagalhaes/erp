@@ -138,3 +138,23 @@ public sealed record UpdatePartnerRequest(
     string? Email,
     string? Phone,
     bool IsActive);
+
+// --- VAT rates ---
+
+public sealed record VatRate(Guid Id, string FiscalRegion, string Code, string Label, decimal Percentage, bool IsActive);
+
+public sealed record UpdateVatRateRequest(decimal Percentage, bool IsActive);
+
+/// <summary>PT (mainland), PT-AC (Açores) and PT-MA (Madeira) — the three fiscal regions VAT rates are set for.</summary>
+public static class FiscalRegions
+{
+    public static readonly (string Code, string Name)[] All =
+    [
+        ("PT", "Portugal Continental"),
+        ("PT-AC", "Açores"),
+        ("PT-MA", "Madeira")
+    ];
+
+    public static string Describe(string code) =>
+        All.FirstOrDefault(region => region.Code == code).Name ?? code;
+}

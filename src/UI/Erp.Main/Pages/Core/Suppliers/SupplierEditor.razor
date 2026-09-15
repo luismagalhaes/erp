@@ -5,6 +5,7 @@
 @using Microsoft.AspNetCore.Components.Web
 @using MudBlazor
 @using Erp.Main.Components
+@using Erp.Main.Components.Common
 @using Erp.Main.Models
 @using Erp.Main.Services
 @using Erp.Main.Resources
@@ -17,23 +18,16 @@
 
 <PageTitle>@(IsNew ? Localizer["SupplierEditor_NewTitle"] : Localizer["SupplierEditor_EditTitle"])</PageTitle>
 
-<MudStack Spacing="4">
-    <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center">
-        <MudStack Spacing="0">
-            <MudText Typo="Typo.h4">@(IsNew ? Localizer["SupplierEditor_NewTitle"] : Localizer["SupplierEditor_EditTitle"])</MudText>
-            @if (!IsNew)
-            {
-                <MudText Typo="Typo.body2" Color="Color.Secondary">
-                    @Localizer["SupplierEditor_UpdateHint"]
-                </MudText>
-            }
-        </MudStack>
-
-        <MudButton Variant="Variant.Text" StartIcon="@Icons.Material.Filled.ArrowBack"
-                   OnClick="@(() => Navigation.NavigateTo("suppliers"))">
-            @Localizer["Common_Back"]
-        </MudButton>
-    </MudStack>
+<MudStack Spacing="3">
+    <PageHeader Title="@(IsNew ? Localizer["SupplierEditor_NewTitle"] : Localizer["SupplierEditor_EditTitle"])"
+                Breadcrumbs="Breadcrumbs">
+        <Actions>
+            <MudButton Variant="Variant.Text" StartIcon="@Icons.Material.Filled.ArrowBack"
+                       OnClick="@(() => Navigation.NavigateTo("suppliers"))">
+                @Localizer["Common_Back"]
+            </MudButton>
+        </Actions>
+    </PageHeader>
 
     @if (!string.IsNullOrWhiteSpace(_error))
     {
@@ -54,20 +48,24 @@
     }
     else
     {
-        <MudPaper Elevation="1" Class="pa-4">
-            @* ModelChanged is what re-renders this page, so the save button follows what is typed. *@
-            <PartnerFormFields Model="_model" ModelChanged="OnModelChanged"
-                               AllowCodeEdit="IsNew" ShowActive="@(!IsNew)" ActiveLabel="@Localizer["SupplierEditor_ActiveLabel"]" />
+        <EditorCard Title="@Localizer["SupplierEditor_CardTitle"]" Icon="@Icons.Material.Filled.Business"
+                    Description="@(IsNew ? null : Localizer["SupplierEditor_UpdateHint"].Value)">
+            <HeaderActions>
+                @if (!IsNew)
+                {
+                    <MudSwitch @bind-Value="_model.IsActive" Color="Color.Primary" Size="Size.Small" Label="@Localizer["SupplierEditor_ActiveLabel"]" />
+                }
+            </HeaderActions>
+            <ChildContent>
+                @* ModelChanged is what re-renders this page, so the save button follows what is typed. *@
+                <PartnerFormFields Model="_model" ModelChanged="OnModelChanged" AllowCodeEdit="IsNew" />
+            </ChildContent>
+        </EditorCard>
 
-            <MudStack Row="true" Justify="Justify.FlexEnd" Class="mt-4">
-                <MudButton Variant="Variant.Filled" Color="Color.Primary"
-                           StartIcon="@Icons.Material.Filled.Save"
-                           Disabled="@(_saving || !_model.IsValid || !Company.HasCompany)"
-                           OnClick="SaveAsync">
-                    @Localizer["Common_SaveButton"]
-                </MudButton>
-            </MudStack>
-        </MudPaper>
+        <FormActions Busy="_saving" Disabled="@(!_model.IsValid() || !Company.HasCompany)"
+                     Hint="@(Company.HasCompany ? null : Localizer["SupplierEditor_NoCompanyWarning"].Value)"
+                     OnSubmit="SaveAsync"
+                     OnCancel="@(() => Navigation.NavigateTo("suppliers"))" />
     }
 </MudStack>
 
@@ -76,6 +74,12 @@
     public Guid? Id { get; set; }
 
     private bool IsNew => Id is null;
+
+    private List<BreadcrumbItem> Breadcrumbs =>
+    [
+        new(Localizer["Suppliers_PageTitle"].Value, href: "suppliers"),
+        new(IsNew ? Localizer["SupplierEditor_NewTitle"].Value : Localizer["SupplierEditor_EditTitle"].Value, href: null, disabled: true)
+    ];
 
     private bool _loading;
     private bool _saving;

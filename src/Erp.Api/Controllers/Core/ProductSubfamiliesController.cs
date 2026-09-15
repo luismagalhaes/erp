@@ -12,7 +12,7 @@ namespace Erp.Api.Controllers.Core;
 [Route("api/product-subfamilies")]
 [Authorize(Policy = Policies.Read)]
 [Produces("application/json")]
-public sealed class ProductSubfamiliesController(IProductSubfamilyService subfamilyService) : ControllerBase
+public sealed class ProductSubfamiliesController(IProductSubfamilyService subfamilyService, ILogger<ProductSubfamiliesController> logger) : ControllerBase
 {
     /// <summary>
     /// Lists the subfamilies of a company, optionally limited to one family.
@@ -73,10 +73,12 @@ public sealed class ProductSubfamiliesController(IProductSubfamilyService subfam
         }
         catch (ArgumentException ex)
         {
+            logger.LogWarning(ex, "{Controller}.{Method} rejected an invalid request.", nameof(ProductSubfamiliesController), nameof(Create));
             return BadRequest(new { error = ex.Message });
         }
         catch (InvalidOperationException ex)
         {
+            logger.LogWarning(ex, "{Controller}.{Method} could not complete due to a conflict.", nameof(ProductSubfamiliesController), nameof(Create));
             return Conflict(new { error = ex.Message });
         }
     }
@@ -98,6 +100,7 @@ public sealed class ProductSubfamiliesController(IProductSubfamilyService subfam
         }
         catch (ArgumentException ex)
         {
+            logger.LogWarning(ex, "{Controller}.{Method} rejected an invalid request.", nameof(ProductSubfamiliesController), nameof(Update));
             return BadRequest(new { error = ex.Message });
         }
     }

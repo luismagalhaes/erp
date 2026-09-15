@@ -16,7 +16,8 @@ namespace Erp.Api.Controllers.Sales;
 [Produces("application/json")]
 public sealed class InvoicesController(
     ISalesDocumentService salesDocumentService,
-    IWarehouseService warehouseService) : ControllerBase
+    IWarehouseService warehouseService,
+    ILogger<InvoicesController> logger) : ControllerBase
 {
     /// <summary>
     /// Falls back to the company's default warehouse when the caller names none. The warehouse
@@ -125,10 +126,12 @@ public sealed class InvoicesController(
         }
         catch (ArgumentException ex)
         {
+            logger.LogWarning(ex, "{Controller}.{Method} rejected an invalid request.", nameof(InvoicesController), nameof(Issue));
             return BadRequest(new { error = ex.Message });
         }
         catch (InvalidOperationException ex)
         {
+            logger.LogWarning(ex, "{Controller}.{Method} could not complete due to a conflict.", nameof(InvoicesController), nameof(Issue));
             return Conflict(new { error = ex.Message });
         }
     }
@@ -158,6 +161,7 @@ public sealed class InvoicesController(
         }
         catch (InvalidOperationException ex)
         {
+            logger.LogWarning(ex, "{Controller}.{Method} could not complete due to a conflict.", nameof(InvoicesController), nameof(Void));
             return Conflict(new { error = ex.Message });
         }
     }

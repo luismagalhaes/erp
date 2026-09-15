@@ -11,6 +11,8 @@
 @inject CompanyState Company
 @inject IStringLocalizer<MainResources> Localizer
 @inject IDialogService DialogService
+@inject IJSRuntime JS
+@inject IConfiguration Configuration
 
 <MudThemeProvider Theme="AppTheme.Default" @bind-IsDarkMode="_isDarkMode" />
 @* Required by every component that opens an overlay: selects, date pickers and menus. *@
@@ -26,21 +28,9 @@
 
         <MudSpacer />
 
-        <MudTooltip Text="@(_isDarkMode ? Localizer["Layout_LightMode"] : Localizer["Layout_DarkMode"])">
-            <MudIconButton Color="Color.Inherit"
-                           Icon="@(_isDarkMode ? Icons.Material.Filled.LightMode : Icons.Material.Filled.DarkMode)"
-                           OnClick="@ToggleDarkMode" />
-        </MudTooltip>
-
-        <MudMenu Icon="@Icons.Material.Filled.Language" Color="Color.Inherit" Class="ml-1"
-                 AnchorOrigin="Origin.BottomRight" TransformOrigin="Origin.TopRight">
-            <MudMenuItem OnClick='@(() => SetCulture("pt-PT"))'>Português</MudMenuItem>
-            <MudMenuItem OnClick='@(() => SetCulture("en-US"))'>English</MudMenuItem>
-        </MudMenu>
-
         <AuthorizeView>
             <Authorized>
-                <div class="erp-account-panel">
+                <div class="erp-appbar-actions">
                     @if (Company.Companies.Count == 1)
                     {
                         <div class="erp-account-panel-company" title="@Company.Companies[0].CompanyName">
@@ -61,25 +51,33 @@
                         </MudSelect>
                     }
 
-                    <MudButton Variant="Variant.Text" Size="Size.Small" StartIcon="@Icons.Material.Filled.Info"
-                               Class="erp-account-panel-about" OnClick="OpenAbout">
-                        @Localizer["Layout_About"]
-                    </MudButton>
+                    <MudMenu Icon="@Icons.Material.Filled.Language" Color="Color.Inherit"
+                             AnchorOrigin="Origin.BottomRight" TransformOrigin="Origin.TopRight">
+                        <MudMenuItem OnClick='@(() => SetCulture("pt-PT"))'>Português</MudMenuItem>
+                        <MudMenuItem OnClick='@(() => SetCulture("en-US"))'>English</MudMenuItem>
+                    </MudMenu>
 
-                    <MudMenu AnchorOrigin="Origin.BottomRight" TransformOrigin="Origin.TopRight"
-                             ActivationEvent="MouseEvent.LeftClick" Class="erp-account-panel-user">
-                        <ActivatorContent>
-                            <div class="erp-account-panel-user-activator">
+                    <MudTooltip Text="@(_isDarkMode ? Localizer["Layout_LightMode"] : Localizer["Layout_DarkMode"])">
+                        <MudIconButton Color="Color.Inherit"
+                                       Icon="@(_isDarkMode ? Icons.Material.Filled.LightMode : Icons.Material.Filled.DarkMode)"
+                                       OnClick="@ToggleDarkMode" />
+                    </MudTooltip>
+
+                    <MudTooltip Text="@context.User.Identity?.Name">
+                        <MudMenu AnchorOrigin="Origin.BottomRight" TransformOrigin="Origin.TopRight"
+                                 ActivationEvent="MouseEvent.LeftClick">
+                            <ActivatorContent>
                                 <MudAvatar Color="Color.Primary" Size="Size.Small" Class="erp-user-avatar">
                                     @Initials(context.User.Identity?.Name)
                                 </MudAvatar>
-                                <span class="erp-account-panel-user-name">@context.User.Identity?.Name</span>
-                            </div>
-                        </ActivatorContent>
-                        <ChildContent>
-                            <MudMenuItem Icon="@Icons.Material.Filled.Logout" OnClick="@Logout">@Localizer["Layout_Logout"]</MudMenuItem>
-                        </ChildContent>
-                    </MudMenu>
+                            </ActivatorContent>
+                            <ChildContent>
+                                <MudMenuItem Icon="@Icons.Material.Filled.AccountCircle" OnClick="@OpenProfile">@Localizer["Layout_Profile"]</MudMenuItem>
+                                <MudMenuItem Icon="@Icons.Material.Filled.Info" OnClick="@OpenAbout">@Localizer["Layout_About"]</MudMenuItem>
+                                <MudMenuItem Icon="@Icons.Material.Filled.Logout" OnClick="@Logout">@Localizer["Layout_Logout"]</MudMenuItem>
+                            </ChildContent>
+                        </MudMenu>
+                    </MudTooltip>
                 </div>
             </Authorized>
         </AuthorizeView>
@@ -117,6 +115,9 @@
     private void OnCompanyChanged(Guid companyId) => Company.Select(companyId);
 
     private void OnCompanyStateChanged() => InvokeAsync(StateHasChanged);
+
+    private async Task OpenProfile()
+        => await JS.InvokeVoidAsync("open", $"{Configuration["Services:IdentityApi"]}/Profile", "_blank");
 
     private Task OpenAbout()
     {

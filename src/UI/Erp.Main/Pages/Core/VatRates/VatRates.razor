@@ -1,6 +1,7 @@
 @page "/vat-rates"
 @attribute [Authorize]
 @using Microsoft.AspNetCore.Authorization
+@using Microsoft.AspNetCore.Components.Web
 @using Microsoft.Extensions.Localization
 @using MudBlazor
 @using Erp.Main.Components.Common
@@ -16,65 +17,50 @@
 <MudStack Spacing="4">
     <PageHeader Title="@Localizer["VatRates_PageTitle"]" Description="@Localizer["VatRates_PageDescription"]" />
 
-    @if (!string.IsNullOrWhiteSpace(_error))
-    {
-        <MudAlert Severity="Severity.Error" Dense="true">@_error</MudAlert>
-    }
-
-    <MudTable Items="_rates" Loading="_loading" Hover="true" Striped="true" Dense="true" Breakpoint="Breakpoint.Sm">
-        <HeaderContent>
-            <MudTh>@Localizer["VatRates_RegionColumn"]</MudTh>
-            <MudTh>@Localizer["Common_CodeColumn"]</MudTh>
-            <MudTh>@Localizer["VatRates_LabelColumn"]</MudTh>
-            <MudTh Style="text-align: right;">@Localizer["VatRates_PercentageColumn"]</MudTh>
-            <MudTh>@Localizer["Common_StatusColumn"]</MudTh>
-            <MudTh Style="text-align: right;">@Localizer["CompanyEditor_ActionsColumn"]</MudTh>
-        </HeaderContent>
-        <RowTemplate>
-            <MudTd DataLabel="@Localizer["VatRates_RegionColumn"]">@FiscalRegions.Describe(context.FiscalRegion)</MudTd>
-            <MudTd DataLabel="@Localizer["Common_CodeColumn"]">
-                <MudText Style="font-family: monospace;">@context.Code</MudText>
-            </MudTd>
-            <MudTd DataLabel="@Localizer["VatRates_LabelColumn"]">@context.Label</MudTd>
-            <MudTd DataLabel="@Localizer["VatRates_PercentageColumn"]" Style="text-align: right;">@context.Percentage.ToString("N2")%</MudTd>
-            <MudTd DataLabel="@Localizer["Common_StatusColumn"]">
-                @if (context.IsActive)
-                {
-                    <MudChip T="string" Size="Size.Small" Color="Color.Success" Variant="Variant.Text">@Localizer["Common_Active"]</MudChip>
-                }
-                else
-                {
-                    <MudChip T="string" Size="Size.Small" Color="Color.Default" Variant="Variant.Text">@Localizer["Common_Inactive"]</MudChip>
-                }
-            </MudTd>
-            <MudTd DataLabel="@Localizer["CompanyEditor_ActionsColumn"]" Style="text-align: right;">
-                <MudIconButton Icon="@Icons.Material.Filled.Edit" Size="Size.Small"
-                               OnClick="@(() => Navigation.NavigateTo($"vat-rates/{context.Id}"))" />
-            </MudTd>
-        </RowTemplate>
-    </MudTable>
+    @* VAT rates are set by law, the same for every company, so this listing is not scoped to one. *@
+    <DataGrid T="VatRate" CompanyScoped="false"
+              LoadAsync="@((_, query, ct) => Catalog.QueryVatRatesAsync(query, ct))"
+              SearchFields="SearchFields" DefaultOrderBy="FiscalRegion"
+              SearchPlaceholder="@Localizer["VatRates_SearchPlaceholder"]"
+              EmptyIcon="@Icons.Material.Filled.Percent"
+              EmptyTitle="@Localizer["VatRates_EmptyTitle"]"
+              EmptyDescription="@Localizer["VatRates_EmptyDescription"]"
+              ItemsLabel="@Localizer["VatRates_ItemsLabel"]"
+              LoadErrorMessage="@Localizer["VatRates_LoadErrorMessage"]">
+        <Columns>
+            <PropertyColumn Property="x => x.FiscalRegion" Title="@Localizer["VatRates_RegionColumn"]">
+                <CellTemplate>@FiscalRegions.Describe(context.Item.FiscalRegion)</CellTemplate>
+            </PropertyColumn>
+            <PropertyColumn Property="x => x.Code" Title="@Localizer["Common_CodeColumn"]" />
+            <PropertyColumn Property="x => x.Label" Title="@Localizer["VatRates_LabelColumn"]" />
+            <PropertyColumn Property="x => x.Percentage" Title="@Localizer["VatRates_PercentageColumn"]"
+                            CellClass="erp-numeric" HeaderClass="erp-numeric">
+                <CellTemplate>@context.Item.Percentage.ToString("N2")%</CellTemplate>
+            </PropertyColumn>
+            <PropertyColumn Property="x => x.IsActive" Title="@Localizer["Common_StatusColumn"]">
+                <CellTemplate>
+                    <MudChip T="string" Size="Size.Small" Variant="Variant.Text"
+                             Color="@(context.Item.IsActive ? Color.Success : Color.Default)">
+                        @(context.Item.IsActive ? Localizer["Common_Active"] : Localizer["Common_Inactive"])
+                    </MudChip>
+                </CellTemplate>
+            </PropertyColumn>
+            <TemplateColumn Title="" Sortable="false" Filterable="false" Hideable="false"
+                            StickyRight="true"
+                            CellClass="erp-numeric" HeaderClass="erp-numeric">
+                <CellTemplate>
+                    <MudIconButton Icon="@Icons.Material.Filled.Edit" Size="Size.Small"
+                                   OnClick="@(() => Navigation.NavigateTo($"vat-rates/{context.Item.Id}"))" />
+                </CellTemplate>
+            </TemplateColumn>
+        </Columns>
+    </DataGrid>
 </MudStack>
 
 @code {
-    private bool _loading = true;
-    private string? _error;
-    private List<VatRate> _rates = [];
-
-    protected override async Task OnInitializedAsync()
-    {
-        try
-        {
-            var (rates, error) = await Catalog.GetVatRatesAsync();
-            _rates = [.. rates];
-            _error = error;
-        }
-        catch (Exception ex)
-        {
-            _error = string.Format(Localizer["VatRates_LoadError"], ex.Message);
-        }
-        finally
-        {
-            _loading = false;
-        }
-    }
+    /// <summary>
+    /// Maps the toolbar search to the DTO members the API exposes, so a renamed column never
+    /// produces an invalid $filter.
+    /// </summary>
+    private static readonly string[] SearchFields = ["Code", "Label"];
 }

@@ -21,14 +21,12 @@ html, body {
     font-weight: 600;
 }
 
-/* Account panel: company / About / user, stacked in the app bar's top-right corner */
-.erp-account-panel {
+/* App bar actions: company selector, language, dark mode and profile — one row, right aligned */
+.erp-appbar-actions {
     display: flex;
-    flex-direction: column;
-    align-items: flex-end;
-    gap: 2px;
+    align-items: center;
+    gap: 8px;
     margin-left: 12px;
-    padding: 4px 0;
 }
 
 .erp-account-panel-company {
@@ -58,30 +56,6 @@ html, body {
 .erp-account-panel-company-select .mud-input-adornment .mud-icon-root,
 .erp-account-panel-company-select .mud-select-input .mud-input-slot {
     color: var(--mud-palette-text-primary);
-}
-
-.erp-account-panel-about.mud-button-root {
-    min-width: 0;
-    padding: 0 4px;
-    font-size: 0.72rem;
-    line-height: 1.4;
-    color: var(--mud-palette-text-secondary);
-}
-
-.erp-account-panel-user-activator {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    cursor: pointer;
-}
-
-.erp-account-panel-user-name {
-    max-width: 140px;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-    font-size: 0.78rem;
-    font-weight: 500;
 }
 
 /* Side menu */

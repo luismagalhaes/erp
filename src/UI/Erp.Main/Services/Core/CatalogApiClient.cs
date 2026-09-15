@@ -158,6 +158,14 @@ public sealed class CatalogApiClient(HttpClient http) : ApiClientBase(http)
     public Task<(IReadOnlyList<VatRate> Items, string? Error)> GetVatRatesAsync(CancellationToken ct = default) =>
         GetListAsync<VatRate>("api/vat-rates", ct);
 
+    /// <summary>
+    /// Server side VAT rate listing: filtering, sorting and paging are applied by the database
+    /// through OData, so the grid only ever holds the window it is painting.
+    /// </summary>
+    public Task<(IReadOnlyList<VatRate> Items, int Count, string? Error)> QueryVatRatesAsync(
+        ODataQuery query, CancellationToken ct = default) =>
+        GetODataAsync<VatRate>($"api/vat-rates/odata{query.ToQueryString()}", ct);
+
     public Task<string?> UpdateVatRateAsync(Guid id, UpdateVatRateRequest request, CancellationToken ct = default) =>
         SendAsync(() => Http.PutAsJsonAsync($"api/vat-rates/{id}", request, ct), ct);
 }

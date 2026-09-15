@@ -11,7 +11,6 @@
     <Project Path="src/Modules/Erp.Inventory/Erp.Inventory.csproj" />
     <Project Path="src/Modules/Erp.Purchasing/Erp.Purchasing.csproj" />
     <Project Path="src/Modules/Erp.Notification/Erp.Notification.csproj" />
-    <Project Path="src/Notification/Erp.Notification.Worker/Erp.Notification.Worker.csproj" />
   </Folder>
   <Folder Name="/src/Erp/Shared/">
     <Project Path="src/Shared/Erp.Common/Erp.Common.csproj" />

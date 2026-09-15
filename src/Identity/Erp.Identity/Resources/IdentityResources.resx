@@ -1,343 +1,897 @@
 <?xml version="1.0" encoding="utf-8"?>
 <root>
+  <!-- 
+    Microsoft ResX Schema 
+    
+    Version 2.0
+    
+    The primary goals of this format is to allow a simple XML format 
+    that is mostly human readable. The generation and parsing of the 
+    various data types are done through the TypeConverter classes 
+    associated with the data types.
+    
+    Example:
+    
+    ... ado.net/XML headers & schema ...
+    <resheader name="resmimetype">text/microsoft-resx</resheader>
+    <resheader name="version">2.0</resheader>
+    <resheader name="reader">System.Resources.ResXResourceReader, System.Windows.Forms, ...</resheader>
+    <resheader name="writer">System.Resources.ResXResourceWriter, System.Windows.Forms, ...</resheader>
+    <data name="Name1"><value>this is my long string</value><comment>this is a comment</comment></data>
+    <data name="Color1" type="System.Drawing.Color, System.Drawing">Blue</data>
+    <data name="Bitmap1" mimetype="application/x-microsoft.net.object.binary.base64">
+        <value>[base64 mime encoded serialized .NET Framework object]</value>
+    </data>
+    <data name="Icon1" type="System.Drawing.Icon, System.Drawing" mimetype="application/x-microsoft.net.object.bytearray.base64">
+        <value>[base64 mime encoded string representing a byte array form of the .NET Framework object]</value>
+        <comment>This is a comment</comment>
+    </data>
+                
+    There are any number of "resheader" rows that contain simple 
+    name/value pairs.
+    
+    Each data row contains a name, and value. The row also contains a 
+    type or mimetype. Type corresponds to a .NET class that support 
+    text/value conversion through the TypeConverter architecture. 
+    Classes that don't support this are serialized and stored with the 
+    mimetype set.
+    
+    The mimetype is used for serialized objects, and tells the 
+    ResXResourceReader how to depersist the object. This is currently not 
+    extensible. For a given mimetype the value must be set accordingly:
+    
+    Note - application/x-microsoft.net.object.binary.base64 is the format 
+    that the ResXResourceWriter will generate, however the reader can 
+    read any of the formats listed below.
+    
+    mimetype: application/x-microsoft.net.object.binary.base64
+    value   : The object must be serialized with 
+            : System.Runtime.Serialization.Formatters.Binary.BinaryFormatter
+            : and then encoded with base64 encoding.
+    
+    mimetype: application/x-microsoft.net.object.soap.base64
+    value   : The object must be serialized with 
+            : System.Runtime.Serialization.Formatters.Soap.SoapFormatter
+            : and then encoded with base64 encoding.
+
+    mimetype: application/x-microsoft.net.object.bytearray.base64
+    value   : The object must be serialized into a byte array 
+            : using a System.ComponentModel.TypeConverter
+            : and then encoded with base64 encoding.
+    -->
   <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
-	<xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
-	<xsd:element name="root" msdata:IsDataSet="true">
-	  <xsd:complexType>
-		<xsd:choice maxOccurs="unbounded">
-		  <xsd:element name="metadata">
-			<xsd:complexType>
-			  <xsd:sequence>
-				<xsd:element name="value" type="xsd:string" minOccurs="0" />
-			  </xsd:sequence>
-			  <xsd:attribute name="name" use="required" type="xsd:string" />
-			  <xsd:attribute name="type" type="xsd:string" />
-			  <xsd:attribute name="mimetype" type="xsd:string" />
-			  <xsd:attribute ref="xml:space" />
-			</xsd:complexType>
-		  </xsd:element>
-		  <xsd:element name="assembly">
-			<xsd:complexType>
-			  <xsd:attribute name="alias" type="xsd:string" />
-			  <xsd:attribute name="name" type="xsd:string" />
-			</xsd:complexType>
-		  </xsd:element>
-		  <xsd:element name="data">
-			<xsd:complexType>
-			  <xsd:sequence>
-				<xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
-				<xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
-			  </xsd:sequence>
-			  <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
-			  <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
-			  <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
-			  <xsd:attribute ref="xml:space" />
-			</xsd:complexType>
-		  </xsd:element>
-		  <xsd:element name="resheader">
-			<xsd:complexType>
-			  <xsd:sequence>
-				<xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
-			  </xsd:sequence>
-			  <xsd:attribute name="name" type="xsd:string" use="required" />
-			</xsd:complexType>
-		  </xsd:element>
-		</xsd:choice>
-	  </xsd:complexType>
-	</xsd:element>
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
   </xsd:schema>
   <resheader name="resmimetype">
-	<value>text/microsoft-resx</value>
+    <value>text/microsoft-resx</value>
   </resheader>
   <resheader name="version">
-	<value>2.0</value>
+    <value>2.0</value>
   </resheader>
   <resheader name="reader">
-	<value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
   <resheader name="writer">
-	<value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
-  <data name="Account_SignIn_PageTitle" xml:space="preserve"><value>Iniciar Sessão — ERP</value></data>
-  <data name="Account_SignIn_Heading" xml:space="preserve"><value>Iniciar sessão</value></data>
-  <data name="Account_SignIn_EmailLabel" xml:space="preserve"><value>Email</value></data>
-  <data name="Account_SignIn_PasswordLabel" xml:space="preserve"><value>Palavra-passe</value></data>
-  <data name="Account_SignIn_SubmitButton" xml:space="preserve"><value>Iniciar sessão</value></data>
-  <data name="Account_SignIn_ForgotPasswordLink" xml:space="preserve"><value>Esqueceu-se da palavra-passe?</value></data>
-  <data name="Account_SignIn_SignUpLink" xml:space="preserve"><value>Criar nova conta</value></data>
-  <data name="Account_SignIn_SuccessRegistered" xml:space="preserve"><value>Conta criada com sucesso. Já pode iniciar sessão.</value></data>
-  <data name="Account_SignIn_SuccessPasswordReset" xml:space="preserve"><value>Palavra-passe redefinida com sucesso. Já pode iniciar sessão.</value></data>
-  <data name="Account_SignIn_ErrorAccountLocked" xml:space="preserve"><value>Conta bloqueada. Tente mais tarde.</value></data>
-  <data name="Account_SignIn_ErrorInvalidCredentials" xml:space="preserve"><value>Email ou palavra-passe incorretos.</value></data>
-
-  <data name="Account_SignUp_PageTitle" xml:space="preserve"><value>Criar Conta — ERP</value></data>
-  <data name="Account_SignUp_Heading" xml:space="preserve"><value>Criar conta</value></data>
-  <data name="Account_SignUp_FirstNameLabel" xml:space="preserve"><value>Primeiro nome</value></data>
-  <data name="Account_SignUp_LastNameLabel" xml:space="preserve"><value>Último nome</value></data>
-  <data name="Account_SignUp_EmailLabel" xml:space="preserve"><value>Email</value></data>
-  <data name="Account_SignUp_PasswordLabel" xml:space="preserve"><value>Palavra-passe</value></data>
-  <data name="Account_SignUp_ConfirmPasswordLabel" xml:space="preserve"><value>Confirmar palavra-passe</value></data>
-  <data name="Account_SignUp_SubmitButton" xml:space="preserve"><value>Criar conta</value></data>
-  <data name="Account_SignUp_SignInLink" xml:space="preserve"><value>Já tem conta? Iniciar sessão</value></data>
-  <data name="Account_SignUp_ErrorPasswordsDoNotMatch" xml:space="preserve"><value>As palavras-passe não coincidem.</value></data>
-
-  <data name="Account_ForgotPassword_PageTitle" xml:space="preserve"><value>Recuperar Palavra-passe — ERP</value></data>
-  <data name="Account_ForgotPassword_Heading" xml:space="preserve"><value>Recuperar palavra-passe</value></data>
-  <data name="Account_ForgotPassword_EmailLabel" xml:space="preserve"><value>Email</value></data>
-  <data name="Account_ForgotPassword_SubmitButton" xml:space="preserve"><value>Enviar link de recuperação</value></data>
-  <data name="Account_ForgotPassword_BackToSignInLink" xml:space="preserve"><value>Voltar a iniciar sessão</value></data>
-  <data name="Account_ForgotPassword_EmailSubject" xml:space="preserve"><value>Redefinir a sua palavra-passe do ERP</value></data>
-  <data name="Account_ForgotPassword_EmailGreeting" xml:space="preserve"><value>Olá {0},</value></data>
-  <data name="Account_ForgotPassword_EmailBody" xml:space="preserve"><value>Clique aqui para redefinir a sua palavra-passe.</value></data>
-
-  <data name="Account_ForgotPasswordConfirmation_PageTitle" xml:space="preserve"><value>Recuperar Palavra-passe — Confirmação</value></data>
-  <data name="Account_ForgotPasswordConfirmation_Heading" xml:space="preserve"><value>Verifique a sua caixa de correio</value></data>
-  <data name="Account_ForgotPasswordConfirmation_Message" xml:space="preserve"><value>Se a sua conta existir, foi enviado um link de recuperação de palavra-passe.</value></data>
-  <data name="Account_ForgotPasswordConfirmation_BackToSignInLink" xml:space="preserve"><value>Voltar a iniciar sessão</value></data>
-
-  <data name="Account_ResetPassword_PageTitle" xml:space="preserve"><value>Redefinir Palavra-passe — ERP</value></data>
-  <data name="Account_ResetPassword_Heading" xml:space="preserve"><value>Redefinir palavra-passe</value></data>
-  <data name="Account_ResetPassword_EmailLabel" xml:space="preserve"><value>Email</value></data>
-  <data name="Account_ResetPassword_NewPasswordLabel" xml:space="preserve"><value>Nova palavra-passe</value></data>
-  <data name="Account_ResetPassword_ConfirmPasswordLabel" xml:space="preserve"><value>Confirmar palavra-passe</value></data>
-  <data name="Account_ResetPassword_SubmitButton" xml:space="preserve"><value>Redefinir palavra-passe</value></data>
-  <data name="Account_ResetPassword_BackToSignInLink" xml:space="preserve"><value>Voltar a iniciar sessão</value></data>
-  <data name="Account_ResetPassword_ErrorInvalidToken" xml:space="preserve"><value>Token de recuperação inválido.</value></data>
-
-  <data name="Account_ResetPasswordConfirmation_PageTitle" xml:space="preserve"><value>Redefinir Palavra-passe — Confirmação</value></data>
-  <data name="Account_ResetPasswordConfirmation_Heading" xml:space="preserve"><value>Palavra-passe atualizada</value></data>
-  <data name="Account_ResetPasswordConfirmation_Message" xml:space="preserve"><value>A sua palavra-passe foi redefinida com sucesso.</value></data>
-  <data name="Account_ResetPasswordConfirmation_ContinueLink" xml:space="preserve"><value>Continuar para iniciar sessão</value></data>
-
-  <data name="Account_SignOut_PageTitle" xml:space="preserve"><value>Sessão Terminada</value></data>
-  <data name="Account_SignOut_Heading" xml:space="preserve"><value>Terminou a sessão com sucesso.</value></data>
-  <data name="Account_SignOut_BackToHomeLink" xml:space="preserve"><value>Voltar ao início</value></data>
-
-  <data name="Home_AuthenticatedUser" xml:space="preserve"><value>Utilizador autenticado: {0}</value></data>
-  <data name="Home_Status" xml:space="preserve"><value>Estado: {0}</value></data>
-  <data name="Home_StatusAuthenticated" xml:space="preserve"><value>Autenticado</value></data>
-  <data name="Home_Info_Heading" xml:space="preserve"><value>Informações</value></data>
-  <data name="Home_Info_NameLabel" xml:space="preserve"><value>Nome</value></data>
-  <data name="Home_Info_EmailLabel" xml:space="preserve"><value>Email</value></data>
-  <data name="Home_Info_LanguageLabel" xml:space="preserve"><value>Idioma</value></data>
-  <data name="Home_Info_EditButton" xml:space="preserve"><value>Alterar dados</value></data>
-
-  <data name="Profile_PageTitle" xml:space="preserve"><value>O Meu Perfil</value></data>
-  <data name="Profile_Heading" xml:space="preserve"><value>O Meu Perfil</value></data>
-  <data name="Profile_Tab_Info" xml:space="preserve"><value>Informações</value></data>
-  <data name="Profile_Tab_Password" xml:space="preserve"><value>Palavra-passe</value></data>
-  <data name="Profile_CurrentPasswordLabel" xml:space="preserve"><value>Palavra-passe atual</value></data>
-  <data name="Profile_NewPasswordLabel" xml:space="preserve"><value>Nova palavra-passe</value></data>
-  <data name="Profile_ConfirmNewPasswordLabel" xml:space="preserve"><value>Confirmar nova palavra-passe</value></data>
-  <data name="Profile_ChangePasswordButton" xml:space="preserve"><value>Alterar palavra-passe</value></data>
-  <data name="Profile_InfoUpdated" xml:space="preserve"><value>Dados atualizados.</value></data>
-  <data name="Profile_PasswordChanged" xml:space="preserve"><value>Palavra-passe alterada.</value></data>
-  <data name="Profile_ErrorPasswordsDontMatch" xml:space="preserve"><value>As palavras-passe não coincidem.</value></data>
-
-  <data name="NavMenu_Home" xml:space="preserve"><value>Início</value></data>
-  <data name="NavMenu_Backoffice" xml:space="preserve"><value>Backoffice</value></data>
-  <data name="NavMenu_Users" xml:space="preserve"><value>Utilizadores</value></data>
-  <data name="NavMenu_Roles" xml:space="preserve"><value>Perfis</value></data>
-  <data name="NavMenu_Clients" xml:space="preserve"><value>Clientes</value></data>
-  <data name="NavMenu_ApiScopes" xml:space="preserve"><value>Âmbitos API</value></data>
-  <data name="NavMenu_ApiResources" xml:space="preserve"><value>Recursos API</value></data>
-  <data name="NavMenu_IdentityResources" xml:space="preserve"><value>Recursos de Identidade</value></data>
-  <data name="NavMenu_IdentityProviders" xml:space="preserve"><value>Fornecedores de Identidade</value></data>
-
-  <data name="Layout_AppTitle" xml:space="preserve"><value>ERP - ID</value></data>
-  <data name="Layout_LightMode" xml:space="preserve"><value>Modo claro</value></data>
-  <data name="Layout_DarkMode" xml:space="preserve"><value>Modo escuro</value></data>
-  <data name="Layout_Logout" xml:space="preserve"><value>Terminar sessão</value></data>
-  <data name="Layout_About" xml:space="preserve"><value>Sobre</value></data>
-  <data name="Layout_AboutVersion" xml:space="preserve"><value>Versão instalada: {0}</value></data>
-  <data name="Layout_CloseButton" xml:space="preserve"><value>Fechar</value></data>
-
-  <data name="Backoffice_Index_PageTitle" xml:space="preserve"><value>Backoffice</value></data>
-  <data name="Backoffice_Index_Heading" xml:space="preserve"><value>Backoffice</value></data>
-
-  <data name="Backoffice_Users_PageTitle" xml:space="preserve"><value>Backoffice - Utilizadores</value></data>
-  <data name="Backoffice_Users_EditHeading" xml:space="preserve"><value>Editar Utilizador</value></data>
-  <data name="Backoffice_Users_Loading" xml:space="preserve"><value>A carregar...</value></data>
-  <data name="Backoffice_Users_Tab_MainInfo" xml:space="preserve"><value>Informação Principal</value></data>
-  <data name="Backoffice_Users_Tab_Roles" xml:space="preserve"><value>Perfis</value></data>
-  <data name="Backoffice_Users_EmailLabel" xml:space="preserve"><value>Email</value></data>
-  <data name="Backoffice_Users_NameLabel" xml:space="preserve"><value>Nome</value></data>
-  <data name="Backoffice_Users_LanguageLabel" xml:space="preserve"><value>Idioma</value></data>
-  <data name="Backoffice_Users_RolesLabel" xml:space="preserve"><value>Perfis</value></data>
-  <data name="Backoffice_Users_RoleColumn" xml:space="preserve"><value>Perfil</value></data>
-  <data name="Backoffice_Users_ActionsColumn" xml:space="preserve"><value>Ações</value></data>
-  <data name="Backoffice_Users_RemoveButton" xml:space="preserve"><value>Remover</value></data>
-  <data name="Backoffice_Users_AddRoleButton" xml:space="preserve"><value>Adicionar perfil</value></data>
-  <data name="Backoffice_Users_SaveButton" xml:space="preserve"><value>Guardar</value></data>
-  <data name="Backoffice_Users_CancelButton" xml:space="preserve"><value>Cancelar</value></data>
-  <data name="Backoffice_Users_ListHeading" xml:space="preserve"><value>Utilizadores ({0})</value></data>
-  <data name="Backoffice_Users_EmailColumn" xml:space="preserve"><value>Email</value></data>
-  <data name="Backoffice_Users_NameColumn" xml:space="preserve"><value>Nome</value></data>
-  <data name="Backoffice_Users_ActiveColumn" xml:space="preserve"><value>Ativo</value></data>
-  <data name="Backoffice_Users_CreatedAtColumn" xml:space="preserve"><value>Criado em</value></data>
-  <data name="Backoffice_Users_Yes" xml:space="preserve"><value>Sim</value></data>
-  <data name="Backoffice_Users_No" xml:space="preserve"><value>Não</value></data>
-  <data name="Backoffice_Users_EditAction" xml:space="preserve"><value>Editar</value></data>
-  <data name="Backoffice_Users_ErrorInvalidUser" xml:space="preserve"><value>Utilizador inválido.</value></data>
-  <data name="Backoffice_Users_ErrorAtLeastOneRole" xml:space="preserve"><value>É necessário pelo menos um perfil.</value></data>
-  <data name="Backoffice_Users_Updated" xml:space="preserve"><value>Utilizador atualizado.</value></data>
-  <data name="Backoffice_Common_SearchPlaceholder" xml:space="preserve"><value>Pesquisar...</value></data>
-  <data name="Backoffice_Common_NoRecords" xml:space="preserve"><value>Sem registos.</value></data>
-  <data name="Backoffice_Roles_ItemsLabel" xml:space="preserve"><value>perfis</value></data>
-  <data name="Backoffice_Users_ItemsLabel" xml:space="preserve"><value>utilizadores</value></data>
-  <data name="Backoffice_Clients_ItemsLabel" xml:space="preserve"><value>clientes</value></data>
-  <data name="Backoffice_ApiScopes_ItemsLabel" xml:space="preserve"><value>âmbitos</value></data>
-  <data name="Backoffice_ApiResources_ItemsLabel" xml:space="preserve"><value>recursos</value></data>
-  <data name="Backoffice_IdentityResourcesPage_ItemsLabel" xml:space="preserve"><value>recursos de identidade</value></data>
-  <data name="Backoffice_IdentityProviders_ItemsLabel" xml:space="preserve"><value>fornecedores</value></data>
-
-  <data name="Backoffice_Common_SaveButton" xml:space="preserve"><value>Guardar</value></data>
-  <data name="Backoffice_Common_CancelButton" xml:space="preserve"><value>Cancelar</value></data>
-  <data name="Backoffice_Common_DeleteButton" xml:space="preserve"><value>Eliminar</value></data>
-  <data name="Backoffice_Common_EditAction" xml:space="preserve"><value>Editar</value></data>
-  <data name="Backoffice_Common_DeleteAction" xml:space="preserve"><value>Eliminar</value></data>
-  <data name="Backoffice_Common_NameLabel" xml:space="preserve"><value>Nome</value></data>
-  <data name="Backoffice_Common_NameColumn" xml:space="preserve"><value>Nome</value></data>
-  <data name="Backoffice_Common_ActionsColumn" xml:space="preserve"><value>Ações</value></data>
-
-  <data name="Backoffice_Roles_PageTitle" xml:space="preserve"><value>Backoffice - Perfis</value></data>
-  <data name="Backoffice_Roles_CreateHeading" xml:space="preserve"><value>Criar Perfil</value></data>
-  <data name="Backoffice_Roles_EditHeading" xml:space="preserve"><value>Editar Perfil</value></data>
-  <data name="Backoffice_Roles_DeleteHeading" xml:space="preserve"><value>Eliminar Perfil</value></data>
-  <data name="Backoffice_Roles_DeleteConfirm" xml:space="preserve"><value>Tem a certeza que pretende eliminar o perfil {0}?</value></data>
-  <data name="Backoffice_Roles_ListHeading" xml:space="preserve"><value>Perfis ({0})</value></data>
-  <data name="Backoffice_Roles_CreateAction" xml:space="preserve"><value>Criar perfil</value></data>
-  <data name="Backoffice_Roles_ErrorNameRequired" xml:space="preserve"><value>Nome do perfil é obrigatório.</value></data>
-  <data name="Backoffice_Roles_ErrorInvalidRole" xml:space="preserve"><value>Perfil inválido.</value></data>
-  <data name="Backoffice_Roles_Created" xml:space="preserve"><value>Perfil criado.</value></data>
-  <data name="Backoffice_Roles_Updated" xml:space="preserve"><value>Perfil atualizado.</value></data>
-  <data name="Backoffice_Roles_Deleted" xml:space="preserve"><value>Perfil eliminado.</value></data>
-  <data name="Backoffice_Roles_NotFound" xml:space="preserve"><value>Perfil não encontrado.</value></data>
-  <data name="Backoffice_Common_Back" xml:space="preserve"><value>Voltar</value></data>
-
-  <data name="Backoffice_Common_DisplayNameLabel" xml:space="preserve"><value>Nome de exibição</value></data>
-  <data name="Backoffice_Common_DisplayNameColumn" xml:space="preserve"><value>Nome de exibição</value></data>
-  <data name="Backoffice_Common_DescriptionLabel" xml:space="preserve"><value>Descrição</value></data>
-  <data name="Backoffice_Common_EnabledLabel" xml:space="preserve"><value>Ativo</value></data>
-  <data name="Backoffice_Common_EnabledColumn" xml:space="preserve"><value>Ativo</value></data>
-  <data name="Backoffice_Common_RequiredLabel" xml:space="preserve"><value>Obrigatório</value></data>
-  <data name="Backoffice_Common_EmphasizeLabel" xml:space="preserve"><value>Destacar</value></data>
-  <data name="Backoffice_Common_ShowInDiscoveryDocumentLabel" xml:space="preserve"><value>Mostrar no documento de descoberta</value></data>
-  <data name="Backoffice_Common_Yes" xml:space="preserve"><value>Sim</value></data>
-  <data name="Backoffice_Common_No" xml:space="preserve"><value>Não</value></data>
-  <data name="Backoffice_Common_RemoveButton" xml:space="preserve"><value>Remover</value></data>
-  <data name="Backoffice_Common_ErrorNameRequired" xml:space="preserve"><value>Nome é obrigatório.</value></data>
-  <data name="Backoffice_Common_DeleteConfirm" xml:space="preserve"><value>Tem a certeza que pretende eliminar {0}?</value></data>
-
-  <data name="Backoffice_ApiScopes_PageTitle" xml:space="preserve"><value>Backoffice - Âmbitos API</value></data>
-  <data name="Backoffice_ApiScopes_CreateHeading" xml:space="preserve"><value>Criar Âmbito API</value></data>
-  <data name="Backoffice_ApiScopes_EditHeading" xml:space="preserve"><value>Editar Âmbito API</value></data>
-  <data name="Backoffice_ApiScopes_DeleteHeading" xml:space="preserve"><value>Eliminar Âmbito API</value></data>
-  <data name="Backoffice_ApiScopes_ListHeading" xml:space="preserve"><value>Âmbitos API ({0})</value></data>
-  <data name="Backoffice_ApiScopes_CreateAction" xml:space="preserve"><value>Criar âmbito API</value></data>
-  <data name="Backoffice_ApiScopes_Tab_MainInfo" xml:space="preserve"><value>Informação Principal</value></data>
-  <data name="Backoffice_ApiScopes_Tab_UserClaims" xml:space="preserve"><value>Claims de Utilizador</value></data>
-  <data name="Backoffice_ApiScopes_UserClaimsLabel" xml:space="preserve"><value>Claims de Utilizador</value></data>
-  <data name="Backoffice_ApiScopes_ClaimColumn" xml:space="preserve"><value>Claim</value></data>
-  <data name="Backoffice_ApiScopes_AddClaimButton" xml:space="preserve"><value>Adicionar claim</value></data>
-  <data name="Backoffice_ApiScopes_ClaimsColumn" xml:space="preserve"><value>Claims</value></data>
-  <data name="Backoffice_ApiScopes_Created" xml:space="preserve"><value>Âmbito API criado.</value></data>
-  <data name="Backoffice_ApiScopes_Updated" xml:space="preserve"><value>Âmbito API atualizado.</value></data>
-  <data name="Backoffice_ApiScopes_Deleted" xml:space="preserve"><value>Âmbito API eliminado.</value></data>
-
-  <data name="Backoffice_ApiResources_PageTitle" xml:space="preserve"><value>Backoffice - Recursos API</value></data>
-  <data name="Backoffice_ApiResources_CreateHeading" xml:space="preserve"><value>Criar Recurso API</value></data>
-  <data name="Backoffice_ApiResources_EditHeading" xml:space="preserve"><value>Editar Recurso API</value></data>
-  <data name="Backoffice_ApiResources_DeleteHeading" xml:space="preserve"><value>Eliminar Recurso API</value></data>
-  <data name="Backoffice_ApiResources_ListHeading" xml:space="preserve"><value>Recursos API ({0})</value></data>
-  <data name="Backoffice_ApiResources_CreateAction" xml:space="preserve"><value>Criar recurso API</value></data>
-  <data name="Backoffice_ApiResources_Tab_MainInfo" xml:space="preserve"><value>Informação Principal</value></data>
-  <data name="Backoffice_ApiResources_Tab_Scopes" xml:space="preserve"><value>Âmbitos</value></data>
-  <data name="Backoffice_ApiResources_Tab_UserClaims" xml:space="preserve"><value>Claims de Utilizador</value></data>
-  <data name="Backoffice_ApiResources_RequireResourceIndicatorLabel" xml:space="preserve"><value>Requer indicador de recurso</value></data>
-  <data name="Backoffice_ApiResources_ScopesLabel" xml:space="preserve"><value>Âmbitos</value></data>
-  <data name="Backoffice_ApiResources_ScopeColumn" xml:space="preserve"><value>Âmbito</value></data>
-  <data name="Backoffice_ApiResources_AddScopeButton" xml:space="preserve"><value>Adicionar âmbito</value></data>
-  <data name="Backoffice_ApiResources_UserClaimsLabel" xml:space="preserve"><value>Claims de Utilizador</value></data>
-  <data name="Backoffice_ApiResources_ClaimColumn" xml:space="preserve"><value>Claim</value></data>
-  <data name="Backoffice_ApiResources_AddClaimButton" xml:space="preserve"><value>Adicionar claim</value></data>
-  <data name="Backoffice_ApiResources_ScopesColumn" xml:space="preserve"><value>Âmbitos</value></data>
-  <data name="Backoffice_ApiResources_Created" xml:space="preserve"><value>Recurso API criado.</value></data>
-  <data name="Backoffice_ApiResources_Updated" xml:space="preserve"><value>Recurso API atualizado.</value></data>
-  <data name="Backoffice_ApiResources_Deleted" xml:space="preserve"><value>Recurso API eliminado.</value></data>
-
-  <data name="Backoffice_IdentityResourcesPage_PageTitle" xml:space="preserve"><value>Backoffice - Recursos de Identidade</value></data>
-  <data name="Backoffice_IdentityResourcesPage_CreateHeading" xml:space="preserve"><value>Criar Recurso de Identidade</value></data>
-  <data name="Backoffice_IdentityResourcesPage_EditHeading" xml:space="preserve"><value>Editar Recurso de Identidade</value></data>
-  <data name="Backoffice_IdentityResourcesPage_DeleteHeading" xml:space="preserve"><value>Eliminar Recurso de Identidade</value></data>
-  <data name="Backoffice_IdentityResourcesPage_ListHeading" xml:space="preserve"><value>Recursos de Identidade ({0})</value></data>
-  <data name="Backoffice_IdentityResourcesPage_CreateAction" xml:space="preserve"><value>Criar recurso de identidade</value></data>
-  <data name="Backoffice_IdentityResourcesPage_Created" xml:space="preserve"><value>Recurso de identidade criado.</value></data>
-  <data name="Backoffice_IdentityResourcesPage_Updated" xml:space="preserve"><value>Recurso de identidade atualizado.</value></data>
-  <data name="Backoffice_IdentityResourcesPage_Deleted" xml:space="preserve"><value>Recurso de identidade eliminado.</value></data>
-
-  <data name="Backoffice_IdentityProviders_PageTitle" xml:space="preserve"><value>Backoffice - Fornecedores de Identidade</value></data>
-  <data name="Backoffice_IdentityProviders_CreateHeading" xml:space="preserve"><value>Criar Fornecedor de Identidade</value></data>
-  <data name="Backoffice_IdentityProviders_EditHeading" xml:space="preserve"><value>Editar Fornecedor de Identidade</value></data>
-  <data name="Backoffice_IdentityProviders_DeleteHeading" xml:space="preserve"><value>Eliminar Fornecedor de Identidade</value></data>
-  <data name="Backoffice_IdentityProviders_ListHeading" xml:space="preserve"><value>Fornecedores de Identidade ({0})</value></data>
-  <data name="Backoffice_IdentityProviders_CreateAction" xml:space="preserve"><value>Criar fornecedor de identidade</value></data>
-  <data name="Backoffice_IdentityProviders_SchemeLabel" xml:space="preserve"><value>Esquema</value></data>
-  <data name="Backoffice_IdentityProviders_SchemeColumn" xml:space="preserve"><value>Esquema</value></data>
-  <data name="Backoffice_IdentityProviders_TypeLabel" xml:space="preserve"><value>Tipo</value></data>
-  <data name="Backoffice_IdentityProviders_TypeColumn" xml:space="preserve"><value>Tipo</value></data>
-  <data name="Backoffice_IdentityProviders_ErrorSchemeTypeRequired" xml:space="preserve"><value>Esquema e Tipo são obrigatórios.</value></data>
-  <data name="Backoffice_IdentityProviders_Created" xml:space="preserve"><value>Fornecedor de identidade criado.</value></data>
-  <data name="Backoffice_IdentityProviders_Updated" xml:space="preserve"><value>Fornecedor de identidade atualizado.</value></data>
-  <data name="Backoffice_IdentityProviders_Deleted" xml:space="preserve"><value>Fornecedor de identidade eliminado.</value></data>
-
-  <data name="Backoffice_Clients_PageTitle" xml:space="preserve"><value>Backoffice - Clientes</value></data>
-  <data name="Backoffice_Clients_EditHeading" xml:space="preserve"><value>Editar Cliente</value></data>
-  <data name="Backoffice_Clients_DeleteHeading" xml:space="preserve"><value>Eliminar Cliente</value></data>
-  <data name="Backoffice_Clients_DeleteConfirm" xml:space="preserve"><value>Tem a certeza que pretende eliminar o cliente {0}?</value></data>
-  <data name="Backoffice_Clients_ListHeading" xml:space="preserve"><value>Clientes ({0})</value></data>
-  <data name="Backoffice_Clients_Loading" xml:space="preserve"><value>A carregar...</value></data>
-  <data name="Backoffice_Clients_ErrorInvalidClient" xml:space="preserve"><value>Cliente inválido.</value></data>
-  <data name="Backoffice_Clients_Tab_MainInfo" xml:space="preserve"><value>Informação Principal</value></data>
-  <data name="Backoffice_Clients_Tab_AllowedGrantTypes" xml:space="preserve"><value>Tipos de Concessão Permitidos</value></data>
-  <data name="Backoffice_Clients_Tab_RedirectUris" xml:space="preserve"><value>URIs de Redirecionamento</value></data>
-  <data name="Backoffice_Clients_Tab_PostLogoutRedirectUris" xml:space="preserve"><value>URIs de Redirecionamento Pós-Logout</value></data>
-  <data name="Backoffice_Clients_Tab_AllowedCorsOrigins" xml:space="preserve"><value>Origens Cors Permitidas</value></data>
-  <data name="Backoffice_Clients_Tab_AllowedScopes" xml:space="preserve"><value>Âmbitos Permitidos</value></data>
-  <data name="Backoffice_Clients_Tab_ClientSecrets" xml:space="preserve"><value>Segredos do Cliente</value></data>
-  <data name="Backoffice_Clients_ClientIdLabel" xml:space="preserve"><value>ID do Cliente</value></data>
-  <data name="Backoffice_Clients_ClientIdColumn" xml:space="preserve"><value>ID do Cliente</value></data>
-  <data name="Backoffice_Clients_ClientNameLabel" xml:space="preserve"><value>Nome do Cliente</value></data>
-  <data name="Backoffice_Clients_RequirePkceLabel" xml:space="preserve"><value>Requer PKCE</value></data>
-  <data name="Backoffice_Clients_RequireClientSecretLabel" xml:space="preserve"><value>Requer Segredo do Cliente</value></data>
-  <data name="Backoffice_Clients_AllowOfflineAccessLabel" xml:space="preserve"><value>Permitir Acesso Offline</value></data>
-  <data name="Backoffice_Clients_AccessTokenLifetimeLabel" xml:space="preserve"><value>Tempo de vida do Token de Acesso</value></data>
-  <data name="Backoffice_Clients_SlidingRefreshTokenLifetimeLabel" xml:space="preserve"><value>Tempo de vida deslizante do Token de Atualização</value></data>
-  <data name="Backoffice_Clients_AbsoluteRefreshTokenLifetimeLabel" xml:space="preserve"><value>Tempo de vida absoluto do Token de Atualização</value></data>
-  <data name="Backoffice_Clients_RefreshTokenUsageLabel" xml:space="preserve"><value>Uso do Token de Atualização</value></data>
-  <data name="Backoffice_Clients_RefreshTokenExpirationLabel" xml:space="preserve"><value>Expiração do Token de Atualização</value></data>
-  <data name="Backoffice_Clients_AllowedGrantTypesLabel" xml:space="preserve"><value>Tipos de Concessão Permitidos</value></data>
-  <data name="Backoffice_Clients_GrantTypeColumn" xml:space="preserve"><value>Tipo de Concessão</value></data>
-  <data name="Backoffice_Clients_AddGrantTypeButton" xml:space="preserve"><value>Adicionar tipo de concessão</value></data>
-  <data name="Backoffice_Clients_RedirectUrisLabel" xml:space="preserve"><value>URIs de Redirecionamento</value></data>
-  <data name="Backoffice_Clients_RedirectUriColumn" xml:space="preserve"><value>URI de Redirecionamento</value></data>
-  <data name="Backoffice_Clients_AddRedirectUriButton" xml:space="preserve"><value>Adicionar URI de redirecionamento</value></data>
-  <data name="Backoffice_Clients_PostLogoutRedirectUrisLabel" xml:space="preserve"><value>URIs de Redirecionamento Pós-Logout</value></data>
-  <data name="Backoffice_Clients_PostLogoutRedirectUriColumn" xml:space="preserve"><value>URI de Redirecionamento Pós-Logout</value></data>
-  <data name="Backoffice_Clients_AddPostLogoutRedirectUriButton" xml:space="preserve"><value>Adicionar URI de redirecionamento pós-logout</value></data>
-  <data name="Backoffice_Clients_AllowedCorsOriginsLabel" xml:space="preserve"><value>Origens Cors Permitidas</value></data>
-  <data name="Backoffice_Clients_OriginColumn" xml:space="preserve"><value>Origem</value></data>
-  <data name="Backoffice_Clients_AddOriginButton" xml:space="preserve"><value>Adicionar origem</value></data>
-  <data name="Backoffice_Clients_AllowedScopesLabel" xml:space="preserve"><value>Âmbitos Permitidos</value></data>
-  <data name="Backoffice_Clients_ScopeColumn" xml:space="preserve"><value>Âmbito</value></data>
-  <data name="Backoffice_Clients_AddScopeButton" xml:space="preserve"><value>Adicionar âmbito</value></data>
-  <data name="Backoffice_Clients_ClientSecretsLabel" xml:space="preserve"><value>Segredos do Cliente</value></data>
-  <data name="Backoffice_Clients_ValueColumn" xml:space="preserve"><value>Valor</value></data>
-  <data name="Backoffice_Clients_IsHashedColumn" xml:space="preserve"><value>Está Codificado</value></data>
-  <data name="Backoffice_Clients_AddSecretButton" xml:space="preserve"><value>Adicionar segredo</value></data>
-  <data name="Backoffice_Clients_ActiveColumn" xml:space="preserve"><value>Ativo</value></data>
-  <data name="Backoffice_Clients_RedirectUrisColumn" xml:space="preserve"><value>URIs de Redirecionamento</value></data>
-  <data name="Backoffice_Clients_ScopesColumn" xml:space="preserve"><value>Âmbitos</value></data>
-  <data name="Backoffice_Clients_Updated" xml:space="preserve"><value>Cliente atualizado.</value></data>
-  <data name="Backoffice_Clients_Deleted" xml:space="preserve"><value>Cliente eliminado.</value></data>
+  <data name="Account_SignIn_PageTitle" xml:space="preserve">
+    <value>Iniciar Sessão — ERP</value>
+  </data>
+  <data name="Account_SignIn_Heading" xml:space="preserve">
+    <value>Iniciar sessão</value>
+  </data>
+  <data name="Account_SignIn_EmailLabel" xml:space="preserve">
+    <value>Email</value>
+  </data>
+  <data name="Account_SignIn_PasswordLabel" xml:space="preserve">
+    <value>Palavra-passe</value>
+  </data>
+  <data name="Account_SignIn_SubmitButton" xml:space="preserve">
+    <value>Iniciar sessão</value>
+  </data>
+  <data name="Account_SignIn_ForgotPasswordLink" xml:space="preserve">
+    <value>Esqueceu-se da palavra-passe?</value>
+  </data>
+  <data name="Account_SignIn_SignUpLink" xml:space="preserve">
+    <value>Criar nova conta</value>
+  </data>
+  <data name="Account_SignIn_SuccessRegistered" xml:space="preserve">
+    <value>Conta criada com sucesso. Já pode iniciar sessão.</value>
+  </data>
+  <data name="Account_SignIn_SuccessPasswordReset" xml:space="preserve">
+    <value>Palavra-passe redefinida com sucesso. Já pode iniciar sessão.</value>
+  </data>
+  <data name="Account_SignIn_ErrorAccountLocked" xml:space="preserve">
+    <value>Conta bloqueada. Tente mais tarde.</value>
+  </data>
+  <data name="Account_SignIn_ErrorInvalidCredentials" xml:space="preserve">
+    <value>Email ou palavra-passe incorretos.</value>
+  </data>
+  <data name="Account_SignUp_PageTitle" xml:space="preserve">
+    <value>Criar Conta — ERP</value>
+  </data>
+  <data name="Account_SignUp_Heading" xml:space="preserve">
+    <value>Criar conta</value>
+  </data>
+  <data name="Account_SignUp_FirstNameLabel" xml:space="preserve">
+    <value>Primeiro nome</value>
+  </data>
+  <data name="Account_SignUp_LastNameLabel" xml:space="preserve">
+    <value>Último nome</value>
+  </data>
+  <data name="Account_SignUp_EmailLabel" xml:space="preserve">
+    <value>Email</value>
+  </data>
+  <data name="Account_SignUp_PasswordLabel" xml:space="preserve">
+    <value>Palavra-passe</value>
+  </data>
+  <data name="Account_SignUp_ConfirmPasswordLabel" xml:space="preserve">
+    <value>Confirmar palavra-passe</value>
+  </data>
+  <data name="Account_SignUp_SubmitButton" xml:space="preserve">
+    <value>Criar conta</value>
+  </data>
+  <data name="Account_SignUp_SignInLink" xml:space="preserve">
+    <value>Já tem conta? Iniciar sessão</value>
+  </data>
+  <data name="Account_SignUp_ErrorPasswordsDoNotMatch" xml:space="preserve">
+    <value>As palavras-passe não coincidem.</value>
+  </data>
+  <data name="Account_ForgotPassword_PageTitle" xml:space="preserve">
+    <value>Recuperar Palavra-passe — ERP</value>
+  </data>
+  <data name="Account_ForgotPassword_Heading" xml:space="preserve">
+    <value>Recuperar palavra-passe</value>
+  </data>
+  <data name="Account_ForgotPassword_EmailLabel" xml:space="preserve">
+    <value>Email</value>
+  </data>
+  <data name="Account_ForgotPassword_SubmitButton" xml:space="preserve">
+    <value>Enviar link de recuperação</value>
+  </data>
+  <data name="Account_ForgotPassword_BackToSignInLink" xml:space="preserve">
+    <value>Voltar a iniciar sessão</value>
+  </data>
+  <data name="Account_ForgotPassword_EmailSubject" xml:space="preserve">
+    <value>Redefinir a sua palavra-passe do ERP</value>
+  </data>
+  <data name="Account_ForgotPassword_EmailGreeting" xml:space="preserve">
+    <value>Olá {0},</value>
+  </data>
+  <data name="Account_ForgotPassword_EmailBody" xml:space="preserve">
+    <value>Clique aqui para redefinir a sua palavra-passe.</value>
+  </data>
+  <data name="Account_ForgotPasswordConfirmation_PageTitle" xml:space="preserve">
+    <value>Recuperar Palavra-passe — Confirmação</value>
+  </data>
+  <data name="Account_ForgotPasswordConfirmation_Heading" xml:space="preserve">
+    <value>Verifique a sua caixa de correio</value>
+  </data>
+  <data name="Account_ForgotPasswordConfirmation_Message" xml:space="preserve">
+    <value>Se a sua conta existir, foi enviado um link de recuperação de palavra-passe.</value>
+  </data>
+  <data name="Account_ForgotPasswordConfirmation_BackToSignInLink" xml:space="preserve">
+    <value>Voltar a iniciar sessão</value>
+  </data>
+  <data name="Account_ResetPassword_PageTitle" xml:space="preserve">
+    <value>Redefinir Palavra-passe — ERP</value>
+  </data>
+  <data name="Account_ResetPassword_Heading" xml:space="preserve">
+    <value>Redefinir palavra-passe</value>
+  </data>
+  <data name="Account_ResetPassword_EmailLabel" xml:space="preserve">
+    <value>Email</value>
+  </data>
+  <data name="Account_ResetPassword_NewPasswordLabel" xml:space="preserve">
+    <value>Nova palavra-passe</value>
+  </data>
+  <data name="Account_ResetPassword_ConfirmPasswordLabel" xml:space="preserve">
+    <value>Confirmar palavra-passe</value>
+  </data>
+  <data name="Account_ResetPassword_SubmitButton" xml:space="preserve">
+    <value>Redefinir palavra-passe</value>
+  </data>
+  <data name="Account_ResetPassword_BackToSignInLink" xml:space="preserve">
+    <value>Voltar a iniciar sessão</value>
+  </data>
+  <data name="Account_ResetPassword_ErrorInvalidToken" xml:space="preserve">
+    <value>Token de recuperação inválido.</value>
+  </data>
+  <data name="Account_ResetPasswordConfirmation_PageTitle" xml:space="preserve">
+    <value>Redefinir Palavra-passe — Confirmação</value>
+  </data>
+  <data name="Account_ResetPasswordConfirmation_Heading" xml:space="preserve">
+    <value>Palavra-passe atualizada</value>
+  </data>
+  <data name="Account_ResetPasswordConfirmation_Message" xml:space="preserve">
+    <value>A sua palavra-passe foi redefinida com sucesso.</value>
+  </data>
+  <data name="Account_ResetPasswordConfirmation_ContinueLink" xml:space="preserve">
+    <value>Continuar para iniciar sessão</value>
+  </data>
+  <data name="Account_SignOut_PageTitle" xml:space="preserve">
+    <value>Sessão Terminada</value>
+  </data>
+  <data name="Account_SignOut_Heading" xml:space="preserve">
+    <value>Terminou a sessão com sucesso.</value>
+  </data>
+  <data name="Account_SignOut_BackToHomeLink" xml:space="preserve">
+    <value>Voltar ao início</value>
+  </data>
+  <data name="Home_AuthenticatedUser" xml:space="preserve">
+    <value>Utilizador autenticado: {0}</value>
+  </data>
+  <data name="Home_Status" xml:space="preserve">
+    <value>Estado: {0}</value>
+  </data>
+  <data name="Home_StatusAuthenticated" xml:space="preserve">
+    <value>Autenticado</value>
+  </data>
+  <data name="Home_Info_Heading" xml:space="preserve">
+    <value>Informações</value>
+  </data>
+  <data name="Home_Info_NameLabel" xml:space="preserve">
+    <value>Nome</value>
+  </data>
+  <data name="Home_Info_EmailLabel" xml:space="preserve">
+    <value>Email</value>
+  </data>
+  <data name="Home_Info_LanguageLabel" xml:space="preserve">
+    <value>Idioma</value>
+  </data>
+  <data name="Home_Info_EditButton" xml:space="preserve">
+    <value>Alterar dados</value>
+  </data>
+  <data name="Profile_PageTitle" xml:space="preserve">
+    <value>O Meu Perfil</value>
+  </data>
+  <data name="Profile_Heading" xml:space="preserve">
+    <value>O Meu Perfil</value>
+  </data>
+  <data name="Profile_Tab_Info" xml:space="preserve">
+    <value>Informações</value>
+  </data>
+  <data name="Profile_Tab_Password" xml:space="preserve">
+    <value>Palavra-passe</value>
+  </data>
+  <data name="Profile_CurrentPasswordLabel" xml:space="preserve">
+    <value>Palavra-passe atual</value>
+  </data>
+  <data name="Profile_NewPasswordLabel" xml:space="preserve">
+    <value>Nova palavra-passe</value>
+  </data>
+  <data name="Profile_ConfirmNewPasswordLabel" xml:space="preserve">
+    <value>Confirmar nova palavra-passe</value>
+  </data>
+  <data name="Profile_ChangePasswordButton" xml:space="preserve">
+    <value>Alterar palavra-passe</value>
+  </data>
+  <data name="Profile_InfoUpdated" xml:space="preserve">
+    <value>Dados atualizados.</value>
+  </data>
+  <data name="Profile_PasswordChanged" xml:space="preserve">
+    <value>Palavra-passe alterada.</value>
+  </data>
+  <data name="Profile_ErrorPasswordsDontMatch" xml:space="preserve">
+    <value>As palavras-passe não coincidem.</value>
+  </data>
+  <data name="NavMenu_Home" xml:space="preserve">
+    <value>Início</value>
+  </data>
+  <data name="NavMenu_Backoffice" xml:space="preserve">
+    <value>Backoffice</value>
+  </data>
+  <data name="NavMenu_Users" xml:space="preserve">
+    <value>Utilizadores</value>
+  </data>
+  <data name="NavMenu_Roles" xml:space="preserve">
+    <value>Perfis</value>
+  </data>
+  <data name="NavMenu_Clients" xml:space="preserve">
+    <value>Clientes</value>
+  </data>
+  <data name="NavMenu_ApiScopes" xml:space="preserve">
+    <value>Âmbitos API</value>
+  </data>
+  <data name="NavMenu_ApiResources" xml:space="preserve">
+    <value>Recursos API</value>
+  </data>
+  <data name="NavMenu_IdentityResources" xml:space="preserve">
+    <value>Recursos de Identidade</value>
+  </data>
+  <data name="NavMenu_IdentityProviders" xml:space="preserve">
+    <value>Fornecedores de Identidade</value>
+  </data>
+  <data name="Layout_AppTitle" xml:space="preserve">
+    <value>SmartInvoice - ID</value>
+  </data>
+  <data name="Layout_LightMode" xml:space="preserve">
+    <value>Modo claro</value>
+  </data>
+  <data name="Layout_DarkMode" xml:space="preserve">
+    <value>Modo escuro</value>
+  </data>
+  <data name="Layout_Logout" xml:space="preserve">
+    <value>Terminar sessão</value>
+  </data>
+  <data name="Backoffice_Index_PageTitle" xml:space="preserve">
+    <value>Backoffice</value>
+  </data>
+  <data name="Backoffice_Index_Heading" xml:space="preserve">
+    <value>Backoffice</value>
+  </data>
+  <data name="Backoffice_Users_PageTitle" xml:space="preserve">
+    <value>Backoffice - Utilizadores</value>
+  </data>
+  <data name="Backoffice_Users_EditHeading" xml:space="preserve">
+    <value>Editar Utilizador</value>
+  </data>
+  <data name="Backoffice_Users_Loading" xml:space="preserve">
+    <value>A carregar...</value>
+  </data>
+  <data name="Backoffice_Users_Tab_MainInfo" xml:space="preserve">
+    <value>Informação Principal</value>
+  </data>
+  <data name="Backoffice_Users_Tab_Roles" xml:space="preserve">
+    <value>Perfis</value>
+  </data>
+  <data name="Backoffice_Users_EmailLabel" xml:space="preserve">
+    <value>Email</value>
+  </data>
+  <data name="Backoffice_Users_NameLabel" xml:space="preserve">
+    <value>Nome</value>
+  </data>
+  <data name="Backoffice_Users_LanguageLabel" xml:space="preserve">
+    <value>Idioma</value>
+  </data>
+  <data name="Backoffice_Users_RolesLabel" xml:space="preserve">
+    <value>Perfis</value>
+  </data>
+  <data name="Backoffice_Users_RoleColumn" xml:space="preserve">
+    <value>Perfil</value>
+  </data>
+  <data name="Backoffice_Users_ActionsColumn" xml:space="preserve">
+    <value>Ações</value>
+  </data>
+  <data name="Backoffice_Users_RemoveButton" xml:space="preserve">
+    <value>Remover</value>
+  </data>
+  <data name="Backoffice_Users_AddRoleButton" xml:space="preserve">
+    <value>Adicionar perfil</value>
+  </data>
+  <data name="Backoffice_Users_SaveButton" xml:space="preserve">
+    <value>Guardar</value>
+  </data>
+  <data name="Backoffice_Users_CancelButton" xml:space="preserve">
+    <value>Cancelar</value>
+  </data>
+  <data name="Backoffice_Users_ListHeading" xml:space="preserve">
+    <value>Utilizadores ({0})</value>
+  </data>
+  <data name="Backoffice_Users_EmailColumn" xml:space="preserve">
+    <value>Email</value>
+  </data>
+  <data name="Backoffice_Users_NameColumn" xml:space="preserve">
+    <value>Nome</value>
+  </data>
+  <data name="Backoffice_Users_ActiveColumn" xml:space="preserve">
+    <value>Ativo</value>
+  </data>
+  <data name="Backoffice_Users_CreatedAtColumn" xml:space="preserve">
+    <value>Criado em</value>
+  </data>
+  <data name="Backoffice_Users_Yes" xml:space="preserve">
+    <value>Sim</value>
+  </data>
+  <data name="Backoffice_Users_No" xml:space="preserve">
+    <value>Não</value>
+  </data>
+  <data name="Backoffice_Users_EditAction" xml:space="preserve">
+    <value>Editar</value>
+  </data>
+  <data name="Backoffice_Users_ErrorInvalidUser" xml:space="preserve">
+    <value>Utilizador inválido.</value>
+  </data>
+  <data name="Backoffice_Users_ErrorAtLeastOneRole" xml:space="preserve">
+    <value>É necessário pelo menos um perfil.</value>
+  </data>
+  <data name="Backoffice_Users_Updated" xml:space="preserve">
+    <value>Utilizador atualizado.</value>
+  </data>
+  <data name="Backoffice_Common_SearchPlaceholder" xml:space="preserve">
+    <value>Pesquisar...</value>
+  </data>
+  <data name="Backoffice_Common_NoRecords" xml:space="preserve">
+    <value>Sem registos.</value>
+  </data>
+  <data name="Backoffice_Roles_ItemsLabel" xml:space="preserve">
+    <value>perfis</value>
+  </data>
+  <data name="Backoffice_Users_ItemsLabel" xml:space="preserve">
+    <value>utilizadores</value>
+  </data>
+  <data name="Backoffice_Clients_ItemsLabel" xml:space="preserve">
+    <value>clientes</value>
+  </data>
+  <data name="Backoffice_ApiScopes_ItemsLabel" xml:space="preserve">
+    <value>âmbitos</value>
+  </data>
+  <data name="Backoffice_ApiResources_ItemsLabel" xml:space="preserve">
+    <value>recursos</value>
+  </data>
+  <data name="Backoffice_IdentityResourcesPage_ItemsLabel" xml:space="preserve">
+    <value>recursos de identidade</value>
+  </data>
+  <data name="Backoffice_IdentityProviders_ItemsLabel" xml:space="preserve">
+    <value>fornecedores</value>
+  </data>
+  <data name="Backoffice_Common_SaveButton" xml:space="preserve">
+    <value>Guardar</value>
+  </data>
+  <data name="Backoffice_Common_CancelButton" xml:space="preserve">
+    <value>Cancelar</value>
+  </data>
+  <data name="Backoffice_Common_DeleteButton" xml:space="preserve">
+    <value>Eliminar</value>
+  </data>
+  <data name="Backoffice_Common_EditAction" xml:space="preserve">
+    <value>Editar</value>
+  </data>
+  <data name="Backoffice_Common_DeleteAction" xml:space="preserve">
+    <value>Eliminar</value>
+  </data>
+  <data name="Backoffice_Common_NameLabel" xml:space="preserve">
+    <value>Nome</value>
+  </data>
+  <data name="Backoffice_Common_NameColumn" xml:space="preserve">
+    <value>Nome</value>
+  </data>
+  <data name="Backoffice_Common_ActionsColumn" xml:space="preserve">
+    <value>Ações</value>
+  </data>
+  <data name="Backoffice_Roles_PageTitle" xml:space="preserve">
+    <value>Backoffice - Perfis</value>
+  </data>
+  <data name="Backoffice_Roles_CreateHeading" xml:space="preserve">
+    <value>Criar Perfil</value>
+  </data>
+  <data name="Backoffice_Roles_EditHeading" xml:space="preserve">
+    <value>Editar Perfil</value>
+  </data>
+  <data name="Backoffice_Roles_DeleteHeading" xml:space="preserve">
+    <value>Eliminar Perfil</value>
+  </data>
+  <data name="Backoffice_Roles_DeleteConfirm" xml:space="preserve">
+    <value>Tem a certeza que pretende eliminar o perfil {0}?</value>
+  </data>
+  <data name="Backoffice_Roles_ListHeading" xml:space="preserve">
+    <value>Perfis ({0})</value>
+  </data>
+  <data name="Backoffice_Roles_CreateAction" xml:space="preserve">
+    <value>Criar perfil</value>
+  </data>
+  <data name="Backoffice_Roles_ErrorNameRequired" xml:space="preserve">
+    <value>Nome do perfil é obrigatório.</value>
+  </data>
+  <data name="Backoffice_Roles_ErrorInvalidRole" xml:space="preserve">
+    <value>Perfil inválido.</value>
+  </data>
+  <data name="Backoffice_Roles_Created" xml:space="preserve">
+    <value>Perfil criado.</value>
+  </data>
+  <data name="Backoffice_Roles_Updated" xml:space="preserve">
+    <value>Perfil atualizado.</value>
+  </data>
+  <data name="Backoffice_Roles_Deleted" xml:space="preserve">
+    <value>Perfil eliminado.</value>
+  </data>
+  <data name="Backoffice_Roles_NotFound" xml:space="preserve">
+    <value>Perfil não encontrado.</value>
+  </data>
+  <data name="Backoffice_Common_Back" xml:space="preserve">
+    <value>Voltar</value>
+  </data>
+  <data name="Backoffice_Common_DisplayNameLabel" xml:space="preserve">
+    <value>Nome de exibição</value>
+  </data>
+  <data name="Backoffice_Common_DisplayNameColumn" xml:space="preserve">
+    <value>Nome de exibição</value>
+  </data>
+  <data name="Backoffice_Common_DescriptionLabel" xml:space="preserve">
+    <value>Descrição</value>
+  </data>
+  <data name="Backoffice_Common_EnabledLabel" xml:space="preserve">
+    <value>Ativo</value>
+  </data>
+  <data name="Backoffice_Common_EnabledColumn" xml:space="preserve">
+    <value>Ativo</value>
+  </data>
+  <data name="Backoffice_Common_RequiredLabel" xml:space="preserve">
+    <value>Obrigatório</value>
+  </data>
+  <data name="Backoffice_Common_EmphasizeLabel" xml:space="preserve">
+    <value>Destacar</value>
+  </data>
+  <data name="Backoffice_Common_ShowInDiscoveryDocumentLabel" xml:space="preserve">
+    <value>Mostrar no documento de descoberta</value>
+  </data>
+  <data name="Backoffice_Common_Yes" xml:space="preserve">
+    <value>Sim</value>
+  </data>
+  <data name="Backoffice_Common_No" xml:space="preserve">
+    <value>Não</value>
+  </data>
+  <data name="Backoffice_Common_RemoveButton" xml:space="preserve">
+    <value>Remover</value>
+  </data>
+  <data name="Backoffice_Common_ErrorNameRequired" xml:space="preserve">
+    <value>Nome é obrigatório.</value>
+  </data>
+  <data name="Backoffice_Common_DeleteConfirm" xml:space="preserve">
+    <value>Tem a certeza que pretende eliminar {0}?</value>
+  </data>
+  <data name="Backoffice_ApiScopes_PageTitle" xml:space="preserve">
+    <value>Backoffice - Âmbitos API</value>
+  </data>
+  <data name="Backoffice_ApiScopes_CreateHeading" xml:space="preserve">
+    <value>Criar Âmbito API</value>
+  </data>
+  <data name="Backoffice_ApiScopes_EditHeading" xml:space="preserve">
+    <value>Editar Âmbito API</value>
+  </data>
+  <data name="Backoffice_ApiScopes_DeleteHeading" xml:space="preserve">
+    <value>Eliminar Âmbito API</value>
+  </data>
+  <data name="Backoffice_ApiScopes_ListHeading" xml:space="preserve">
+    <value>Âmbitos API ({0})</value>
+  </data>
+  <data name="Backoffice_ApiScopes_CreateAction" xml:space="preserve">
+    <value>Criar âmbito API</value>
+  </data>
+  <data name="Backoffice_ApiScopes_Tab_MainInfo" xml:space="preserve">
+    <value>Informação Principal</value>
+  </data>
+  <data name="Backoffice_ApiScopes_Tab_UserClaims" xml:space="preserve">
+    <value>Claims de Utilizador</value>
+  </data>
+  <data name="Backoffice_ApiScopes_UserClaimsLabel" xml:space="preserve">
+    <value>Claims de Utilizador</value>
+  </data>
+  <data name="Backoffice_ApiScopes_ClaimColumn" xml:space="preserve">
+    <value>Claim</value>
+  </data>
+  <data name="Backoffice_ApiScopes_AddClaimButton" xml:space="preserve">
+    <value>Adicionar claim</value>
+  </data>
+  <data name="Backoffice_ApiScopes_ClaimsColumn" xml:space="preserve">
+    <value>Claims</value>
+  </data>
+  <data name="Backoffice_ApiScopes_Created" xml:space="preserve">
+    <value>Âmbito API criado.</value>
+  </data>
+  <data name="Backoffice_ApiScopes_Updated" xml:space="preserve">
+    <value>Âmbito API atualizado.</value>
+  </data>
+  <data name="Backoffice_ApiScopes_Deleted" xml:space="preserve">
+    <value>Âmbito API eliminado.</value>
+  </data>
+  <data name="Backoffice_ApiResources_PageTitle" xml:space="preserve">
+    <value>Backoffice - Recursos API</value>
+  </data>
+  <data name="Backoffice_ApiResources_CreateHeading" xml:space="preserve">
+    <value>Criar Recurso API</value>
+  </data>
+  <data name="Backoffice_ApiResources_EditHeading" xml:space="preserve">
+    <value>Editar Recurso API</value>
+  </data>
+  <data name="Backoffice_ApiResources_DeleteHeading" xml:space="preserve">
+    <value>Eliminar Recurso API</value>
+  </data>
+  <data name="Backoffice_ApiResources_ListHeading" xml:space="preserve">
+    <value>Recursos API ({0})</value>
+  </data>
+  <data name="Backoffice_ApiResources_CreateAction" xml:space="preserve">
+    <value>Criar recurso API</value>
+  </data>
+  <data name="Backoffice_ApiResources_Tab_MainInfo" xml:space="preserve">
+    <value>Informação Principal</value>
+  </data>
+  <data name="Backoffice_ApiResources_Tab_Scopes" xml:space="preserve">
+    <value>Âmbitos</value>
+  </data>
+  <data name="Backoffice_ApiResources_Tab_UserClaims" xml:space="preserve">
+    <value>Claims de Utilizador</value>
+  </data>
+  <data name="Backoffice_ApiResources_RequireResourceIndicatorLabel" xml:space="preserve">
+    <value>Requer indicador de recurso</value>
+  </data>
+  <data name="Backoffice_ApiResources_ScopesLabel" xml:space="preserve">
+    <value>Âmbitos</value>
+  </data>
+  <data name="Backoffice_ApiResources_ScopeColumn" xml:space="preserve">
+    <value>Âmbito</value>
+  </data>
+  <data name="Backoffice_ApiResources_AddScopeButton" xml:space="preserve">
+    <value>Adicionar âmbito</value>
+  </data>
+  <data name="Backoffice_ApiResources_UserClaimsLabel" xml:space="preserve">
+    <value>Claims de Utilizador</value>
+  </data>
+  <data name="Backoffice_ApiResources_ClaimColumn" xml:space="preserve">
+    <value>Claim</value>
+  </data>
+  <data name="Backoffice_ApiResources_AddClaimButton" xml:space="preserve">
+    <value>Adicionar claim</value>
+  </data>
+  <data name="Backoffice_ApiResources_ScopesColumn" xml:space="preserve">
+    <value>Âmbitos</value>
+  </data>
+  <data name="Backoffice_ApiResources_Created" xml:space="preserve">
+    <value>Recurso API criado.</value>
+  </data>
+  <data name="Backoffice_ApiResources_Updated" xml:space="preserve">
+    <value>Recurso API atualizado.</value>
+  </data>
+  <data name="Backoffice_ApiResources_Deleted" xml:space="preserve">
+    <value>Recurso API eliminado.</value>
+  </data>
+  <data name="Backoffice_IdentityResourcesPage_PageTitle" xml:space="preserve">
+    <value>Backoffice - Recursos de Identidade</value>
+  </data>
+  <data name="Backoffice_IdentityResourcesPage_CreateHeading" xml:space="preserve">
+    <value>Criar Recurso de Identidade</value>
+  </data>
+  <data name="Backoffice_IdentityResourcesPage_EditHeading" xml:space="preserve">
+    <value>Editar Recurso de Identidade</value>
+  </data>
+  <data name="Backoffice_IdentityResourcesPage_DeleteHeading" xml:space="preserve">
+    <value>Eliminar Recurso de Identidade</value>
+  </data>
+  <data name="Backoffice_IdentityResourcesPage_ListHeading" xml:space="preserve">
+    <value>Recursos de Identidade ({0})</value>
+  </data>
+  <data name="Backoffice_IdentityResourcesPage_CreateAction" xml:space="preserve">
+    <value>Criar recurso de identidade</value>
+  </data>
+  <data name="Backoffice_IdentityResourcesPage_Created" xml:space="preserve">
+    <value>Recurso de identidade criado.</value>
+  </data>
+  <data name="Backoffice_IdentityResourcesPage_Updated" xml:space="preserve">
+    <value>Recurso de identidade atualizado.</value>
+  </data>
+  <data name="Backoffice_IdentityResourcesPage_Deleted" xml:space="preserve">
+    <value>Recurso de identidade eliminado.</value>
+  </data>
+  <data name="Backoffice_IdentityProviders_PageTitle" xml:space="preserve">
+    <value>Backoffice - Fornecedores de Identidade</value>
+  </data>
+  <data name="Backoffice_IdentityProviders_CreateHeading" xml:space="preserve">
+    <value>Criar Fornecedor de Identidade</value>
+  </data>
+  <data name="Backoffice_IdentityProviders_EditHeading" xml:space="preserve">
+    <value>Editar Fornecedor de Identidade</value>
+  </data>
+  <data name="Backoffice_IdentityProviders_DeleteHeading" xml:space="preserve">
+    <value>Eliminar Fornecedor de Identidade</value>
+  </data>
+  <data name="Backoffice_IdentityProviders_ListHeading" xml:space="preserve">
+    <value>Fornecedores de Identidade ({0})</value>
+  </data>
+  <data name="Backoffice_IdentityProviders_CreateAction" xml:space="preserve">
+    <value>Criar fornecedor de identidade</value>
+  </data>
+  <data name="Backoffice_IdentityProviders_SchemeLabel" xml:space="preserve">
+    <value>Esquema</value>
+  </data>
+  <data name="Backoffice_IdentityProviders_SchemeColumn" xml:space="preserve">
+    <value>Esquema</value>
+  </data>
+  <data name="Backoffice_IdentityProviders_TypeLabel" xml:space="preserve">
+    <value>Tipo</value>
+  </data>
+  <data name="Backoffice_IdentityProviders_TypeColumn" xml:space="preserve">
+    <value>Tipo</value>
+  </data>
+  <data name="Backoffice_IdentityProviders_ErrorSchemeTypeRequired" xml:space="preserve">
+    <value>Esquema e Tipo são obrigatórios.</value>
+  </data>
+  <data name="Backoffice_IdentityProviders_Created" xml:space="preserve">
+    <value>Fornecedor de identidade criado.</value>
+  </data>
+  <data name="Backoffice_IdentityProviders_Updated" xml:space="preserve">
+    <value>Fornecedor de identidade atualizado.</value>
+  </data>
+  <data name="Backoffice_IdentityProviders_Deleted" xml:space="preserve">
+    <value>Fornecedor de identidade eliminado.</value>
+  </data>
+  <data name="Backoffice_Clients_PageTitle" xml:space="preserve">
+    <value>Backoffice - Clientes</value>
+  </data>
+  <data name="Backoffice_Clients_EditHeading" xml:space="preserve">
+    <value>Editar Cliente</value>
+  </data>
+  <data name="Backoffice_Clients_DeleteHeading" xml:space="preserve">
+    <value>Eliminar Cliente</value>
+  </data>
+  <data name="Backoffice_Clients_DeleteConfirm" xml:space="preserve">
+    <value>Tem a certeza que pretende eliminar o cliente {0}?</value>
+  </data>
+  <data name="Backoffice_Clients_ListHeading" xml:space="preserve">
+    <value>Clientes ({0})</value>
+  </data>
+  <data name="Backoffice_Clients_Loading" xml:space="preserve">
+    <value>A carregar...</value>
+  </data>
+  <data name="Backoffice_Clients_ErrorInvalidClient" xml:space="preserve">
+    <value>Cliente inválido.</value>
+  </data>
+  <data name="Backoffice_Clients_Tab_MainInfo" xml:space="preserve">
+    <value>Informação Principal</value>
+  </data>
+  <data name="Backoffice_Clients_Tab_AllowedGrantTypes" xml:space="preserve">
+    <value>Tipos de Concessão Permitidos</value>
+  </data>
+  <data name="Backoffice_Clients_Tab_RedirectUris" xml:space="preserve">
+    <value>URIs de Redirecionamento</value>
+  </data>
+  <data name="Backoffice_Clients_Tab_PostLogoutRedirectUris" xml:space="preserve">
+    <value>URIs de Redirecionamento Pós-Logout</value>
+  </data>
+  <data name="Backoffice_Clients_Tab_AllowedCorsOrigins" xml:space="preserve">
+    <value>Origens Cors Permitidas</value>
+  </data>
+  <data name="Backoffice_Clients_Tab_AllowedScopes" xml:space="preserve">
+    <value>Âmbitos Permitidos</value>
+  </data>
+  <data name="Backoffice_Clients_Tab_ClientSecrets" xml:space="preserve">
+    <value>Segredos do Cliente</value>
+  </data>
+  <data name="Backoffice_Clients_ClientIdLabel" xml:space="preserve">
+    <value>ID do Cliente</value>
+  </data>
+  <data name="Backoffice_Clients_ClientIdColumn" xml:space="preserve">
+    <value>ID do Cliente</value>
+  </data>
+  <data name="Backoffice_Clients_ClientNameLabel" xml:space="preserve">
+    <value>Nome do Cliente</value>
+  </data>
+  <data name="Backoffice_Clients_RequirePkceLabel" xml:space="preserve">
+    <value>Requer PKCE</value>
+  </data>
+  <data name="Backoffice_Clients_RequireClientSecretLabel" xml:space="preserve">
+    <value>Requer Segredo do Cliente</value>
+  </data>
+  <data name="Backoffice_Clients_AllowOfflineAccessLabel" xml:space="preserve">
+    <value>Permitir Acesso Offline</value>
+  </data>
+  <data name="Backoffice_Clients_AccessTokenLifetimeLabel" xml:space="preserve">
+    <value>Tempo de vida do Token de Acesso</value>
+  </data>
+  <data name="Backoffice_Clients_SlidingRefreshTokenLifetimeLabel" xml:space="preserve">
+    <value>Tempo de vida deslizante do Token de Atualização</value>
+  </data>
+  <data name="Backoffice_Clients_AbsoluteRefreshTokenLifetimeLabel" xml:space="preserve">
+    <value>Tempo de vida absoluto do Token de Atualização</value>
+  </data>
+  <data name="Backoffice_Clients_RefreshTokenUsageLabel" xml:space="preserve">
+    <value>Uso do Token de Atualização</value>
+  </data>
+  <data name="Backoffice_Clients_RefreshTokenExpirationLabel" xml:space="preserve">
+    <value>Expiração do Token de Atualização</value>
+  </data>
+  <data name="Backoffice_Clients_AllowedGrantTypesLabel" xml:space="preserve">
+    <value>Tipos de Concessão Permitidos</value>
+  </data>
+  <data name="Backoffice_Clients_GrantTypeColumn" xml:space="preserve">
+    <value>Tipo de Concessão</value>
+  </data>
+  <data name="Backoffice_Clients_AddGrantTypeButton" xml:space="preserve">
+    <value>Adicionar tipo de concessão</value>
+  </data>
+  <data name="Backoffice_Clients_RedirectUrisLabel" xml:space="preserve">
+    <value>URIs de Redirecionamento</value>
+  </data>
+  <data name="Backoffice_Clients_RedirectUriColumn" xml:space="preserve">
+    <value>URI de Redirecionamento</value>
+  </data>
+  <data name="Backoffice_Clients_AddRedirectUriButton" xml:space="preserve">
+    <value>Adicionar URI de redirecionamento</value>
+  </data>
+  <data name="Backoffice_Clients_PostLogoutRedirectUrisLabel" xml:space="preserve">
+    <value>URIs de Redirecionamento Pós-Logout</value>
+  </data>
+  <data name="Backoffice_Clients_PostLogoutRedirectUriColumn" xml:space="preserve">
+    <value>URI de Redirecionamento Pós-Logout</value>
+  </data>
+  <data name="Backoffice_Clients_AddPostLogoutRedirectUriButton" xml:space="preserve">
+    <value>Adicionar URI de redirecionamento pós-logout</value>
+  </data>
+  <data name="Backoffice_Clients_AllowedCorsOriginsLabel" xml:space="preserve">
+    <value>Origens Cors Permitidas</value>
+  </data>
+  <data name="Backoffice_Clients_OriginColumn" xml:space="preserve">
+    <value>Origem</value>
+  </data>
+  <data name="Backoffice_Clients_AddOriginButton" xml:space="preserve">
+    <value>Adicionar origem</value>
+  </data>
+  <data name="Backoffice_Clients_AllowedScopesLabel" xml:space="preserve">
+    <value>Âmbitos Permitidos</value>
+  </data>
+  <data name="Backoffice_Clients_ScopeColumn" xml:space="preserve">
+    <value>Âmbito</value>
+  </data>
+  <data name="Backoffice_Clients_AddScopeButton" xml:space="preserve">
+    <value>Adicionar âmbito</value>
+  </data>
+  <data name="Backoffice_Clients_ClientSecretsLabel" xml:space="preserve">
+    <value>Segredos do Cliente</value>
+  </data>
+  <data name="Backoffice_Clients_ValueColumn" xml:space="preserve">
+    <value>Valor</value>
+  </data>
+  <data name="Backoffice_Clients_IsHashedColumn" xml:space="preserve">
+    <value>Está Codificado</value>
+  </data>
+  <data name="Backoffice_Clients_AddSecretButton" xml:space="preserve">
+    <value>Adicionar segredo</value>
+  </data>
+  <data name="Backoffice_Clients_ActiveColumn" xml:space="preserve">
+    <value>Ativo</value>
+  </data>
+  <data name="Backoffice_Clients_RedirectUrisColumn" xml:space="preserve">
+    <value>URIs de Redirecionamento</value>
+  </data>
+  <data name="Backoffice_Clients_ScopesColumn" xml:space="preserve">
+    <value>Âmbitos</value>
+  </data>
+  <data name="Backoffice_Clients_Updated" xml:space="preserve">
+    <value>Cliente atualizado.</value>
+  </data>
+  <data name="Backoffice_Clients_Deleted" xml:space="preserve">
+    <value>Cliente eliminado.</value>
+  </data>
 </root>

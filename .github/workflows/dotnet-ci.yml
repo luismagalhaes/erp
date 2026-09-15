@@ -240,8 +240,12 @@ jobs:
       - name: Restore
         run: dotnet restore ${{ matrix.project }}
 
+      # -p:Version overrides Directory.Build.props' <Version> for this build only, so the "About"
+      # button (Assembly.GetEntryAssembly().GetName().Version) shows which pipeline run produced the
+      # deployed build. The "1.0" here is the major/minor and must be bumped together with the one
+      # in Directory.Build.props for a real release.
       - name: Publish
-        run: dotnet publish ${{ matrix.project }} --configuration Release --no-restore --output ./publish/${{ matrix.name }}
+        run: dotnet publish ${{ matrix.project }} --configuration Release --no-restore --output ./publish/${{ matrix.name }} -p:Version=1.0.${{ github.run_number }}
 
       - name: Deploy to the Web App
         uses: azure/webapps-deploy@v3

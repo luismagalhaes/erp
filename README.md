@@ -9,8 +9,7 @@ Correm em processo separado apenas os que têm razão para isso:
 | Processo | Porquê |
 |---|---|
 | `Erp.Identity` | É um servidor OIDC — fronteira de segurança real |
-| `Erp.Api` | Todos os módulos de negócio |
-| `Erp.Notification.Worker` | Processamento assíncrono em segundo plano |
+| `Erp.Api` | Todos os módulos de negócio, incluindo o envio de email em segundo plano (ver [Notification](#notification)) |
 | `Erp.Main` | Interface web |
 
 ## Índice
@@ -151,8 +150,7 @@ O `Erp.Sales` e o `Erp.Purchasing` referenciam o `Erp.Inventory`, para que emiti
 
 | Projeto | Descrição |
 |---|---|
-| [Erp.Notification](src/Modules/Erp.Notification/) | `EmailNotification` e estados, interfaces, fila de emails, histórico, envio SMTP e o `NotificationDbContext`. |
-| [Erp.Notification.Worker](src/Notification/Erp.Notification.Worker/) | Worker que drena a fila em intervalos fixos e regista as falhas na própria notificação. Processo à parte, e por isso projeto à parte. |
+| [Erp.Notification](src/Modules/Erp.Notification/) | `EmailNotification` e estados, interfaces, fila de emails, histórico, envio SMTP e o `NotificationDbContext`. Inclui o `EmailQueueWorker`, um `BackgroundService` que drena a fila em intervalos fixos dentro do próprio `Erp.Api` — não há processo à parte, porque não há razão para escalar isto independentemente da API. |
 
 ### Testes
 
@@ -177,7 +175,6 @@ O `Erp.Sales` e o `Erp.Purchasing` referenciam o `Erp.Inventory`, para que emiti
 | Erp.Main | https://localhost:7019 | http://localhost:5191 |
 | Erp.Identity | https://localhost:7081 | http://localhost:5269 |
 | Erp.Api | https://localhost:7072 | http://localhost:5096 |
-| Erp.Notification.Worker | — | — |
 
 Estas portas estão referenciadas em configuração (URLs de callback OIDC, CORS, `Services:*` no [Erp.Main/appsettings.json](src/UI/Erp.Main/appsettings.json) e nos clients semeados). Alterar uma porta implica atualizar também esses pontos.
 
@@ -260,16 +257,13 @@ dotnet build Erp.slnx
 dotnet run --project .\src\Identity\Erp.Identity\Erp.Identity.csproj --launch-profile https
 dotnet run --project .\src\Erp.Api\Erp.Api.csproj --launch-profile https
 dotnet run --project .\src\UI\Erp.Main\Erp.Main.csproj --launch-profile https
-
-# 3. Opcional: envio efetivo dos emails em fila
-dotnet run --project .\src\Notification\Erp.Notification.Worker\Erp.Notification.Worker.csproj
 ```
 
-> A recuperação de password do Identity enfileira o email no `Erp.Api`. Sem esse processo a correr, o pedido falha — arranque-o sempre que testar o fluxo de reset.
+> A recuperação de password do Identity enfileira o email no `Erp.Api`, que também o envia — o `EmailQueueWorker` corre dentro do próprio `Erp.Api` (ver [Notification](#notification)). Sem `Smtp:*` configurado localmente a notificação fica `Failed`, mas o fluxo de reset em si (gerar o link, validar o token) não depende disso.
 
 Abrir https://localhost:7019 — o acesso não autenticado é redirecionado para o login do Identity.
 
-Em Visual Studio existem os perfis de arranque múltiplo **"All"** e **"All + Worker"** ([Erp.slnLaunch.user](Erp.slnLaunch.user)).
+Em Visual Studio existe o perfil de arranque múltiplo **"All"** ([Erp.slnLaunch.user](Erp.slnLaunch.user)).
 
 **Migrações e seed aplicam-se sozinhas.** O `Erp.Api` e o `Erp.Identity` fazem duas coisas no arranque: aplicam as migrations pendentes (nunca é destrutivo) e semeiam clients, scopes, resources, roles e admin user (crítico para a app funcionar) — [Program.cs](src/Erp.Api/Program.cs) e [SeedData](src/Identity/Erp.Identity.Storage/Data/SeedData.cs). É por isto que o *pipeline* de deploy (ver [Integração contínua e deploy](#integração-contínua-e-deploy)) não tem passos de migração nem seed: publicar código e arrancar a app já chega. **Nota:** o seed sobrescreve o que foi editado no backoffice (clients, scopes, resources) — alterações feitas lá são perdidas no arranque seguinte. Criar uma migração nova continua manual, com `dotnet ef migrations add` (ver [Base de dados](#base-de-dados)).
 
@@ -706,7 +700,7 @@ O scope de envio é deliberadamente separado de `erp.read` e `erp.write`: o clie
 
 O segredo que o Identity apresenta vem de `ServiceAuthentication:ClientSecret` (user secrets ou cofre — ver [Configuração e segredos](#configuração-e-segredos)). Em desenvolvimento, se não estiver configurado, cai no valor de `Constants.Clients.IdentityServiceSecret` para a máquina local funcionar sem preparação. **O lado do Identity Server não segue essa mesma regra**: o [SeedData](src/Identity/Erp.Identity.Storage/Data/SeedData.cs) cria o client `identity-service` sem nenhum secret — tem de ser definido manualmente no backoffice (Clients → identity-service) em cada ambiente, com o mesmo valor que for registado em `ServiceAuthentication:ClientSecret` nesse ambiente. Sem isto, o envio de email por recuperação de password falha com 401.
 
-O envio efetivo é feito pelo [Erp.Notification.Worker](src/Notification/Erp.Notification.Worker/), que drena a fila no intervalo definido em `NotificationWorker:PollingIntervalSeconds`. Uma falha de entrega marca a notificação como `Failed` com o erro e incrementa as tentativas, sem parar o ciclo.
+O envio efetivo é feito pelo [`EmailQueueWorker`](src/Modules/Erp.Notification/Application/Services/EmailQueueWorker.cs), um `BackgroundService` registado em `AddNotificationApplication` que corre dentro do próprio `Erp.Api` e drena a fila no intervalo definido em `NotificationWorker:PollingIntervalSeconds`. Uma falha de entrega marca a notificação como `Failed` com o erro e incrementa as tentativas, sem parar o ciclo.
 
 ---
 
@@ -821,7 +815,7 @@ Registo honesto do que ainda não está feito, para evitar surpresas:
 - **Custeio: médio ponderado, não FIFO** — o stock é valorizado ao custo médio ponderado das compras, calculado a partir do razão. O FIFO exigiria guardar camadas de custo e consumi-las por ordem, que é outra estrutura; o médio ponderado tira-se do razão sem nada de novo. O custo da ficha do artigo sobreviveu apenas como recurso último, para artigos que nenhuma compra chegou a custear, e o ficheiro de inventário diz quantas linhas precisaram dele.
 - **Testes de integração só correm no deploy, não em cada PR** — desde que existe a job `integration-tests` (ver [Integração contínua e deploy](#integração-contínua-e-deploy)), [Erp.IntegrationTests](tests/Erp.IntegrationTests/) corre no CI contra uma Azure SQL dedicada, mas só em `workflow_dispatch` — um bug destes só aparece quando alguém pede um deploy, não no PR que o introduziu. Ficou assim porque a base de dados dedicada é paga (o Free tier só cobre uma) e a *fixture* apaga todas as tabelas no arranque, o que exclui usar staging ou correr em paralelo com outro PR. Um SQL Server em contentor no `build-and-test` resolveria isto — sem custo, sem *firewall*, isolado por natureza — mas exige rever a *fixture* (hoje pensada para uma base persistente, não uma efémera por corrida).
 - **DTOs copiados à mão** — o `Erp.Main` mantém a sua própria cópia dos contratos da API em vez de os partilhar. Um campo renomeado de um lado compila do outro e chega em silêncio como `null` ou `Guid.Empty`; já aconteceu mais do que uma vez.
-- **SMTP por configurar** — sem `Smtp:Host` e `Smtp:FromEmail`, o worker marca os emails como `Failed` com essa mensagem. É visível no backoffice de notificações e resolve-se com configuração, não com código.
+- **SMTP por configurar** — sem `Smtp:Host` e `Smtp:FromEmail`, o `EmailQueueWorker` marca os emails como `Failed` com essa mensagem. É visível no backoffice de notificações e resolve-se com configuração, não com código.
 - **Constantes duplicadas** — os scopes, roles e claims vivem em [Erp.Common](src/Shared/Erp.Common/Constants.cs), usado pela `Erp.Api` e pelo `Erp.Main`, mas o Identity mantém a sua cópia em `Erp.Identity.Common`. Os valores coincidem, mas alterar só um dos lados põe o seed e a API em desacordo sem erro de compilação.
 - **Cobertura de testes desigual** — a lógica fiscal, a emissão, o stock e os serviços do Core estão cobertos; as camadas Storage (EF Core) e as páginas Blazor não têm testes.
 - **Deploy sem aprovação formal** — o job `deploy` (ver [Integração contínua e deploy](#integração-contínua-e-deploy)) só corre por `workflow_dispatch`, nunca por push, porque **Required reviewers em *environments* do GitHub exige plano Pro/Team/Enterprise para repositórios privados** — no Free essa opção não aparece. A autorização hoje é "só quem tem acesso ao repositório consegue clicar em Run workflow", não uma aprovação registada por outra pessoa. Corrige-se fazendo *upgrade* do plano do GitHub e voltando a gatilhar por `environment:` com *reviewers*.
@@ -830,13 +824,13 @@ Registo honesto do que ainda não está feito, para evitar surpresas:
 
 ## Configuração e segredos
 
-Os `appsettings.*.json` de cada host guardam só o que **não é segredo** — autoridades OIDC, URLs de outros serviços, flags. Os valores sensíveis vêm do [Infisical](https://infisical.com) através de um `IConfigurationProvider` próprio, acrescentado à configuração **depois** do `appsettings.*.json` e das variáveis de ambiente — por isso ganha sempre a qualquer valor local com a mesma chave. Existe **em duplicado, de propósito**, em dois sítios que não se referenciam um ao outro: [`Erp.Common/Configuration`](src/Shared/Erp.Common/Configuration/), usado por `Erp.Api`, `Erp.Main` e `Erp.Notification.Worker`, e [`Erp.Identity.Common/Configuration`](src/Identity/Erp.Identity.Common/Configuration/), usado só pelo `Erp.Identity` — os projetos do Identity não dependem do `Erp.Common`, mesmo à custa desta duplicação.
+Os `appsettings.*.json` de cada host guardam só o que **não é segredo** — autoridades OIDC, URLs de outros serviços, flags. Os valores sensíveis vêm do [Infisical](https://infisical.com) através de um `IConfigurationProvider` próprio, acrescentado à configuração **depois** do `appsettings.*.json` e das variáveis de ambiente — por isso ganha sempre a qualquer valor local com a mesma chave. Existe **em duplicado, de propósito**, em dois sítios que não se referenciam um ao outro: [`Erp.Common/Configuration`](src/Shared/Erp.Common/Configuration/), usado por `Erp.Api` e `Erp.Main`, e [`Erp.Identity.Common/Configuration`](src/Identity/Erp.Identity.Common/Configuration/), usado só pelo `Erp.Identity` — os projetos do Identity não dependem do `Erp.Common`, mesmo à custa desta duplicação.
 
 > **Regra do repositório:** sempre que se acrescenta um segredo novo (no cofre ou em `appsettings.*.json`), esta secção tem de ser atualizada — chave, para que serve e onde vive. Um segredo que só existe na cabeça de quem o criou não sobrevive à próxima pessoa a mexer no deploy.
 
 ### Como funciona o cofre
 
-`builder.Configuration.AddInfisicalSecrets(builder.Environment)` — chamado logo a seguir a `CreateBuilder`/`Host.CreateApplicationBuilder` nos quatro hosts (`Erp.Api`, `Erp.Identity`, `Erp.Main`, `Erp.Notification.Worker`) — lê três variáveis de arranque e, só se as três estiverem definidas, autentica-se no Infisical (Universal Auth, uma *machine identity*) e carrega os secrets do ambiente correspondente:
+`builder.Configuration.AddInfisicalSecrets(builder.Environment)` — chamado logo a seguir a `CreateBuilder`/`Host.CreateApplicationBuilder` nos três hosts (`Erp.Api`, `Erp.Identity`, `Erp.Main`) — lê três variáveis de arranque e, só se as três estiverem definidas, autentica-se no Infisical (Universal Auth, uma *machine identity*) e carrega os secrets do ambiente correspondente:
 
 | Variável de arranque | Onde vive | Obrigatória |
 |---|---|---|
@@ -855,10 +849,9 @@ Os nomes dos secrets no Infisical seguem a convenção de variável de ambiente 
 
 | Host | Fica em `appsettings.*.json` (não secreto) | Vem do cofre |
 |---|---|---|
-| Erp.Api | `IdentityServer:Authority`, `AT:WebserviceUrl`, `AT:AtcudUrl`, `Smtp:Host`/`Port`/`UseSsl`/`FromEmail`/`FromName`, `Fiscal:IssuerTaxId`/`CertificateNumber`/`KeyVersion` | `ConnectionStrings:ErpDb`, `Smtp:UserName`, `Smtp:Password`, `AT:CertificateBase64`, `AT:CertificatePassword`, `Fiscal:PrivateKeyPem`, `ApplicationInsights:ConnectionString` |
+| Erp.Api | `IdentityServer:Authority`, `AT:WebserviceUrl`, `AT:AtcudUrl`, `Smtp:Host`/`Port`/`UseSsl`/`FromEmail`/`FromName`, `NotificationWorker:BatchSize`/`PollingIntervalSeconds`, `Fiscal:IssuerTaxId`/`CertificateNumber`/`KeyVersion` | `ConnectionStrings:ErpDb`, `Smtp:UserName`, `Smtp:Password`, `AT:CertificateBase64`, `AT:CertificatePassword`, `Fiscal:PrivateKeyPem`, `ApplicationInsights:ConnectionString` |
 | Erp.Identity | `IdentityServer:Authority`, `NotificationService:BaseUrl`, `ServiceAuthentication:Authority`/`ClientId`/`Scope` | `ConnectionStrings:IdentityDb`, `ServiceAuthentication:ClientSecret`, `AdminUser:Email`/`FirstName`/`LastName`/`Password`, `ApplicationInsights:ConnectionString` |
 | Erp.Main | `OidcConfiguration:*`, `Services:Api`/`IdentityApi` | — (`blazor-wasm` é um client público, sem secret) |
-| Erp.Notification.Worker | `NotificationWorker:BatchSize`/`PollingIntervalSeconds`, `Smtp:Host`/`Port`/`UseSsl`/`FromEmail`/`FromName` | `ConnectionStrings:ErpDb`, `Smtp:UserName`, `Smtp:Password` |
 
 `ApplicationInsights:ConnectionString` é opcional em `Erp.Api` e `Erp.Identity`: os dois hosts usam `ILogger`/OpenTelemetry nativos (ver [`Telemetry/OpenTelemetryExtensions.cs`](src/Erp.Api/Telemetry/OpenTelemetryExtensions.cs) em cada um), e só ligam o exportador para o Azure Monitor quando esta chave está preenchida — vazia (como em `appsettings.json`), a app funciona igual, só sem exportar para o Application Insights.
 

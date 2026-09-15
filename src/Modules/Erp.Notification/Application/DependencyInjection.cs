@@ -18,6 +18,7 @@ public static class DependencyInjection
         services.AddScoped<IEmailHistoryService, EmailHistoryService>();
         services.AddScoped<INotificationProcessingService, NotificationProcessingService>();
         services.AddScoped<IEmailSender, SmtpEmailSender>();
+        services.AddHostedService<EmailQueueWorker>();
 
         return services;
     }

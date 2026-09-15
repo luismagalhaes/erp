@@ -18,30 +18,5 @@
         "DebugTarget": "https"
       }
     ]
-  },
-  {
-    "Name": "All + Worker",
-    "Projects": [
-      {
-        "Path": "src\\Identity\\Erp.Identity\\Erp.Identity.csproj",
-        "Action": "Start",
-        "DebugTarget": "https"
-      },
-      {
-        "Path": "src\\Erp.Api\\Erp.Api.csproj",
-        "Action": "Start",
-        "DebugTarget": "https"
-      },
-      {
-        "Path": "src\\UI\\Erp.Main\\Erp.Main.csproj",
-        "Action": "Start",
-        "DebugTarget": "https"
-      },
-      {
-        "Path": "src\\Notification\\Erp.Notification.Worker\\Erp.Notification.Worker.csproj",
-        "Action": "Start",
-        "DebugTarget": "Erp.Notification.Worker"
-      }
-    ]
   }
 ]

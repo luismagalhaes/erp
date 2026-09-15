@@ -123,6 +123,7 @@
   <data name="Layout_Logout" xml:space="preserve"><value>Log out</value></data>
   <data name="Layout_About" xml:space="preserve"><value>About</value></data>
   <data name="Layout_AboutVersion" xml:space="preserve"><value>Installed version: {0}</value></data>
+  <data name="Layout_Profile" xml:space="preserve"><value>Profile</value></data>
 
   <data name="NavMenu_Dashboard" xml:space="preserve"><value>Dashboard</value></data>
   <data name="NavMenu_PartnersGroup" xml:space="preserve"><value>Customers and Suppliers</value></data>
@@ -273,7 +274,11 @@
   <data name="VatRates_RegionColumn" xml:space="preserve"><value>Fiscal region</value></data>
   <data name="VatRates_LabelColumn" xml:space="preserve"><value>Rate</value></data>
   <data name="VatRates_PercentageColumn" xml:space="preserve"><value>Percentage</value></data>
-  <data name="VatRates_LoadError" xml:space="preserve"><value>Unable to load VAT rates: {0}</value></data>
+  <data name="VatRates_SearchPlaceholder" xml:space="preserve"><value>Search by code or rate</value></data>
+  <data name="VatRates_EmptyTitle" xml:space="preserve"><value>No VAT rates to show</value></data>
+  <data name="VatRates_EmptyDescription" xml:space="preserve"><value>Adjust the search filters.</value></data>
+  <data name="VatRates_ItemsLabel" xml:space="preserve"><value>rates</value></data>
+  <data name="VatRates_LoadErrorMessage" xml:space="preserve"><value>Unable to load VAT rates</value></data>
   <data name="VatRateEditor_Title" xml:space="preserve"><value>Edit VAT rate</value></data>
   <data name="VatRateEditor_ImmutableNotice" xml:space="preserve"><value>The fiscal region and code don't change — only the percentage and status.</value></data>
   <data name="VatRateEditor_ActiveLabel" xml:space="preserve"><value>Rate active</value></data>

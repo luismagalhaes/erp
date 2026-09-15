@@ -305,14 +305,31 @@ public sealed record UpdatePartnerRequest(
 /// <summary>
 /// One VAT rate for one fiscal region — mainland Portugal and the two autonomous regions each set
 /// their own percentage for the same rate tier, so the pair is what identifies a row, not the code
-/// alone.
+/// alone. Init properties for the same reason as <see cref="BrandDto"/>: EF Core only maps members
+/// over an object initializer, which is what keeps the OData options translatable to SQL.
 /// </summary>
-public sealed record VatRateDto(
-    Guid Id,
-    string FiscalRegion,
-    string Code,
-    string Label,
-    decimal Percentage,
-    bool IsActive);
+public sealed record VatRateDto
+{
+    public VatRateDto()
+    {
+    }
+
+    public VatRateDto(Guid id, string fiscalRegion, string code, string label, decimal percentage, bool isActive)
+    {
+        Id = id;
+        FiscalRegion = fiscalRegion;
+        Code = code;
+        Label = label;
+        Percentage = percentage;
+        IsActive = isActive;
+    }
+
+    public Guid Id { get; init; }
+    public string FiscalRegion { get; init; } = string.Empty;
+    public string Code { get; init; } = string.Empty;
+    public string Label { get; init; } = string.Empty;
+    public decimal Percentage { get; init; }
+    public bool IsActive { get; init; }
+}
 
 public sealed record UpdateVatRateRequest(decimal Percentage, bool IsActive);

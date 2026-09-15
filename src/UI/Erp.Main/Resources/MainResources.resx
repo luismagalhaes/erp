@@ -123,6 +123,7 @@
   <data name="Layout_Logout" xml:space="preserve"><value>Terminar sessão</value></data>
   <data name="Layout_About" xml:space="preserve"><value>Sobre</value></data>
   <data name="Layout_AboutVersion" xml:space="preserve"><value>Versão instalada: {0}</value></data>
+  <data name="Layout_Profile" xml:space="preserve"><value>Perfil</value></data>
 
   <data name="NavMenu_Dashboard" xml:space="preserve"><value>Dashboard</value></data>
   <data name="NavMenu_PartnersGroup" xml:space="preserve"><value>Clientes e Fornecedores</value></data>
@@ -273,7 +274,11 @@
   <data name="VatRates_RegionColumn" xml:space="preserve"><value>Espaço fiscal</value></data>
   <data name="VatRates_LabelColumn" xml:space="preserve"><value>Taxa</value></data>
   <data name="VatRates_PercentageColumn" xml:space="preserve"><value>Percentagem</value></data>
-  <data name="VatRates_LoadError" xml:space="preserve"><value>Não foi possível carregar as taxas de IVA: {0}</value></data>
+  <data name="VatRates_SearchPlaceholder" xml:space="preserve"><value>Procurar por código ou taxa</value></data>
+  <data name="VatRates_EmptyTitle" xml:space="preserve"><value>Sem taxas de IVA para mostrar</value></data>
+  <data name="VatRates_EmptyDescription" xml:space="preserve"><value>Ajuste os filtros de pesquisa.</value></data>
+  <data name="VatRates_ItemsLabel" xml:space="preserve"><value>taxas</value></data>
+  <data name="VatRates_LoadErrorMessage" xml:space="preserve"><value>Não foi possível carregar as taxas de IVA</value></data>
   <data name="VatRateEditor_Title" xml:space="preserve"><value>Editar taxa de IVA</value></data>
   <data name="VatRateEditor_ImmutableNotice" xml:space="preserve"><value>O espaço fiscal e o código não se alteram — só a percentagem e o estado.</value></data>
   <data name="VatRateEditor_ActiveLabel" xml:space="preserve"><value>Taxa ativa</value></data>

@@ -35,7 +35,7 @@ public static class InfisicalConfigurationExtensions
     /// This is Erp.Identity's own copy: the Identity host and its projects deliberately do not
     /// reference <c>Erp.Common</c> — <c>Erp.Identity.Common</c> is where anything they need to share
     /// lives instead, kept independent even at the cost of a small duplication with the copy in
-    /// <c>Erp.Common.Configuration</c> that Erp.Api/Erp.Main/Erp.Notification.Worker use.
+    /// <c>Erp.Common.Configuration</c> that Erp.Api/Erp.Main use.
     /// </para>
     /// </remarks>
     public static void AddInfisicalSecrets(this ConfigurationManager configuration, IHostEnvironment environment)

@@ -66,35 +66,6 @@ public sealed class BrandService(IBrandStorage storage) : IBrandService
     private static BrandDto Map(Brand brand) => new(brand.Id, brand.Code, brand.Name, brand.IsActive);
 }
 
-public sealed class VatRateService(IVatRateStorage storage) : IVatRateService
-{
-    public async Task<IReadOnlyList<VatRateDto>> GetAllAsync(CancellationToken cancellationToken = default)
-    {
-        var rates = await storage.GetAllAsync(cancellationToken);
-        return rates.Select(Map).ToList();
-    }
-
-    public async Task<VatRateDto?> UpdateAsync(Guid id, UpdateVatRateRequest request, CancellationToken cancellationToken = default)
-    {
-        ArgumentNullException.ThrowIfNull(request);
-
-        var rate = await storage.GetByIdAsync(id, cancellationToken);
-        if (rate is null)
-            return null;
-
-        rate.Percentage = request.Percentage;
-        rate.IsActive = request.IsActive;
-        rate.UpdatedAtUtc = DateTime.UtcNow;
-
-        await storage.SaveChangesAsync(cancellationToken);
-
-        return Map(rate);
-    }
-
-    private static VatRateDto Map(VatRate rate) =>
-        new(rate.Id, rate.FiscalRegion, rate.Code, rate.Label, rate.Percentage, rate.IsActive);
-}
-
 public sealed class ProductFamilyService(IProductFamilyStorage storage) : IProductFamilyService
 {
     public async Task<IReadOnlyList<ProductFamilyDto>> GetAllAsync(Guid companyId, CancellationToken cancellationToken = default)

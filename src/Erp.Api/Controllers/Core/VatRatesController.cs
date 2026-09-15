@@ -3,6 +3,7 @@ using Erp.Core.Infrastructure.Application;
 using Erp.Core.Infrastructure.Contracts;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.OData.Query;
 
 namespace Erp.Api.Controllers.Core;
 
@@ -21,6 +22,16 @@ public sealed class VatRatesController(IVatRateService vatRateService) : Control
     [ProducesResponseType<IReadOnlyList<VatRateDto>>(StatusCodes.Status200OK)]
     public async Task<ActionResult<IReadOnlyList<VatRateDto>>> GetAll(CancellationToken cancellationToken) =>
         Ok(await vatRateService.GetAllAsync(cancellationToken));
+
+    /// <summary>
+    /// The listing the data grid calls. Filtering, sorting and paging travel as OData options and
+    /// are applied by the database. Rates are global, so there is no tenancy filter to keep outside
+    /// the query here.
+    /// </summary>
+    [HttpGet("odata")]
+    [ProducesResponseType<ODataCollection<VatRateDto>>(StatusCodes.Status200OK)]
+    public ActionResult<ODataCollection<VatRateDto>> Query(ODataQueryOptions<VatRateDto> options) =>
+        Ok(ODataQueryExecutor.Execute(vatRateService.Query(), options));
 
     [HttpPut("{id:guid}")]
     [Authorize(Policy = Policies.Admin)]

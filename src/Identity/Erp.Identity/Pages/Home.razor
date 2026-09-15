@@ -9,15 +9,6 @@
 @inject IStringLocalizer<IdentityResources> Localizer
 
 <MudStack Spacing="4">
-    <MudPaper Class="pa-6 erp-card" Elevation="0">
-        <AuthorizeView>
-            <Authorized>
-                <MudText Typo="Typo.body1">@Localizer["Home_AuthenticatedUser", context.User.Identity?.Name ?? string.Empty]</MudText>
-                <MudText Typo="Typo.body2" Class="mt-2">@Localizer["Home_Status", Localizer["Home_StatusAuthenticated"]]</MudText>
-            </Authorized>
-        </AuthorizeView>
-    </MudPaper>
-
     @if (_user is not null)
     {
         <MudCard Class="erp-card" Elevation="0">

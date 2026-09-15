@@ -91,6 +91,11 @@ public interface ISupplierStorage
 public interface IVatRateStorage
 {
     Task<IReadOnlyList<VatRate>> GetAllAsync(CancellationToken cancellationToken = default);
+
+    /// <summary>The listing left open so the OData options of the grid are translated into SQL instead of
+    /// being applied over rows already read.</summary>
+    IQueryable<VatRateDto> Query();
+
     Task<VatRate?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default);
     Task SaveChangesAsync(CancellationToken cancellationToken = default);
 }

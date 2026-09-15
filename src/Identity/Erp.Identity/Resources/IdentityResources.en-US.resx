@@ -1,343 +1,897 @@
 <?xml version="1.0" encoding="utf-8"?>
 <root>
+  <!-- 
+    Microsoft ResX Schema 
+    
+    Version 2.0
+    
+    The primary goals of this format is to allow a simple XML format 
+    that is mostly human readable. The generation and parsing of the 
+    various data types are done through the TypeConverter classes 
+    associated with the data types.
+    
+    Example:
+    
+    ... ado.net/XML headers & schema ...
+    <resheader name="resmimetype">text/microsoft-resx</resheader>
+    <resheader name="version">2.0</resheader>
+    <resheader name="reader">System.Resources.ResXResourceReader, System.Windows.Forms, ...</resheader>
+    <resheader name="writer">System.Resources.ResXResourceWriter, System.Windows.Forms, ...</resheader>
+    <data name="Name1"><value>this is my long string</value><comment>this is a comment</comment></data>
+    <data name="Color1" type="System.Drawing.Color, System.Drawing">Blue</data>
+    <data name="Bitmap1" mimetype="application/x-microsoft.net.object.binary.base64">
+        <value>[base64 mime encoded serialized .NET Framework object]</value>
+    </data>
+    <data name="Icon1" type="System.Drawing.Icon, System.Drawing" mimetype="application/x-microsoft.net.object.bytearray.base64">
+        <value>[base64 mime encoded string representing a byte array form of the .NET Framework object]</value>
+        <comment>This is a comment</comment>
+    </data>
+                
+    There are any number of "resheader" rows that contain simple 
+    name/value pairs.
+    
+    Each data row contains a name, and value. The row also contains a 
+    type or mimetype. Type corresponds to a .NET class that support 
+    text/value conversion through the TypeConverter architecture. 
+    Classes that don't support this are serialized and stored with the 
+    mimetype set.
+    
+    The mimetype is used for serialized objects, and tells the 
+    ResXResourceReader how to depersist the object. This is currently not 
+    extensible. For a given mimetype the value must be set accordingly:
+    
+    Note - application/x-microsoft.net.object.binary.base64 is the format 
+    that the ResXResourceWriter will generate, however the reader can 
+    read any of the formats listed below.
+    
+    mimetype: application/x-microsoft.net.object.binary.base64
+    value   : The object must be serialized with 
+            : System.Runtime.Serialization.Formatters.Binary.BinaryFormatter
+            : and then encoded with base64 encoding.
+    
+    mimetype: application/x-microsoft.net.object.soap.base64
+    value   : The object must be serialized with 
+            : System.Runtime.Serialization.Formatters.Soap.SoapFormatter
+            : and then encoded with base64 encoding.
+
+    mimetype: application/x-microsoft.net.object.bytearray.base64
+    value   : The object must be serialized into a byte array 
+            : using a System.ComponentModel.TypeConverter
+            : and then encoded with base64 encoding.
+    -->
   <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
-	<xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
-	<xsd:element name="root" msdata:IsDataSet="true">
-	  <xsd:complexType>
-		<xsd:choice maxOccurs="unbounded">
-		  <xsd:element name="metadata">
-			<xsd:complexType>
-			  <xsd:sequence>
-				<xsd:element name="value" type="xsd:string" minOccurs="0" />
-			  </xsd:sequence>
-			  <xsd:attribute name="name" use="required" type="xsd:string" />
-			  <xsd:attribute name="type" type="xsd:string" />
-			  <xsd:attribute name="mimetype" type="xsd:string" />
-			  <xsd:attribute ref="xml:space" />
-			</xsd:complexType>
-		  </xsd:element>
-		  <xsd:element name="assembly">
-			<xsd:complexType>
-			  <xsd:attribute name="alias" type="xsd:string" />
-			  <xsd:attribute name="name" type="xsd:string" />
-			</xsd:complexType>
-		  </xsd:element>
-		  <xsd:element name="data">
-			<xsd:complexType>
-			  <xsd:sequence>
-				<xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
-				<xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
-			  </xsd:sequence>
-			  <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
-			  <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
-			  <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
-			  <xsd:attribute ref="xml:space" />
-			</xsd:complexType>
-		  </xsd:element>
-		  <xsd:element name="resheader">
-			<xsd:complexType>
-			  <xsd:sequence>
-				<xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
-			  </xsd:sequence>
-			  <xsd:attribute name="name" type="xsd:string" use="required" />
-			</xsd:complexType>
-		  </xsd:element>
-		</xsd:choice>
-	  </xsd:complexType>
-	</xsd:element>
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
   </xsd:schema>
   <resheader name="resmimetype">
-	<value>text/microsoft-resx</value>
+    <value>text/microsoft-resx</value>
   </resheader>
   <resheader name="version">
-	<value>2.0</value>
+    <value>2.0</value>
   </resheader>
   <resheader name="reader">
-	<value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
   <resheader name="writer">
-	<value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
-  <data name="Account_SignIn_PageTitle" xml:space="preserve"><value>Sign In — ERP</value></data>
-  <data name="Account_SignIn_Heading" xml:space="preserve"><value>Sign In</value></data>
-  <data name="Account_SignIn_EmailLabel" xml:space="preserve"><value>Email</value></data>
-  <data name="Account_SignIn_PasswordLabel" xml:space="preserve"><value>Password</value></data>
-  <data name="Account_SignIn_SubmitButton" xml:space="preserve"><value>Sign In</value></data>
-  <data name="Account_SignIn_ForgotPasswordLink" xml:space="preserve"><value>Forgot password?</value></data>
-  <data name="Account_SignIn_SignUpLink" xml:space="preserve"><value>Create new account</value></data>
-  <data name="Account_SignIn_SuccessRegistered" xml:space="preserve"><value>Account created successfully. You can sign in now.</value></data>
-  <data name="Account_SignIn_SuccessPasswordReset" xml:space="preserve"><value>Password reset successfully. You can sign in now.</value></data>
-  <data name="Account_SignIn_ErrorAccountLocked" xml:space="preserve"><value>Account locked. Try again later.</value></data>
-  <data name="Account_SignIn_ErrorInvalidCredentials" xml:space="preserve"><value>Incorrect email or password.</value></data>
-
-  <data name="Account_SignUp_PageTitle" xml:space="preserve"><value>Sign Up — ERP</value></data>
-  <data name="Account_SignUp_Heading" xml:space="preserve"><value>Create account</value></data>
-  <data name="Account_SignUp_FirstNameLabel" xml:space="preserve"><value>First name</value></data>
-  <data name="Account_SignUp_LastNameLabel" xml:space="preserve"><value>Last name</value></data>
-  <data name="Account_SignUp_EmailLabel" xml:space="preserve"><value>Email</value></data>
-  <data name="Account_SignUp_PasswordLabel" xml:space="preserve"><value>Password</value></data>
-  <data name="Account_SignUp_ConfirmPasswordLabel" xml:space="preserve"><value>Confirm password</value></data>
-  <data name="Account_SignUp_SubmitButton" xml:space="preserve"><value>Create account</value></data>
-  <data name="Account_SignUp_SignInLink" xml:space="preserve"><value>Already have an account? Sign In</value></data>
-  <data name="Account_SignUp_ErrorPasswordsDoNotMatch" xml:space="preserve"><value>Passwords do not match.</value></data>
-
-  <data name="Account_ForgotPassword_PageTitle" xml:space="preserve"><value>Forgot Password — ERP</value></data>
-  <data name="Account_ForgotPassword_Heading" xml:space="preserve"><value>Forgot password</value></data>
-  <data name="Account_ForgotPassword_EmailLabel" xml:space="preserve"><value>Email</value></data>
-  <data name="Account_ForgotPassword_SubmitButton" xml:space="preserve"><value>Send reset link</value></data>
-  <data name="Account_ForgotPassword_BackToSignInLink" xml:space="preserve"><value>Back to Sign In</value></data>
-  <data name="Account_ForgotPassword_EmailSubject" xml:space="preserve"><value>Reset your ERP password</value></data>
-  <data name="Account_ForgotPassword_EmailGreeting" xml:space="preserve"><value>Hello {0},</value></data>
-  <data name="Account_ForgotPassword_EmailBody" xml:space="preserve"><value>Click here to reset your password.</value></data>
-
-  <data name="Account_ForgotPasswordConfirmation_PageTitle" xml:space="preserve"><value>Forgot Password — Confirmation</value></data>
-  <data name="Account_ForgotPasswordConfirmation_Heading" xml:space="preserve"><value>Check your inbox</value></data>
-  <data name="Account_ForgotPasswordConfirmation_Message" xml:space="preserve"><value>If your account exists, a password reset link has been sent.</value></data>
-  <data name="Account_ForgotPasswordConfirmation_BackToSignInLink" xml:space="preserve"><value>Back to Sign In</value></data>
-
-  <data name="Account_ResetPassword_PageTitle" xml:space="preserve"><value>Reset Password — ERP</value></data>
-  <data name="Account_ResetPassword_Heading" xml:space="preserve"><value>Reset password</value></data>
-  <data name="Account_ResetPassword_EmailLabel" xml:space="preserve"><value>Email</value></data>
-  <data name="Account_ResetPassword_NewPasswordLabel" xml:space="preserve"><value>New password</value></data>
-  <data name="Account_ResetPassword_ConfirmPasswordLabel" xml:space="preserve"><value>Confirm password</value></data>
-  <data name="Account_ResetPassword_SubmitButton" xml:space="preserve"><value>Reset password</value></data>
-  <data name="Account_ResetPassword_BackToSignInLink" xml:space="preserve"><value>Back to Sign In</value></data>
-  <data name="Account_ResetPassword_ErrorInvalidToken" xml:space="preserve"><value>Invalid reset token.</value></data>
-
-  <data name="Account_ResetPasswordConfirmation_PageTitle" xml:space="preserve"><value>Reset Password — Confirmation</value></data>
-  <data name="Account_ResetPasswordConfirmation_Heading" xml:space="preserve"><value>Password updated</value></data>
-  <data name="Account_ResetPasswordConfirmation_Message" xml:space="preserve"><value>Your password has been reset successfully.</value></data>
-  <data name="Account_ResetPasswordConfirmation_ContinueLink" xml:space="preserve"><value>Continue to sign in</value></data>
-
-  <data name="Account_SignOut_PageTitle" xml:space="preserve"><value>Signed Out</value></data>
-  <data name="Account_SignOut_Heading" xml:space="preserve"><value>You have successfully signed out.</value></data>
-  <data name="Account_SignOut_BackToHomeLink" xml:space="preserve"><value>Back to home</value></data>
-
-  <data name="Home_AuthenticatedUser" xml:space="preserve"><value>Authenticated user: {0}</value></data>
-  <data name="Home_Status" xml:space="preserve"><value>Status: {0}</value></data>
-  <data name="Home_StatusAuthenticated" xml:space="preserve"><value>Authenticated</value></data>
-  <data name="Home_Info_Heading" xml:space="preserve"><value>Information</value></data>
-  <data name="Home_Info_NameLabel" xml:space="preserve"><value>Name</value></data>
-  <data name="Home_Info_EmailLabel" xml:space="preserve"><value>Email</value></data>
-  <data name="Home_Info_LanguageLabel" xml:space="preserve"><value>Language</value></data>
-  <data name="Home_Info_EditButton" xml:space="preserve"><value>Edit details</value></data>
-
-  <data name="Profile_PageTitle" xml:space="preserve"><value>My Profile</value></data>
-  <data name="Profile_Heading" xml:space="preserve"><value>My Profile</value></data>
-  <data name="Profile_Tab_Info" xml:space="preserve"><value>Information</value></data>
-  <data name="Profile_Tab_Password" xml:space="preserve"><value>Password</value></data>
-  <data name="Profile_CurrentPasswordLabel" xml:space="preserve"><value>Current password</value></data>
-  <data name="Profile_NewPasswordLabel" xml:space="preserve"><value>New password</value></data>
-  <data name="Profile_ConfirmNewPasswordLabel" xml:space="preserve"><value>Confirm new password</value></data>
-  <data name="Profile_ChangePasswordButton" xml:space="preserve"><value>Change password</value></data>
-  <data name="Profile_InfoUpdated" xml:space="preserve"><value>Details updated.</value></data>
-  <data name="Profile_PasswordChanged" xml:space="preserve"><value>Password changed.</value></data>
-  <data name="Profile_ErrorPasswordsDontMatch" xml:space="preserve"><value>The passwords don't match.</value></data>
-
-  <data name="NavMenu_Home" xml:space="preserve"><value>Home</value></data>
-  <data name="NavMenu_Backoffice" xml:space="preserve"><value>Backoffice</value></data>
-  <data name="NavMenu_Users" xml:space="preserve"><value>Users</value></data>
-  <data name="NavMenu_Roles" xml:space="preserve"><value>Roles</value></data>
-  <data name="NavMenu_Clients" xml:space="preserve"><value>Clients</value></data>
-  <data name="NavMenu_ApiScopes" xml:space="preserve"><value>API Scopes</value></data>
-  <data name="NavMenu_ApiResources" xml:space="preserve"><value>API Resources</value></data>
-  <data name="NavMenu_IdentityResources" xml:space="preserve"><value>Identity Resources</value></data>
-  <data name="NavMenu_IdentityProviders" xml:space="preserve"><value>Identity Providers</value></data>
-
-  <data name="Layout_AppTitle" xml:space="preserve"><value>ERP - ID</value></data>
-  <data name="Layout_LightMode" xml:space="preserve"><value>Light mode</value></data>
-  <data name="Layout_DarkMode" xml:space="preserve"><value>Dark mode</value></data>
-  <data name="Layout_Logout" xml:space="preserve"><value>Log out</value></data>
-  <data name="Layout_About" xml:space="preserve"><value>About</value></data>
-  <data name="Layout_AboutVersion" xml:space="preserve"><value>Installed version: {0}</value></data>
-  <data name="Layout_CloseButton" xml:space="preserve"><value>Close</value></data>
-
-  <data name="Backoffice_Index_PageTitle" xml:space="preserve"><value>Backoffice</value></data>
-  <data name="Backoffice_Index_Heading" xml:space="preserve"><value>Backoffice</value></data>
-
-  <data name="Backoffice_Users_PageTitle" xml:space="preserve"><value>Backoffice - Users</value></data>
-  <data name="Backoffice_Users_EditHeading" xml:space="preserve"><value>Edit User</value></data>
-  <data name="Backoffice_Users_Loading" xml:space="preserve"><value>Loading...</value></data>
-  <data name="Backoffice_Users_Tab_MainInfo" xml:space="preserve"><value>Main Info</value></data>
-  <data name="Backoffice_Users_Tab_Roles" xml:space="preserve"><value>Roles</value></data>
-  <data name="Backoffice_Users_EmailLabel" xml:space="preserve"><value>Email</value></data>
-  <data name="Backoffice_Users_NameLabel" xml:space="preserve"><value>Name</value></data>
-  <data name="Backoffice_Users_LanguageLabel" xml:space="preserve"><value>Language</value></data>
-  <data name="Backoffice_Users_RolesLabel" xml:space="preserve"><value>Roles</value></data>
-  <data name="Backoffice_Users_RoleColumn" xml:space="preserve"><value>Role</value></data>
-  <data name="Backoffice_Users_ActionsColumn" xml:space="preserve"><value>Actions</value></data>
-  <data name="Backoffice_Users_RemoveButton" xml:space="preserve"><value>Remove</value></data>
-  <data name="Backoffice_Users_AddRoleButton" xml:space="preserve"><value>Add role</value></data>
-  <data name="Backoffice_Users_SaveButton" xml:space="preserve"><value>Save</value></data>
-  <data name="Backoffice_Users_CancelButton" xml:space="preserve"><value>Cancel</value></data>
-  <data name="Backoffice_Users_ListHeading" xml:space="preserve"><value>Users ({0})</value></data>
-  <data name="Backoffice_Users_EmailColumn" xml:space="preserve"><value>Email</value></data>
-  <data name="Backoffice_Users_NameColumn" xml:space="preserve"><value>Name</value></data>
-  <data name="Backoffice_Users_ActiveColumn" xml:space="preserve"><value>Active</value></data>
-  <data name="Backoffice_Users_CreatedAtColumn" xml:space="preserve"><value>Created at</value></data>
-  <data name="Backoffice_Users_Yes" xml:space="preserve"><value>Yes</value></data>
-  <data name="Backoffice_Users_No" xml:space="preserve"><value>No</value></data>
-  <data name="Backoffice_Users_EditAction" xml:space="preserve"><value>Edit</value></data>
-  <data name="Backoffice_Users_ErrorInvalidUser" xml:space="preserve"><value>Invalid user.</value></data>
-  <data name="Backoffice_Users_ErrorAtLeastOneRole" xml:space="preserve"><value>At least one role is required.</value></data>
-  <data name="Backoffice_Users_Updated" xml:space="preserve"><value>User updated.</value></data>
-  <data name="Backoffice_Common_SearchPlaceholder" xml:space="preserve"><value>Search...</value></data>
-  <data name="Backoffice_Common_NoRecords" xml:space="preserve"><value>No records.</value></data>
-  <data name="Backoffice_Roles_ItemsLabel" xml:space="preserve"><value>roles</value></data>
-  <data name="Backoffice_Users_ItemsLabel" xml:space="preserve"><value>users</value></data>
-  <data name="Backoffice_Clients_ItemsLabel" xml:space="preserve"><value>clients</value></data>
-  <data name="Backoffice_ApiScopes_ItemsLabel" xml:space="preserve"><value>scopes</value></data>
-  <data name="Backoffice_ApiResources_ItemsLabel" xml:space="preserve"><value>resources</value></data>
-  <data name="Backoffice_IdentityResourcesPage_ItemsLabel" xml:space="preserve"><value>identity resources</value></data>
-  <data name="Backoffice_IdentityProviders_ItemsLabel" xml:space="preserve"><value>providers</value></data>
-
-  <data name="Backoffice_Common_SaveButton" xml:space="preserve"><value>Save</value></data>
-  <data name="Backoffice_Common_CancelButton" xml:space="preserve"><value>Cancel</value></data>
-  <data name="Backoffice_Common_DeleteButton" xml:space="preserve"><value>Delete</value></data>
-  <data name="Backoffice_Common_EditAction" xml:space="preserve"><value>Edit</value></data>
-  <data name="Backoffice_Common_DeleteAction" xml:space="preserve"><value>Delete</value></data>
-  <data name="Backoffice_Common_NameLabel" xml:space="preserve"><value>Name</value></data>
-  <data name="Backoffice_Common_NameColumn" xml:space="preserve"><value>Name</value></data>
-  <data name="Backoffice_Common_ActionsColumn" xml:space="preserve"><value>Actions</value></data>
-
-  <data name="Backoffice_Roles_PageTitle" xml:space="preserve"><value>Backoffice - Roles</value></data>
-  <data name="Backoffice_Roles_CreateHeading" xml:space="preserve"><value>Create Role</value></data>
-  <data name="Backoffice_Roles_EditHeading" xml:space="preserve"><value>Edit Role</value></data>
-  <data name="Backoffice_Roles_DeleteHeading" xml:space="preserve"><value>Delete Role</value></data>
-  <data name="Backoffice_Roles_DeleteConfirm" xml:space="preserve"><value>Are you sure you want to delete role {0}?</value></data>
-  <data name="Backoffice_Roles_ListHeading" xml:space="preserve"><value>Roles ({0})</value></data>
-  <data name="Backoffice_Roles_CreateAction" xml:space="preserve"><value>Create role</value></data>
-  <data name="Backoffice_Roles_ErrorNameRequired" xml:space="preserve"><value>Role name is required.</value></data>
-  <data name="Backoffice_Roles_ErrorInvalidRole" xml:space="preserve"><value>Invalid role.</value></data>
-  <data name="Backoffice_Roles_Created" xml:space="preserve"><value>Role created.</value></data>
-  <data name="Backoffice_Roles_Updated" xml:space="preserve"><value>Role updated.</value></data>
-  <data name="Backoffice_Roles_Deleted" xml:space="preserve"><value>Role deleted.</value></data>
-  <data name="Backoffice_Roles_NotFound" xml:space="preserve"><value>Role not found.</value></data>
-  <data name="Backoffice_Common_Back" xml:space="preserve"><value>Back</value></data>
-
-  <data name="Backoffice_Common_DisplayNameLabel" xml:space="preserve"><value>Display name</value></data>
-  <data name="Backoffice_Common_DisplayNameColumn" xml:space="preserve"><value>Display name</value></data>
-  <data name="Backoffice_Common_DescriptionLabel" xml:space="preserve"><value>Description</value></data>
-  <data name="Backoffice_Common_EnabledLabel" xml:space="preserve"><value>Enabled</value></data>
-  <data name="Backoffice_Common_EnabledColumn" xml:space="preserve"><value>Enabled</value></data>
-  <data name="Backoffice_Common_RequiredLabel" xml:space="preserve"><value>Required</value></data>
-  <data name="Backoffice_Common_EmphasizeLabel" xml:space="preserve"><value>Emphasize</value></data>
-  <data name="Backoffice_Common_ShowInDiscoveryDocumentLabel" xml:space="preserve"><value>Show In Discovery Document</value></data>
-  <data name="Backoffice_Common_Yes" xml:space="preserve"><value>Yes</value></data>
-  <data name="Backoffice_Common_No" xml:space="preserve"><value>No</value></data>
-  <data name="Backoffice_Common_RemoveButton" xml:space="preserve"><value>Remove</value></data>
-  <data name="Backoffice_Common_ErrorNameRequired" xml:space="preserve"><value>Name is required.</value></data>
-  <data name="Backoffice_Common_DeleteConfirm" xml:space="preserve"><value>Are you sure you want to delete {0}?</value></data>
-
-  <data name="Backoffice_ApiScopes_PageTitle" xml:space="preserve"><value>Backoffice - API Scopes</value></data>
-  <data name="Backoffice_ApiScopes_CreateHeading" xml:space="preserve"><value>Create API Scope</value></data>
-  <data name="Backoffice_ApiScopes_EditHeading" xml:space="preserve"><value>Edit API Scope</value></data>
-  <data name="Backoffice_ApiScopes_DeleteHeading" xml:space="preserve"><value>Delete API Scope</value></data>
-  <data name="Backoffice_ApiScopes_ListHeading" xml:space="preserve"><value>API Scopes ({0})</value></data>
-  <data name="Backoffice_ApiScopes_CreateAction" xml:space="preserve"><value>Create API Scope</value></data>
-  <data name="Backoffice_ApiScopes_Tab_MainInfo" xml:space="preserve"><value>Main Info</value></data>
-  <data name="Backoffice_ApiScopes_Tab_UserClaims" xml:space="preserve"><value>User Claims</value></data>
-  <data name="Backoffice_ApiScopes_UserClaimsLabel" xml:space="preserve"><value>UserClaims</value></data>
-  <data name="Backoffice_ApiScopes_ClaimColumn" xml:space="preserve"><value>Claim</value></data>
-  <data name="Backoffice_ApiScopes_AddClaimButton" xml:space="preserve"><value>Add claim</value></data>
-  <data name="Backoffice_ApiScopes_ClaimsColumn" xml:space="preserve"><value>Claims</value></data>
-  <data name="Backoffice_ApiScopes_Created" xml:space="preserve"><value>API scope created.</value></data>
-  <data name="Backoffice_ApiScopes_Updated" xml:space="preserve"><value>API scope updated.</value></data>
-  <data name="Backoffice_ApiScopes_Deleted" xml:space="preserve"><value>API scope deleted.</value></data>
-
-  <data name="Backoffice_ApiResources_PageTitle" xml:space="preserve"><value>Backoffice - API Resources</value></data>
-  <data name="Backoffice_ApiResources_CreateHeading" xml:space="preserve"><value>Create API Resource</value></data>
-  <data name="Backoffice_ApiResources_EditHeading" xml:space="preserve"><value>Edit API Resource</value></data>
-  <data name="Backoffice_ApiResources_DeleteHeading" xml:space="preserve"><value>Delete API Resource</value></data>
-  <data name="Backoffice_ApiResources_ListHeading" xml:space="preserve"><value>API Resources ({0})</value></data>
-  <data name="Backoffice_ApiResources_CreateAction" xml:space="preserve"><value>Create API Resource</value></data>
-  <data name="Backoffice_ApiResources_Tab_MainInfo" xml:space="preserve"><value>Main Info</value></data>
-  <data name="Backoffice_ApiResources_Tab_Scopes" xml:space="preserve"><value>Scopes</value></data>
-  <data name="Backoffice_ApiResources_Tab_UserClaims" xml:space="preserve"><value>User Claims</value></data>
-  <data name="Backoffice_ApiResources_RequireResourceIndicatorLabel" xml:space="preserve"><value>Require Resource Indicator</value></data>
-  <data name="Backoffice_ApiResources_ScopesLabel" xml:space="preserve"><value>Scopes</value></data>
-  <data name="Backoffice_ApiResources_ScopeColumn" xml:space="preserve"><value>Scope</value></data>
-  <data name="Backoffice_ApiResources_AddScopeButton" xml:space="preserve"><value>Add scope</value></data>
-  <data name="Backoffice_ApiResources_UserClaimsLabel" xml:space="preserve"><value>UserClaims</value></data>
-  <data name="Backoffice_ApiResources_ClaimColumn" xml:space="preserve"><value>Claim</value></data>
-  <data name="Backoffice_ApiResources_AddClaimButton" xml:space="preserve"><value>Add claim</value></data>
-  <data name="Backoffice_ApiResources_ScopesColumn" xml:space="preserve"><value>Scopes</value></data>
-  <data name="Backoffice_ApiResources_Created" xml:space="preserve"><value>API resource created.</value></data>
-  <data name="Backoffice_ApiResources_Updated" xml:space="preserve"><value>API resource updated.</value></data>
-  <data name="Backoffice_ApiResources_Deleted" xml:space="preserve"><value>API resource deleted.</value></data>
-
-  <data name="Backoffice_IdentityResourcesPage_PageTitle" xml:space="preserve"><value>Backoffice - Identity Resources</value></data>
-  <data name="Backoffice_IdentityResourcesPage_CreateHeading" xml:space="preserve"><value>Create Identity Resource</value></data>
-  <data name="Backoffice_IdentityResourcesPage_EditHeading" xml:space="preserve"><value>Edit Identity Resource</value></data>
-  <data name="Backoffice_IdentityResourcesPage_DeleteHeading" xml:space="preserve"><value>Delete Identity Resource</value></data>
-  <data name="Backoffice_IdentityResourcesPage_ListHeading" xml:space="preserve"><value>Identity Resources ({0})</value></data>
-  <data name="Backoffice_IdentityResourcesPage_CreateAction" xml:space="preserve"><value>Create Identity Resource</value></data>
-  <data name="Backoffice_IdentityResourcesPage_Created" xml:space="preserve"><value>Identity resource created.</value></data>
-  <data name="Backoffice_IdentityResourcesPage_Updated" xml:space="preserve"><value>Identity resource updated.</value></data>
-  <data name="Backoffice_IdentityResourcesPage_Deleted" xml:space="preserve"><value>Identity resource deleted.</value></data>
-
-  <data name="Backoffice_IdentityProviders_PageTitle" xml:space="preserve"><value>Backoffice - Identity Providers</value></data>
-  <data name="Backoffice_IdentityProviders_CreateHeading" xml:space="preserve"><value>Create Identity Provider</value></data>
-  <data name="Backoffice_IdentityProviders_EditHeading" xml:space="preserve"><value>Edit Identity Provider</value></data>
-  <data name="Backoffice_IdentityProviders_DeleteHeading" xml:space="preserve"><value>Delete Identity Provider</value></data>
-  <data name="Backoffice_IdentityProviders_ListHeading" xml:space="preserve"><value>Identity Providers ({0})</value></data>
-  <data name="Backoffice_IdentityProviders_CreateAction" xml:space="preserve"><value>Create Identity Provider</value></data>
-  <data name="Backoffice_IdentityProviders_SchemeLabel" xml:space="preserve"><value>Scheme</value></data>
-  <data name="Backoffice_IdentityProviders_SchemeColumn" xml:space="preserve"><value>Scheme</value></data>
-  <data name="Backoffice_IdentityProviders_TypeLabel" xml:space="preserve"><value>Type</value></data>
-  <data name="Backoffice_IdentityProviders_TypeColumn" xml:space="preserve"><value>Type</value></data>
-  <data name="Backoffice_IdentityProviders_ErrorSchemeTypeRequired" xml:space="preserve"><value>Scheme and Type are required.</value></data>
-  <data name="Backoffice_IdentityProviders_Created" xml:space="preserve"><value>Identity provider created.</value></data>
-  <data name="Backoffice_IdentityProviders_Updated" xml:space="preserve"><value>Identity provider updated.</value></data>
-  <data name="Backoffice_IdentityProviders_Deleted" xml:space="preserve"><value>Identity provider deleted.</value></data>
-
-  <data name="Backoffice_Clients_PageTitle" xml:space="preserve"><value>Backoffice - Clients</value></data>
-  <data name="Backoffice_Clients_EditHeading" xml:space="preserve"><value>Edit Client</value></data>
-  <data name="Backoffice_Clients_DeleteHeading" xml:space="preserve"><value>Delete Client</value></data>
-  <data name="Backoffice_Clients_DeleteConfirm" xml:space="preserve"><value>Are you sure you want to delete client {0}?</value></data>
-  <data name="Backoffice_Clients_ListHeading" xml:space="preserve"><value>Clients ({0})</value></data>
-  <data name="Backoffice_Clients_Loading" xml:space="preserve"><value>Loading...</value></data>
-  <data name="Backoffice_Clients_ErrorInvalidClient" xml:space="preserve"><value>Invalid client.</value></data>
-  <data name="Backoffice_Clients_Tab_MainInfo" xml:space="preserve"><value>Main Info</value></data>
-  <data name="Backoffice_Clients_Tab_AllowedGrantTypes" xml:space="preserve"><value>Allowed Grant Types</value></data>
-  <data name="Backoffice_Clients_Tab_RedirectUris" xml:space="preserve"><value>Redirect Uris</value></data>
-  <data name="Backoffice_Clients_Tab_PostLogoutRedirectUris" xml:space="preserve"><value>Post Logout Redirect Uris</value></data>
-  <data name="Backoffice_Clients_Tab_AllowedCorsOrigins" xml:space="preserve"><value>Allowed Cors Origins</value></data>
-  <data name="Backoffice_Clients_Tab_AllowedScopes" xml:space="preserve"><value>Allowed Scopes</value></data>
-  <data name="Backoffice_Clients_Tab_ClientSecrets" xml:space="preserve"><value>Client Secrets</value></data>
-  <data name="Backoffice_Clients_ClientIdLabel" xml:space="preserve"><value>ClientId</value></data>
-  <data name="Backoffice_Clients_ClientIdColumn" xml:space="preserve"><value>ClientId</value></data>
-  <data name="Backoffice_Clients_ClientNameLabel" xml:space="preserve"><value>ClientName</value></data>
-  <data name="Backoffice_Clients_RequirePkceLabel" xml:space="preserve"><value>RequirePkce</value></data>
-  <data name="Backoffice_Clients_RequireClientSecretLabel" xml:space="preserve"><value>RequireClientSecret</value></data>
-  <data name="Backoffice_Clients_AllowOfflineAccessLabel" xml:space="preserve"><value>AllowOfflineAccess</value></data>
-  <data name="Backoffice_Clients_AccessTokenLifetimeLabel" xml:space="preserve"><value>AccessTokenLifetime</value></data>
-  <data name="Backoffice_Clients_SlidingRefreshTokenLifetimeLabel" xml:space="preserve"><value>SlidingRefreshTokenLifetime</value></data>
-  <data name="Backoffice_Clients_AbsoluteRefreshTokenLifetimeLabel" xml:space="preserve"><value>AbsoluteRefreshTokenLifetime</value></data>
-  <data name="Backoffice_Clients_RefreshTokenUsageLabel" xml:space="preserve"><value>RefreshTokenUsage</value></data>
-  <data name="Backoffice_Clients_RefreshTokenExpirationLabel" xml:space="preserve"><value>RefreshTokenExpiration</value></data>
-  <data name="Backoffice_Clients_AllowedGrantTypesLabel" xml:space="preserve"><value>AllowedGrantTypes</value></data>
-  <data name="Backoffice_Clients_GrantTypeColumn" xml:space="preserve"><value>Grant Type</value></data>
-  <data name="Backoffice_Clients_AddGrantTypeButton" xml:space="preserve"><value>Add grant type</value></data>
-  <data name="Backoffice_Clients_RedirectUrisLabel" xml:space="preserve"><value>RedirectUris</value></data>
-  <data name="Backoffice_Clients_RedirectUriColumn" xml:space="preserve"><value>Redirect Uri</value></data>
-  <data name="Backoffice_Clients_AddRedirectUriButton" xml:space="preserve"><value>Add redirect uri</value></data>
-  <data name="Backoffice_Clients_PostLogoutRedirectUrisLabel" xml:space="preserve"><value>PostLogoutRedirectUris</value></data>
-  <data name="Backoffice_Clients_PostLogoutRedirectUriColumn" xml:space="preserve"><value>Post Logout Redirect Uri</value></data>
-  <data name="Backoffice_Clients_AddPostLogoutRedirectUriButton" xml:space="preserve"><value>Add post logout redirect uri</value></data>
-  <data name="Backoffice_Clients_AllowedCorsOriginsLabel" xml:space="preserve"><value>AllowedCorsOrigins</value></data>
-  <data name="Backoffice_Clients_OriginColumn" xml:space="preserve"><value>Origin</value></data>
-  <data name="Backoffice_Clients_AddOriginButton" xml:space="preserve"><value>Add origin</value></data>
-  <data name="Backoffice_Clients_AllowedScopesLabel" xml:space="preserve"><value>AllowedScopes</value></data>
-  <data name="Backoffice_Clients_ScopeColumn" xml:space="preserve"><value>Scope</value></data>
-  <data name="Backoffice_Clients_AddScopeButton" xml:space="preserve"><value>Add scope</value></data>
-  <data name="Backoffice_Clients_ClientSecretsLabel" xml:space="preserve"><value>ClientSecrets</value></data>
-  <data name="Backoffice_Clients_ValueColumn" xml:space="preserve"><value>Value</value></data>
-  <data name="Backoffice_Clients_IsHashedColumn" xml:space="preserve"><value>IsHashed</value></data>
-  <data name="Backoffice_Clients_AddSecretButton" xml:space="preserve"><value>Add secret</value></data>
-  <data name="Backoffice_Clients_ActiveColumn" xml:space="preserve"><value>Active</value></data>
-  <data name="Backoffice_Clients_RedirectUrisColumn" xml:space="preserve"><value>Redirect URIs</value></data>
-  <data name="Backoffice_Clients_ScopesColumn" xml:space="preserve"><value>Scopes</value></data>
-  <data name="Backoffice_Clients_Updated" xml:space="preserve"><value>Client updated.</value></data>
-  <data name="Backoffice_Clients_Deleted" xml:space="preserve"><value>Client deleted.</value></data>
+  <data name="Account_SignIn_PageTitle" xml:space="preserve">
+    <value>Sign In — ERP</value>
+  </data>
+  <data name="Account_SignIn_Heading" xml:space="preserve">
+    <value>Sign In</value>
+  </data>
+  <data name="Account_SignIn_EmailLabel" xml:space="preserve">
+    <value>Email</value>
+  </data>
+  <data name="Account_SignIn_PasswordLabel" xml:space="preserve">
+    <value>Password</value>
+  </data>
+  <data name="Account_SignIn_SubmitButton" xml:space="preserve">
+    <value>Sign In</value>
+  </data>
+  <data name="Account_SignIn_ForgotPasswordLink" xml:space="preserve">
+    <value>Forgot password?</value>
+  </data>
+  <data name="Account_SignIn_SignUpLink" xml:space="preserve">
+    <value>Create new account</value>
+  </data>
+  <data name="Account_SignIn_SuccessRegistered" xml:space="preserve">
+    <value>Account created successfully. You can sign in now.</value>
+  </data>
+  <data name="Account_SignIn_SuccessPasswordReset" xml:space="preserve">
+    <value>Password reset successfully. You can sign in now.</value>
+  </data>
+  <data name="Account_SignIn_ErrorAccountLocked" xml:space="preserve">
+    <value>Account locked. Try again later.</value>
+  </data>
+  <data name="Account_SignIn_ErrorInvalidCredentials" xml:space="preserve">
+    <value>Incorrect email or password.</value>
+  </data>
+  <data name="Account_SignUp_PageTitle" xml:space="preserve">
+    <value>Sign Up — ERP</value>
+  </data>
+  <data name="Account_SignUp_Heading" xml:space="preserve">
+    <value>Create account</value>
+  </data>
+  <data name="Account_SignUp_FirstNameLabel" xml:space="preserve">
+    <value>First name</value>
+  </data>
+  <data name="Account_SignUp_LastNameLabel" xml:space="preserve">
+    <value>Last name</value>
+  </data>
+  <data name="Account_SignUp_EmailLabel" xml:space="preserve">
+    <value>Email</value>
+  </data>
+  <data name="Account_SignUp_PasswordLabel" xml:space="preserve">
+    <value>Password</value>
+  </data>
+  <data name="Account_SignUp_ConfirmPasswordLabel" xml:space="preserve">
+    <value>Confirm password</value>
+  </data>
+  <data name="Account_SignUp_SubmitButton" xml:space="preserve">
+    <value>Create account</value>
+  </data>
+  <data name="Account_SignUp_SignInLink" xml:space="preserve">
+    <value>Already have an account? Sign In</value>
+  </data>
+  <data name="Account_SignUp_ErrorPasswordsDoNotMatch" xml:space="preserve">
+    <value>Passwords do not match.</value>
+  </data>
+  <data name="Account_ForgotPassword_PageTitle" xml:space="preserve">
+    <value>Forgot Password — ERP</value>
+  </data>
+  <data name="Account_ForgotPassword_Heading" xml:space="preserve">
+    <value>Forgot password</value>
+  </data>
+  <data name="Account_ForgotPassword_EmailLabel" xml:space="preserve">
+    <value>Email</value>
+  </data>
+  <data name="Account_ForgotPassword_SubmitButton" xml:space="preserve">
+    <value>Send reset link</value>
+  </data>
+  <data name="Account_ForgotPassword_BackToSignInLink" xml:space="preserve">
+    <value>Back to Sign In</value>
+  </data>
+  <data name="Account_ForgotPassword_EmailSubject" xml:space="preserve">
+    <value>Reset your ERP password</value>
+  </data>
+  <data name="Account_ForgotPassword_EmailGreeting" xml:space="preserve">
+    <value>Hello {0},</value>
+  </data>
+  <data name="Account_ForgotPassword_EmailBody" xml:space="preserve">
+    <value>Click here to reset your password.</value>
+  </data>
+  <data name="Account_ForgotPasswordConfirmation_PageTitle" xml:space="preserve">
+    <value>Forgot Password — Confirmation</value>
+  </data>
+  <data name="Account_ForgotPasswordConfirmation_Heading" xml:space="preserve">
+    <value>Check your inbox</value>
+  </data>
+  <data name="Account_ForgotPasswordConfirmation_Message" xml:space="preserve">
+    <value>If your account exists, a password reset link has been sent.</value>
+  </data>
+  <data name="Account_ForgotPasswordConfirmation_BackToSignInLink" xml:space="preserve">
+    <value>Back to Sign In</value>
+  </data>
+  <data name="Account_ResetPassword_PageTitle" xml:space="preserve">
+    <value>Reset Password — ERP</value>
+  </data>
+  <data name="Account_ResetPassword_Heading" xml:space="preserve">
+    <value>Reset password</value>
+  </data>
+  <data name="Account_ResetPassword_EmailLabel" xml:space="preserve">
+    <value>Email</value>
+  </data>
+  <data name="Account_ResetPassword_NewPasswordLabel" xml:space="preserve">
+    <value>New password</value>
+  </data>
+  <data name="Account_ResetPassword_ConfirmPasswordLabel" xml:space="preserve">
+    <value>Confirm password</value>
+  </data>
+  <data name="Account_ResetPassword_SubmitButton" xml:space="preserve">
+    <value>Reset password</value>
+  </data>
+  <data name="Account_ResetPassword_BackToSignInLink" xml:space="preserve">
+    <value>Back to Sign In</value>
+  </data>
+  <data name="Account_ResetPassword_ErrorInvalidToken" xml:space="preserve">
+    <value>Invalid reset token.</value>
+  </data>
+  <data name="Account_ResetPasswordConfirmation_PageTitle" xml:space="preserve">
+    <value>Reset Password — Confirmation</value>
+  </data>
+  <data name="Account_ResetPasswordConfirmation_Heading" xml:space="preserve">
+    <value>Password updated</value>
+  </data>
+  <data name="Account_ResetPasswordConfirmation_Message" xml:space="preserve">
+    <value>Your password has been reset successfully.</value>
+  </data>
+  <data name="Account_ResetPasswordConfirmation_ContinueLink" xml:space="preserve">
+    <value>Continue to sign in</value>
+  </data>
+  <data name="Account_SignOut_PageTitle" xml:space="preserve">
+    <value>Signed Out</value>
+  </data>
+  <data name="Account_SignOut_Heading" xml:space="preserve">
+    <value>You have successfully signed out.</value>
+  </data>
+  <data name="Account_SignOut_BackToHomeLink" xml:space="preserve">
+    <value>Back to home</value>
+  </data>
+  <data name="Home_AuthenticatedUser" xml:space="preserve">
+    <value>Authenticated user: {0}</value>
+  </data>
+  <data name="Home_Status" xml:space="preserve">
+    <value>Status: {0}</value>
+  </data>
+  <data name="Home_StatusAuthenticated" xml:space="preserve">
+    <value>Authenticated</value>
+  </data>
+  <data name="Home_Info_Heading" xml:space="preserve">
+    <value>Information</value>
+  </data>
+  <data name="Home_Info_NameLabel" xml:space="preserve">
+    <value>Name</value>
+  </data>
+  <data name="Home_Info_EmailLabel" xml:space="preserve">
+    <value>Email</value>
+  </data>
+  <data name="Home_Info_LanguageLabel" xml:space="preserve">
+    <value>Language</value>
+  </data>
+  <data name="Home_Info_EditButton" xml:space="preserve">
+    <value>Edit details</value>
+  </data>
+  <data name="Profile_PageTitle" xml:space="preserve">
+    <value>My Profile</value>
+  </data>
+  <data name="Profile_Heading" xml:space="preserve">
+    <value>My Profile</value>
+  </data>
+  <data name="Profile_Tab_Info" xml:space="preserve">
+    <value>Information</value>
+  </data>
+  <data name="Profile_Tab_Password" xml:space="preserve">
+    <value>Password</value>
+  </data>
+  <data name="Profile_CurrentPasswordLabel" xml:space="preserve">
+    <value>Current password</value>
+  </data>
+  <data name="Profile_NewPasswordLabel" xml:space="preserve">
+    <value>New password</value>
+  </data>
+  <data name="Profile_ConfirmNewPasswordLabel" xml:space="preserve">
+    <value>Confirm new password</value>
+  </data>
+  <data name="Profile_ChangePasswordButton" xml:space="preserve">
+    <value>Change password</value>
+  </data>
+  <data name="Profile_InfoUpdated" xml:space="preserve">
+    <value>Details updated.</value>
+  </data>
+  <data name="Profile_PasswordChanged" xml:space="preserve">
+    <value>Password changed.</value>
+  </data>
+  <data name="Profile_ErrorPasswordsDontMatch" xml:space="preserve">
+    <value>The passwords don't match.</value>
+  </data>
+  <data name="NavMenu_Home" xml:space="preserve">
+    <value>Home</value>
+  </data>
+  <data name="NavMenu_Backoffice" xml:space="preserve">
+    <value>Backoffice</value>
+  </data>
+  <data name="NavMenu_Users" xml:space="preserve">
+    <value>Users</value>
+  </data>
+  <data name="NavMenu_Roles" xml:space="preserve">
+    <value>Roles</value>
+  </data>
+  <data name="NavMenu_Clients" xml:space="preserve">
+    <value>Clients</value>
+  </data>
+  <data name="NavMenu_ApiScopes" xml:space="preserve">
+    <value>API Scopes</value>
+  </data>
+  <data name="NavMenu_ApiResources" xml:space="preserve">
+    <value>API Resources</value>
+  </data>
+  <data name="NavMenu_IdentityResources" xml:space="preserve">
+    <value>Identity Resources</value>
+  </data>
+  <data name="NavMenu_IdentityProviders" xml:space="preserve">
+    <value>Identity Providers</value>
+  </data>
+  <data name="Layout_AppTitle" xml:space="preserve">
+    <value>SmartInvoice - ID</value>
+  </data>
+  <data name="Layout_LightMode" xml:space="preserve">
+    <value>Light mode</value>
+  </data>
+  <data name="Layout_DarkMode" xml:space="preserve">
+    <value>Dark mode</value>
+  </data>
+  <data name="Layout_Logout" xml:space="preserve">
+    <value>Log out</value>
+  </data>
+  <data name="Backoffice_Index_PageTitle" xml:space="preserve">
+    <value>Backoffice</value>
+  </data>
+  <data name="Backoffice_Index_Heading" xml:space="preserve">
+    <value>Backoffice</value>
+  </data>
+  <data name="Backoffice_Users_PageTitle" xml:space="preserve">
+    <value>Backoffice - Users</value>
+  </data>
+  <data name="Backoffice_Users_EditHeading" xml:space="preserve">
+    <value>Edit User</value>
+  </data>
+  <data name="Backoffice_Users_Loading" xml:space="preserve">
+    <value>Loading...</value>
+  </data>
+  <data name="Backoffice_Users_Tab_MainInfo" xml:space="preserve">
+    <value>Main Info</value>
+  </data>
+  <data name="Backoffice_Users_Tab_Roles" xml:space="preserve">
+    <value>Roles</value>
+  </data>
+  <data name="Backoffice_Users_EmailLabel" xml:space="preserve">
+    <value>Email</value>
+  </data>
+  <data name="Backoffice_Users_NameLabel" xml:space="preserve">
+    <value>Name</value>
+  </data>
+  <data name="Backoffice_Users_LanguageLabel" xml:space="preserve">
+    <value>Language</value>
+  </data>
+  <data name="Backoffice_Users_RolesLabel" xml:space="preserve">
+    <value>Roles</value>
+  </data>
+  <data name="Backoffice_Users_RoleColumn" xml:space="preserve">
+    <value>Role</value>
+  </data>
+  <data name="Backoffice_Users_ActionsColumn" xml:space="preserve">
+    <value>Actions</value>
+  </data>
+  <data name="Backoffice_Users_RemoveButton" xml:space="preserve">
+    <value>Remove</value>
+  </data>
+  <data name="Backoffice_Users_AddRoleButton" xml:space="preserve">
+    <value>Add role</value>
+  </data>
+  <data name="Backoffice_Users_SaveButton" xml:space="preserve">
+    <value>Save</value>
+  </data>
+  <data name="Backoffice_Users_CancelButton" xml:space="preserve">
+    <value>Cancel</value>
+  </data>
+  <data name="Backoffice_Users_ListHeading" xml:space="preserve">
+    <value>Users ({0})</value>
+  </data>
+  <data name="Backoffice_Users_EmailColumn" xml:space="preserve">
+    <value>Email</value>
+  </data>
+  <data name="Backoffice_Users_NameColumn" xml:space="preserve">
+    <value>Name</value>
+  </data>
+  <data name="Backoffice_Users_ActiveColumn" xml:space="preserve">
+    <value>Active</value>
+  </data>
+  <data name="Backoffice_Users_CreatedAtColumn" xml:space="preserve">
+    <value>Created at</value>
+  </data>
+  <data name="Backoffice_Users_Yes" xml:space="preserve">
+    <value>Yes</value>
+  </data>
+  <data name="Backoffice_Users_No" xml:space="preserve">
+    <value>No</value>
+  </data>
+  <data name="Backoffice_Users_EditAction" xml:space="preserve">
+    <value>Edit</value>
+  </data>
+  <data name="Backoffice_Users_ErrorInvalidUser" xml:space="preserve">
+    <value>Invalid user.</value>
+  </data>
+  <data name="Backoffice_Users_ErrorAtLeastOneRole" xml:space="preserve">
+    <value>At least one role is required.</value>
+  </data>
+  <data name="Backoffice_Users_Updated" xml:space="preserve">
+    <value>User updated.</value>
+  </data>
+  <data name="Backoffice_Common_SearchPlaceholder" xml:space="preserve">
+    <value>Search...</value>
+  </data>
+  <data name="Backoffice_Common_NoRecords" xml:space="preserve">
+    <value>No records.</value>
+  </data>
+  <data name="Backoffice_Roles_ItemsLabel" xml:space="preserve">
+    <value>roles</value>
+  </data>
+  <data name="Backoffice_Users_ItemsLabel" xml:space="preserve">
+    <value>users</value>
+  </data>
+  <data name="Backoffice_Clients_ItemsLabel" xml:space="preserve">
+    <value>clients</value>
+  </data>
+  <data name="Backoffice_ApiScopes_ItemsLabel" xml:space="preserve">
+    <value>scopes</value>
+  </data>
+  <data name="Backoffice_ApiResources_ItemsLabel" xml:space="preserve">
+    <value>resources</value>
+  </data>
+  <data name="Backoffice_IdentityResourcesPage_ItemsLabel" xml:space="preserve">
+    <value>identity resources</value>
+  </data>
+  <data name="Backoffice_IdentityProviders_ItemsLabel" xml:space="preserve">
+    <value>providers</value>
+  </data>
+  <data name="Backoffice_Common_SaveButton" xml:space="preserve">
+    <value>Save</value>
+  </data>
+  <data name="Backoffice_Common_CancelButton" xml:space="preserve">
+    <value>Cancel</value>
+  </data>
+  <data name="Backoffice_Common_DeleteButton" xml:space="preserve">
+    <value>Delete</value>
+  </data>
+  <data name="Backoffice_Common_EditAction" xml:space="preserve">
+    <value>Edit</value>
+  </data>
+  <data name="Backoffice_Common_DeleteAction" xml:space="preserve">
+    <value>Delete</value>
+  </data>
+  <data name="Backoffice_Common_NameLabel" xml:space="preserve">
+    <value>Name</value>
+  </data>
+  <data name="Backoffice_Common_NameColumn" xml:space="preserve">
+    <value>Name</value>
+  </data>
+  <data name="Backoffice_Common_ActionsColumn" xml:space="preserve">
+    <value>Actions</value>
+  </data>
+  <data name="Backoffice_Roles_PageTitle" xml:space="preserve">
+    <value>Backoffice - Roles</value>
+  </data>
+  <data name="Backoffice_Roles_CreateHeading" xml:space="preserve">
+    <value>Create Role</value>
+  </data>
+  <data name="Backoffice_Roles_EditHeading" xml:space="preserve">
+    <value>Edit Role</value>
+  </data>
+  <data name="Backoffice_Roles_DeleteHeading" xml:space="preserve">
+    <value>Delete Role</value>
+  </data>
+  <data name="Backoffice_Roles_DeleteConfirm" xml:space="preserve">
+    <value>Are you sure you want to delete role {0}?</value>
+  </data>
+  <data name="Backoffice_Roles_ListHeading" xml:space="preserve">
+    <value>Roles ({0})</value>
+  </data>
+  <data name="Backoffice_Roles_CreateAction" xml:space="preserve">
+    <value>Create role</value>
+  </data>
+  <data name="Backoffice_Roles_ErrorNameRequired" xml:space="preserve">
+    <value>Role name is required.</value>
+  </data>
+  <data name="Backoffice_Roles_ErrorInvalidRole" xml:space="preserve">
+    <value>Invalid role.</value>
+  </data>
+  <data name="Backoffice_Roles_Created" xml:space="preserve">
+    <value>Role created.</value>
+  </data>
+  <data name="Backoffice_Roles_Updated" xml:space="preserve">
+    <value>Role updated.</value>
+  </data>
+  <data name="Backoffice_Roles_Deleted" xml:space="preserve">
+    <value>Role deleted.</value>
+  </data>
+  <data name="Backoffice_Roles_NotFound" xml:space="preserve">
+    <value>Role not found.</value>
+  </data>
+  <data name="Backoffice_Common_Back" xml:space="preserve">
+    <value>Back</value>
+  </data>
+  <data name="Backoffice_Common_DisplayNameLabel" xml:space="preserve">
+    <value>Display name</value>
+  </data>
+  <data name="Backoffice_Common_DisplayNameColumn" xml:space="preserve">
+    <value>Display name</value>
+  </data>
+  <data name="Backoffice_Common_DescriptionLabel" xml:space="preserve">
+    <value>Description</value>
+  </data>
+  <data name="Backoffice_Common_EnabledLabel" xml:space="preserve">
+    <value>Enabled</value>
+  </data>
+  <data name="Backoffice_Common_EnabledColumn" xml:space="preserve">
+    <value>Enabled</value>
+  </data>
+  <data name="Backoffice_Common_RequiredLabel" xml:space="preserve">
+    <value>Required</value>
+  </data>
+  <data name="Backoffice_Common_EmphasizeLabel" xml:space="preserve">
+    <value>Emphasize</value>
+  </data>
+  <data name="Backoffice_Common_ShowInDiscoveryDocumentLabel" xml:space="preserve">
+    <value>Show In Discovery Document</value>
+  </data>
+  <data name="Backoffice_Common_Yes" xml:space="preserve">
+    <value>Yes</value>
+  </data>
+  <data name="Backoffice_Common_No" xml:space="preserve">
+    <value>No</value>
+  </data>
+  <data name="Backoffice_Common_RemoveButton" xml:space="preserve">
+    <value>Remove</value>
+  </data>
+  <data name="Backoffice_Common_ErrorNameRequired" xml:space="preserve">
+    <value>Name is required.</value>
+  </data>
+  <data name="Backoffice_Common_DeleteConfirm" xml:space="preserve">
+    <value>Are you sure you want to delete {0}?</value>
+  </data>
+  <data name="Backoffice_ApiScopes_PageTitle" xml:space="preserve">
+    <value>Backoffice - API Scopes</value>
+  </data>
+  <data name="Backoffice_ApiScopes_CreateHeading" xml:space="preserve">
+    <value>Create API Scope</value>
+  </data>
+  <data name="Backoffice_ApiScopes_EditHeading" xml:space="preserve">
+    <value>Edit API Scope</value>
+  </data>
+  <data name="Backoffice_ApiScopes_DeleteHeading" xml:space="preserve">
+    <value>Delete API Scope</value>
+  </data>
+  <data name="Backoffice_ApiScopes_ListHeading" xml:space="preserve">
+    <value>API Scopes ({0})</value>
+  </data>
+  <data name="Backoffice_ApiScopes_CreateAction" xml:space="preserve">
+    <value>Create API Scope</value>
+  </data>
+  <data name="Backoffice_ApiScopes_Tab_MainInfo" xml:space="preserve">
+    <value>Main Info</value>
+  </data>
+  <data name="Backoffice_ApiScopes_Tab_UserClaims" xml:space="preserve">
+    <value>User Claims</value>
+  </data>
+  <data name="Backoffice_ApiScopes_UserClaimsLabel" xml:space="preserve">
+    <value>UserClaims</value>
+  </data>
+  <data name="Backoffice_ApiScopes_ClaimColumn" xml:space="preserve">
+    <value>Claim</value>
+  </data>
+  <data name="Backoffice_ApiScopes_AddClaimButton" xml:space="preserve">
+    <value>Add claim</value>
+  </data>
+  <data name="Backoffice_ApiScopes_ClaimsColumn" xml:space="preserve">
+    <value>Claims</value>
+  </data>
+  <data name="Backoffice_ApiScopes_Created" xml:space="preserve">
+    <value>API scope created.</value>
+  </data>
+  <data name="Backoffice_ApiScopes_Updated" xml:space="preserve">
+    <value>API scope updated.</value>
+  </data>
+  <data name="Backoffice_ApiScopes_Deleted" xml:space="preserve">
+    <value>API scope deleted.</value>
+  </data>
+  <data name="Backoffice_ApiResources_PageTitle" xml:space="preserve">
+    <value>Backoffice - API Resources</value>
+  </data>
+  <data name="Backoffice_ApiResources_CreateHeading" xml:space="preserve">
+    <value>Create API Resource</value>
+  </data>
+  <data name="Backoffice_ApiResources_EditHeading" xml:space="preserve">
+    <value>Edit API Resource</value>
+  </data>
+  <data name="Backoffice_ApiResources_DeleteHeading" xml:space="preserve">
+    <value>Delete API Resource</value>
+  </data>
+  <data name="Backoffice_ApiResources_ListHeading" xml:space="preserve">
+    <value>API Resources ({0})</value>
+  </data>
+  <data name="Backoffice_ApiResources_CreateAction" xml:space="preserve">
+    <value>Create API Resource</value>
+  </data>
+  <data name="Backoffice_ApiResources_Tab_MainInfo" xml:space="preserve">
+    <value>Main Info</value>
+  </data>
+  <data name="Backoffice_ApiResources_Tab_Scopes" xml:space="preserve">
+    <value>Scopes</value>
+  </data>
+  <data name="Backoffice_ApiResources_Tab_UserClaims" xml:space="preserve">
+    <value>User Claims</value>
+  </data>
+  <data name="Backoffice_ApiResources_RequireResourceIndicatorLabel" xml:space="preserve">
+    <value>Require Resource Indicator</value>
+  </data>
+  <data name="Backoffice_ApiResources_ScopesLabel" xml:space="preserve">
+    <value>Scopes</value>
+  </data>
+  <data name="Backoffice_ApiResources_ScopeColumn" xml:space="preserve">
+    <value>Scope</value>
+  </data>
+  <data name="Backoffice_ApiResources_AddScopeButton" xml:space="preserve">
+    <value>Add scope</value>
+  </data>
+  <data name="Backoffice_ApiResources_UserClaimsLabel" xml:space="preserve">
+    <value>UserClaims</value>
+  </data>
+  <data name="Backoffice_ApiResources_ClaimColumn" xml:space="preserve">
+    <value>Claim</value>
+  </data>
+  <data name="Backoffice_ApiResources_AddClaimButton" xml:space="preserve">
+    <value>Add claim</value>
+  </data>
+  <data name="Backoffice_ApiResources_ScopesColumn" xml:space="preserve">
+    <value>Scopes</value>
+  </data>
+  <data name="Backoffice_ApiResources_Created" xml:space="preserve">
+    <value>API resource created.</value>
+  </data>
+  <data name="Backoffice_ApiResources_Updated" xml:space="preserve">
+    <value>API resource updated.</value>
+  </data>
+  <data name="Backoffice_ApiResources_Deleted" xml:space="preserve">
+    <value>API resource deleted.</value>
+  </data>
+  <data name="Backoffice_IdentityResourcesPage_PageTitle" xml:space="preserve">
+    <value>Backoffice - Identity Resources</value>
+  </data>
+  <data name="Backoffice_IdentityResourcesPage_CreateHeading" xml:space="preserve">
+    <value>Create Identity Resource</value>
+  </data>
+  <data name="Backoffice_IdentityResourcesPage_EditHeading" xml:space="preserve">
+    <value>Edit Identity Resource</value>
+  </data>
+  <data name="Backoffice_IdentityResourcesPage_DeleteHeading" xml:space="preserve">
+    <value>Delete Identity Resource</value>
+  </data>
+  <data name="Backoffice_IdentityResourcesPage_ListHeading" xml:space="preserve">
+    <value>Identity Resources ({0})</value>
+  </data>
+  <data name="Backoffice_IdentityResourcesPage_CreateAction" xml:space="preserve">
+    <value>Create Identity Resource</value>
+  </data>
+  <data name="Backoffice_IdentityResourcesPage_Created" xml:space="preserve">
+    <value>Identity resource created.</value>
+  </data>
+  <data name="Backoffice_IdentityResourcesPage_Updated" xml:space="preserve">
+    <value>Identity resource updated.</value>
+  </data>
+  <data name="Backoffice_IdentityResourcesPage_Deleted" xml:space="preserve">
+    <value>Identity resource deleted.</value>
+  </data>
+  <data name="Backoffice_IdentityProviders_PageTitle" xml:space="preserve">
+    <value>Backoffice - Identity Providers</value>
+  </data>
+  <data name="Backoffice_IdentityProviders_CreateHeading" xml:space="preserve">
+    <value>Create Identity Provider</value>
+  </data>
+  <data name="Backoffice_IdentityProviders_EditHeading" xml:space="preserve">
+    <value>Edit Identity Provider</value>
+  </data>
+  <data name="Backoffice_IdentityProviders_DeleteHeading" xml:space="preserve">
+    <value>Delete Identity Provider</value>
+  </data>
+  <data name="Backoffice_IdentityProviders_ListHeading" xml:space="preserve">
+    <value>Identity Providers ({0})</value>
+  </data>
+  <data name="Backoffice_IdentityProviders_CreateAction" xml:space="preserve">
+    <value>Create Identity Provider</value>
+  </data>
+  <data name="Backoffice_IdentityProviders_SchemeLabel" xml:space="preserve">
+    <value>Scheme</value>
+  </data>
+  <data name="Backoffice_IdentityProviders_SchemeColumn" xml:space="preserve">
+    <value>Scheme</value>
+  </data>
+  <data name="Backoffice_IdentityProviders_TypeLabel" xml:space="preserve">
+    <value>Type</value>
+  </data>
+  <data name="Backoffice_IdentityProviders_TypeColumn" xml:space="preserve">
+    <value>Type</value>
+  </data>
+  <data name="Backoffice_IdentityProviders_ErrorSchemeTypeRequired" xml:space="preserve">
+    <value>Scheme and Type are required.</value>
+  </data>
+  <data name="Backoffice_IdentityProviders_Created" xml:space="preserve">
+    <value>Identity provider created.</value>
+  </data>
+  <data name="Backoffice_IdentityProviders_Updated" xml:space="preserve">
+    <value>Identity provider updated.</value>
+  </data>
+  <data name="Backoffice_IdentityProviders_Deleted" xml:space="preserve">
+    <value>Identity provider deleted.</value>
+  </data>
+  <data name="Backoffice_Clients_PageTitle" xml:space="preserve">
+    <value>Backoffice - Clients</value>
+  </data>
+  <data name="Backoffice_Clients_EditHeading" xml:space="preserve">
+    <value>Edit Client</value>
+  </data>
+  <data name="Backoffice_Clients_DeleteHeading" xml:space="preserve">
+    <value>Delete Client</value>
+  </data>
+  <data name="Backoffice_Clients_DeleteConfirm" xml:space="preserve">
+    <value>Are you sure you want to delete client {0}?</value>
+  </data>
+  <data name="Backoffice_Clients_ListHeading" xml:space="preserve">
+    <value>Clients ({0})</value>
+  </data>
+  <data name="Backoffice_Clients_Loading" xml:space="preserve">
+    <value>Loading...</value>
+  </data>
+  <data name="Backoffice_Clients_ErrorInvalidClient" xml:space="preserve">
+    <value>Invalid client.</value>
+  </data>
+  <data name="Backoffice_Clients_Tab_MainInfo" xml:space="preserve">
+    <value>Main Info</value>
+  </data>
+  <data name="Backoffice_Clients_Tab_AllowedGrantTypes" xml:space="preserve">
+    <value>Allowed Grant Types</value>
+  </data>
+  <data name="Backoffice_Clients_Tab_RedirectUris" xml:space="preserve">
+    <value>Redirect Uris</value>
+  </data>
+  <data name="Backoffice_Clients_Tab_PostLogoutRedirectUris" xml:space="preserve">
+    <value>Post Logout Redirect Uris</value>
+  </data>
+  <data name="Backoffice_Clients_Tab_AllowedCorsOrigins" xml:space="preserve">
+    <value>Allowed Cors Origins</value>
+  </data>
+  <data name="Backoffice_Clients_Tab_AllowedScopes" xml:space="preserve">
+    <value>Allowed Scopes</value>
+  </data>
+  <data name="Backoffice_Clients_Tab_ClientSecrets" xml:space="preserve">
+    <value>Client Secrets</value>
+  </data>
+  <data name="Backoffice_Clients_ClientIdLabel" xml:space="preserve">
+    <value>ClientId</value>
+  </data>
+  <data name="Backoffice_Clients_ClientIdColumn" xml:space="preserve">
+    <value>ClientId</value>
+  </data>
+  <data name="Backoffice_Clients_ClientNameLabel" xml:space="preserve">
+    <value>ClientName</value>
+  </data>
+  <data name="Backoffice_Clients_RequirePkceLabel" xml:space="preserve">
+    <value>RequirePkce</value>
+  </data>
+  <data name="Backoffice_Clients_RequireClientSecretLabel" xml:space="preserve">
+    <value>RequireClientSecret</value>
+  </data>
+  <data name="Backoffice_Clients_AllowOfflineAccessLabel" xml:space="preserve">
+    <value>AllowOfflineAccess</value>
+  </data>
+  <data name="Backoffice_Clients_AccessTokenLifetimeLabel" xml:space="preserve">
+    <value>AccessTokenLifetime</value>
+  </data>
+  <data name="Backoffice_Clients_SlidingRefreshTokenLifetimeLabel" xml:space="preserve">
+    <value>SlidingRefreshTokenLifetime</value>
+  </data>
+  <data name="Backoffice_Clients_AbsoluteRefreshTokenLifetimeLabel" xml:space="preserve">
+    <value>AbsoluteRefreshTokenLifetime</value>
+  </data>
+  <data name="Backoffice_Clients_RefreshTokenUsageLabel" xml:space="preserve">
+    <value>RefreshTokenUsage</value>
+  </data>
+  <data name="Backoffice_Clients_RefreshTokenExpirationLabel" xml:space="preserve">
+    <value>RefreshTokenExpiration</value>
+  </data>
+  <data name="Backoffice_Clients_AllowedGrantTypesLabel" xml:space="preserve">
+    <value>AllowedGrantTypes</value>
+  </data>
+  <data name="Backoffice_Clients_GrantTypeColumn" xml:space="preserve">
+    <value>Grant Type</value>
+  </data>
+  <data name="Backoffice_Clients_AddGrantTypeButton" xml:space="preserve">
+    <value>Add grant type</value>
+  </data>
+  <data name="Backoffice_Clients_RedirectUrisLabel" xml:space="preserve">
+    <value>RedirectUris</value>
+  </data>
+  <data name="Backoffice_Clients_RedirectUriColumn" xml:space="preserve">
+    <value>Redirect Uri</value>
+  </data>
+  <data name="Backoffice_Clients_AddRedirectUriButton" xml:space="preserve">
+    <value>Add redirect uri</value>
+  </data>
+  <data name="Backoffice_Clients_PostLogoutRedirectUrisLabel" xml:space="preserve">
+    <value>PostLogoutRedirectUris</value>
+  </data>
+  <data name="Backoffice_Clients_PostLogoutRedirectUriColumn" xml:space="preserve">
+    <value>Post Logout Redirect Uri</value>
+  </data>
+  <data name="Backoffice_Clients_AddPostLogoutRedirectUriButton" xml:space="preserve">
+    <value>Add post logout redirect uri</value>
+  </data>
+  <data name="Backoffice_Clients_AllowedCorsOriginsLabel" xml:space="preserve">
+    <value>AllowedCorsOrigins</value>
+  </data>
+  <data name="Backoffice_Clients_OriginColumn" xml:space="preserve">
+    <value>Origin</value>
+  </data>
+  <data name="Backoffice_Clients_AddOriginButton" xml:space="preserve">
+    <value>Add origin</value>
+  </data>
+  <data name="Backoffice_Clients_AllowedScopesLabel" xml:space="preserve">
+    <value>AllowedScopes</value>
+  </data>
+  <data name="Backoffice_Clients_ScopeColumn" xml:space="preserve">
+    <value>Scope</value>
+  </data>
+  <data name="Backoffice_Clients_AddScopeButton" xml:space="preserve">
+    <value>Add scope</value>
+  </data>
+  <data name="Backoffice_Clients_ClientSecretsLabel" xml:space="preserve">
+    <value>ClientSecrets</value>
+  </data>
+  <data name="Backoffice_Clients_ValueColumn" xml:space="preserve">
+    <value>Value</value>
+  </data>
+  <data name="Backoffice_Clients_IsHashedColumn" xml:space="preserve">
+    <value>IsHashed</value>
+  </data>
+  <data name="Backoffice_Clients_AddSecretButton" xml:space="preserve">
+    <value>Add secret</value>
+  </data>
+  <data name="Backoffice_Clients_ActiveColumn" xml:space="preserve">
+    <value>Active</value>
+  </data>
+  <data name="Backoffice_Clients_RedirectUrisColumn" xml:space="preserve">
+    <value>Redirect URIs</value>
+  </data>
+  <data name="Backoffice_Clients_ScopesColumn" xml:space="preserve">
+    <value>Scopes</value>
+  </data>
+  <data name="Backoffice_Clients_Updated" xml:space="preserve">
+    <value>Client updated.</value>
+  </data>
+  <data name="Backoffice_Clients_Deleted" xml:space="preserve">
+    <value>Client deleted.</value>
+  </data>
 </root>

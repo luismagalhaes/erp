@@ -1,10 +1,9 @@
 using Duende.IdentityServer.EntityFramework.DbContexts;
 using Duende.IdentityServer.EntityFramework.Entities;
+using Duende.IdentityServer.Models;
 using Erp.Identity.Domain.Application;
 using Erp.Identity.Infrastructure.Storage;
 using Microsoft.EntityFrameworkCore;
-using System.Security.Cryptography;
-using System.Text;
 
 namespace Erp.Identity.Storage.Storage;
 
@@ -266,9 +265,5 @@ public sealed class ClientStorage(IDbContextFactory<ConfigurationDbContext> dbCo
             target.Add(factory(value));
     }
 
-    private static string HashSecret(string plainText)
-    {
-        var bytes = SHA256.HashData(Encoding.UTF8.GetBytes(plainText));
-        return Convert.ToHexString(bytes).ToLowerInvariant();
-    }
+    private static string HashSecret(string plainText) => plainText.Sha256();
 }

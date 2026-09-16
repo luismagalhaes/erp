@@ -1,8 +1,10 @@
-using System.Net;
-using System.Net.Mail;
 using Erp.Notification.Application.Configuration;
 using Erp.Notification.Infrastructure.Messaging;
+using MailKit.Security;
 using Microsoft.Extensions.Options;
+using MimeKit;
+using MailAddress = System.Net.Mail.MailAddress;
+using SmtpClient = MailKit.Net.Smtp.SmtpClient;
 
 namespace Erp.Notification.Application.Services;
 
@@ -18,33 +20,26 @@ public sealed class SmtpEmailSender(IOptions<SmtpOptions> smtpOptions) : IEmailS
         if (string.IsNullOrWhiteSpace(_options.FromEmail))
             throw new InvalidOperationException("Smtp:FromEmail is not configured.");
 
-        using var message = new MailMessage
-        {
-            From = new MailAddress(_options.FromEmail, _options.FromName),
-            Subject = subject,
-            Body = htmlBody,
-            IsBodyHtml = true
-        };
+        // MimeKit's MailboxAddress parses leniently and won't reject a malformed address the way
+        // MailAddress does, so it's used here purely for the format check, not for sending.
+        _ = new MailAddress(_options.FromEmail);
+        _ = new MailAddress(toEmail);
 
-        message.To.Add(toEmail);
+        using var message = new MimeMessage();
+        message.From.Add(new MailboxAddress(_options.FromName, _options.FromEmail));
+        message.To.Add(MailboxAddress.Parse(toEmail));
+        message.Subject = subject;
+        message.Body = new BodyBuilder { HtmlBody = htmlBody }.ToMessageBody();
 
-        using var client = new SmtpClient(_options.Host, _options.Port)
-        {
-            EnableSsl = _options.UseSsl,
-            DeliveryMethod = SmtpDeliveryMethod.Network
-        };
+        using var client = new SmtpClient();
 
-        if (string.IsNullOrWhiteSpace(_options.UserName))
-        {
-            client.UseDefaultCredentials = true;
-        }
-        else
-        {
-            client.UseDefaultCredentials = false;
-            client.Credentials = new NetworkCredential(_options.UserName, _options.Password);
-        }
+        var secureSocketOptions = _options.UseSsl ? SecureSocketOptions.StartTlsWhenAvailable : SecureSocketOptions.None;
+        await client.ConnectAsync(_options.Host, _options.Port, secureSocketOptions, cancellationToken);
 
-        cancellationToken.ThrowIfCancellationRequested();
-        await client.SendMailAsync(message, cancellationToken);
+        if (!string.IsNullOrWhiteSpace(_options.UserName))
+            await client.AuthenticateAsync(_options.UserName, _options.Password, cancellationToken);
+
+        await client.SendAsync(message, cancellationToken);
+        await client.DisconnectAsync(true, cancellationToken);
     }
 }

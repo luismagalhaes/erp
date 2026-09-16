@@ -1,9 +1,8 @@
 using Duende.IdentityServer.EntityFramework.Entities;
+using Duende.IdentityServer.Models;
 using Erp.Identity.Domain.Application;
 using Erp.Identity.Storage.Storage;
 using FluentAssertions;
-using System.Security.Cryptography;
-using System.Text;
 
 namespace Erp.Identity.Tests.Storage;
 
@@ -56,7 +55,7 @@ public class ClientStorageTests
     public async Task CreateClientAsync_hashes_plain_text_secrets()
     {
         var storage = new ClientStorage(_factory);
-        var expected = Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes("plain"))).ToLowerInvariant();
+        var expected = "plain".Sha256();
 
         await storage.CreateClientAsync(CreateRequest(secrets: [new ClientSecretItem("plain", "  primary  ", IsHashed: false)]));
 

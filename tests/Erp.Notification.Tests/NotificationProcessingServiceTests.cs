@@ -3,6 +3,7 @@ using Erp.Notification.Domain.Models;
 using Erp.Notification.Infrastructure.Messaging;
 using Erp.Notification.Infrastructure.Storage;
 using FluentAssertions;
+using Microsoft.Extensions.Logging.Abstractions;
 using NSubstitute;
 using NSubstitute.ExceptionExtensions;
 
@@ -13,7 +14,8 @@ public class NotificationProcessingServiceTests
     private readonly IEmailNotificationStorage _storage = Substitute.For<IEmailNotificationStorage>();
     private readonly IEmailSender _sender = Substitute.For<IEmailSender>();
 
-    private NotificationProcessingService CreateService() => new(_storage, _sender);
+    private NotificationProcessingService CreateService() =>
+        new(_storage, _sender, NullLogger<NotificationProcessingService>.Instance);
 
     private static EmailNotification Pending(string toEmail = "ana@empresa.pt") => new()
     {

@@ -2,12 +2,14 @@ using Erp.Notification.Domain.Models;
 using Erp.Notification.Infrastructure.Application;
 using Erp.Notification.Infrastructure.Messaging;
 using Erp.Notification.Infrastructure.Storage;
+using Microsoft.Extensions.Logging;
 
 namespace Erp.Notification.Application.Services;
 
 public sealed class NotificationProcessingService(
     IEmailNotificationStorage storage,
-    IEmailSender emailSender) : INotificationProcessingService
+    IEmailSender emailSender,
+    ILogger<NotificationProcessingService> logger) : INotificationProcessingService
 {
     public async Task<int> ProcessPendingAsync(int batchSize, CancellationToken cancellationToken = default)
     {
@@ -24,9 +26,15 @@ public sealed class NotificationProcessingService(
             }
             catch (Exception ex)
             {
+                logger.LogError(
+                    ex,
+                    "Failed to send notification {NotificationId} to {ToEmail}.",
+                    notification.Id,
+                    notification.ToEmail);
+
                 notification.Status = EmailNotificationStatus.Failed;
                 notification.RetryCount++;
-                notification.LastError = ex.Message;
+                notification.LastError = ex.InnerException?.Message ?? ex.Message;
                 notification.ProcessedAtUtc = DateTime.UtcNow;
             }
         }

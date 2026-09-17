@@ -1,6 +1,8 @@
 using Erp.SeriesRegistry.Domain;
 using Erp.Inventory.Infrastructure.Application;
 using Erp.FiscalPT;
+using Erp.FiscalPT.AtWebservice;
+using Erp.FiscalPT.AtWebservice.TransportDocuments;
 using Erp.FiscalPT.Signing;
 using Erp.Sales.Application.Services;
 using Erp.Sales.Domain;
@@ -8,6 +10,7 @@ using Erp.Sales.Infrastructure.Application;
 using Erp.Sales.Infrastructure.Contracts;
 using Erp.Sales.Infrastructure.Storage;
 using FluentAssertions;
+using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
 using NSubstitute;
 using Erp.Common;
@@ -22,6 +25,8 @@ public class StockMovementServiceTests
     private readonly IUnitOfWork _unitOfWork = Substitute.For<IUnitOfWork>();
     private readonly IDocumentSigner _signer = Substitute.For<IDocumentSigner>();
     private readonly ITransaction _transaction = Substitute.For<ITransaction>();
+    private readonly IAtTransportDocumentClient _atClient = Substitute.For<IAtTransportDocumentClient>();
+    private readonly IAtCompanyProfileProvider _atProfiles = Substitute.For<IAtCompanyProfileProvider>();
     private readonly List<StockMovement> _persisted = [];
     private readonly List<MovementStatusChange> _persistedStatusChanges = [];
     private readonly Guid _companyId = Guid.NewGuid();
@@ -39,6 +44,12 @@ public class StockMovementServiceTests
 
         _movements.When(x => x.AddStatusChangeAsync(Arg.Any<MovementStatusChange>(), Arg.Any<CancellationToken>()))
             .Do(call => _persistedStatusChanges.Add(call.Arg<MovementStatusChange>()));
+
+        _atProfiles.GetAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>())
+            .Returns(new AtCompanyProfile("123456789", "Acme", "Rua A", "Lisboa", "1000-000", "1", "secret"));
+
+        _atClient.CommunicateAsync(Arg.Any<AtTransportDocumentRequest>(), Arg.Any<AtCredentials>(), Arg.Any<CancellationToken>())
+            .Returns(new AtTransportDocumentResult(true, false, 0, null, "ABC123", null, null));
     }
 
     /// <summary>
@@ -47,7 +58,8 @@ public class StockMovementServiceTests
     private readonly IStockRecorder _stockRecorder = Substitute.For<IStockRecorder>();
 
     private StockMovementService CreateService() =>
-        new(_movements, _series, _unitOfWork, _signer, _stockRecorder,
+        new(_movements, _series, _unitOfWork, _signer, _stockRecorder, _atClient, _atProfiles,
+            NullLogger<StockMovementService>.Instance,
             Options.Create(new FiscalOptions { IssuerTaxId = "123456789", CertificateNumber = "9999", KeyVersion = "1" }));
 
     private Series GivenSeries(string documentType = "GT", Guid? companyId = null)
@@ -242,10 +254,64 @@ public class StockMovementServiceTests
         var movement = _persisted.Single();
         _movements.GetByIdAsync(issued.Id, Arg.Any<CancellationToken>()).Returns(movement);
 
-        var communicated = await service.CommunicateAsync(issued.Id, " ABC123 ");
+        var communicated = await service.CommunicateAsync(issued.Id);
 
         communicated!.AtDocCodeId.Should().Be("ABC123");
         communicated.CommunicatedAtUtc.Should().NotBeNull();
+    }
+
+    [Fact]
+    public async Task CommunicateAsync_accepts_the_documented_alert_as_success()
+    {
+        var series = GivenSeries();
+        var service = CreateService();
+        var issued = await service.IssueAsync(Request(_companyId, series.Id), "user-1");
+
+        var movement = _persisted.Single();
+        _movements.GetByIdAsync(issued.Id, Arg.Any<CancellationToken>()).Returns(movement);
+
+        _atClient.CommunicateAsync(Arg.Any<AtTransportDocumentRequest>(), Arg.Any<AtCredentials>(), Arg.Any<CancellationToken>())
+            .Returns(new AtTransportDocumentResult(true, true, -100, "late communication", "ABC123", null, null));
+
+        var communicated = await service.CommunicateAsync(issued.Id);
+
+        communicated!.AtDocCodeId.Should().Be("ABC123");
+    }
+
+    [Fact]
+    public async Task CommunicateAsync_surfaces_an_at_rejection()
+    {
+        var series = GivenSeries();
+        var service = CreateService();
+        var issued = await service.IssueAsync(Request(_companyId, series.Id), "user-1");
+
+        var movement = _persisted.Single();
+        _movements.GetByIdAsync(issued.Id, Arg.Any<CancellationToken>()).Returns(movement);
+
+        _atClient.CommunicateAsync(Arg.Any<AtTransportDocumentRequest>(), Arg.Any<AtCredentials>(), Arg.Any<CancellationToken>())
+            .Returns(Task.FromException<AtTransportDocumentResult>(new AtTransportDocumentException(-7, "NIF mismatch")));
+
+        var act = () => service.CommunicateAsync(issued.Id);
+
+        await act.Should().ThrowAsync<AtTransportDocumentException>();
+        movement.AtDocCodeId.Should().BeNull();
+    }
+
+    [Fact]
+    public async Task CommunicateAsync_requires_the_company_to_have_at_credentials_configured()
+    {
+        var series = GivenSeries();
+        var service = CreateService();
+        var issued = await service.IssueAsync(Request(_companyId, series.Id), "user-1");
+
+        var movement = _persisted.Single();
+        _movements.GetByIdAsync(issued.Id, Arg.Any<CancellationToken>()).Returns(movement);
+
+        _atProfiles.GetAsync(_companyId, Arg.Any<CancellationToken>()).Returns((AtCompanyProfile?)null);
+
+        var act = () => service.CommunicateAsync(issued.Id);
+
+        await act.Should().ThrowAsync<InvalidOperationException>().WithMessage("*AT WDT credentials*");
     }
 
     [Fact]
@@ -258,9 +324,9 @@ public class StockMovementServiceTests
         var movement = _persisted.Single();
         _movements.GetByIdAsync(issued.Id, Arg.Any<CancellationToken>()).Returns(movement);
 
-        await service.CommunicateAsync(issued.Id, "ABC123");
+        await service.CommunicateAsync(issued.Id);
 
-        var act = () => service.CommunicateAsync(issued.Id, "XYZ999");
+        var act = () => service.CommunicateAsync(issued.Id);
 
         await act.Should().ThrowAsync<InvalidOperationException>().WithMessage("*already communicated*");
     }

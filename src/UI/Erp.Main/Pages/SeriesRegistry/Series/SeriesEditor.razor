@@ -174,18 +174,69 @@
                     @L["SeriesEditor_CommunicatedNotice", _series.ValidationCode]
                 </MudAlert>
             }
-
-            <MudStack Row="true" Spacing="2" AlignItems="AlignItems.Center">
-                <MudTextField @bind-Value="_validationCode" Label="@L["SeriesEditor_ValidationCodeLabel"]"
-                              Variant="Variant.Outlined" Margin="Margin.Dense" Style="max-width: 320px;" />
+            else
+            {
                 <MudButton Variant="Variant.Filled" Color="Color.Primary"
                            StartIcon="@Icons.Material.Filled.CloudDone"
-                           Disabled="@(_saving || string.IsNullOrWhiteSpace(_validationCode))"
+                           Disabled="_saving"
                            OnClick="CommunicateAsync">
-                    @L["SeriesEditor_RegisterCodeButton"]
+                    @L["SeriesEditor_CommunicateButton"]
                 </MudButton>
-            </MudStack>
+
+                <MudDivider Class="my-4" />
+
+                <MudText Typo="Typo.body2" Color="Color.Secondary" Class="mb-2">
+                    @L["SeriesEditor_ManualCommunicationNotice"]
+                </MudText>
+                <MudStack Row="true" Spacing="2" AlignItems="AlignItems.Center">
+                    <MudTextField @bind-Value="_manualValidationCode" Immediate="true"
+                                  Label="@L["SeriesEditor_ValidationCodeLabel"]"
+                                  Variant="Variant.Outlined" Margin="Margin.Dense" Style="max-width: 320px;" />
+                    <MudButton Variant="Variant.Outlined" Color="Color.Primary"
+                               StartIcon="@Icons.Material.Filled.EditNote"
+                               Disabled="@(_saving || string.IsNullOrWhiteSpace(_manualValidationCode))"
+                               OnClick="CommunicateManuallyAsync">
+                        @L["SeriesEditor_RegisterCodeButton"]
+                    </MudButton>
+                </MudStack>
+            }
         </MudPaper>
+
+        @if (_series.Status == "Communicated")
+        {
+            <MudPaper Elevation="1" Class="pa-4">
+                <MudText Typo="Typo.h6" Class="mb-2">@L["SeriesEditor_CancelSectionTitle"]</MudText>
+                <MudText Typo="Typo.body2" Color="Color.Secondary" Class="mb-3">
+                    @L["SeriesEditor_CancelSectionNotice"]
+                </MudText>
+                <MudButton Variant="Variant.Filled" Color="Color.Error"
+                           StartIcon="@Icons.Material.Filled.Cancel"
+                           Disabled="_saving"
+                           OnClick="CancelAsync">
+                    @L["SeriesEditor_CancelButton"]
+                </MudButton>
+            </MudPaper>
+        }
+
+        @if (_series.Status is "Communicated" or "Active")
+        {
+            <MudPaper Elevation="1" Class="pa-4">
+                <MudText Typo="Typo.h6" Class="mb-2">@L["SeriesEditor_FinalizeSectionTitle"]</MudText>
+                <MudText Typo="Typo.body2" Color="Color.Secondary" Class="mb-3">
+                    @L["SeriesEditor_FinalizeSectionNotice"]
+                </MudText>
+                <MudStack Row="true" Spacing="2" AlignItems="AlignItems.Center">
+                    <MudTextField @bind-Value="_justificacao" Label="@L["SeriesEditor_JustificationLabel"]"
+                                  Variant="Variant.Outlined" Margin="Margin.Dense" Style="max-width: 480px;" />
+                    <MudButton Variant="Variant.Filled" Color="Color.Warning"
+                               StartIcon="@Icons.Material.Filled.Flag"
+                               Disabled="_saving"
+                               OnClick="FinalizeAsync">
+                        @L["SeriesEditor_FinalizeButton"]
+                    </MudButton>
+                </MudStack>
+            </MudPaper>
+        }
     }
 </MudStack>
 
@@ -226,7 +277,8 @@
     private string _seriesCode = string.Empty;
     private int _initialSequence = 1;
     private string _establishmentCode = string.Empty;
-    private string _validationCode = string.Empty;
+    private string _justificacao = string.Empty;
+    private string _manualValidationCode = string.Empty;
     private string _stockEffect = DefaultStockEffectFor("FT");
     private bool _selfBilling;
 
@@ -363,7 +415,7 @@
 
         try
         {
-            var error = await SalesApi.CommunicateSeriesAsync(Id!.Value, _validationCode.Trim());
+            var error = await SalesApi.CommunicateSeriesAsync(Id!.Value);
 
             if (error is not null)
             {
@@ -372,12 +424,99 @@
             }
 
             Snackbar.Add(L["SeriesEditor_ValidationCodeRegisteredSuccess"].Value, Severity.Success);
-            _validationCode = string.Empty;
             await LoadAsync();
         }
         catch (Exception ex)
         {
             _error = L["SeriesEditor_RegisterCodeError", ex.Message];
+        }
+        finally
+        {
+            _saving = false;
+        }
+    }
+
+    /// <summary>Fallback for when the AT webservice itself is not reachable or not yet configured.</summary>
+    private async Task CommunicateManuallyAsync()
+    {
+        _saving = true;
+        _error = null;
+
+        try
+        {
+            var error = await SalesApi.CommunicateSeriesManuallyAsync(Id!.Value, _manualValidationCode.Trim());
+
+            if (error is not null)
+            {
+                _error = error;
+                return;
+            }
+
+            Snackbar.Add(L["SeriesEditor_ValidationCodeRegisteredSuccess"].Value, Severity.Success);
+            _manualValidationCode = string.Empty;
+            await LoadAsync();
+        }
+        catch (Exception ex)
+        {
+            _error = L["SeriesEditor_RegisterCodeError", ex.Message];
+        }
+        finally
+        {
+            _saving = false;
+        }
+    }
+
+    private async Task CancelAsync()
+    {
+        _saving = true;
+        _error = null;
+
+        try
+        {
+            var error = await SalesApi.CancelSeriesAsync(Id!.Value);
+
+            if (error is not null)
+            {
+                _error = error;
+                return;
+            }
+
+            Snackbar.Add(L["SeriesEditor_CancelSuccess"].Value, Severity.Success);
+            await LoadAsync();
+        }
+        catch (Exception ex)
+        {
+            _error = L["SeriesEditor_CancelError", ex.Message];
+        }
+        finally
+        {
+            _saving = false;
+        }
+    }
+
+    private async Task FinalizeAsync()
+    {
+        _saving = true;
+        _error = null;
+
+        try
+        {
+            var error = await SalesApi.FinalizeSeriesAsync(
+                Id!.Value, string.IsNullOrWhiteSpace(_justificacao) ? null : _justificacao.Trim());
+
+            if (error is not null)
+            {
+                _error = error;
+                return;
+            }
+
+            Snackbar.Add(L["SeriesEditor_FinalizeSuccess"].Value, Severity.Success);
+            _justificacao = string.Empty;
+            await LoadAsync();
+        }
+        catch (Exception ex)
+        {
+            _error = L["SeriesEditor_FinalizeError", ex.Message];
         }
         finally
         {

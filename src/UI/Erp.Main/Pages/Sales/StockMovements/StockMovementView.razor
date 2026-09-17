@@ -176,16 +176,12 @@
                     <MudText Typo="Typo.body2" Color="Color.Secondary" Class="mb-3">
                         @L["StockMovementView_CommunicationHelp"]
                     </MudText>
-                    <MudStack Row="true" Spacing="2" AlignItems="AlignItems.Center">
-                        <MudTextField @bind-Value="_atDocCodeId" Label="@L["StockMovementView_AtCodeLabel"]"
-                                      Variant="Variant.Outlined" Margin="Margin.Dense" Style="max-width: 360px;" />
-                        <MudButton Variant="Variant.Filled" Color="Color.Primary"
-                                   StartIcon="@Icons.Material.Filled.CloudDone"
-                                   Disabled="@(_working || string.IsNullOrWhiteSpace(_atDocCodeId))"
-                                   OnClick="CommunicateAsync">
-                            @L["StockMovementView_RegisterCodeButton"]
-                        </MudButton>
-                    </MudStack>
+                    <MudButton Variant="Variant.Filled" Color="Color.Primary"
+                               StartIcon="@Icons.Material.Filled.CloudDone"
+                               Disabled="_working"
+                               OnClick="CommunicateAsync">
+                        @L["StockMovementView_CommunicateButton"]
+                    </MudButton>
                 }
                 else
                 {
@@ -234,7 +230,6 @@
     private bool _working;
     private string? _error;
     private string _voidReason = string.Empty;
-    private string _atDocCodeId = string.Empty;
     private Guid? _loadedId;
 
     private StockMovementDetail? _movement;
@@ -276,7 +271,7 @@
 
         try
         {
-            var error = await SalesApi.CommunicateStockMovementAsync(Id, _atDocCodeId.Trim());
+            var error = await SalesApi.CommunicateStockMovementAsync(Id);
 
             if (error is not null)
             {
@@ -285,7 +280,6 @@
             }
 
             Snackbar.Add(L["StockMovementView_CommunicateSuccess"], Severity.Success);
-            _atDocCodeId = string.Empty;
             await LoadAsync();
         }
         catch (Exception ex)

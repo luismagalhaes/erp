@@ -76,4 +76,21 @@ public readonly record struct SeriesState(
     /// <summary>Closes the series. Doing it twice changes nothing.</summary>
     public SeriesState Finalize() =>
         IsFinalized ? this : this with { Status = SeriesStatus.Finalized };
+
+    /// <summary>
+    /// Cancels a series communicated by mistake. Only allowed while nothing has been issued on it
+    /// yet: the tax authority requires an attestation that no document used the series, and that is
+    /// only true while the status is still <see cref="SeriesStatus.Communicated"/> — once
+    /// <see cref="TakeNextSequence"/> has run once, that attestation would be false.
+    /// </summary>
+    public SeriesState Cancel()
+    {
+        if (Status != SeriesStatus.Communicated)
+        {
+            throw new InvalidOperationException(
+                "Only a communicated series with no document issued yet can be cancelled.");
+        }
+
+        return this with { Status = SeriesStatus.Cancelled };
+    }
 }

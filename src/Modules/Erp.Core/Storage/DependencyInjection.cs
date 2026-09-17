@@ -17,6 +17,7 @@ public static class DependencyInjection
         services.AddModuleModel<CoreModelConfiguration>();
 
         services.AddScoped<ICompanyStorage, CompanyStorage>();
+        services.AddScoped<ICompanyAtCredentialStorage, CompanyAtCredentialStorage>();
         services.AddScoped<IUserCompanyStorage, UserCompanyStorage>();
         services.AddScoped<IBrandStorage, BrandStorage>();
         services.AddScoped<IProductFamilyStorage, ProductFamilyStorage>();

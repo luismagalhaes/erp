@@ -1,8 +1,13 @@
+using Erp.FiscalPT;
+using Erp.FiscalPT.AtWebservice;
+using Erp.FiscalPT.AtWebservice.Series;
 using Erp.SeriesRegistry.Application.Services;
 using Erp.SeriesRegistry.Domain;
 using Erp.SeriesRegistry.Infrastructure.Contracts;
 using Erp.SeriesRegistry.Infrastructure.Storage;
 using FluentAssertions;
+using Microsoft.Extensions.Logging.Abstractions;
+using Microsoft.Extensions.Options;
 using NSubstitute;
 using Erp.Common;
 
@@ -16,6 +21,8 @@ public class StandardSeriesTests
 {
     private readonly ISeriesStorage _storage = Substitute.For<ISeriesStorage>();
     private readonly IUnitOfWork _unitOfWork = Substitute.For<IUnitOfWork>();
+    private readonly IAtSeriesClient _atClient = Substitute.For<IAtSeriesClient>();
+    private readonly IAtCompanyProfileProvider _atProfiles = Substitute.For<IAtCompanyProfileProvider>();
     private readonly Guid _companyId = Guid.NewGuid();
 
     private readonly List<Series> _stored = [];
@@ -30,7 +37,9 @@ public class StandardSeriesTests
                 [.. _stored.Where(x => x.CompanyId == call.ArgAt<Guid>(0))]);
     }
 
-    private SeriesService CreateService() => new(_storage, _unitOfWork);
+    private SeriesService CreateService() =>
+        new(_storage, _unitOfWork, _atClient, _atProfiles, NullLogger<SeriesService>.Instance,
+            Options.Create(new FiscalOptions()));
 
     [Fact]
     public async Task CreateStandardSetAsync_creates_one_series_per_document_type()

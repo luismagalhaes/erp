@@ -4,6 +4,7 @@ using Erp.Common;
 using Erp.Common.Configuration;
 using Erp.Storage;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.OData;
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
@@ -16,7 +17,7 @@ builder.Configuration.AddInfisicalSecrets(builder.Environment);
 builder.Configuration.EnsureConfigured(
     "ConnectionStrings:ErpDb",
     "IdentityServer:Authority",
-    "Fiscal:PrivateKeyPem",
+    "AT:SigningKeyPem",
     "Smtp:Host",
     "Smtp:UserName",
     "Smtp:Password",
@@ -59,6 +60,12 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
 
 builder.Services.AddAuthorizationBuilder()
     .AddPolicies();
+
+// Encrypts the per-company AT WDT password at rest (see CompanyAtCredentialService). A fixed
+// application name keeps the key ring stable across deploys instead of tying it to the content
+// root path, which can differ between deployment slots.
+builder.Services.AddDataProtection()
+    .SetApplicationName(Constants.ApiResources.ErpApi);
 
 builder.Services.AddOpenApi();
 

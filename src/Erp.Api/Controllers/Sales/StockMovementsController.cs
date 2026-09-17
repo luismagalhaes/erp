@@ -1,6 +1,7 @@
 using System.Security.Claims;
 using Erp.Api.Services;
 using Erp.Core.Infrastructure.Application;
+using Erp.FiscalPT.AtWebservice.TransportDocuments;
 using Erp.Sales.Infrastructure.Application;
 using Erp.Sales.Infrastructure.Contracts;
 using Microsoft.AspNetCore.Authorization;
@@ -120,27 +121,28 @@ public sealed class StockMovementsController(
     }
 
     /// <summary>
-    /// Records the code the tax authority returned for this document. Without it the goods
-    /// cannot legally start moving.
+    /// Sends the document to the AT "Documentos de transporte" webservice and records the code it
+    /// returns. Without it the goods cannot legally start moving.
     /// </summary>
     [HttpPost("{id:guid}/communicate")]
     [Authorize(Policy = Policies.Write)]
     [ProducesResponseType<StockMovementDetailDto>(StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status409Conflict)]
-    public async Task<ActionResult<StockMovementDetailDto>> Communicate(
-        Guid id,
-        [FromBody] CommunicateStockMovementRequest request,
-        CancellationToken cancellationToken)
+    [ProducesResponseType(StatusCodes.Status502BadGateway)]
+    public async Task<ActionResult<StockMovementDetailDto>> Communicate(Guid id, CancellationToken cancellationToken)
     {
-        if (string.IsNullOrWhiteSpace(request?.AtDocCodeId))
-            return BadRequest(new { error = "The code returned by the tax authority is required." });
-
         try
         {
-            var result = await stockMovementService.CommunicateAsync(id, request.AtDocCodeId, cancellationToken);
+            var result = await stockMovementService.CommunicateAsync(id, cancellationToken);
             return result is null ? NotFound() : Ok(result);
+        }
+        catch (AtTransportDocumentException ex)
+        {
+            logger.LogWarning(
+                ex, "{Controller}.{Method}: AT rejected the document (code {ReturnCode}).",
+                nameof(StockMovementsController), nameof(Communicate), ex.ReturnCode);
+            return StatusCode(StatusCodes.Status502BadGateway, new { error = ex.Message, atReturnCode = ex.ReturnCode });
         }
         catch (InvalidOperationException ex)
         {

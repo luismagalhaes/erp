@@ -17,6 +17,7 @@ namespace Erp.Api.Controllers.Core;
 public sealed class CompaniesController(
     ICompanyAdminService companyAdminService,
     ISeriesService seriesService,
+    ICompanyAtCredentialService companyAtCredentialService,
     ILogger<CompaniesController> logger) : ControllerBase
 {
     /// <summary>Lists every company.</summary>
@@ -136,6 +137,47 @@ public sealed class CompaniesController(
         {
             logger.LogWarning(ex, "{Controller}.{Method} could not complete due to a conflict.", nameof(CompaniesController), nameof(Update));
             return Conflict(new { error = ex.Message });
+        }
+    }
+
+    /// <summary>
+    /// Whether the company has a WDT subutilizador registered for AT transport-document
+    /// communication, and which one — never the password.
+    /// </summary>
+    [HttpGet("{id:guid}/at-credentials")]
+    [ProducesResponseType<CompanyAtCredentialStatus>(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<CompanyAtCredentialStatus>> GetAtCredentialStatus(
+        Guid id, CancellationToken cancellationToken)
+    {
+        var status = await companyAtCredentialService.GetStatusAsync(id, cancellationToken);
+        return status is null ? NotFound() : Ok(status);
+    }
+
+    /// <summary>
+    /// Registers or replaces the company's WDT subutilizador. Write-only: the password is never
+    /// returned by this or any other endpoint once saved.
+    /// </summary>
+    [HttpPut("{id:guid}/at-credentials")]
+    [Authorize(Policy = Policies.Admin)]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> SetAtCredentials(
+        Guid id, [FromBody] SetCompanyAtCredentialsRequest request, CancellationToken cancellationToken)
+    {
+        if (string.IsNullOrWhiteSpace(request?.SubUserId) || string.IsNullOrWhiteSpace(request.Password))
+            return BadRequest(new { error = "SubUserId and Password are required." });
+
+        try
+        {
+            await companyAtCredentialService.SetCredentialsAsync(id, request.SubUserId, request.Password, cancellationToken);
+            return NoContent();
+        }
+        catch (ArgumentException ex)
+        {
+            logger.LogWarning(ex, "{Controller}.{Method} rejected an invalid request.", nameof(CompaniesController), nameof(SetAtCredentials));
+            return NotFound(new { error = ex.Message });
         }
     }
 }

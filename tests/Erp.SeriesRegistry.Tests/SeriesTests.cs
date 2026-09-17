@@ -95,4 +95,47 @@ public class SeriesTests
 
         series.FinalizedAtUtc.Should().Be(first);
     }
+
+    [Fact]
+    public void Cancel_moves_a_communicated_series_to_cancelled()
+    {
+        var series = CommunicatedSeries();
+
+        series.Cancel(DateTime.UtcNow);
+
+        series.Status.Should().Be(SeriesStatus.Cancelled);
+        series.CancelledAtUtc.Should().NotBeNull();
+    }
+
+    [Fact]
+    public void Cancel_refuses_a_series_that_already_issued_a_document()
+    {
+        var series = CommunicatedSeries();
+        series.TakeNextSequence();
+
+        var act = () => series.Cancel(DateTime.UtcNow);
+
+        act.Should().Throw<InvalidOperationException>().WithMessage("*no document issued*");
+    }
+
+    [Fact]
+    public void Cancel_refuses_a_series_never_communicated()
+    {
+        var series = new Series { DocumentType = "FT", SeriesCode = "A2026" };
+
+        var act = () => series.Cancel(DateTime.UtcNow);
+
+        act.Should().Throw<InvalidOperationException>();
+    }
+
+    [Fact]
+    public void Cancel_refuses_a_series_already_cancelled()
+    {
+        var series = CommunicatedSeries();
+        series.Cancel(DateTime.UtcNow);
+
+        var act = () => series.Cancel(DateTime.UtcNow);
+
+        act.Should().Throw<InvalidOperationException>();
+    }
 }

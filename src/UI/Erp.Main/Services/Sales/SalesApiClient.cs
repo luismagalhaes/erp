@@ -112,10 +112,9 @@ public class SalesApiClient(HttpClient http) : ApiClientBase(http)
             : (null, await ApiResponse.ReadErrorAsync(response, cancellationToken));
     }
 
-    public async Task<string?> CommunicateStockMovementAsync(Guid id, string atDocCodeId, CancellationToken cancellationToken = default)
+    public async Task<string?> CommunicateStockMovementAsync(Guid id, CancellationToken cancellationToken = default)
     {
-        var response = await Http.PostAsJsonAsync(
-            $"api/stock-movements/{id}/communicate", new CommunicateStockMovementRequest(atDocCodeId), cancellationToken);
+        var response = await Http.PostAsync($"api/stock-movements/{id}/communicate", null, cancellationToken);
 
         return response.IsSuccessStatusCode ? null : await ApiResponse.ReadErrorAsync(response, cancellationToken);
     }

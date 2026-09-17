@@ -20,11 +20,11 @@ esquema de base de dados que garante a inviolabilidade dos registos.
 | 1 — Estrutura de projetos | **Feito** — `Erp.FiscalPT` + `Erp.Sales`, com as camadas em pastas |
 | 2 — Modelo de dados imutável | **Feito** — entidades, `SalesDbContext`, migration `InitialSales` e [script de permissões](../src/Modules/Erp.Sales/Storage/Data/Scripts/harden-sales-permissions.sql) |
 | 3 — Motor de assinatura | **Feito** — `DocumentSignatureString`, `RsaDocumentSigner`, `DocumentSigner` e 22 testes |
-| 4 — Séries e ATCUD | **Parcial** — modelo, ciclo de vida, gestão no frontend e registo manual do código de validação; falta o cliente SOAP do *SeriesWSService* |
+| 4 — Séries e ATCUD | **Parcial** — modelo, ciclo de vida, gestão no frontend, e cliente SOAP do *SeriesWSService* (`registarSerie`/`anularSerie`/`finalizarSerie`, com WS-Security e credenciais por empresa); falta `consultarSeries` (só leitura) |
 | 5 — Código QR | **Feito** — `QrCodePayloadBuilder` gera a mensagem e `QrCodeImage` renderiza a imagem PNG, impressa no documento |
 | 6 — Emissão e API | **Feito** — emissão transacional com lock por série, listagem, detalhe, anulação e ficheiro de artigos |
 | 6d — Faturação de guias | **Feito** — faturas emitidas a partir das guias em `/invoices/from-movements`, com faturação parcial e repetida até ao limite do que a guia moveu, e referência em `OrderReferences` no SAF-T |
-| 6b — Movimentação de mercadorias | **Parcial** — guias GR/GT/GA/GC/GD emitidas, assinadas e numeradas como as faturas, com locais de carga e descarga, início de transporte e matrícula; o código da AT regista-se manualmente, falta a comunicação prévia por webservice |
+| 6b — Movimentação de mercadorias | **Parcial** — guias GR/GT/GA/GC/GD emitidas, assinadas e numeradas como as faturas, com locais de carga e descarga, início de transporte e matrícula; a comunicação prévia por webservice (`envioDocumentoTransporte`) está implementada, com WS-Security e credenciais WDT por empresa, mas anular uma guia já comunicada não avisa a AT |
 | 6c — Recibos | **Feito** — recibos RC/RG emitidos, assinados e numerados como as faturas, com as faturas que liquidam, os meios de pagamento e a anulação que devolve as faturas a dívida |
 | 7 — Documento impresso | **Parcial** — impressão em HTML/A4 para faturas, guias e recibos, com todas as menções obrigatórias, cópias e código QR; falta o PDF assinado exigido a partir de 2027 |
 | 8 — SAF-T (PT) | **Feito** — ficheiro 1.04_01 gerado em `Erp.FiscalPT/Saft` com header, master files, `SalesInvoices`, `MovementOfGoods` e `Payments`, validado contra o XSD oficial da AT na emissão e nos testes, com página de exportação em `/saft` |
@@ -34,9 +34,9 @@ Na UI (`Erp.Main`): `/invoices` lista, `/invoices/new` emite e `/invoices/{id}` 
 com o hash, o ATCUD, a mensagem do QR e a anulação com motivo. As tabelas auxiliares têm páginas
 próprias em `/series` e `/products`, e a empresa ativa escolhe-se no cabeçalho.
 
-Ainda não implementado e necessário antes de qualquer utilização real: comunicação automática de
-séries à AT, comunicação prévia dos documentos de transporte, idempotência na emissão e validação da
-empresa contra o `Erp.Core`.
+Ainda não implementado e necessário antes de qualquer utilização real: idempotência na emissão,
+validação da empresa contra o `Erp.Core`, `consultarSeries` e a comunicação de anulação de uma guia
+de transporte já comunicada.
 
 ---
 
@@ -261,17 +261,23 @@ ATCUD:{CódigoValidação}-{NúmeroSequencial}
 ATCUD:JFTX7RK9-2
 ```
 
-Integração com o *SeriesWSService*:
+Integração com o *SeriesWSService*, implementada em
+[`AtSeriesClient`](../src/Shared/Erp.FiscalPT/AtWebservice/Series/AtSeriesClient.cs):
 
-- SOAP sobre o endpoint já configurado em `AT:WebserviceUrl`, com autenticação por certificado do
-  sujeito passivo e credenciais de subutilizador — mover `CertificatePath` e
-  `CertificatePassword` para *secrets*.
-- Operações a cobrir: registar série, consultar séries, finalizar série e anular série.
-- Validar primeiro no ambiente de testes da AT, com NIF e certificado de teste.
+- SOAP sobre `AT:SeriesUrl`, com o certificado SSL do produtor de software (`AT:ClientCertificateBase64`)
+  e cabeçalho WS-Security cifrado com credenciais de subutilizador por empresa
+  (`CompanyAtCredential`, `Backoffice → Empresas → AT`).
+- Operações cobertas: `registarSerie`, `anularSerie`, `finalizarSerie`. `consultarSeries`
+  (só leitura) fica por fazer.
+- Ainda por validar contra o ambiente de testes real da AT — os códigos de sucesso por operação
+  (2001/2003/2004) foram inferidos do padrão documentado, não lidos verbatim (a tabela do manual em
+  PDF saiu com as colunas trocadas na extração para `registarSerie`).
 - O código de validação é persistido na `Series`; sem ele, a emissão nessa série é recusada.
 
 Ciclo de vida: **Criada** → **Comunicada** → **Ativa** → **Finalizada** (comunicada à AT, não
-aceita mais documentos). A transição para finalizada é irreversível.
+aceita mais documentos), com um ramo lateral **Cancelada** a partir de **Comunicada** (anulação por
+erro de registo, só antes de qualquer documento emitido). A transição para finalizada ou cancelada
+é irreversível.
 
 **Critério de aceitação:** uma série registada no ambiente de testes da AT devolve código de
 validação, fica persistida, e a emissão numa série não comunicada é recusada com erro explícito.

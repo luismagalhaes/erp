@@ -1,4 +1,6 @@
 using Erp.FiscalPT;
+using Erp.FiscalPT.AtWebservice;
+using Erp.FiscalPT.AtWebservice.TransportDocuments;
 using Erp.FiscalPT.Documents;
 using Erp.FiscalPT.QrCode;
 using Erp.FiscalPT.Signing;
@@ -9,6 +11,7 @@ using Erp.Sales.Domain;
 using Erp.Sales.Infrastructure.Application;
 using Erp.Sales.Infrastructure.Contracts;
 using Erp.Sales.Infrastructure.Storage;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Erp.Common;
 using Erp.SeriesRegistry.Domain;
@@ -18,7 +21,7 @@ namespace Erp.Sales.Application.Services;
 
 /// <summary>
 /// Issues the documents covered by the goods in circulation regime. They follow the same rules
-/// as an invoice �?" series numbering, hash chain, immutability �?" and add the transport data the
+/// as an invoice — series numbering, hash chain, immutability — and add the transport data the
 /// tax authority requires before the goods start moving.
 /// </summary>
 public sealed class StockMovementService(
@@ -27,6 +30,9 @@ public sealed class StockMovementService(
     IUnitOfWork unitOfWork,
     IDocumentSigner signer,
     IStockRecorder stockRecorder,
+    IAtTransportDocumentClient atTransportDocumentClient,
+    IAtCompanyProfileProvider atCompanyProfileProvider,
+    ILogger<StockMovementService> logger,
     IOptions<FiscalOptions> fiscalOptions) : IStockMovementService
 {
     private readonly FiscalOptions _fiscal = fiscalOptions.Value;
@@ -150,17 +156,68 @@ public sealed class StockMovementService(
         return Map(movement);
     }
 
-    public async Task<StockMovementDetailDto?> CommunicateAsync(Guid id, string atDocCodeId, CancellationToken cancellationToken = default)
+    public async Task<StockMovementDetailDto?> CommunicateAsync(Guid id, CancellationToken cancellationToken = default)
     {
         var movement = await movementStorage.GetByIdAsync(id, cancellationToken);
         if (movement is null)
             return null;
 
-        movement.Communicate(atDocCodeId.Trim(), DateTime.UtcNow);
+        if (movement.IsVoided)
+            throw new InvalidOperationException($"Document '{movement.DocumentNumber}' is voided and cannot be communicated.");
+
+        if (!string.IsNullOrWhiteSpace(movement.AtDocCodeId))
+            throw new InvalidOperationException($"Document '{movement.DocumentNumber}' was already communicated.");
+
+        var profile = await atCompanyProfileProvider.GetAsync(movement.CompanyId, cancellationToken)
+            ?? throw new InvalidOperationException(
+                "This company has no AT WDT credentials configured yet. Set them before communicating a document.");
+
+        var request = BuildAtTransportDocumentRequest(movement, profile);
+        var credentials = new AtCredentials(profile.TaxId, profile.SubUserId, profile.Password);
+
+        var result = await atTransportDocumentClient.CommunicateAsync(request, credentials, cancellationToken);
+
+        if (result.IsAlert)
+        {
+            logger.LogWarning(
+                "AT accepted document {DocumentNumber} with alert {ReturnCode}: {ReturnMessage}",
+                movement.DocumentNumber, result.ReturnCode, result.ReturnMessage);
+        }
+
+        if (string.IsNullOrWhiteSpace(result.AtDocCodeId))
+            throw new InvalidOperationException($"AT accepted document '{movement.DocumentNumber}' but returned no ATDocCodeID.");
+
+        movement.Communicate(result.AtDocCodeId, DateTime.UtcNow);
         await unitOfWork.SaveChangesAsync(cancellationToken);
 
         return Map(movement);
     }
+
+    private static AtTransportDocumentRequest BuildAtTransportDocumentRequest(StockMovement movement, AtCompanyProfile profile) =>
+        new(
+            IssuerTaxId: profile.TaxId,
+            CompanyName: profile.CompanyName,
+            CompanyAddress: new AtTransportDocumentAddress(profile.Address, profile.City, profile.PostalCode),
+            DocumentNumber: movement.DocumentNumber,
+            Atcud: movement.Atcud,
+            MovementStatus: movement.EffectiveStatus,
+            MovementDate: movement.MovementDate,
+            MovementType: movement.MovementType,
+            PartyTaxId: movement.PartyTaxId,
+            PartyIsSupplier: movement.PartyIsSupplier,
+            PartyName: movement.PartyName,
+            ShipTo: ToAtAddress(movement.ShipTo),
+            ShipFrom: ToAtAddress(movement.ShipFrom),
+            MovementEndAtUtc: movement.MovementEndAtUtc,
+            MovementStartAtUtc: movement.MovementStartAtUtc,
+            VehiclePlate: movement.VehiclePlate,
+            Lines: [.. movement.Lines
+                .OrderBy(line => line.LineNumber)
+                .Select(line => new AtTransportDocumentLine(
+                    line.ProductDescription, line.Quantity, line.UnitOfMeasure, line.UnitPrice))]);
+
+    private static AtTransportDocumentAddress ToAtAddress(MovementLocation location) =>
+        new(location.Address, location.City, location.PostalCode);
 
     public async Task<StockMovementDetailDto?> VoidAsync(Guid id, string reason, string? userId, CancellationToken cancellationToken = default)
     {

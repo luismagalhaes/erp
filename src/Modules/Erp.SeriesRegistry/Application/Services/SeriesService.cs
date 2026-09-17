@@ -1,14 +1,26 @@
 using Erp.Common;
+using Erp.FiscalPT;
+using Erp.FiscalPT.AtWebservice;
+using Erp.FiscalPT.AtWebservice.Series;
 using Erp.FiscalPT.Documents;
 using Erp.SeriesRegistry.Domain;
 using Erp.SeriesRegistry.Infrastructure.Application;
 using Erp.SeriesRegistry.Infrastructure.Contracts;
 using Erp.SeriesRegistry.Infrastructure.Storage;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 
 namespace Erp.SeriesRegistry.Application.Services;
 
-public sealed class SeriesService(ISeriesStorage storage, IUnitOfWork unitOfWork) : ISeriesService
+public sealed class SeriesService(
+    ISeriesStorage storage,
+    IUnitOfWork unitOfWork,
+    IAtSeriesClient atSeriesClient,
+    IAtCompanyProfileProvider atCompanyProfileProvider,
+    ILogger<SeriesService> logger,
+    IOptions<FiscalOptions> fiscalOptions) : ISeriesService
 {
+    private readonly FiscalOptions _fiscal = fiscalOptions.Value;
     public async Task<IReadOnlyList<SeriesListItemDto>> GetAllAsync(Guid companyId, CancellationToken cancellationToken = default)
     {
         var series = await storage.GetAllAsync(companyId, cancellationToken);
@@ -140,7 +152,45 @@ public sealed class SeriesService(ISeriesStorage storage, IUnitOfWork unitOfWork
         return Map(series);
     }
 
-    public async Task<SeriesListItemDto?> CommunicateAsync(Guid id, string validationCode, CancellationToken cancellationToken = default)
+    public async Task<SeriesListItemDto?> CommunicateAsync(Guid id, CancellationToken cancellationToken = default)
+    {
+        var series = await storage.GetByIdAsync(id, cancellationToken);
+        if (series is null)
+            return null;
+
+        var credentials = await GetCredentialsAsync(series.CompanyId, cancellationToken);
+
+        var request = new AtSeriesRegistrationRequest(
+            Serie: series.SeriesCode,
+            TipoSerie: "N", // Normal — Formação/Recuperação are not modelled by this ERP.
+            ClasseDoc: SeriesDocumentClasses.For(series.DocumentType),
+            TipoDoc: series.DocumentType,
+            NumInicialSeq: series.InitialSequence,
+            DataInicioPrevUtiliz: DateOnly.FromDateTime(DateTime.UtcNow),
+            NumCertSWFatur: int.Parse(_fiscal.CertificateNumber),
+            MeioProcessamento: "PI"); // Programa Informático de Faturação.
+
+        var result = await atSeriesClient.RegisterAsync(request, credentials, cancellationToken);
+
+        if (string.IsNullOrWhiteSpace(result.ValidationCode))
+            throw new InvalidOperationException($"AT accepted series '{series.SeriesCode}' but returned no codValidacaoSerie.");
+
+        series.Communicate(result.ValidationCode, DateTime.UtcNow);
+        await unitOfWork.SaveChangesAsync(cancellationToken);
+
+        logger.LogInformation("Series '{SeriesCode}' registered with AT, validation code {ValidationCode}.",
+            series.SeriesCode, result.ValidationCode);
+
+        return Map(series);
+    }
+
+    /// <summary>
+    /// Records a validation code obtained outside this webservice call — e.g. from the Portal das
+    /// Finanças directly — for when the AT webservice itself is not reachable or not yet
+    /// configured. Skips <see cref="IAtSeriesClient"/> entirely.
+    /// </summary>
+    public async Task<SeriesListItemDto?> CommunicateManuallyAsync(
+        Guid id, string validationCode, CancellationToken cancellationToken = default)
     {
         var series = await storage.GetByIdAsync(id, cancellationToken);
         if (series is null)
@@ -149,7 +199,81 @@ public sealed class SeriesService(ISeriesStorage storage, IUnitOfWork unitOfWork
         series.Communicate(validationCode.Trim(), DateTime.UtcNow);
         await unitOfWork.SaveChangesAsync(cancellationToken);
 
+        logger.LogInformation("Series '{SeriesCode}' communicated manually.", series.SeriesCode);
+
         return Map(series);
+    }
+
+    /// <summary>
+    /// Cancels a series communicated by mistake. Only possible before any document was issued on
+    /// it — the domain guard on <see cref="Domain.Series.Cancel"/> is what makes the
+    /// "declaracaoNaoEmissao" sent to AT below actually true.
+    /// </summary>
+    public async Task<SeriesListItemDto?> CancelAsync(Guid id, CancellationToken cancellationToken = default)
+    {
+        var series = await storage.GetByIdAsync(id, cancellationToken);
+        if (series is null)
+            return null;
+
+        if (series.Status != SeriesStatus.Communicated)
+        {
+            throw new InvalidOperationException(
+                $"Series '{series.SeriesCode}': only a communicated series with no document issued yet can be cancelled.");
+        }
+
+        var credentials = await GetCredentialsAsync(series.CompanyId, cancellationToken);
+
+        var request = new AtSeriesCancellationRequest(
+            Serie: series.SeriesCode,
+            ClasseDoc: SeriesDocumentClasses.For(series.DocumentType),
+            TipoDoc: series.DocumentType,
+            CodValidacaoSerie: series.ValidationCode!,
+            Motivo: "ER", // The only reason code AT documents: "Anulação por erro de registo".
+            DeclaracaoNaoEmissao: true);
+
+        await atSeriesClient.CancelAsync(request, credentials, cancellationToken);
+
+        series.Cancel(DateTime.UtcNow);
+        await unitOfWork.SaveChangesAsync(cancellationToken);
+
+        logger.LogInformation("Series '{SeriesCode}' cancelled with AT.", series.SeriesCode);
+
+        return Map(series);
+    }
+
+    public async Task<SeriesListItemDto?> FinalizeAsync(Guid id, string? justificacao, CancellationToken cancellationToken = default)
+    {
+        var series = await storage.GetByIdAsync(id, cancellationToken);
+        if (series is null)
+            return null;
+
+        var credentials = await GetCredentialsAsync(series.CompanyId, cancellationToken);
+
+        var request = new AtSeriesFinalizationRequest(
+            Serie: series.SeriesCode,
+            ClasseDoc: SeriesDocumentClasses.For(series.DocumentType),
+            TipoDoc: series.DocumentType,
+            CodValidacaoSerie: series.ValidationCode!,
+            SeqUltimoDocEmitido: series.CurrentSequence,
+            Justificacao: justificacao);
+
+        await atSeriesClient.FinalizeAsync(request, credentials, cancellationToken);
+
+        series.Finalize(DateTime.UtcNow);
+        await unitOfWork.SaveChangesAsync(cancellationToken);
+
+        logger.LogInformation("Series '{SeriesCode}' finalized with AT.", series.SeriesCode);
+
+        return Map(series);
+    }
+
+    private async Task<AtCredentials> GetCredentialsAsync(Guid companyId, CancellationToken cancellationToken)
+    {
+        var profile = await atCompanyProfileProvider.GetAsync(companyId, cancellationToken)
+            ?? throw new InvalidOperationException(
+                "This company has no AT WDT credentials configured yet. Set them before communicating a series.");
+
+        return new AtCredentials(profile.TaxId, profile.SubUserId, profile.Password);
     }
 
     /// <summary>
@@ -180,6 +304,9 @@ public sealed class SeriesService(ISeriesStorage storage, IUnitOfWork unitOfWork
             Status = series.Status.ToString(),
             CanIssue = series.CanIssue,
             StockEffect = series.StockEffect.ToString(),
-            SelfBilling = series.SelfBilling
+            SelfBilling = series.SelfBilling,
+            CommunicatedAtUtc = series.CommunicatedAtUtc,
+            FinalizedAtUtc = series.FinalizedAtUtc,
+            CancelledAtUtc = series.CancelledAtUtc
         };
 }

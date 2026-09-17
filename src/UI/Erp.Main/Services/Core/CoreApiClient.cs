@@ -69,6 +69,24 @@ public class CoreApiClient(HttpClient http) : ApiClientBase(http)
             : (null, await ApiResponse.ReadErrorAsync(response, cancellationToken));
     }
 
+    /// <summary>Whether the company has a WDT subutilizador registered for AT transport-document communication.</summary>
+    public async Task<CompanyAtCredentialStatus?> GetCompanyAtCredentialStatusAsync(
+        Guid id, CancellationToken cancellationToken = default)
+    {
+        var response = await Http.GetAsync($"api/companies/{id}/at-credentials", cancellationToken);
+        return response.IsSuccessStatusCode
+            ? await response.Content.ReadFromJsonAsync<CompanyAtCredentialStatus>(cancellationToken)
+            : null;
+    }
+
+    /// <summary>Registers or replaces the company's WDT subutilizador. Write-only: the password is never read back.</summary>
+    public async Task<string?> SetCompanyAtCredentialsAsync(
+        Guid id, SetCompanyAtCredentialsRequest request, CancellationToken cancellationToken = default)
+    {
+        var response = await Http.PutAsJsonAsync($"api/companies/{id}/at-credentials", request, cancellationToken);
+        return response.IsSuccessStatusCode ? null : await ApiResponse.ReadErrorAsync(response, cancellationToken);
+    }
+
     /// <param name="companyId">Limits the result to one company; null returns every membership.</param>
     public async Task<(IReadOnlyList<UserCompanyAdmin> Items, string? Error)> GetUserCompaniesAsync(
         Guid? companyId = null,

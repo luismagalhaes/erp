@@ -55,10 +55,10 @@ public sealed class SigningKeyProvider : ISigningKeyProvider, IDisposable
 
     private RSA LoadKey()
     {
-        if (!string.IsNullOrWhiteSpace(_options.PrivateKeyPem))
+        if (!string.IsNullOrWhiteSpace(_options.SigningKeyPem))
         {
             var configured = RSA.Create();
-            configured.ImportFromPem(_options.PrivateKeyPem);
+            configured.ImportFromPem(_options.SigningKeyPem);
             WarnOnKeySize(configured);
             return configured;
         }
@@ -66,7 +66,7 @@ public sealed class SigningKeyProvider : ISigningKeyProvider, IDisposable
         if (!_options.AllowDevelopmentKeyGeneration)
         {
             throw new InvalidOperationException(
-                "No signing key configured. Set Fiscal:PrivateKeyPem through user secrets or a secret store.");
+                "No signing key configured. Set AT:SigningKeyPem through user secrets or a secret store.");
         }
 
         return LoadOrCreateDevelopmentKey();

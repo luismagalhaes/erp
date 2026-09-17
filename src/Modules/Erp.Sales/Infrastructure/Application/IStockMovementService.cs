@@ -20,8 +20,11 @@ public interface IStockMovementService
     /// </summary>
     Task<StockMovementDetailDto> IssueAsync(CreateStockMovementRequest request, string? userId, CancellationToken cancellationToken = default);
 
-    /// <summary>Records the code returned by the tax authority for this document.</summary>
-    Task<StockMovementDetailDto?> CommunicateAsync(Guid id, string atDocCodeId, CancellationToken cancellationToken = default);
+    /// <summary>
+    /// Sends the document to the AT "Documentos de transporte" webservice and, once accepted,
+    /// records the code it returned. Without it the goods cannot legally start moving.
+    /// </summary>
+    Task<StockMovementDetailDto?> CommunicateAsync(Guid id, CancellationToken cancellationToken = default);
 
     /// <summary>Voids a document without altering the original record.</summary>
     Task<StockMovementDetailDto?> VoidAsync(Guid id, string reason, string? userId, CancellationToken cancellationToken = default);

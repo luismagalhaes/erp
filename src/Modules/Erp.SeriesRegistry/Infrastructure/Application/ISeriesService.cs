@@ -37,8 +37,26 @@ public interface ISeriesService
     Task<SeriesListItemDto?> UpdateAsync(Guid id, UpdateSeriesRequest request, CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Records the validation code returned by the tax authority, which unlocks issuing on
-    /// this series and completes the ATCUD.
+    /// Registers the series with the AT webservice and records the validation code it returns,
+    /// which unlocks issuing on this series and completes the ATCUD.
     /// </summary>
-    Task<SeriesListItemDto?> CommunicateAsync(Guid id, string validationCode, CancellationToken cancellationToken = default);
+    Task<SeriesListItemDto?> CommunicateAsync(Guid id, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Records a validation code obtained outside the webservice — e.g. from the Portal das
+    /// Finanças directly — for when the AT webservice is not reachable or not yet configured.
+    /// </summary>
+    Task<SeriesListItemDto?> CommunicateManuallyAsync(Guid id, string validationCode, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Cancels a series communicated by mistake, before any document was issued on it. Not
+    /// reversible.
+    /// </summary>
+    Task<SeriesListItemDto?> CancelAsync(Guid id, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Tells the AT the series is done: valid for the documents already issued, but not to be used
+    /// again from here on.
+    /// </summary>
+    Task<SeriesListItemDto?> FinalizeAsync(Guid id, string? justificacao, CancellationToken cancellationToken = default);
 }

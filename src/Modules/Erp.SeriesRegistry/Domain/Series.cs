@@ -55,6 +55,8 @@ public sealed class Series
 
     public DateTime? FinalizedAtUtc { get; private set; }
 
+    public DateTime? CancelledAtUtc { get; private set; }
+
     public string? CreatedByUserId { get; set; }
 
     public byte[]? RowVersion { get; set; }
@@ -95,6 +97,20 @@ public sealed class Series
 
         Apply(State.Finalize());
         FinalizedAtUtc = finalizedAtUtc;
+    }
+
+    /// <summary>Cancels a communicated series that has not issued any document yet.</summary>
+    public void Cancel(DateTime cancelledAtUtc)
+    {
+        try
+        {
+            Apply(State.Cancel());
+            CancelledAtUtc = cancelledAtUtc;
+        }
+        catch (InvalidOperationException ex)
+        {
+            throw new InvalidOperationException($"Series '{SeriesCode}': {ex.Message}", ex);
+        }
     }
 
     private void Apply(SeriesState state)

@@ -42,6 +42,11 @@ public sealed record UpdateCompanyRequest(
     string? PostalCode = null,
     string Country = "PT");
 
+/// <summary>The registered WDT subutilizador and when it was set, without the password.</summary>
+public sealed record CompanyAtCredentialStatus(string SubUserId, DateTime UpdatedAtUtc);
+
+public sealed record SetCompanyAtCredentialsRequest(string SubUserId, string Password);
+
 public sealed record IdentityUser(
     string Id,
     string Email,

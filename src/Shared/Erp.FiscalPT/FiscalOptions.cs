@@ -22,10 +22,12 @@ public sealed class FiscalOptions
     public string KeyVersion { get; set; } = "1";
 
     /// <summary>
-    /// Producer RSA private key in PEM format. Never set this in appsettings — it's in the vault
-    /// as FISCAL__PRIVATEKEYPEM, one value per environment.
+    /// Producer RSA private key in PEM format, used to sign documents locally (SAF-T hash chain).
+    /// Never set this in appsettings — it's in the vault as AT__SIGNINGKEYPEM (grouped with the
+    /// other AT-related credentials, not under Fiscal, even though it lives on this options type),
+    /// one value per environment. See <see cref="DependencyInjection.AddFiscalPT"/> for the binding.
     /// </summary>
-    public string? PrivateKeyPem { get; set; }
+    public string? SigningKeyPem { get; set; }
 
     /// <summary>
     /// When no key is configured, allows generating a local development key instead of failing.

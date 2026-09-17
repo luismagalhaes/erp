@@ -1,8 +1,13 @@
+using Erp.FiscalPT;
+using Erp.FiscalPT.AtWebservice;
+using Erp.FiscalPT.AtWebservice.Series;
 using Erp.SeriesRegistry.Application.Services;
 using Erp.SeriesRegistry.Domain;
 using Erp.SeriesRegistry.Infrastructure.Contracts;
 using Erp.SeriesRegistry.Infrastructure.Storage;
 using FluentAssertions;
+using Microsoft.Extensions.Logging.Abstractions;
+using Microsoft.Extensions.Options;
 using NSubstitute;
 using Erp.Common;
 
@@ -17,6 +22,8 @@ public class SeriesUpdateTests
 {
     private readonly ISeriesStorage _storage = Substitute.For<ISeriesStorage>();
     private readonly IUnitOfWork _unitOfWork = Substitute.For<IUnitOfWork>();
+    private readonly IAtSeriesClient _atClient = Substitute.For<IAtSeriesClient>();
+    private readonly IAtCompanyProfileProvider _atProfiles = Substitute.For<IAtCompanyProfileProvider>();
     private readonly Guid _companyId = Guid.NewGuid();
 
     private readonly List<Series> _stored = [];
@@ -31,9 +38,17 @@ public class SeriesUpdateTests
 
         _storage.GetByIdAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>())
             .Returns(call => _stored.FirstOrDefault(x => x.Id == call.ArgAt<Guid>(0)));
+
+        _atProfiles.GetAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>())
+            .Returns(new AtCompanyProfile("123456789", "Acme", "Rua A", "Lisboa", "1000-000", "1", "secret"));
+
+        _atClient.RegisterAsync(Arg.Any<AtSeriesRegistrationRequest>(), Arg.Any<AtCredentials>(), Arg.Any<CancellationToken>())
+            .Returns(new AtSeriesOperationResult(2001, null, "JFTX7RK9", "A"));
     }
 
-    private SeriesService CreateService() => new(_storage, _unitOfWork);
+    private SeriesService CreateService() =>
+        new(_storage, _unitOfWork, _atClient, _atProfiles, NullLogger<SeriesService>.Instance,
+            Options.Create(new FiscalOptions()));
 
     private async Task<SeriesListItemDto> GivenSeries(string documentType = "FT", string code = "FT2026") =>
         await CreateService().CreateAsync(new CreateSeriesRequest(_companyId, documentType, code), "user-1");
@@ -58,7 +73,7 @@ public class SeriesUpdateTests
     public async Task UpdateAsync_leaves_everything_fiscally_relevant_alone()
     {
         var series = await GivenSeries();
-        await CreateService().CommunicateAsync(series.Id, "JFTX7RK9");
+        await CreateService().CommunicateAsync(series.Id);
 
         var updated = await CreateService().UpdateAsync(series.Id, new UpdateSeriesRequest("In"));
 
@@ -77,7 +92,7 @@ public class SeriesUpdateTests
     public async Task UpdateAsync_works_on_a_series_already_communicated()
     {
         var series = await GivenSeries();
-        await CreateService().CommunicateAsync(series.Id, "JFTX7RK9");
+        await CreateService().CommunicateAsync(series.Id);
 
         var updated = await CreateService().UpdateAsync(series.Id, new UpdateSeriesRequest("None"));
 

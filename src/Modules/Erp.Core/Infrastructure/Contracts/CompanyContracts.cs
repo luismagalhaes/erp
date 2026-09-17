@@ -53,6 +53,9 @@ public sealed record CreateCompanyRequest(
     string? PostalCode = null,
     string Country = "PT");
 
+/// <summary>The WDT subutilizador a company registered at the Portal das Finanças. Write-only: there is no matching "get" that returns the password.</summary>
+public sealed record SetCompanyAtCredentialsRequest(string SubUserId, string Password);
+
 public sealed record UpdateCompanyRequest(
     string Name,
     string TaxId,

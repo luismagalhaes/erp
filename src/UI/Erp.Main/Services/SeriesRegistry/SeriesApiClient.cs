@@ -46,10 +46,36 @@ public class SeriesApiClient(HttpClient http) : ApiClientBase(http)
             : (null, await ApiResponse.ReadErrorAsync(response, cancellationToken));
     }
 
-    public async Task<string?> CommunicateSeriesAsync(Guid id, string validationCode, CancellationToken cancellationToken = default)
+    public async Task<string?> CommunicateSeriesAsync(Guid id, CancellationToken cancellationToken = default)
+    {
+        var response = await Http.PostAsync($"api/series/{id}/communicate", null, cancellationToken);
+
+        return response.IsSuccessStatusCode ? null : await ApiResponse.ReadErrorAsync(response, cancellationToken);
+    }
+
+    /// <summary>Records a validation code obtained outside the webservice, e.g. straight from the Portal das Finanças.</summary>
+    public async Task<string?> CommunicateSeriesManuallyAsync(
+        Guid id, string validationCode, CancellationToken cancellationToken = default)
     {
         var response = await Http.PostAsJsonAsync(
-            $"api/series/{id}/communicate", new CommunicateSeriesRequest(validationCode), cancellationToken);
+            $"api/series/{id}/communicate-manually", new CommunicateSeriesManuallyRequest(validationCode), cancellationToken);
+
+        return response.IsSuccessStatusCode ? null : await ApiResponse.ReadErrorAsync(response, cancellationToken);
+    }
+
+    /// <summary>Cancels a series communicated by mistake, before any document was issued on it.</summary>
+    public async Task<string?> CancelSeriesAsync(Guid id, CancellationToken cancellationToken = default)
+    {
+        var response = await Http.PostAsync($"api/series/{id}/cancel", null, cancellationToken);
+
+        return response.IsSuccessStatusCode ? null : await ApiResponse.ReadErrorAsync(response, cancellationToken);
+    }
+
+    public async Task<string?> FinalizeSeriesAsync(
+        Guid id, string? justificacao, CancellationToken cancellationToken = default)
+    {
+        var response = await Http.PostAsJsonAsync(
+            $"api/series/{id}/finalize", new FinalizeSeriesRequest(justificacao), cancellationToken);
 
         return response.IsSuccessStatusCode ? null : await ApiResponse.ReadErrorAsync(response, cancellationToken);
     }

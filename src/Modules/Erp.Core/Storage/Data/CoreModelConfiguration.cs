@@ -26,6 +26,18 @@ public sealed class CoreModelConfiguration : IModuleModelConfiguration
             entity.HasIndex(x => x.TaxId).IsUnique();
         });
 
+        modelBuilder.Entity<CompanyAtCredential>(entity =>
+        {
+            entity.HasKey(x => x.CompanyId);
+            entity.Property(x => x.SubUserId).HasMaxLength(50).IsRequired();
+            entity.Property(x => x.ProtectedPassword).HasMaxLength(1000).IsRequired();
+
+            entity.HasOne(x => x.Company)
+                .WithOne()
+                .HasForeignKey<CompanyAtCredential>(x => x.CompanyId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
         modelBuilder.Entity<UserCompany>(entity =>
         {
             entity.HasKey(x => x.Id);

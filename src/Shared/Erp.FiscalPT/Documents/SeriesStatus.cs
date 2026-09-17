@@ -16,5 +16,10 @@ public enum SeriesStatus : byte
     Active = 2,
 
     /// <summary>Closed and communicated as finished; accepts no further documents.</summary>
-    Finalized = 3
+    Finalized = 3,
+
+    /// <summary>
+    /// Communicated by mistake, then cancelled at the tax authority before any document used it.
+    /// </summary>
+    Cancelled = 4
 }

@@ -452,13 +452,13 @@ Fazer o deploy não chega para o login funcionar — três coisas têm de estar 
 
    | Host | Chaves a preencher em appsettings |
    |---|---|
-   | Erp.Api | `IdentityServer:Authority`, `AT:WebserviceUrl`/`AtcudUrl` |
+   | Erp.Api | `IdentityServer:Authority`, `AT:SeriesUrl`, `AT:TransportDocumentsUrl` |
    | Erp.Identity | `IdentityServer:Authority`, `NotificationService:BaseUrl`, `ServiceAuthentication:Authority`/`ClientId`/`Scope` |
    | Erp.Main | `OidcConfiguration:Authority`/`RedirectUri`/`PostLogoutRedirectUri`, `Services:Api`/`IdentityApi` |
 
    Todas apontam para o **URL real** da Web App de cada peça nesse ambiente (ex. `https://erp-api-staging.azurewebsites.net`), nunca para `localhost` nem para o URL de outro ambiente.
 
-3. **Registar os segredos desse ambiente no cofre** (`ConnectionStrings:*`, `Smtp:*`, `Fiscal:PrivateKeyPem`, `ServiceAuthentication:ClientSecret`, `AdminUser:*`) e as três variáveis de arranque do Infisical como *Application setting* nas Web Apps desse ambiente — ver [Configuração e segredos](#configuração-e-segredos).
+3. **Registar os segredos desse ambiente no cofre** (`ConnectionStrings:*`, `Smtp:*`, `AT:SigningKeyPem`, `ServiceAuthentication:ClientSecret`, `AdminUser:*`) e as três variáveis de arranque do Infisical como *Application setting* nas Web Apps desse ambiente — ver [Configuração e segredos](#configuração-e-segredos).
 
 4. **Registar esse mesmo URL do Erp.Main como cliente autorizado no Identity.** Este é o passo que falta hoje, e que faz o login falhar em staging mesmo com o passo 2 feito: o `RedirectUris`, `PostLogoutRedirectUris` e `AllowedCorsOrigins` do client `blazor-wasm` **não vêm de configuração** — estão fixos em código, em [`Constants.Clients`](src/Identity/Erp.Identity.Common/Constants/Constants.cs#L103-L111) (só `HttpsLocalhost7019`/`HttpLocalhost5191`) e usados em [`SeedData.cs`](src/Identity/Erp.Identity.Storage/Data/SeedData.cs#L160-L162). Como o seed corre em todo o arranque (ver [Como executar](#como-executar)), só esses dois `localhost` ficam autorizados em qualquer ambiente — o Duende recusa qualquer outro `redirect_uri` com *invalid_redirect_uri*, mesmo que o `appsettings.Staging.json` do Erp.Main já aponte para o URL certo. Para um ambiente novo funcionar, isto tem de mudar em código (acrescentar o URL desse ambiente à lista de `Constants.Clients`, ou tornar isto configurável por `appsettings` em vez de fixo) e o Identity tem de ser publicado de novo.
 
@@ -811,7 +811,7 @@ Registo honesto do que ainda não está feito, para evitar surpresas:
 - **Dados mestre no Core** — o catálogo de artigos (com família, subfamília e marca), os clientes, os fornecedores e os armazéns vivem no módulo Core, porque são partilhados: Sales fatura-os, Purchasing vai comprá-los e Inventory reporta-os. Cada documento emitido guarda a sua própria cópia, pelo que editá-los nunca altera o que já foi faturado.
 - **Módulos por implementar** — Accounting e Reporting ainda não existem: entram como pasta de controllers e camadas próprias quando forem escritos. Core, SeriesRegistry, Sales, Inventory, Notification e **Purchasing** estão completos: o [plano de compras](docs/purchasing.md#fases) está todo feito, das encomendas ao custeio.
 - **Menu com links por escrever** — Contabilidade e Relatórios ainda não têm páginas: clicá-las leva a `/not-found`.
-- **Comunicação à AT é manual** — as séries, as guias de transporte e os ficheiros são preparados e validados pelo ERP, mas quem os submete é o utilizador: os *webservices* SOAP da AT não estão integrados. O código de validação da série e o código de circulação da guia registam-se à mão.
+- **Comunicação à AT por webservice: séries e guias de transporte, não tudo o resto** — [`AtSeriesClient`](src/Shared/Erp.FiscalPT/AtWebservice/Series/AtSeriesClient.cs) (registar/anular/finalizar série) e [`AtTransportDocumentClient`](src/Shared/Erp.FiscalPT/AtWebservice/AtTransportDocumentClient.cs) (guias) chamam mesmo a AT, mas exigem credenciais do subutilizador por empresa (`Backoffice → Empresas → AT`) e a chave pública de autenticação da AT no cofre — sem isso os botões "Comunicar à AT" falham. `Consultar Séries` (só leitura) e a comunicação de anulação de uma guia já comunicada ficaram de fora.
 - **Custeio: médio ponderado, não FIFO** — o stock é valorizado ao custo médio ponderado das compras, calculado a partir do razão. O FIFO exigiria guardar camadas de custo e consumi-las por ordem, que é outra estrutura; o médio ponderado tira-se do razão sem nada de novo. O custo da ficha do artigo sobreviveu apenas como recurso último, para artigos que nenhuma compra chegou a custear, e o ficheiro de inventário diz quantas linhas precisaram dele.
 - **Testes de integração só correm no deploy, não em cada PR** — desde que existe a job `integration-tests` (ver [Integração contínua e deploy](#integração-contínua-e-deploy)), [Erp.IntegrationTests](tests/Erp.IntegrationTests/) corre no CI contra uma Azure SQL dedicada, mas só em `workflow_dispatch` — um bug destes só aparece quando alguém pede um deploy, não no PR que o introduziu. Ficou assim porque a base de dados dedicada é paga (o Free tier só cobre uma) e a *fixture* apaga todas as tabelas no arranque, o que exclui usar staging ou correr em paralelo com outro PR. Um SQL Server em contentor no `build-and-test` resolveria isto — sem custo, sem *firewall*, isolado por natureza — mas exige rever a *fixture* (hoje pensada para uma base persistente, não uma efémera por corrida).
 - **DTOs copiados à mão** — o `Erp.Main` mantém a sua própria cópia dos contratos da API em vez de os partilhar. Um campo renomeado de um lado compila do outro e chega em silêncio como `null` ou `Guid.Empty`; já aconteceu mais do que uma vez.
@@ -849,13 +849,15 @@ Os nomes dos secrets no Infisical seguem a convenção de variável de ambiente 
 
 | Host | Fica em `appsettings.*.json` (não secreto) | Vem do cofre |
 |---|---|---|
-| Erp.Api | `IdentityServer:Authority`, `AT:WebserviceUrl`, `AT:AtcudUrl`, `Smtp:Host`/`Port`/`UseSsl`/`FromEmail`/`FromName`, `NotificationWorker:BatchSize`/`PollingIntervalSeconds`, `Fiscal:IssuerTaxId`/`CertificateNumber`/`KeyVersion` | `ConnectionStrings:ErpDb`, `Smtp:UserName`, `Smtp:Password`, `AT:CertificateBase64`, `AT:CertificatePassword`, `Fiscal:PrivateKeyPem`, `ApplicationInsights:ConnectionString` |
+| Erp.Api | `IdentityServer:Authority`, `AT:SeriesUrl`, `AT:TransportDocumentsUrl`, `Smtp:Host`/`Port`/`UseSsl`/`FromEmail`/`FromName`, `NotificationWorker:BatchSize`/`PollingIntervalSeconds`, `Fiscal:IssuerTaxId`/`CertificateNumber`/`KeyVersion` | `ConnectionStrings:ErpDb`, `Smtp:UserName`, `Smtp:Password`, `AT:ClientCertificateBase64`, `AT:ClientCertificatePassword`, `AT:SigningKeyPem`, `AT:PublicKeyPem`, `ApplicationInsights:ConnectionString` |
 | Erp.Identity | `IdentityServer:Authority`, `NotificationService:BaseUrl`, `ServiceAuthentication:Authority`/`ClientId`/`Scope` | `ConnectionStrings:IdentityDb`, `ServiceAuthentication:ClientSecret`, `AdminUser:Email`/`FirstName`/`LastName`/`Password`, `ApplicationInsights:ConnectionString` |
 | Erp.Main | `OidcConfiguration:*`, `Services:Api`/`IdentityApi` | — (`blazor-wasm` é um client público, sem secret) |
 
 `ApplicationInsights:ConnectionString` é opcional em `Erp.Api` e `Erp.Identity`: os dois hosts usam `ILogger`/OpenTelemetry nativos (ver [`Telemetry/OpenTelemetryExtensions.cs`](src/Erp.Api/Telemetry/OpenTelemetryExtensions.cs) em cada um), e só ligam o exportador para o Azure Monitor quando esta chave está preenchida — vazia (como em `appsettings.json`), a app funciona igual, só sem exportar para o Application Insights.
 
-`Fiscal:PrivateKeyPem` e `AT:CertificateBase64`/`CertificatePassword` estão documentados em [`FiscalOptions`](src/Shared/Erp.FiscalPT/FiscalOptions.cs) e [`AtOptions`](src/Shared/Erp.FiscalPT/AtOptions.cs) — cada propriedade que vem do cofre tem um comentário a apontar a chave exata. `AT:CertificateBase64`/`CertificatePassword` ainda não são lidas por código nenhum: são o contrato já preparado para quando a integração com os *webservices* da AT for implementada (ver [Estado atual e limitações conhecidas](#estado-atual-e-limitações-conhecidas)).
+`AT:SigningKeyPem` (propriedade de [`FiscalOptions`](src/Shared/Erp.FiscalPT/FiscalOptions.cs), mas agrupada no cofre com as restantes chaves AT) e `AT:ClientCertificateBase64`/`ClientCertificatePassword`/`PublicKeyPem` (de [`AtOptions`](src/Shared/Erp.FiscalPT/AtOptions.cs)) — cada propriedade que vem do cofre tem um comentário a apontar a chave exata. Os nomes distinguem de quem é cada chave: `AT:ClientCertificateBase64`/`ClientCertificatePassword` é **nossa** — o certificado SSL do produtor de software, que abre a ligação HTTPS e prova que é o teu software a ligar (a AT permite reutilizar o mesmo certificado nos dois webservices). `AT:PublicKeyPem` é **deles** — a chave pública RSA do Sistema de Autenticação do Portal das Finanças, obtida por email junto da AT (`asi-cd@at.gov.pt`) ou na página "Testar Webservice" — cifra o `Nonce`/`Password`/`Created` do cabeçalho WS-Security, **igual nos dois webservices** ([`WsSecurityHeaderBuilder`](src/Shared/Erp.FiscalPT/AtWebservice/Crypto/WsSecurityHeaderBuilder.cs), partilhado por `AtTransportDocumentClient` e `AtSeriesClient`). Ao contrário do certificado (binário, por isso em base64), a chave pública já vem em texto PEM e entra no cofre tal como está.
+
+**A comunicação à AT está implementada para guias de transporte e para séries** ([`AtTransportDocumentClient`](src/Shared/Erp.FiscalPT/AtWebservice/AtTransportDocumentClient.cs), [`AtSeriesClient`](src/Shared/Erp.FiscalPT/AtWebservice/Series/AtSeriesClient.cs)), mas as credenciais do subutilizador (utilizador/senha do Portal das Finanças que assina o cabeçalho SOAP) não vivem no cofre — são **por empresa**, porque cada sujeito passivo cria o seu próprio subutilizador, com as permissões `WDT` (guias) e `WSE` (séries) atribuídas ao mesmo subutilizador. Ficam cifradas na tabela `CompanyAtCredential` via `Microsoft.AspNetCore.DataProtection` ([`CompanyAtCredentialService`](src/Modules/Erp.Core/Application/Services/CompanyAtCredentialService.cs)), geridas em `Backoffice → Empresas → separador AT`. Isto é a única exceção à regra "cada segredo novo vive no cofre" — é um segredo por linha na base de dados, não por ambiente.
 
 A única exceção com *fallback* de desenvolvimento é `ServiceAuthentication:ClientSecret`: se não estiver configurada, o [Program.cs](src/Identity/Erp.Identity/Program.cs) do Identity usa `Constants.Clients.IdentityServiceSecret` **só quando `IsDevelopment()`**, para a máquina local funcionar sem preparação nenhuma. Fora de Development esta chave é obrigatória.
 
@@ -877,10 +879,11 @@ Environments do Infisical: `dev`, `staging` e (quando existir) `prod` — os mes
 | `CONNECTIONSTRINGS__ERPDB` | `Server=(localdb)\MSSQLLocalDB;Database=ErpPortugal;Integrated Security=true;TrustServerCertificate=true;` |
 | `CONNECTIONSTRINGS__IDENTITYDB` | `Server=(localdb)\MSSQLLocalDB;Database=ErpPortugal_Identity;Integrated Security=true;TrustServerCertificate=true;` |
 | `SMTP__USERNAME` / `SMTP__PASSWORD` | Vazio, ou uma conta de teste |
-| `AT__CERTIFICATEBASE64` / `AT__CERTIFICATEPASSWORD` | Vazio até a integração AT existir |
+| `AT__CLIENTCERTIFICATEBASE64` / `AT__CLIENTCERTIFICATEPASSWORD` | Vazio até haver um certificado de testes emitido pela AT |
+| `AT__PUBLICKEYPEM` | Vazio até se pedir a chave à AT — sem ela, comunicar uma guia ou uma série falha com "AT:PublicKeyPem is not configured" |
 | `SERVICEAUTHENTICATION__CLIENTSECRET` | `identity-service-secret` (o mesmo do *fallback* de código) |
 | `ADMINUSER__EMAIL` / `FIRSTNAME` / `LASTNAME` / `PASSWORD` | À escolha de quem administra o ambiente de dev |
-| `FISCAL__PRIVATEKEYPEM` | Vazio — gera/reutiliza sozinho uma chave local em `%LOCALAPPDATA%\Erp\Sales\` |
+| `AT__SIGNINGKEYPEM` | Vazio — gera/reutiliza sozinho uma chave local em `%LOCALAPPDATA%\Erp\Sales\` |
 | `APPLICATIONINSIGHTS__CONNECTIONSTRING` | Vazio — sem Application Insights em dev |
 
 **`staging`** — todas obrigatórias assim que `Infisical:*` estiver configurado nas Web Apps de staging:
@@ -890,10 +893,11 @@ Environments do Infisical: `dev`, `staging` e (quando existir) `prod` — os mes
 | `CONNECTIONSTRINGS__ERPDB` | Connection string da base `free-sql-db-erp`, com uma password **nova** — nunca a que esteve exposta no histórico do git |
 | `CONNECTIONSTRINGS__IDENTITYDB` | idem, base `free-sql-db-erp-identity` |
 | `SMTP__USERNAME` / `SMTP__PASSWORD` | Caixa de correio real de staging |
-| `AT__CERTIFICATEBASE64` / `AT__CERTIFICATEPASSWORD` | Quando a integração AT existir |
+| `AT__CLIENTCERTIFICATEBASE64` / `AT__CLIENTCERTIFICATEPASSWORD` | Certificado SSL de staging emitido pela AT, partilhado pelos dois webservices (séries e guias) |
+| `AT__PUBLICKEYPEM` | Chave pública pedida à AT por email (`asi-cd@at.gov.pt`), partilhada pelos dois webservices |
 | `SERVICEAUTHENTICATION__CLIENTSECRET` | Segredo novo e forte, igual ao que for definido no backoffice para o client `identity-service` (ver acima) |
 | `ADMINUSER__EMAIL` / `FIRSTNAME` / `LASTNAME` / `PASSWORD` | Conta real de quem administra staging, password forte |
-| `FISCAL__PRIVATEKEYPEM` | Chave RSA 1024 bit própria de staging (`openssl genrsa -out staging-key.pem 1024`), nunca partilhada com produção |
+| `AT__SIGNINGKEYPEM` | Chave RSA 1024 bit própria de staging (`openssl genrsa -out staging-key.pem 1024`), nunca partilhada com produção |
 | `APPLICATIONINSIGHTS__CONNECTIONSTRING` | Connection string do recurso Application Insights de staging |
 
 `prod` segue a mesma lista, com os seus próprios valores — nunca os mesmos de staging.

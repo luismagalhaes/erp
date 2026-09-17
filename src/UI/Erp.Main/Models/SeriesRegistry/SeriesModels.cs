@@ -10,7 +10,10 @@ public sealed record SalesSeries(
     string Status,
     bool CanIssue,
     string StockEffect = "None",
-    bool SelfBilling = false);
+    bool SelfBilling = false,
+    DateTime? CommunicatedAtUtc = null,
+    DateTime? FinalizedAtUtc = null,
+    DateTime? CancelledAtUtc = null);
 
 public sealed record CreateSeriesRequest(
     Guid CompanyId,
@@ -21,7 +24,9 @@ public sealed record CreateSeriesRequest(
     string? StockEffect = null,
     bool SelfBilling = false);
 
-public sealed record CommunicateSeriesRequest(string ValidationCode);
+public sealed record FinalizeSeriesRequest(string? Justificacao = null);
+
+public sealed record CommunicateSeriesManuallyRequest(string ValidationCode);
 
 /// <summary>
 /// The only field a series still allows to be changed. Everything else was communicated to the AT

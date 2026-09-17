@@ -19,8 +19,11 @@ public sealed record CreateSeriesRequest(
     string? StockEffect = null,
     bool SelfBilling = false);
 
-/// <param name="ValidationCode">Code returned by the tax authority when the series is registered.</param>
-public sealed record CommunicateSeriesRequest(string ValidationCode);
+/// <param name="Justificacao">Optional notes about why the series is being finalized (AT's "justificação").</param>
+public sealed record FinalizeSeriesRequest(string? Justificacao = null);
+
+/// <param name="ValidationCode">Code obtained outside the webservice, e.g. from the Portal das Finanças directly.</param>
+public sealed record CommunicateSeriesManuallyRequest(string ValidationCode);
 
 /// <summary>
 /// What a series still allows to be changed after it exists, which is very little.
@@ -61,4 +64,10 @@ public sealed record SeriesListItemDto
     public string StockEffect { get; init; } = string.Empty;
 
     public bool SelfBilling { get; init; }
+
+    public DateTime? CommunicatedAtUtc { get; init; }
+
+    public DateTime? FinalizedAtUtc { get; init; }
+
+    public DateTime? CancelledAtUtc { get; init; }
 }

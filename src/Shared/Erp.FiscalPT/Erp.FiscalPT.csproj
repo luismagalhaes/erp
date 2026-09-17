@@ -13,6 +13,8 @@
     <!-- Only for the signing key provider and AddFiscalPT: abstractions, no hosting baggage. -->
     <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="10.*" />
     <PackageReference Include="Microsoft.Extensions.Options.ConfigurationExtensions" Version="10.*" />
+    <!-- For the AT transport-documents SOAP client's typed HttpClient. -->
+    <PackageReference Include="Microsoft.Extensions.Http" Version="10.*" />
   </ItemGroup>
 
   <ItemGroup>

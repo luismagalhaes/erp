@@ -241,6 +241,17 @@
   <data name="CompanyEditor_WarehousesTab" xml:space="preserve"><value>Armazéns</value></data>
   <data name="CompanyEditor_WarehousesTabDisabledHint" xml:space="preserve"><value>Guarde a empresa antes de criar armazéns</value></data>
   <data name="CompanyEditor_WarehousesTabDescription" xml:space="preserve"><value>Onde esta empresa guarda existências. O predefinido é o que os documentos assumem quando não indicam outro.</value></data>
+  <data name="CompanyEditor_AtTab" xml:space="preserve"><value>AT</value></data>
+  <data name="CompanyEditor_AtTabDisabledHint" xml:space="preserve"><value>Guarde a empresa antes de configurar as credenciais AT</value></data>
+  <data name="CompanyEditor_AtTabDescription" xml:space="preserve"><value>Subutilizador WDT que esta empresa criou no Portal das Finanças, usado para comunicar guias de transporte à AT. Cada empresa tem o seu — não é partilhado com as outras.</value></data>
+  <data name="CompanyEditor_AtCredentialsRegistered" xml:space="preserve"><value>Credenciais registadas para o subutilizador {0}, atualizadas em {1}</value></data>
+  <data name="CompanyEditor_AtCredentialsMissing" xml:space="preserve"><value>Esta empresa ainda não tem credenciais AT configuradas. As guias de transporte não podem ser comunicadas até isto ser preenchido.</value></data>
+  <data name="CompanyEditor_AtSubUserIdLabel" xml:space="preserve"><value>Número do subutilizador</value></data>
+  <data name="CompanyEditor_AtSubUserIdHelperText" xml:space="preserve"><value>Só o número, sem o NIF nem a barra — o NIF já é o da empresa acima. Por exemplo "1", não "{NIF}/1"</value></data>
+  <data name="CompanyEditor_AtPasswordLabel" xml:space="preserve"><value>Senha do subutilizador</value></data>
+  <data name="CompanyEditor_AtCredentialsSaved" xml:space="preserve"><value>Credenciais AT guardadas.</value></data>
+  <data name="CompanyEditor_LoadAtCredentialsError" xml:space="preserve"><value>Não foi possível obter o estado das credenciais AT: {0}</value></data>
+  <data name="CompanyEditor_SaveAtCredentialsError" xml:space="preserve"><value>Não foi possível guardar as credenciais AT: {0}</value></data>
   <data name="CompanyEditor_NewWarehouse" xml:space="preserve"><value>Novo armazém</value></data>
   <data name="CompanyEditor_CityColumn" xml:space="preserve"><value>Localidade</value></data>
   <data name="CompanyEditor_DefaultColumn" xml:space="preserve"><value>Predefinido</value></data>
@@ -790,10 +801,20 @@
   <data name="SeriesEditor_DocType_RC" xml:space="preserve"><value>Recibo (regime de IVA de caixa)</value></data>
   <data name="SeriesEditor_DocType_RG" xml:space="preserve"><value>Outros recibos</value></data>
   <data name="SeriesEditor_CommunicationSectionTitle" xml:space="preserve"><value>Comunicação à AT</value></data>
-  <data name="SeriesEditor_CommunicationSectionNotice" xml:space="preserve"><value>Registe aqui o código de validação devolvido pela AT ao comunicar a série. É esse código que forma o ATCUD dos documentos e desbloqueia a emissão.</value></data>
+  <data name="SeriesEditor_CommunicationSectionNotice" xml:space="preserve"><value>Comunique a série à AT para obter o código de validação. É esse código que forma o ATCUD dos documentos e desbloqueia a emissão.</value></data>
   <data name="SeriesEditor_CommunicatedNotice" xml:space="preserve"><value>Série comunicada com o código {0}.</value></data>
-  <data name="SeriesEditor_ValidationCodeLabel" xml:space="preserve"><value>Código de validação</value></data>
-  <data name="SeriesEditor_RegisterCodeButton" xml:space="preserve"><value>Registar código</value></data>
+  <data name="SeriesEditor_CommunicateButton" xml:space="preserve"><value>Comunicar à AT</value></data>
+  <data name="SeriesEditor_CancelSectionTitle" xml:space="preserve"><value>Anular comunicação</value></data>
+  <data name="SeriesEditor_CancelSectionNotice" xml:space="preserve"><value>Anula o registo desta série na AT, por erro. Só é possível enquanto nenhum documento tiver sido emitido com ela, e não é reversível.</value></data>
+  <data name="SeriesEditor_CancelButton" xml:space="preserve"><value>Anular na AT</value></data>
+  <data name="SeriesEditor_CancelSuccess" xml:space="preserve"><value>Série anulada na AT.</value></data>
+  <data name="SeriesEditor_CancelError" xml:space="preserve"><value>Não foi possível anular a série: {0}</value></data>
+  <data name="SeriesEditor_FinalizeSectionTitle" xml:space="preserve"><value>Finalizar série</value></data>
+  <data name="SeriesEditor_FinalizeSectionNotice" xml:space="preserve"><value>Diz à AT que esta série deixa de ser usada a partir do último documento emitido. Os documentos já emitidos continuam válidos.</value></data>
+  <data name="SeriesEditor_JustificationLabel" xml:space="preserve"><value>Observações (opcional)</value></data>
+  <data name="SeriesEditor_FinalizeButton" xml:space="preserve"><value>Finalizar na AT</value></data>
+  <data name="SeriesEditor_FinalizeSuccess" xml:space="preserve"><value>Série finalizada na AT.</value></data>
+  <data name="SeriesEditor_FinalizeError" xml:space="preserve"><value>Não foi possível finalizar a série: {0}</value></data>
   <data name="SeriesEditor_SeriesNotFoundNotice" xml:space="preserve"><value>Série não encontrada nesta empresa.</value></data>
   <data name="SeriesEditor_LoadError" xml:space="preserve"><value>Não foi possível carregar a série: {0}</value></data>
   <data name="SeriesEditor_CreateFailed" xml:space="preserve"><value>Não foi possível criar a série.</value></data>
@@ -804,6 +825,9 @@
   <data name="SeriesEditor_UpdateStockEffectError" xml:space="preserve"><value>Não foi possível alterar o efeito no stock: {0}</value></data>
   <data name="SeriesEditor_ValidationCodeRegisteredSuccess" xml:space="preserve"><value>Código de validação registado.</value></data>
   <data name="SeriesEditor_RegisterCodeError" xml:space="preserve"><value>Não foi possível registar o código: {0}</value></data>
+  <data name="SeriesEditor_ManualCommunicationNotice" xml:space="preserve"><value>Se a AT não estiver acessível, podes registar aqui o código de validação obtido diretamente no Portal das Finanças.</value></data>
+  <data name="SeriesEditor_ValidationCodeLabel" xml:space="preserve"><value>Código de validação</value></data>
+  <data name="SeriesEditor_RegisterCodeButton" xml:space="preserve"><value>Registar código manualmente</value></data>
   <data name="PurchaseOrders_PageTitle" xml:space="preserve"><value>Encomendas a fornecedores</value></data>
   <data name="PurchaseOrders_HeaderTitle" xml:space="preserve"><value>Encomendas</value></data>
   <data name="PurchaseOrders_OpenOnlySwitch" xml:space="preserve"><value>Só por receber</value></data>
@@ -1269,9 +1293,8 @@
   <data name="StockMovementView_TaxLabel" xml:space="preserve"><value>IVA</value></data>
   <data name="StockMovementView_TotalLabel" xml:space="preserve"><value>Total</value></data>
   <data name="StockMovementView_CommunicationTitle" xml:space="preserve"><value>Comunicação à AT</value></data>
-  <data name="StockMovementView_CommunicationHelp" xml:space="preserve"><value>Registe aqui o código que a AT devolve ao comunicar o documento de transporte. Enquanto não existir, a mercadoria não pode circular.</value></data>
-  <data name="StockMovementView_AtCodeLabel" xml:space="preserve"><value>Código atribuído pela AT</value></data>
-  <data name="StockMovementView_RegisterCodeButton" xml:space="preserve"><value>Registar código</value></data>
+  <data name="StockMovementView_CommunicationHelp" xml:space="preserve"><value>Comunique a guia à AT antes de o transporte começar. Enquanto não existir código, a mercadoria não pode circular.</value></data>
+  <data name="StockMovementView_CommunicateButton" xml:space="preserve"><value>Comunicar à AT</value></data>
   <data name="StockMovementView_CommunicatedNotice" xml:space="preserve"><value>Comunicada em {0} UTC com o código</value></data>
   <data name="StockMovementView_QrDataTitle" xml:space="preserve"><value>Dados do código QR</value></data>
   <data name="StockMovementView_VoidMovementTitle" xml:space="preserve"><value>Anular guia</value></data>

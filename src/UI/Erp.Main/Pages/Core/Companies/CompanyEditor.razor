@@ -258,6 +258,48 @@
                         </NoRecordsContent>
                     </MudTable>
                 </MudTabPanel>
+
+                <MudTabPanel Text="@Localizer["CompanyEditor_AtTab"]" Icon="@Icons.Material.Filled.Https" Disabled="IsNew"
+                             ToolTip="@(IsNew ? Localizer["CompanyEditor_AtTabDisabledHint"].Value : null)">
+                    <MudText Typo="Typo.body2" Color="Color.Secondary" Class="mb-4">
+                        @Localizer["CompanyEditor_AtTabDescription"]
+                    </MudText>
+
+                    @if (_atStatus is not null)
+                    {
+                        <MudAlert Severity="Severity.Success" Dense="true" Class="mb-4">
+                            @string.Format(Localizer["CompanyEditor_AtCredentialsRegistered"],
+                                _atStatus.SubUserId, _atStatus.UpdatedAtUtc.ToString("yyyy-MM-dd HH:mm")) UTC.
+                        </MudAlert>
+                    }
+                    else
+                    {
+                        <MudAlert Severity="Severity.Warning" Dense="true" Class="mb-4">
+                            @Localizer["CompanyEditor_AtCredentialsMissing"]
+                        </MudAlert>
+                    }
+
+                    <MudGrid Spacing="3">
+                        <MudItem xs="12" sm="6" md="4">
+                            <MudTextField @bind-Value="_atSubUserId" Label="@Localizer["CompanyEditor_AtSubUserIdLabel"]"
+                                          HelperText="@Localizer["CompanyEditor_AtSubUserIdHelperText"]"
+                                          Variant="Variant.Outlined" Margin="Margin.Dense" />
+                        </MudItem>
+                        <MudItem xs="12" sm="6" md="4">
+                            <MudTextField @bind-Value="_atPassword" Label="@Localizer["CompanyEditor_AtPasswordLabel"]"
+                                          InputType="InputType.Password" Variant="Variant.Outlined" Margin="Margin.Dense" />
+                        </MudItem>
+                    </MudGrid>
+
+                    <MudStack Row="true" Justify="Justify.FlexEnd" Class="mt-4">
+                        <MudButton Variant="Variant.Filled" Color="Color.Primary"
+                                   StartIcon="@Icons.Material.Filled.Save"
+                                   Disabled="@(_workingAt || string.IsNullOrWhiteSpace(_atSubUserId) || string.IsNullOrWhiteSpace(_atPassword))"
+                                   OnClick="SaveAtCredentialsAsync">
+                            @Localizer["Common_SaveButton"]
+                        </MudButton>
+                    </MudStack>
+                </MudTabPanel>
             </MudTabs>
         </MudPaper>
     }
@@ -365,6 +407,11 @@
     private bool _workingWarehouses;
     private List<Warehouse> _warehouses = [];
 
+    private bool _workingAt;
+    private CompanyAtCredentialStatus? _atStatus;
+    private string _atSubUserId = string.Empty;
+    private string _atPassword = string.Empty;
+
     private bool _warehouseOpen;
     private Guid? _warehouseId;
     private string _warehouseCode = string.Empty;
@@ -421,6 +468,7 @@
 
             await LoadUsersAsync();
             await LoadWarehousesAsync();
+            await LoadAtCredentialStatusAsync();
         }
         catch (Exception ex)
         {
@@ -490,6 +538,48 @@
         finally
         {
             _workingWarehouses = false;
+        }
+    }
+
+    private async Task LoadAtCredentialStatusAsync()
+    {
+        try
+        {
+            _atStatus = await CoreApi.GetCompanyAtCredentialStatusAsync(Id!.Value);
+        }
+        catch (Exception ex)
+        {
+            _error = string.Format(Localizer["CompanyEditor_LoadAtCredentialsError"], ex.Message);
+        }
+    }
+
+    private async Task SaveAtCredentialsAsync()
+    {
+        _workingAt = true;
+        _error = null;
+
+        try
+        {
+            var error = await CoreApi.SetCompanyAtCredentialsAsync(
+                Id!.Value, new SetCompanyAtCredentialsRequest(_atSubUserId.Trim(), _atPassword));
+
+            if (error is not null)
+            {
+                _error = error;
+                return;
+            }
+
+            Snackbar.Add(Localizer["CompanyEditor_AtCredentialsSaved"].Value, Severity.Success);
+            _atPassword = string.Empty;
+            await LoadAtCredentialStatusAsync();
+        }
+        catch (Exception ex)
+        {
+            _error = string.Format(Localizer["CompanyEditor_SaveAtCredentialsError"], ex.Message);
+        }
+        finally
+        {
+            _workingAt = false;
         }
     }
 

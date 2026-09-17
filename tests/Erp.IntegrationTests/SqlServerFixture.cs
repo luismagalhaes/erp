@@ -1,5 +1,9 @@
 using Erp.Api.Services;
+using Erp.FiscalPT.AtWebservice;
+using Erp.FiscalPT.AtWebservice.Series;
+using Erp.FiscalPT.AtWebservice.TransportDocuments;
 using Erp.Storage;
+using Microsoft.AspNetCore.DataProtection;
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
@@ -60,6 +64,16 @@ public sealed class SqlServerFixture : IAsyncLifetime
         var services = new ServiceCollection();
         services.AddLogging(logging => logging.SetMinimumLevel(LogLevel.Warning));
         services.AddModules(configuration, allowDevelopmentKeyGeneration: true);
+
+        // CompanyAtCredentialService needs it; Program.cs adds it the same way for the real host.
+        services.AddDataProtection();
+
+        // These tests exercise the ERP's own wiring, not a live SOAP call to the tax authority — the
+        // last registration for each interface wins, overriding the real HTTP-backed ones AddModules
+        // just added.
+        services.AddScoped<IAtSeriesClient, StubAtSeriesClient>();
+        services.AddScoped<IAtTransportDocumentClient, StubAtTransportDocumentClient>();
+        services.AddScoped<IAtCompanyProfileProvider, StubAtCompanyProfileProvider>();
 
         // validateScopes catches a scoped service captured by a singleton, which is the kind of
         // wiring mistake that only shows up under load in production.

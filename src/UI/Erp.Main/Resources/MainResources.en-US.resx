@@ -241,6 +241,17 @@
   <data name="CompanyEditor_WarehousesTab" xml:space="preserve"><value>Warehouses</value></data>
   <data name="CompanyEditor_WarehousesTabDisabledHint" xml:space="preserve"><value>Save the company before creating warehouses</value></data>
   <data name="CompanyEditor_WarehousesTabDescription" xml:space="preserve"><value>Where this company stores stock. The default is what documents assume when none is specified.</value></data>
+  <data name="CompanyEditor_AtTab" xml:space="preserve"><value>AT</value></data>
+  <data name="CompanyEditor_AtTabDisabledHint" xml:space="preserve"><value>Save the company before configuring its AT credentials</value></data>
+  <data name="CompanyEditor_AtTabDescription" xml:space="preserve"><value>The WDT subutilizador this company created at the Portal das Finanças, used to communicate transport documents to the tax authority. Each company has its own — it is not shared with the others.</value></data>
+  <data name="CompanyEditor_AtCredentialsRegistered" xml:space="preserve"><value>Credentials registered for subutilizador {0}, updated on {1}</value></data>
+  <data name="CompanyEditor_AtCredentialsMissing" xml:space="preserve"><value>This company has no AT credentials configured yet. Transport documents cannot be communicated until this is filled in.</value></data>
+  <data name="CompanyEditor_AtSubUserIdLabel" xml:space="preserve"><value>Subutilizador number</value></data>
+  <data name="CompanyEditor_AtSubUserIdHelperText" xml:space="preserve"><value>Just the number, without the tax id or the slash — the tax id is already the company's, above. E.g. "1", not "{TaxId}/1"</value></data>
+  <data name="CompanyEditor_AtPasswordLabel" xml:space="preserve"><value>Subutilizador password</value></data>
+  <data name="CompanyEditor_AtCredentialsSaved" xml:space="preserve"><value>AT credentials saved.</value></data>
+  <data name="CompanyEditor_LoadAtCredentialsError" xml:space="preserve"><value>Could not get the AT credentials status: {0}</value></data>
+  <data name="CompanyEditor_SaveAtCredentialsError" xml:space="preserve"><value>Could not save the AT credentials: {0}</value></data>
   <data name="CompanyEditor_NewWarehouse" xml:space="preserve"><value>New warehouse</value></data>
   <data name="CompanyEditor_CityColumn" xml:space="preserve"><value>City</value></data>
   <data name="CompanyEditor_DefaultColumn" xml:space="preserve"><value>Default</value></data>
@@ -790,10 +801,20 @@
   <data name="SeriesEditor_DocType_RC" xml:space="preserve"><value>Receipt (cash VAT scheme)</value></data>
   <data name="SeriesEditor_DocType_RG" xml:space="preserve"><value>Other receipts</value></data>
   <data name="SeriesEditor_CommunicationSectionTitle" xml:space="preserve"><value>Report to tax authority</value></data>
-  <data name="SeriesEditor_CommunicationSectionNotice" xml:space="preserve"><value>Register here the validation code returned by the tax authority when reporting the series. It is that code that forms the ATCUD of the documents and unlocks issuing.</value></data>
+  <data name="SeriesEditor_CommunicationSectionNotice" xml:space="preserve"><value>Communicate the series to the tax authority to get the validation code. It is that code that forms the ATCUD of the documents and unlocks issuing.</value></data>
   <data name="SeriesEditor_CommunicatedNotice" xml:space="preserve"><value>Series reported with code {0}.</value></data>
-  <data name="SeriesEditor_ValidationCodeLabel" xml:space="preserve"><value>Validation code</value></data>
-  <data name="SeriesEditor_RegisterCodeButton" xml:space="preserve"><value>Register code</value></data>
+  <data name="SeriesEditor_CommunicateButton" xml:space="preserve"><value>Communicate to AT</value></data>
+  <data name="SeriesEditor_CancelSectionTitle" xml:space="preserve"><value>Cancel communication</value></data>
+  <data name="SeriesEditor_CancelSectionNotice" xml:space="preserve"><value>Cancels this series' registration at the tax authority, by mistake. Only possible while no document has been issued with it, and not reversible.</value></data>
+  <data name="SeriesEditor_CancelButton" xml:space="preserve"><value>Cancel at AT</value></data>
+  <data name="SeriesEditor_CancelSuccess" xml:space="preserve"><value>Series cancelled at AT.</value></data>
+  <data name="SeriesEditor_CancelError" xml:space="preserve"><value>Could not cancel the series: {0}</value></data>
+  <data name="SeriesEditor_FinalizeSectionTitle" xml:space="preserve"><value>Finalize series</value></data>
+  <data name="SeriesEditor_FinalizeSectionNotice" xml:space="preserve"><value>Tells the tax authority this series stops being used from the last document issued. Documents already issued remain valid.</value></data>
+  <data name="SeriesEditor_JustificationLabel" xml:space="preserve"><value>Notes (optional)</value></data>
+  <data name="SeriesEditor_FinalizeButton" xml:space="preserve"><value>Finalize at AT</value></data>
+  <data name="SeriesEditor_FinalizeSuccess" xml:space="preserve"><value>Series finalized at AT.</value></data>
+  <data name="SeriesEditor_FinalizeError" xml:space="preserve"><value>Could not finalize the series: {0}</value></data>
   <data name="SeriesEditor_SeriesNotFoundNotice" xml:space="preserve"><value>Series not found for this company.</value></data>
   <data name="SeriesEditor_LoadError" xml:space="preserve"><value>Unable to load the series: {0}</value></data>
   <data name="SeriesEditor_CreateFailed" xml:space="preserve"><value>Unable to create the series.</value></data>
@@ -804,6 +825,9 @@
   <data name="SeriesEditor_UpdateStockEffectError" xml:space="preserve"><value>Unable to change the stock effect: {0}</value></data>
   <data name="SeriesEditor_ValidationCodeRegisteredSuccess" xml:space="preserve"><value>Validation code registered.</value></data>
   <data name="SeriesEditor_RegisterCodeError" xml:space="preserve"><value>Unable to register the code: {0}</value></data>
+  <data name="SeriesEditor_ManualCommunicationNotice" xml:space="preserve"><value>If the tax authority is not reachable, you can register here the validation code obtained directly from the Portal das Finanças.</value></data>
+  <data name="SeriesEditor_ValidationCodeLabel" xml:space="preserve"><value>Validation code</value></data>
+  <data name="SeriesEditor_RegisterCodeButton" xml:space="preserve"><value>Register code manually</value></data>
   <data name="PurchaseOrders_PageTitle" xml:space="preserve"><value>Purchase orders</value></data>
   <data name="PurchaseOrders_HeaderTitle" xml:space="preserve"><value>Orders</value></data>
   <data name="PurchaseOrders_OpenOnlySwitch" xml:space="preserve"><value>Pending only</value></data>
@@ -1269,9 +1293,8 @@
   <data name="StockMovementView_TaxLabel" xml:space="preserve"><value>Tax</value></data>
   <data name="StockMovementView_TotalLabel" xml:space="preserve"><value>Total</value></data>
   <data name="StockMovementView_CommunicationTitle" xml:space="preserve"><value>Tax authority communication</value></data>
-  <data name="StockMovementView_CommunicationHelp" xml:space="preserve"><value>Register here the code returned by the tax authority when communicating the transport document. Until it exists, goods cannot be transported.</value></data>
-  <data name="StockMovementView_AtCodeLabel" xml:space="preserve"><value>Code assigned by the tax authority</value></data>
-  <data name="StockMovementView_RegisterCodeButton" xml:space="preserve"><value>Register code</value></data>
+  <data name="StockMovementView_CommunicationHelp" xml:space="preserve"><value>Communicate the document to the tax authority before transport begins. Until a code exists, goods cannot be transported.</value></data>
+  <data name="StockMovementView_CommunicateButton" xml:space="preserve"><value>Communicate to AT</value></data>
   <data name="StockMovementView_CommunicatedNotice" xml:space="preserve"><value>Communicated on {0} UTC with code</value></data>
   <data name="StockMovementView_QrDataTitle" xml:space="preserve"><value>QR code data</value></data>
   <data name="StockMovementView_VoidMovementTitle" xml:space="preserve"><value>Void waybill</value></data>

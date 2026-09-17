@@ -113,7 +113,7 @@ public sealed class CompanyScenario(SqlServerFixture fixture)
                     StockEffect: stockEffect),
                 "user-1");
 
-            await series.CommunicateAsync(created.Id, "JFTX7RK9");
+            await series.CommunicateAsync(created.Id);
 
             return created.Id;
         });

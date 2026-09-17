@@ -48,10 +48,6 @@ public sealed class AtTransportDocumentClient(
         var envelope = BuildEnvelope(header, request);
         var envelopeXml = envelope.ToString(SaveOptions.DisableFormatting);
 
-        // Temporary: lets you paste the exact request into AT's "Testar Webservice" page to isolate
-        // whether a rejection is the envelope/crypto or something else. Remove once confirmed working.
-        logger.LogInformation("AT transport document request body: {Body}", envelopeXml);
-
         using var content = new StringContent(envelopeXml, Encoding.UTF8, "text/xml");
         using var httpRequest = new HttpRequestMessage(HttpMethod.Post, string.Empty) { Content = content };
         httpRequest.Headers.TryAddWithoutValidation("SOAPAction", $"\"{Tns.NamespaceName}\"");

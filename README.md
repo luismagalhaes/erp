@@ -74,14 +74,88 @@ As pastas `Application` e `Storage` expõem cada uma um `DependencyInjection.cs`
 
 O preço a conhecer: o `Erp.Sales` referencia o `Erp.Inventory` inteiro, e já não apenas as suas interfaces. O compilador deixou de garantir que um módulo só toca no contrato do outro — passou a convenção, e o `IStockRecorder` continua a ser a forma certa de o fazer.
 
+```mermaid
+graph TB
+    subgraph API["Erp.Api — host dos módulos de negócio"]
+        direction TB
+        Core["Erp.Core<br/>empresas · produtos · clientes<br/>fornecedores · armazéns"]
+        Series["Erp.SeriesRegistry<br/>séries · ATCUD"]
+        Sales["Erp.Sales<br/>faturas · guias · recibos"]
+        Purchasing["Erp.Purchasing<br/>encomendas · receção<br/>faturas de fornecedor"]
+        Inventory["Erp.Inventory<br/>stock · custeio"]
+        Notification["Erp.Notification<br/>fila de emails"]
+
+        Sales --> Series
+        Sales --> Inventory
+        Purchasing --> Series
+        Purchasing --> Inventory
+    end
+
+    subgraph Shared["Shared"]
+        FiscalPT["Erp.FiscalPT<br/>assinatura · SAF-T<br/>webservices da AT"]
+        Storage["Erp.Storage<br/>AppDbContext · UnitOfWork"]
+    end
+
+    Sales -.-> FiscalPT
+    Purchasing -.-> FiscalPT
+    Series -.-> FiscalPT
+    Core -.-> Storage
+    Sales -.-> Storage
+    Purchasing -.-> Storage
+    Inventory -.-> Storage
+    Notification -.-> Storage
+
+    Main["Erp.Main<br/>Blazor Server"] -->|"REST + OData<br/>JWT Bearer"| API
+    Identity["Erp.Identity<br/>Duende IdentityServer"]
+
+    Main -->|OIDC| Identity
+    API -.->|valida o token| Identity
+    Identity -->|"client credentials<br/>enfileirar email"| Notification
 ```
-Erp.Main (Blazor Server)  ──OIDC──►  Erp.Identity (Duende IdentityServer)
-        │                                      │  + API de utilizadores
-        │ access token (Bearer)                │
-        ▼                                      ▼
-Erp.Api  ─── Core · SeriesRegistry · Sales · Inventory · Purchasing · Notification ──►  SQL Server
-   (JWT Bearer, um audience, scopes globais de leitura e escrita)
+
+**Módulos → `Erp.FiscalPT`/`Erp.Storage` (tracejado)** é dependência de biblioteca partilhada, não chamada de rede — os três hosts continuam a correr como processos separados, ligados só pelas setas cheias (OIDC, REST/OData, client credentials).
+
+### Ligações em runtime
+
+Para além da estrutura de código, isto é o que liga a instâncias reais fora do repositório — útil para perceber o que falha quando falta um secret ou um serviço externo está em baixo:
+
+```mermaid
+graph LR
+    Browser(["Utilizador<br/>(browser)"])
+    Main["Erp.Main"]
+    Identity["Erp.Identity"]
+    Api["Erp.Api"]
+    ErpDB[("ErpDb")]
+    IdentityDB[("IdentityDb")]
+    ATSeries["AT — SeriesWSService<br/>(SOAP)"]
+    ATTransport["AT — Documentos de<br/>Transporte (SOAP)"]
+    SMTP["SMTP<br/>(Brevo, via MailKit)"]
+    Vault[["Infisical<br/>(cofre de segredos)"]]
+    AppInsights["Application Insights<br/>(OpenTelemetry)"]
+
+    Browser <--> Main
+    Browser -->|login| Identity
+    Main -->|"REST/OData<br/>JWT Bearer"| Api
+    Api -.->|valida o JWT| Identity
+    Identity -->|"client credentials<br/>enfileirar email"| Api
+
+    Api --> ErpDB
+    Identity --> IdentityDB
+
+    Api -->|"SOAP + WS-Security<br/>certificado cliente"| ATSeries
+    Api -->|"SOAP + WS-Security<br/>certificado cliente"| ATTransport
+
+    Api -->|SMTP| SMTP
+
+    Api -.->|segredos no arranque| Vault
+    Identity -.->|segredos no arranque| Vault
+    Main -.->|segredos no arranque| Vault
+
+    Api -.->|telemetria| AppInsights
+    Identity -.->|telemetria| AppInsights
 ```
+
+As credenciais para `SeriesWSService` e `Documentos de Transporte` são **por empresa** (`CompanyAtCredential`, ver [Configuração e segredos](#configuração-e-segredos)); o certificado cliente e a chave pública de cifra são partilhados pela instalação inteira.
 
 ---
 
@@ -144,7 +218,7 @@ O `Erp.Sales` e o `Erp.Purchasing` referenciam o `Erp.Inventory`, para que emiti
 |---|---|
 | [Erp.Common](src/Shared/Erp.Common/) | Constantes que descrevem o contrato do access token — roles, claims, scopes e api resources — partilhadas pela `Erp.Api` e pelo `Erp.Main`, para não dependerem de um projeto do Identity. E o `IUnitOfWork`, que os serviços usam para gravar e abrir transações sem saberem que existe EF Core. |
 | [Erp.Storage](src/Shared/Erp.Storage/) | O `AppDbContext` que todos os módulos de negócio partilham, as migrations e o `IModuleModelConfiguration` com que cada módulo declara as suas tabelas. Não referencia módulo nenhum. |
-| [Erp.FiscalPT](src/Shared/Erp.FiscalPT/) | Primitivas de fiscalidade portuguesa sem dependências de infraestrutura: string e assinatura RSA dos documentos, ATCUD, número de documento, mensagem e imagem do código QR, arredondamento fiscal, e os geradores e validadores do **SAF-T (PT)** e do **ficheiro de inventário**, com os XSD oficiais embebidos. |
+| [Erp.FiscalPT](src/Shared/Erp.FiscalPT/) | Primitivas de fiscalidade portuguesa: string e assinatura RSA dos documentos, ATCUD, número de documento, mensagem e imagem do código QR, arredondamento fiscal, os geradores e validadores do **SAF-T (PT)** e do **ficheiro de inventário** (com os XSD oficiais embebidos), e os clientes SOAP dos webservices da AT ([`AtWebservice/Series`](src/Shared/Erp.FiscalPT/AtWebservice/Series/), [`AtWebservice/TransportDocuments`](src/Shared/Erp.FiscalPT/AtWebservice/TransportDocuments/)) — esta última parte é que traz uma dependência real de infraestrutura (`HttpClient`), ao contrário do resto da biblioteca. |
 
 ### Notification
 
@@ -539,6 +613,9 @@ Emite também os **recibos** — `RC` (regime de IVA de caixa) e `RG` (restantes
 | `POST` | `/api/series` | `Admin` |
 | `PUT` | `/api/series/{id}` | `Admin` |
 | `POST` | `/api/series/{id}/communicate` | `Admin` |
+| `POST` | `/api/series/{id}/communicate-manually` | `Admin` |
+| `POST` | `/api/series/{id}/cancel` | `Admin` |
+| `POST` | `/api/series/{id}/finalize` | `Admin` |
 
 O acesso é por **scope** do token (políticas em [Policies.cs](src/Erp.Api/Services/Policies.cs)); a gestão de séries não depende do scope mas sim da role `SuperAdmin`, através da política `Admin`. Não existe endpoint de alteração nem de remoção de documentos: correções fazem-se por documento retificativo e a anulação escreve um registo de mudança de estado.
 
@@ -700,7 +777,7 @@ O scope de envio é deliberadamente separado de `erp.read` e `erp.write`: o clie
 
 O segredo que o Identity apresenta vem de `ServiceAuthentication:ClientSecret` (user secrets ou cofre — ver [Configuração e segredos](#configuração-e-segredos)). Em desenvolvimento, se não estiver configurado, cai no valor de `Constants.Clients.IdentityServiceSecret` para a máquina local funcionar sem preparação. **O lado do Identity Server não segue essa mesma regra**: o [SeedData](src/Identity/Erp.Identity.Storage/Data/SeedData.cs) cria o client `identity-service` sem nenhum secret — tem de ser definido manualmente no backoffice (Clients → identity-service) em cada ambiente, com o mesmo valor que for registado em `ServiceAuthentication:ClientSecret` nesse ambiente. Sem isto, o envio de email por recuperação de password falha com 401.
 
-O envio efetivo é feito pelo [`EmailQueueWorker`](src/Modules/Erp.Notification/Application/Services/EmailQueueWorker.cs), um `BackgroundService` registado em `AddNotificationApplication` que corre dentro do próprio `Erp.Api` e drena a fila no intervalo definido em `NotificationWorker:PollingIntervalSeconds`. Uma falha de entrega marca a notificação como `Failed` com o erro e incrementa as tentativas, sem parar o ciclo.
+O [`EmailQueueWorker`](src/Modules/Erp.Notification/Application/Services/EmailQueueWorker.cs), um `BackgroundService` registado em `AddNotificationApplication`, corre dentro do próprio `Erp.Api` e drena a fila no intervalo definido em `NotificationWorker:PollingIntervalSeconds` — mas só trata do ciclo/intervalo: o envio em si é do [`NotificationProcessingService`](src/Modules/Erp.Notification/Application/Services/NotificationProcessingService.cs), que chama o [`SmtpEmailSender`](src/Modules/Erp.Notification/Application/Services/SmtpEmailSender.cs) (MailKit) por notificação pendente. Uma falha de entrega marca a notificação como `Failed` com o erro e incrementa as tentativas, sem parar o ciclo.
 
 ---
 
@@ -811,11 +888,11 @@ Registo honesto do que ainda não está feito, para evitar surpresas:
 - **Dados mestre no Core** — o catálogo de artigos (com família, subfamília e marca), os clientes, os fornecedores e os armazéns vivem no módulo Core, porque são partilhados: Sales fatura-os, Purchasing vai comprá-los e Inventory reporta-os. Cada documento emitido guarda a sua própria cópia, pelo que editá-los nunca altera o que já foi faturado.
 - **Módulos por implementar** — Accounting e Reporting ainda não existem: entram como pasta de controllers e camadas próprias quando forem escritos. Core, SeriesRegistry, Sales, Inventory, Notification e **Purchasing** estão completos: o [plano de compras](docs/purchasing.md#fases) está todo feito, das encomendas ao custeio.
 - **Menu com links por escrever** — Contabilidade e Relatórios ainda não têm páginas: clicá-las leva a `/not-found`.
-- **Comunicação à AT por webservice: séries e guias de transporte, não tudo o resto** — [`AtSeriesClient`](src/Shared/Erp.FiscalPT/AtWebservice/Series/AtSeriesClient.cs) (registar/anular/finalizar série) e [`AtTransportDocumentClient`](src/Shared/Erp.FiscalPT/AtWebservice/AtTransportDocumentClient.cs) (guias) chamam mesmo a AT, mas exigem credenciais do subutilizador por empresa (`Backoffice → Empresas → AT`) e a chave pública de autenticação da AT no cofre — sem isso os botões "Comunicar à AT" falham. `Consultar Séries` (só leitura) e a comunicação de anulação de uma guia já comunicada ficaram de fora.
+- **Comunicação à AT por webservice: séries e guias de transporte, não tudo o resto** — [`AtSeriesClient`](src/Shared/Erp.FiscalPT/AtWebservice/Series/AtSeriesClient.cs) (registar/anular/finalizar série) e [`AtTransportDocumentClient`](src/Shared/Erp.FiscalPT/AtWebservice/TransportDocuments/AtTransportDocumentClient.cs) (guias) chamam mesmo a AT, mas exigem credenciais do subutilizador por empresa (`Backoffice → Empresas → AT`) e a chave pública de autenticação da AT no cofre — sem isso os botões "Comunicar à AT" falham. A comunicação de séries também aceita um registo manual do código de validação (`POST /api/series/{id}/communicate-manually`), para quando a AT não está acessível — as guias, por agora, não têm esse recurso. `Consultar Séries` (só leitura) e a comunicação de anulação de uma guia já comunicada ficaram de fora.
 - **Custeio: médio ponderado, não FIFO** — o stock é valorizado ao custo médio ponderado das compras, calculado a partir do razão. O FIFO exigiria guardar camadas de custo e consumi-las por ordem, que é outra estrutura; o médio ponderado tira-se do razão sem nada de novo. O custo da ficha do artigo sobreviveu apenas como recurso último, para artigos que nenhuma compra chegou a custear, e o ficheiro de inventário diz quantas linhas precisaram dele.
 - **Testes de integração só correm no deploy, não em cada PR** — desde que existe a job `integration-tests` (ver [Integração contínua e deploy](#integração-contínua-e-deploy)), [Erp.IntegrationTests](tests/Erp.IntegrationTests/) corre no CI contra uma Azure SQL dedicada, mas só em `workflow_dispatch` — um bug destes só aparece quando alguém pede um deploy, não no PR que o introduziu. Ficou assim porque a base de dados dedicada é paga (o Free tier só cobre uma) e a *fixture* apaga todas as tabelas no arranque, o que exclui usar staging ou correr em paralelo com outro PR. Um SQL Server em contentor no `build-and-test` resolveria isto — sem custo, sem *firewall*, isolado por natureza — mas exige rever a *fixture* (hoje pensada para uma base persistente, não uma efémera por corrida).
 - **DTOs copiados à mão** — o `Erp.Main` mantém a sua própria cópia dos contratos da API em vez de os partilhar. Um campo renomeado de um lado compila do outro e chega em silêncio como `null` ou `Guid.Empty`; já aconteceu mais do que uma vez.
-- **SMTP por configurar** — sem `Smtp:Host` e `Smtp:FromEmail`, o `EmailQueueWorker` marca os emails como `Failed` com essa mensagem. É visível no backoffice de notificações e resolve-se com configuração, não com código.
+- **SMTP configurado em dev/staging, não em produção** — o envio usa MailKit ([`SmtpEmailSender`](src/Modules/Erp.Notification/Application/Services/SmtpEmailSender.cs)); sem `Smtp:Host` ou `Smtp:FromEmail`, recusa-se com uma mensagem própria para cada um (`"Smtp:Host is not configured."` / `"Smtp:FromEmail is not configured."`, verifica o `Host` primeiro), capturada pelo [`NotificationProcessingService`](src/Modules/Erp.Notification/Application/Services/NotificationProcessingService.cs) que marca a notificação como `Failed` — o `EmailQueueWorker` só trata do intervalo de repetição, não do envio em si. `appsettings.Development.json`/`Staging.json` já têm `Smtp:Host`/`FromEmail` reais; `appsettings.Production.json` está vazio, por isso em produção isto só funciona se o cofre tiver as duas chaves — hoje só `Smtp:UserName`/`Password` estão documentadas como vindas do cofre. Visível no backoffice de notificações; resolve-se com configuração, não com código.
 - **Constantes duplicadas** — os scopes, roles e claims vivem em [Erp.Common](src/Shared/Erp.Common/Constants.cs), usado pela `Erp.Api` e pelo `Erp.Main`, mas o Identity mantém a sua cópia em `Erp.Identity.Common`. Os valores coincidem, mas alterar só um dos lados põe o seed e a API em desacordo sem erro de compilação.
 - **Cobertura de testes desigual** — a lógica fiscal, a emissão, o stock e os serviços do Core estão cobertos; as camadas Storage (EF Core) e as páginas Blazor não têm testes.
 - **Deploy sem aprovação formal** — o job `deploy` (ver [Integração contínua e deploy](#integração-contínua-e-deploy)) só corre por `workflow_dispatch`, nunca por push, porque **Required reviewers em *environments* do GitHub exige plano Pro/Team/Enterprise para repositórios privados** — no Free essa opção não aparece. A autorização hoje é "só quem tem acesso ao repositório consegue clicar em Run workflow", não uma aprovação registada por outra pessoa. Corrige-se fazendo *upgrade* do plano do GitHub e voltando a gatilhar por `environment:` com *reviewers*.
@@ -857,7 +934,7 @@ Os nomes dos secrets no Infisical seguem a convenção de variável de ambiente 
 
 `AT:SigningKeyPem` (propriedade de [`FiscalOptions`](src/Shared/Erp.FiscalPT/FiscalOptions.cs), mas agrupada no cofre com as restantes chaves AT) e `AT:ClientCertificateBase64`/`ClientCertificatePassword`/`PublicKeyPem` (de [`AtOptions`](src/Shared/Erp.FiscalPT/AtOptions.cs)) — cada propriedade que vem do cofre tem um comentário a apontar a chave exata. Os nomes distinguem de quem é cada chave: `AT:ClientCertificateBase64`/`ClientCertificatePassword` é **nossa** — o certificado SSL do produtor de software, que abre a ligação HTTPS e prova que é o teu software a ligar (a AT permite reutilizar o mesmo certificado nos dois webservices). `AT:PublicKeyPem` é **deles** — a chave pública RSA do Sistema de Autenticação do Portal das Finanças, obtida por email junto da AT (`asi-cd@at.gov.pt`) ou na página "Testar Webservice" — cifra o `Nonce`/`Password`/`Created` do cabeçalho WS-Security, **igual nos dois webservices** ([`WsSecurityHeaderBuilder`](src/Shared/Erp.FiscalPT/AtWebservice/Crypto/WsSecurityHeaderBuilder.cs), partilhado por `AtTransportDocumentClient` e `AtSeriesClient`). Ao contrário do certificado (binário, por isso em base64), a chave pública já vem em texto PEM e entra no cofre tal como está.
 
-**A comunicação à AT está implementada para guias de transporte e para séries** ([`AtTransportDocumentClient`](src/Shared/Erp.FiscalPT/AtWebservice/AtTransportDocumentClient.cs), [`AtSeriesClient`](src/Shared/Erp.FiscalPT/AtWebservice/Series/AtSeriesClient.cs)), mas as credenciais do subutilizador (utilizador/senha do Portal das Finanças que assina o cabeçalho SOAP) não vivem no cofre — são **por empresa**, porque cada sujeito passivo cria o seu próprio subutilizador, com as permissões `WDT` (guias) e `WSE` (séries) atribuídas ao mesmo subutilizador. Ficam cifradas na tabela `CompanyAtCredential` via `Microsoft.AspNetCore.DataProtection` ([`CompanyAtCredentialService`](src/Modules/Erp.Core/Application/Services/CompanyAtCredentialService.cs)), geridas em `Backoffice → Empresas → separador AT`. Isto é a única exceção à regra "cada segredo novo vive no cofre" — é um segredo por linha na base de dados, não por ambiente.
+**A comunicação à AT está implementada para guias de transporte e para séries** ([`AtTransportDocumentClient`](src/Shared/Erp.FiscalPT/AtWebservice/TransportDocuments/AtTransportDocumentClient.cs), [`AtSeriesClient`](src/Shared/Erp.FiscalPT/AtWebservice/Series/AtSeriesClient.cs)), mas as credenciais do subutilizador (utilizador/senha do Portal das Finanças que assina o cabeçalho SOAP) não vivem no cofre — são **por empresa**, porque cada sujeito passivo cria o seu próprio subutilizador, com as permissões `WDT` (guias) e `WSE` (séries) atribuídas ao mesmo subutilizador. Ficam cifradas na tabela `CompanyAtCredential` via `Microsoft.AspNetCore.DataProtection` ([`CompanyAtCredentialService`](src/Modules/Erp.Core/Application/Services/CompanyAtCredentialService.cs)), geridas em `Backoffice → Empresas → separador AT`. Isto é a única exceção à regra "cada segredo novo vive no cofre" — é um segredo por linha na base de dados, não por ambiente.
 
 A única exceção com *fallback* de desenvolvimento é `ServiceAuthentication:ClientSecret`: se não estiver configurada, o [Program.cs](src/Identity/Erp.Identity/Program.cs) do Identity usa `Constants.Clients.IdentityServiceSecret` **só quando `IsDevelopment()`**, para a máquina local funcionar sem preparação nenhuma. Fora de Development esta chave é obrigatória.
 

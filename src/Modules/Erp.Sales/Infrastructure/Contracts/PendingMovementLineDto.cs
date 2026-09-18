@@ -22,6 +22,7 @@ public sealed record PendingMovementLineDto(
     decimal InvoicedQuantity,
     decimal PendingQuantity,
     decimal UnitPrice,
+    decimal DiscountPercentage,
     string TaxCountryRegion,
     string TaxCode,
     decimal TaxPercentage,

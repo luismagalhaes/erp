@@ -70,6 +70,7 @@ public sealed class SalesDocumentService(
                         already,
                         entry.line.Quantity - already,
                         entry.line.UnitPrice,
+                        entry.line.DiscountPercentage,
                         entry.line.TaxCountryRegion,
                         entry.line.TaxCode,
                         entry.line.TaxPercentage,

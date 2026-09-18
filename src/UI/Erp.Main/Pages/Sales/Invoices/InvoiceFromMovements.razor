@@ -324,8 +324,19 @@
             line.Selected = false;
     }
 
-    private static decimal LineTotal(PendingLine line) =>
-        line.Selected ? Math.Round(line.Quantity * line.Source.UnitPrice, 2, MidpointRounding.AwayFromZero) : 0m;
+    // Same arithmetic as the API: the discount is taken off the rounded gross amount.
+    private static decimal LineTotal(PendingLine line)
+    {
+        if (!line.Selected)
+            return 0m;
+
+        var gross = Round(line.Quantity * line.Source.UnitPrice);
+        var discount = Round(gross * line.Source.DiscountPercentage / 100m);
+
+        return gross - discount;
+    }
+
+    private static decimal Round(decimal value) => Math.Round(value, 2, MidpointRounding.AwayFromZero);
 
     private async Task IssueAsync()
     {
@@ -353,7 +364,8 @@
                     line.Source.TaxCountryRegion,
                     line.Source.TaxExemptionCode,
                     line.Source.TaxExemptionReason,
-                    line.Source.LineId))]);
+                    line.Source.LineId,
+                    line.Source.DiscountPercentage))]);
 
             var (invoice, error) = await SalesApi.IssueInvoiceAsync(request);
 

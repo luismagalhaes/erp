@@ -1,3 +1,4 @@
+@using Microsoft.AspNetCore.Components.Web
 @using MudBlazor
 @using Erp.Common
 @using Erp.Main.Models.Core
@@ -10,24 +11,72 @@
 @*
     A postal code that follows the country. For Portugal the box only takes digits and writes the
     dash itself — XXXX-XXX, the shape the SAF-T and the API require; any other country is free text.
+
+    The lookup fires three ways, and only three: Enter, the search icon, or the code reaching the
+    complete "0000-000" shape on its own. Not on every keystroke before that — with a Mask, every
+    keystroke round-trips to the server to reformat the text (Blazor Server has no client-side
+    masking of its own), and a round trip on every single one reset the caret to the start on the
+    way back: typing "4000123" one digit at a time came back as "0004-" or similar, each new digit
+    landing before the last instead of after it. A debounce means that round trip normally only
+    happens once typing pauses — usually right as the code is finished — instead of after every
+    character, which is what keeps typing continuous while still catching a completed code quickly.
+
+    Also bound to a *local* field, not straight to the Value parameter, so a value that comes back
+    down after a round trip is never mistaken for an unrelated external change.
+
+    A resolved code that moradas.dev also has streets for opens a drawer listing them; picking one
+    raises StreetSelected with the street (and its door-number segment, if it has one) already
+    joined into one line, for the parent to drop into its own address field — this component has no
+    address field of its own to fill.
 *@
 @if (PostalCodes.IsPortugal(Country))
 {
-    <MudTextField T="string" Value="@Value" ValueChanged="OnChangedAsync" Immediate="true"
+    <MudTextField T="string" @bind-Value="_displayValue" @bind-Value:after="OnChangedAsync"
+                  Immediate="true" DebounceInterval="500"
                   Label="@Label" Variant="Variant.Outlined" Margin="Margin.Dense"
                   Mask="@_portugueseMask" Placeholder="@PostalCodes.PortugalMask.Replace('0', 'X')"
-                  Error="@(!PostalCodes.IsValid(Value, Country))"
-                  ErrorText="@Localizer["PostalCode_PortugalFormatError"]" />
+                  Error="@(!PostalCodes.IsValid(_displayValue, Country))"
+                  ErrorText="@Localizer["PostalCode_PortugalFormatError"]"
+                  Adornment="Adornment.End" AdornmentIcon="@Icons.Material.Filled.Search"
+                  OnAdornmentClick="LookupNowAsync" AdornmentAriaLabel="@Localizer["PostalCode_LookupTooltip"]"
+                  OnKeyDown="OnKeyDownAsync" />
+
+    @* Only a resolved PT code can have streets to offer, so the drawer lives in this branch. *@
+    <MudDrawer @bind-Open="_streetsDrawerOpen" Anchor="Anchor.End" Elevation="2"
+               Variant="DrawerVariant.Temporary" Width="320px">
+        <MudDrawerHeader>
+            <div>
+                <MudText Typo="Typo.h6">@Localizer["PostalCode_StreetsDrawerTitle"]</MudText>
+                <MudText Typo="Typo.body2" Class="mud-text-secondary">@Localizer["PostalCode_StreetsDrawerHint"]</MudText>
+            </div>
+        </MudDrawerHeader>
+        <MudList T="PostalCodeStreet">
+            @foreach (var street in _streets)
+            {
+                <MudListItem T="PostalCodeStreet" Value="@street" OnClick="@(() => SelectStreetAsync(street))">
+                    <MudText>@street.Name</MudText>
+                    @if (!string.IsNullOrWhiteSpace(street.Segment))
+                    {
+                        <MudText Typo="Typo.caption" Class="mud-text-secondary">@street.Segment</MudText>
+                    }
+                </MudListItem>
+            }
+        </MudList>
+    </MudDrawer>
 }
 else
 {
-    <MudTextField T="string" Value="@Value" ValueChanged="OnChangedAsync"
+    <MudTextField T="string" @bind-Value="_displayValue" @bind-Value:after="OnChangedAsync"
                   Label="@Label" Variant="Variant.Outlined" Margin="Margin.Dense" />
 }
 
 @code {
     private readonly PatternMask _portugueseMask = new(PostalCodes.PortugalMask);
     private string? _lastLookedUp;
+    private string? _displayValue;
+    private string? _lastEmittedValue;
+    private bool _streetsDrawerOpen;
+    private IReadOnlyList<PostalCodeStreet> _streets = [];
 
     [Parameter] public string? Value { get; set; }
 
@@ -39,27 +88,76 @@ else
     [Parameter] public string? Label { get; set; }
 
     /// <summary>
-    /// Raised once a complete "0000-000" code resolves to an address via geoapi.pt, so the parent
+    /// Raised once a complete "0000-000" code resolves to an address via moradas.dev, so the parent
     /// can fill in locality/city. Never raised for a code with no match, or for a non-PT country.
     /// </summary>
     [Parameter] public EventCallback<PostalCodeLookupResult> LookupResolved { get; set; }
 
-    private async Task OnChangedAsync(string? value)
-    {
-        await ValueChanged.InvokeAsync(value);
+    /// <summary>
+    /// Raised when the user picks a street from the drawer moradas.dev's street list opens, with
+    /// the street (plus its door-number segment, when it has one) already joined into one line the
+    /// parent can drop straight into its address field.
+    /// </summary>
+    [Parameter] public EventCallback<string> StreetSelected { get; set; }
 
+    protected override void OnParametersSet()
+    {
+        // Only resync from the parent when Value changed for some other reason than this
+        // component's own last edit — the initial load, or a form reset. Otherwise every keystroke
+        // would come back down as a "new" externally driven value and reset the caret to the start.
+        if (Value == _lastEmittedValue)
+            return;
+
+        _displayValue = Value;
+        _lastEmittedValue = Value;
+    }
+
+    private async Task OnChangedAsync()
+    {
+        _lastEmittedValue = _displayValue;
+        await ValueChanged.InvokeAsync(_displayValue);
+
+        // Only a complete, well-formed code is worth a network call, and only once per value —
+        // Enter and the icon cover the case where the user wants it looked up again regardless.
+        if (_displayValue != _lastLookedUp)
+            await LookupNowAsync();
+    }
+
+    private Task OnKeyDownAsync(KeyboardEventArgs args) =>
+        args.Key == "Enter" ? LookupNowAsync() : Task.CompletedTask;
+
+    /// <summary>Runs the lookup for whatever is in the field right now, regardless of whether it
+    /// was already looked up — the icon is an explicit "search this", not just a safety net.</summary>
+    private async Task LookupNowAsync()
+    {
         if (!PostalCodes.IsPortugal(Country) || !LookupResolved.HasDelegate)
             return;
 
-        // Only a complete, well-formed code is worth a network call, and only once per value —
-        // Immediate=true fires on every keystroke, so this is what keeps it from spamming the API.
-        if (string.IsNullOrWhiteSpace(value) || value == _lastLookedUp || !PostalCodes.IsValid(value, Country))
+        if (string.IsNullOrWhiteSpace(_displayValue) || !PostalCodes.IsValid(_displayValue, Country))
             return;
 
-        _lastLookedUp = value;
+        _lastLookedUp = _displayValue;
 
-        var result = await Lookups.GetPostalCodeAsync(value);
-        if (result is not null)
-            await LookupResolved.InvokeAsync(result);
+        var result = await Lookups.GetPostalCodeAsync(_displayValue);
+        if (result is null)
+            return;
+
+        await LookupResolved.InvokeAsync(result);
+
+        // Only worth a drawer when there is something to pick from; a code moradas.dev has no
+        // street data for just resolves the locality/city as before, with no extra prompt.
+        if (result.Streets.Count > 0)
+        {
+            _streets = result.Streets;
+            _streetsDrawerOpen = true;
+        }
+    }
+
+    private async Task SelectStreetAsync(PostalCodeStreet street)
+    {
+        _streetsDrawerOpen = false;
+
+        var address = string.IsNullOrWhiteSpace(street.Segment) ? street.Name : $"{street.Name}, {street.Segment}";
+        await StreetSelected.InvokeAsync(address);
     }
 }

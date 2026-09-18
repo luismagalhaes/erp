@@ -80,6 +80,14 @@
 
     [Parameter] public EventCallback Changed { get; set; }
 
+    /// <summary>
+    /// The Total this component last auto-filled the single method's amount with. Without this, a
+    /// single method's amount was reset to Total on every render — not just when Total actually
+    /// changed — which silently wiped out any different amount the user had just typed, so the
+    /// document could never actually end up mismatched, and the warning below could never show.
+    /// </summary>
+    private decimal? _lastSyncedTotal;
+
     private decimal MethodsTotal => Math.Round(Methods.Sum(method => method.Amount), 2, MidpointRounding.AwayFromZero);
 
     /// <summary>What is still to be covered: positive when money is missing, negative when it is over.</summary>
@@ -105,8 +113,11 @@
         if (Methods.Count == 0)
             Methods.Add(new MethodLine());
 
-        if (Methods.Count == 1)
+        if (Methods.Count == 1 && Total != _lastSyncedTotal)
+        {
             Methods[0].Amount = Total;
+            _lastSyncedTotal = Total;
+        }
     }
 
     private async Task AddAsync()

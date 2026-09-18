@@ -2009,6 +2009,9 @@
   <data name="PaymentMethods_RemoveTitle" xml:space="preserve"><value>Remove payment method</value></data>
   <data name="PaymentMethods_MismatchWarning" xml:space="preserve"><value>The methods add up to {0}, but the document totals {1}.</value></data>
   <data name="PostalCode_PortugalFormatError" xml:space="preserve"><value>The postal code must be XXXX-XXX.</value></data>
+  <data name="PostalCode_LookupTooltip" xml:space="preserve"><value>Look up the address by postal code</value></data>
+  <data name="PostalCode_StreetsDrawerTitle" xml:space="preserve"><value>Streets found</value></data>
+  <data name="PostalCode_StreetsDrawerHint" xml:space="preserve"><value>Pick a street to fill in the address</value></data>
   <data name="NewStockMovement_TotalQuantityDescription" xml:space="preserve"><value>Total quantity: {0}</value></data>
   <data name="PaymentMethods_MissingWarning" xml:space="preserve"><value>The methods add up to {0} of {1}: {2} still missing.</value></data>
   <data name="PaymentMethods_ExcessWarning" xml:space="preserve"><value>The methods add up to {0} of {1}: {2} more than the document.</value></data>

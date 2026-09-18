@@ -8,7 +8,7 @@ namespace Erp.Api.Controllers.Core;
 
 /// <summary>
 /// Free, external master-data lookups shared by the customer/supplier editors: address by
-/// postal code (geoapi.pt) and company data by NIF/NIPC (VIES). Neither call is company-scoped;
+/// postal code (moradas.dev) and company data by NIF/NIPC (VIES). Neither call is company-scoped;
 /// they only ever answer with public data.
 /// </summary>
 [ApiController]

@@ -220,6 +220,19 @@ html, body {
     padding-bottom: 10px;
 }
 
+/* A row of wrapped text turns one long value into a taller row that throws off every other row's
+   height — bad enough on its own with FixedHeader, worse with Virtualize, which assumes a constant
+   ItemSize. Clipped to one line with an ellipsis instead; the column is resizable
+   (ColumnResizeMode="ResizeMode.Column"), so widening it is how the rest becomes visible.
+   max-width: 0 is what makes overflow apply at all here — the cell's real width still comes from
+   the column, since resizing already puts the table in table-layout: fixed. */
+.erp-grid .mud-table-body .mud-table-cell {
+    max-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
 /* MudBlazor paints sticky cells with --mud-palette-background-gray, which makes the pinned
    actions column stand out from the rest of the table. These rules hand the cell back to the
    colours the row and the header already use, so pinning changes the position and nothing else.

@@ -19,4 +19,6 @@ public sealed record VatNumberValidationResult(
     VatNumberValidationSource Source,
     bool? IsRegisteredInVies = null,
     string? RegisteredName = null,
-    string? RegisteredAddress = null);
+    string? RegisteredAddress = null,
+    string? RegisteredPostalCode = null,
+    string? RegisteredCity = null);

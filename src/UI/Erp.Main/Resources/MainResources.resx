@@ -2009,6 +2009,9 @@
   <data name="PaymentMethods_RemoveTitle" xml:space="preserve"><value>Remover meio de pagamento</value></data>
   <data name="PaymentMethods_MismatchWarning" xml:space="preserve"><value>Os meios somam {0}, mas o documento totaliza {1}.</value></data>
   <data name="PostalCode_PortugalFormatError" xml:space="preserve"><value>O código postal tem de ser XXXX-XXX.</value></data>
+  <data name="PostalCode_LookupTooltip" xml:space="preserve"><value>Procurar morada pelo código postal</value></data>
+  <data name="PostalCode_StreetsDrawerTitle" xml:space="preserve"><value>Ruas encontradas</value></data>
+  <data name="PostalCode_StreetsDrawerHint" xml:space="preserve"><value>Escolha uma rua para preencher a morada</value></data>
   <data name="NewStockMovement_TotalQuantityDescription" xml:space="preserve"><value>Quantidade total: {0}</value></data>
   <data name="PaymentMethods_MissingWarning" xml:space="preserve"><value>Os meios somam {0} de {1}: faltam {2}.</value></data>
   <data name="PaymentMethods_ExcessWarning" xml:space="preserve"><value>Os meios somam {0} de {1}: são mais {2} do que o documento.</value></data>

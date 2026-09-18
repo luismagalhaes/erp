@@ -124,7 +124,7 @@
                     </MudItem>
                     <MudItem xs="6" md="3">
                         <PostalCodeField @bind-Value="_customerPostalCode" Country="@_customerCountry"
-                                         LookupResolved="OnCustomerPostalCodeResolvedAsync"
+                                         LookupResolved="OnCustomerPostalCodeResolvedAsync" StreetSelected="OnCustomerStreetSelectedAsync"
                                          Label="@L["PartnerForm_PostalCodeLabel"]" />
                     </MudItem>
                     <MudItem xs="6" md="3">
@@ -156,53 +156,55 @@
                     </HeaderContent>
                     <RowTemplate>
                         <MudTd DataLabel="@L["NewInvoice_ProductColumn"]">
-                            @* Closed, the box shows only the code; the list still spells the article out. *@
-                            <MudSelect T="Guid?" Value="context.ProductId"
-                                       ValueChanged="@(productId => OnProductChanged(context, productId))"
-                                       ToStringFunc="@(id => ProductCode(id))"
-                                       Margin="Margin.Dense" Variant="Variant.Outlined" Clearable="true"
-                                       Placeholder="@L["NewInvoice_FreeProductPlaceholder"]">
-                                @foreach (var product in _products)
-                                {
-                                    <MudSelectItem T="Guid?" Value="@product.Id">@product.ProductCode — @product.Description</MudSelectItem>
-                                }
-                            </MudSelect>
+                            @* Closed, the box shows only the code; typing searches the code and the description too. *@
+                            <MudAutocomplete T="Guid?" Value="context.ProductId"
+                                             ValueChanged="@(productId => OnProductChanged(context, productId))"
+                                             SearchFunc="SearchProductsAsync" ToStringFunc="@(id => ProductCode(id))"
+                                             ResetValueOnEmptyText="true" CoerceText="true"
+                                             Variant="Variant.Text" Margin="Margin.Dense" Dense="true" Clearable="true"
+                                             Placeholder="@L["NewInvoice_FreeProductPlaceholder"]">
+                                <ItemTemplate Context="productId">
+                                    <MudText>@ProductCode(productId) — @ProductDescription(productId)</MudText>
+                                </ItemTemplate>
+                            </MudAutocomplete>
                         </MudTd>
                         <MudTd DataLabel="@L["NewInvoice_DescriptionColumn"]">
-                            <MudTextField @bind-Value="context.ProductDescription" Immediate="true" Margin="Margin.Dense" Variant="Variant.Outlined" />
+                            <MudTextField @bind-Value="context.ProductDescription" Immediate="true" Margin="Margin.Dense" Variant="Variant.Text" />
                         </MudTd>
                         <MudTd DataLabel="@L["NewInvoice_QuantityColumn"]">
                             <MudNumericField T="decimal" Value="context.Quantity" ValueChanged="@(quantity => OnQuantityChanged(context, quantity))"
-                                             Immediate="true" Margin="Margin.Dense" Variant="Variant.Outlined" Min="0" HideSpinButtons="true" />
+                                             Immediate="true" Margin="Margin.Dense" Variant="Variant.Text" Min="0" HideSpinButtons="true" />
                         </MudTd>
                         <MudTd DataLabel="@L["NewInvoice_UnitPriceColumn"]">
-                            <MudNumericField @bind-Value="context.UnitPrice" Immediate="true" Margin="Margin.Dense" Variant="Variant.Outlined" Min="0" Format="N2" HideSpinButtons="true" />
+                            <MudNumericField @bind-Value="context.UnitPrice" Immediate="true" Margin="Margin.Dense" Variant="Variant.Text" Min="0" Format="N2" HideSpinButtons="true" />
                         </MudTd>
                         <MudTd DataLabel="@L["NewInvoice_DiscountColumn"]">
-                            <MudNumericField @bind-Value="context.DiscountPercentage" Immediate="true" Margin="Margin.Dense" Variant="Variant.Outlined"
+                            <MudNumericField @bind-Value="context.DiscountPercentage" Immediate="true" Margin="Margin.Dense" Variant="Variant.Text"
                                              Min="0" Max="100" Format="0.##" HideSpinButtons="true" Adornment="Adornment.End" AdornmentText="%" />
                         </MudTd>
                         <MudTd DataLabel="@L["NewInvoice_TaxColumn"]">
+                            @* Box and list both show the rate alone — the four PT tiers are known by their percentage, not a name. *@
                             <MudSelect T="string" Value="context.TaxCode" ValueChanged="@(code => OnTaxCodeChanged(context, code))"
                                        ToStringFunc="@(code => TaxRateLabel(code))"
-                                       Margin="Margin.Dense" Variant="Variant.Outlined">
+                                       Margin="Margin.Dense" Variant="Variant.Text">
                                 @foreach (var rate in _taxRates)
                                 {
-                                    <MudSelectItem T="string" Value="@rate.Code">@rate.Label (@rate.Percentage.ToString("0.##")%)</MudSelectItem>
+                                    <MudSelectItem T="string" Value="@rate.Code">@rate.Percentage.ToString("0.##")%</MudSelectItem>
                                 }
                             </MudSelect>
                             @if (context.TaxCode == TaxCodes.Exempt)
                             {
-                                @* The AT's table: an exempt line has to cite one of these codes. *@
-                                <MudSelect T="string" @bind-Value="context.ExemptionCode" Margin="Margin.Dense" Variant="Variant.Outlined"
-                                           ToStringFunc="@(code => code)"
-                                           Class="mt-1" Placeholder="@L["NewInvoice_ExemptionCodePlaceholder"]" Required="true"
-                                           Error="@string.IsNullOrWhiteSpace(context.ExemptionCode)">
-                                    @foreach (var reason in TaxExemptionReasons.All)
-                                    {
-                                        <MudSelectItem T="string" Value="@reason.Code">@reason.Code — @reason.Description</MudSelectItem>
-                                    }
-                                </MudSelect>
+                                @* The AT's table: an exempt line has to cite one of these codes; the list keeps the
+                                   description, since the codes alone (M01, M02...) mean nothing to look at. *@
+                                <MudAutocomplete T="string" @bind-Value="context.ExemptionCode"
+                                                 SearchFunc="SearchExemptionReasonsAsync" ToStringFunc="@(code => code ?? string.Empty)"
+                                                 CoerceText="true" Variant="Variant.Text" Margin="Margin.Dense" Dense="true"
+                                                 Class="mt-1" Placeholder="@L["NewInvoice_ExemptionCodePlaceholder"]" Required="true"
+                                                 Error="@string.IsNullOrWhiteSpace(context.ExemptionCode)">
+                                    <ItemTemplate Context="exemptionCode">
+                                        <MudText>@exemptionCode — @ExemptionDescription(exemptionCode)</MudText>
+                                    </ItemTemplate>
+                                </MudAutocomplete>
                             }
                         </MudTd>
                         <MudTd DataLabel="@L["NewInvoice_TotalColumn"]" Style="text-align: right;">@LineAmount(context).ToString("N2")</MudTd>
@@ -307,6 +309,11 @@
     private IReadOnlyList<DocumentTotalsSummary.TaxLine> TaxBreakdown =>
     [
         .. _lines
+            // A line with no product chosen yet still carries the editor's default 23% — real for
+            // no article at all, so it has no business in the breakdown until one is picked. Code,
+            // not ProductId: an eco-fee companion line has a ProductCode but no catalog ProductId,
+            // and is just as real as the article it rides along with.
+            .Where(line => !string.IsNullOrWhiteSpace(line.ProductCode))
             .GroupBy(line => (line.TaxCode, line.TaxPercentage))
             .OrderByDescending(group => group.Key.TaxPercentage)
             .Select(group => new DocumentTotalsSummary.TaxLine(
@@ -450,6 +457,8 @@
             _customerCity = result.Locality ?? result.Municipality ?? string.Empty;
     }
 
+    private void OnCustomerStreetSelectedAsync(string address) => _customerAddress = address;
+
     /// <summary>
     /// Runs the module-11 check and, for a company NIF, queries VIES: fills the name when it is
     /// still blank and reports what came back, good or bad, instead of failing silently.
@@ -492,6 +501,12 @@
 
             if (string.IsNullOrWhiteSpace(_customerAddress) && !string.IsNullOrWhiteSpace(result.RegisteredAddress))
                 _customerAddress = result.RegisteredAddress;
+
+            if (string.IsNullOrWhiteSpace(_customerPostalCode) && !string.IsNullOrWhiteSpace(result.RegisteredPostalCode))
+                _customerPostalCode = result.RegisteredPostalCode;
+
+            if (string.IsNullOrWhiteSpace(_customerCity) && !string.IsNullOrWhiteSpace(result.RegisteredCity))
+                _customerCity = result.RegisteredCity;
 
             _customerTaxIdLookupSeverity = Severity.Success;
             _customerTaxIdLookupMessage = string.Format(L["PartnerForm_TaxIdFoundMessage"], result.RegisteredName);
@@ -590,11 +605,41 @@
     private string ProductCode(Guid? productId) =>
         _products.FirstOrDefault(product => product.Id == productId)?.ProductCode ?? string.Empty;
 
+    private string ProductDescription(Guid? productId) =>
+        _products.FirstOrDefault(product => product.Id == productId)?.Description ?? string.Empty;
+
+    /// <summary>Matches on code or description, so typing either finds the article.</summary>
+    private Task<IEnumerable<Guid?>> SearchProductsAsync(string? text, CancellationToken cancellationToken)
+    {
+        IEnumerable<ProductListItem> matches = string.IsNullOrWhiteSpace(text)
+            ? _products
+            : _products.Where(product =>
+                product.ProductCode.Contains(text, StringComparison.OrdinalIgnoreCase)
+                || product.Description.Contains(text, StringComparison.OrdinalIgnoreCase));
+
+        return Task.FromResult(matches.Select(product => (Guid?)product.Id));
+    }
+
     /// <summary>And the tax box shows the rate, not the name of the rate.</summary>
     private string TaxRateLabel(string? taxCode)
     {
         var rate = _taxRates.FirstOrDefault(rate => rate.Code == taxCode);
         return rate is null ? taxCode ?? string.Empty : $"{rate.Percentage:0.##}%";
+    }
+
+    private string ExemptionDescription(string? code) =>
+        TaxExemptionReasons.All.FirstOrDefault(reason => reason.Code == code)?.Description ?? string.Empty;
+
+    /// <summary>Matches on the AT code or its description, since the codes alone mean nothing to look at.</summary>
+    private Task<IEnumerable<string>> SearchExemptionReasonsAsync(string? text, CancellationToken cancellationToken)
+    {
+        var matches = string.IsNullOrWhiteSpace(text)
+            ? TaxExemptionReasons.All
+            : TaxExemptionReasons.All.Where(reason =>
+                reason.Code.Contains(text, StringComparison.OrdinalIgnoreCase)
+                || reason.Description.Contains(text, StringComparison.OrdinalIgnoreCase));
+
+        return Task.FromResult(matches.Select(reason => reason.Code));
     }
 
     // Same arithmetic as the API: the discount is taken off the rounded gross amount.

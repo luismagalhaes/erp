@@ -6,7 +6,11 @@ public sealed record PostalCodeLookupResult(
     string? Locality,
     string? Municipality,
     string? District,
-    string? Parish);
+    string? Parish,
+    IReadOnlyList<PostalCodeStreet> Streets);
+
+/// <summary>Mirrors Erp.Dependencies' PostalCodeStreet.</summary>
+public sealed record PostalCodeStreet(string Name, string? Segment);
 
 /// <summary>Mirrors Erp.Dependencies' VatNumberValidationSource.</summary>
 public enum VatNumberValidationSource
@@ -21,4 +25,6 @@ public sealed record VatNumberValidationResult(
     VatNumberValidationSource Source,
     bool? IsRegisteredInVies,
     string? RegisteredName,
-    string? RegisteredAddress);
+    string? RegisteredAddress,
+    string? RegisteredPostalCode = null,
+    string? RegisteredCity = null);

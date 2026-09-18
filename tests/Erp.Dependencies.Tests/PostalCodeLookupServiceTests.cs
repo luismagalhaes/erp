@@ -5,20 +5,20 @@ using FluentAssertions;
 namespace Erp.Dependencies.Tests;
 
 /// <summary>
-/// The geoapi.pt lookup that fills locality/municipality from a "0000-000" postal code. geoapi.pt
-/// answers a single object for a fully specific code and an array for a broader one, and this is
-/// what tells the two shapes apart without the caller having to know which is coming.
+/// The moradas.dev lookup that fills locality/municipality from a "0000-000" postal code. Unlike
+/// the previous provider (geoapi.pt), moradas.dev always answers a single JSON object — never an
+/// array — and has no freguesia (parish) field at all.
 /// </summary>
 public class PostalCodeLookupServiceTests
 {
     private static PostalCodeLookupService CreateService(FakeHttpMessageHandler handler) =>
-        new(new HttpClient(handler) { BaseAddress = new Uri("https://json.geoapi.pt/") });
+        new(new HttpClient(handler) { BaseAddress = new Uri("https://moradas.dev/") });
 
     [Fact]
     public async Task LookupAsync_calls_the_cp_endpoint_with_the_normalized_code()
     {
         var handler = new FakeHttpMessageHandler()
-            .Returns(HttpStatusCode.OK, """{"CP":"4805-476","Localidade":"Guimarães"}""");
+            .Returns(HttpStatusCode.OK, """{"cp7":"4805-476","cp4":"4805","cp3":"476","distrito":"Braga","concelho":"Guimarães","localidade":"Guimarães","arterias":[]}""");
 
         await CreateService(handler).LookupAsync(" 4805-476 ");
 
@@ -26,34 +26,73 @@ public class PostalCodeLookupServiceTests
     }
 
     [Fact]
-    public async Task LookupAsync_maps_a_single_object_response()
+    public async Task LookupAsync_maps_the_single_object_response()
     {
         var handler = new FakeHttpMessageHandler().Returns(
             HttpStatusCode.OK,
-            """{"CP":"1000-001","Localidade":"Lisboa","Concelho":"Lisboa","Distrito":"Lisboa","Freguesia":"Santo António"}""");
+            """{"cp7":"1000-001","cp4":"1000","cp3":"001","distrito":"Lisboa","concelho":"Lisboa","localidade":"Lisboa","arterias":[]}""");
 
         var result = await CreateService(handler).LookupAsync("1000-001");
 
-        result.Should().Be(new PostalCodeLookupResult("1000-001", "Lisboa", "Lisboa", "Lisboa", "Santo António"));
+        result.Should().BeEquivalentTo(new PostalCodeLookupResult("1000-001", "Lisboa", "Lisboa", "Lisboa", Parish: null, Streets: []));
     }
 
-    /// <summary>A code that only pins down the CTT zone comes back as an array of matches.</summary>
+    /// <summary>moradas.dev has no freguesia field, so Parish is always null regardless of the response.</summary>
     [Fact]
-    public async Task LookupAsync_takes_the_first_match_of_an_array_response()
+    public async Task LookupAsync_always_leaves_the_parish_null()
     {
         var handler = new FakeHttpMessageHandler().Returns(
             HttpStatusCode.OK,
-            """[{"CP":"4700-000","Localidade":"Braga"},{"CP":"4700-001","Localidade":"Braga (outra rua)"}]""");
+            """{"cp7":"4715-293","cp4":"4715","cp3":"293","distrito":"Braga","concelho":"Braga","localidade":"Braga","arterias":[]}""");
 
-        var result = await CreateService(handler).LookupAsync("4700-000");
+        var result = await CreateService(handler).LookupAsync("4715-293");
 
-        result!.Locality.Should().Be("Braga");
+        result!.Parish.Should().BeNull();
     }
 
     [Fact]
-    public async Task LookupAsync_returns_null_when_geoapi_has_no_match()
+    public async Task LookupAsync_maps_the_streets_moradas_dev_lists_for_the_code()
     {
-        var handler = new FakeHttpMessageHandler().Returns(HttpStatusCode.NotFound);
+        var handler = new FakeHttpMessageHandler().Returns(
+            HttpStatusCode.OK,
+            """
+            {"cp7":"4700-001","cp4":"4700","cp3":"001","distrito":"Braga","concelho":"Braga","localidade":"Braga","arterias":[
+                {"street":"Rua Costa Soares","troco":null},
+                {"street":"Rua Doutor Carlos Magalhães","troco":"Impares de 1 a 19"}
+            ]}
+            """);
+
+        var result = await CreateService(handler).LookupAsync("4700-001");
+
+        result!.Streets.Should().BeEquivalentTo(
+        [
+            new PostalCodeStreet("Rua Costa Soares", null),
+            new PostalCodeStreet("Rua Doutor Carlos Magalhães", "Impares de 1 a 19")
+        ]);
+    }
+
+    /// <summary>moradas.dev sometimes repeats the exact same street when door-number ranges collide.</summary>
+    [Fact]
+    public async Task LookupAsync_collapses_duplicate_street_entries()
+    {
+        var handler = new FakeHttpMessageHandler().Returns(
+            HttpStatusCode.OK,
+            """
+            {"cp7":"4715-293","cp4":"4715","cp3":"293","distrito":"Braga","concelho":"Braga","localidade":"Braga","arterias":[
+                {"street":"Praça Ricardo da Rocha","troco":null},
+                {"street":"Praça Ricardo da Rocha","troco":null}
+            ]}
+            """);
+
+        var result = await CreateService(handler).LookupAsync("4715-293");
+
+        result!.Streets.Should().ContainSingle().Which.Should().Be(new PostalCodeStreet("Praça Ricardo da Rocha", null));
+    }
+
+    [Fact]
+    public async Task LookupAsync_returns_null_when_moradas_has_no_match()
+    {
+        var handler = new FakeHttpMessageHandler().Returns(HttpStatusCode.NotFound, """{"error":"not found"}""");
 
         var result = await CreateService(handler).LookupAsync("0000-000");
 
@@ -80,7 +119,7 @@ public class PostalCodeLookupServiceTests
         await act.Should().ThrowAsync<HttpRequestException>();
     }
 
-    /// <summary>A code that is not even "0000-000" is refused locally — geoapi.pt is never asked.</summary>
+    /// <summary>A code that is not even "0000-000" is refused locally — moradas.dev is never asked.</summary>
     [Theory]
     [InlineData("1000001")]
     [InlineData("1000-0011")]

@@ -23,11 +23,15 @@ public sealed class VatNumberValidationService(HttpClient httpClient) : IVatNumb
             $"ms/{PortugalCountryCode}/vat/{normalized}",
             cancellationToken);
 
+        var (address, postalCode, city) = ViesAddress.Parse(response?.Address);
+
         return new VatNumberValidationResult(
             IsStructurallyValid: true,
             VatNumberValidationSource.Vies,
             IsRegisteredInVies: response?.IsValid,
             RegisteredName: response?.Name,
-            RegisteredAddress: response?.Address);
+            RegisteredAddress: address,
+            RegisteredPostalCode: postalCode,
+            RegisteredCity: city);
     }
 }

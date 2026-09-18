@@ -7,12 +7,14 @@
 @using MudBlazor
 @using Erp.Common
 @using Erp.Main.Models
+@using Erp.Main.Components.Common
 @using Erp.Main.Models.Core
 @using Erp.Main.Resources
 @using Erp.Main.Services
 @inject CoreApiClient CoreApi
 @inject IdentityApiClient IdentityApi
 @inject StockApiClient StockApi
+@inject LookupApiClient Lookups
 @inject CompanyState Company
 @inject NavigationManager Navigation
 @inject ISnackbar Snackbar
@@ -57,7 +59,9 @@
                             <MudTextField @bind-Value="_legalName" Label="@Localizer["CompanyEditor_LegalNameLabel"]" Variant="Variant.Outlined" Margin="Margin.Dense" />
                         </MudItem>
                         <MudItem xs="12" sm="4" md="3">
-                            <MudTextField @bind-Value="_taxId" Label="@Localizer["Companies_TaxIdColumn"]" Variant="Variant.Outlined" Margin="Margin.Dense" Required="true" />
+                            <MudTextField @bind-Value="_taxId" Label="@Localizer["Companies_TaxIdColumn"]" Variant="Variant.Outlined" Margin="Margin.Dense" Required="true"
+                                          Adornment="Adornment.End" AdornmentIcon="@Icons.Material.Filled.Search"
+                                          OnAdornmentClick="LookupTaxIdAsync" AdornmentAriaLabel="@Localizer["PartnerForm_TaxIdLookupTooltip"]" />
                         </MudItem>
                         <MudItem xs="12" sm="4" md="3">
                             <MudTextField @bind-Value="_email" Label="@Localizer["CompanyEditor_EmailColumn"]" Variant="Variant.Outlined" Margin="Margin.Dense" InputType="InputType.Email" />
@@ -75,7 +79,9 @@
                             <MudTextField @bind-Value="_address" Label="@Localizer["PartnerForm_AddressLabel"]" Variant="Variant.Outlined" Margin="Margin.Dense" />
                         </MudItem>
                         <MudItem xs="12" sm="3" md="3">
-                            <MudTextField @bind-Value="_postalCode" Label="@Localizer["PartnerForm_PostalCodeLabel"]" Variant="Variant.Outlined" Margin="Margin.Dense" />
+                            <PostalCodeField @bind-Value="_postalCode" Country="@_country"
+                                             LookupResolved="OnPostalCodeResolvedAsync" StreetSelected="OnStreetSelectedAsync"
+                                             Label="@Localizer["PartnerForm_PostalCodeLabel"]" />
                         </MudItem>
                         <MudItem xs="12" sm="3" md="3">
                             <MudTextField @bind-Value="_city" Label="@Localizer["CompanyEditor_CityColumn"]" Variant="Variant.Outlined" Margin="Margin.Dense" />
@@ -88,6 +94,13 @@
                                 }
                             </MudSelect>
                         </MudItem>
+
+                        @if (!string.IsNullOrWhiteSpace(_taxIdLookupMessage))
+                        {
+                            <MudItem xs="12">
+                                <MudAlert Severity="@_taxIdLookupSeverity" Dense="true">@_taxIdLookupMessage</MudAlert>
+                            </MudItem>
+                        }
 
                         @if (!IsNew)
                         {
@@ -327,7 +340,9 @@
                 <MudTextField @bind-Value="_warehouseAddress" Label="@Localizer["PartnerForm_AddressLabel"]" Variant="Variant.Outlined" Margin="Margin.Dense" />
             </MudItem>
             <MudItem xs="12" sm="3" md="3">
-                <MudTextField @bind-Value="_warehousePostalCode" Label="@Localizer["PartnerForm_PostalCodeLabel"]" Variant="Variant.Outlined" Margin="Margin.Dense" />
+                <PostalCodeField @bind-Value="_warehousePostalCode" Country="@_warehouseCountry"
+                                 LookupResolved="OnWarehousePostalCodeResolvedAsync" StreetSelected="OnWarehouseStreetSelectedAsync"
+                                 Label="@Localizer["PartnerForm_PostalCodeLabel"]" />
             </MudItem>
             <MudItem xs="12" sm="3" md="3">
                 <MudTextField @bind-Value="_warehouseCity" Label="@Localizer["CompanyEditor_CityColumn"]" Variant="Variant.Outlined" Margin="Margin.Dense" />
@@ -396,6 +411,10 @@
     private string _country = "PT";
     private bool _isActive = true;
 
+    private string? _taxIdLookupMessage;
+    private Severity _taxIdLookupSeverity = Severity.Info;
+    private bool _lookingUpTaxId;
+
     private string _newUserId = string.Empty;
     private string _newRole = Constants.Roles.User;
 
@@ -424,12 +443,17 @@
     private bool _warehouseIsActive = true;
 
     private bool CanSaveWarehouse =>
-        !string.IsNullOrWhiteSpace(_warehouseCode) && !string.IsNullOrWhiteSpace(_warehouseName);
+        !string.IsNullOrWhiteSpace(_warehouseCode)
+        && !string.IsNullOrWhiteSpace(_warehouseName)
+        && PostalCodes.IsValid(_warehousePostalCode, _warehouseCountry);
 
     private List<IdentityUser> _availableUsers =>
         [.. _users.Where(user => _memberships.All(m => m.UserId != user.Id))];
 
-    private bool CanSave => !string.IsNullOrWhiteSpace(_name) && !string.IsNullOrWhiteSpace(_taxId);
+    private bool CanSave =>
+        !string.IsNullOrWhiteSpace(_name)
+        && !string.IsNullOrWhiteSpace(_taxId)
+        && PostalCodes.IsValid(_postalCode, _country);
 
     protected override async Task OnParametersSetAsync()
     {
@@ -582,6 +606,15 @@
             _workingAt = false;
         }
     }
+
+    /// <summary>Fills in the city when it is still blank; an existing value is never overwritten.</summary>
+    private void OnWarehousePostalCodeResolvedAsync(PostalCodeLookupResult result)
+    {
+        if (string.IsNullOrWhiteSpace(_warehouseCity))
+            _warehouseCity = result.Locality ?? result.Municipality ?? string.Empty;
+    }
+
+    private void OnWarehouseStreetSelectedAsync(string address) => _warehouseAddress = address;
 
     /// <summary>Opens the dialog on an existing warehouse, or empty for a new one.</summary>
     private void OpenWarehouse(Warehouse? warehouse)
@@ -773,4 +806,85 @@
 
     private static string NormalizeCountry(string value) =>
         string.IsNullOrWhiteSpace(value) ? "PT" : value.Trim().ToUpperInvariant();
+
+    /// <summary>Fills in the city when it is still blank; an existing value is never overwritten.</summary>
+    private void OnPostalCodeResolvedAsync(PostalCodeLookupResult result)
+    {
+        if (string.IsNullOrWhiteSpace(_city))
+            _city = result.Locality ?? result.Municipality ?? string.Empty;
+    }
+
+    private void OnStreetSelectedAsync(string address) => _address = address;
+
+    /// <summary>
+    /// Runs the module-11 check and, for a company NIF, queries VIES: fills the name and address
+    /// when they are still blank and reports what came back, good or bad, instead of failing silently.
+    /// </summary>
+    private async Task LookupTaxIdAsync()
+    {
+        if (_lookingUpTaxId || string.IsNullOrWhiteSpace(_taxId))
+            return;
+
+        _lookingUpTaxId = true;
+        _taxIdLookupMessage = null;
+
+        try
+        {
+            var result = await Lookups.GetVatNumberAsync(_taxId);
+
+            if (result is null || !result.IsStructurallyValid)
+            {
+                _taxIdLookupSeverity = Severity.Error;
+                _taxIdLookupMessage = Localizer["PartnerForm_TaxIdInvalidMessage"];
+                return;
+            }
+
+            if (result.Source != VatNumberValidationSource.Vies)
+            {
+                _taxIdLookupSeverity = Severity.Success;
+                _taxIdLookupMessage = Localizer["PartnerForm_TaxIdValidMessage"];
+                return;
+            }
+
+            if (result.IsRegisteredInVies != true)
+            {
+                _taxIdLookupSeverity = Severity.Warning;
+                _taxIdLookupMessage = Localizer["PartnerForm_TaxIdNotRegisteredMessage"];
+                return;
+            }
+
+            if (string.IsNullOrWhiteSpace(_name) && !string.IsNullOrWhiteSpace(result.RegisteredName))
+                _name = result.RegisteredName;
+
+            if (string.IsNullOrWhiteSpace(_address) && !string.IsNullOrWhiteSpace(result.RegisteredAddress))
+                _address = result.RegisteredAddress;
+
+            if (string.IsNullOrWhiteSpace(_postalCode) && !string.IsNullOrWhiteSpace(result.RegisteredPostalCode))
+                _postalCode = result.RegisteredPostalCode;
+
+            if (string.IsNullOrWhiteSpace(_city) && !string.IsNullOrWhiteSpace(result.RegisteredCity))
+                _city = result.RegisteredCity;
+
+            // Prefer the postal code table's own locality name over VIES's, when it has one — it is
+            // occasionally more specific or more consistently cased than what VIES's free-text
+            // address gives. moradas.dev has no freguesia (parish) data, though, so this can no
+            // longer sharpen a municipality-level VIES result down to parish level the way the
+            // previous provider (geoapi.pt) could.
+            if (PostalCodes.IsValid(_postalCode, _country))
+            {
+                var postalCodeResult = await Lookups.GetPostalCodeAsync(_postalCode);
+                var locality = postalCodeResult?.Locality ?? postalCodeResult?.Municipality;
+
+                if (!string.IsNullOrWhiteSpace(locality))
+                    _city = locality;
+            }
+
+            _taxIdLookupSeverity = Severity.Success;
+            _taxIdLookupMessage = string.Format(Localizer["PartnerForm_TaxIdFoundMessage"], result.RegisteredName);
+        }
+        finally
+        {
+            _lookingUpTaxId = false;
+        }
+    }
 }

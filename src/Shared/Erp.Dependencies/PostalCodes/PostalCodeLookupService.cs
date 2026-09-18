@@ -1,18 +1,17 @@
 using System.Net;
-using System.Net.Http.Json;
 using System.Text.Json;
 using System.Text.RegularExpressions;
+using System.Linq;
 
 namespace Erp.Dependencies.PostalCodes;
 
 /// <summary>
-/// Calls the free geoapi.pt "código postal" endpoint (json.geoapi.pt/cp/{codigo}). No API key is
-/// required; the base address is set once in <see cref="DependencyInjection"/>.
+/// Calls the free moradas.dev "código postal" endpoint (moradas.dev/cp/{cp7}). No API key is
+/// required — a reasonable per-IP rate limit is the only restriction — and the base address is set
+/// once in <see cref="DependencyInjection"/>.
 /// </summary>
 public sealed partial class PostalCodeLookupService(HttpClient httpClient) : IPostalCodeLookupService
 {
-    private static readonly JsonSerializerOptions JsonOptions = new() { PropertyNameCaseInsensitive = true };
-
     public async Task<PostalCodeLookupResult?> LookupAsync(string postalCode, CancellationToken cancellationToken = default)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(postalCode);
@@ -27,26 +26,35 @@ public sealed partial class PostalCodeLookupService(HttpClient httpClient) : IPo
 
         response.EnsureSuccessStatusCode();
 
-        // geoapi.pt returns either a single object or an array of matches depending on the code's
-        // granularity; both shapes are handled so a caller never has to know which one arrived.
-        var payload = await response.Content.ReadAsStringAsync(cancellationToken);
-        if (string.IsNullOrWhiteSpace(payload))
+        var body = await response.Content.ReadAsStringAsync(cancellationToken);
+        if (string.IsNullOrWhiteSpace(body))
             return null;
 
-        var entry = payload.TrimStart().StartsWith('[')
-            ? JsonSerializer.Deserialize<GeoApiPostalCodeEntry[]>(payload, JsonOptions)?.FirstOrDefault()
-            : JsonSerializer.Deserialize<GeoApiPostalCodeEntry>(payload, JsonOptions);
-
+        var entry = JsonSerializer.Deserialize<MoradasPostalCodeEntry>(body);
         if (entry is null)
             return null;
 
+        // moradas.dev has no equivalent of geoapi.pt's freguesia (parish) — only the district,
+        // municipality and locality it returns are mapped; a caller after the parish-level detail
+        // has nothing here to fall back to.
         return new PostalCodeLookupResult(
-            entry.Cp ?? normalized,
+            entry.Cp7 ?? normalized,
             entry.Localidade,
             entry.Concelho,
             entry.Distrito,
-            entry.Freguesia);
+            Parish: null,
+            Streets: MapStreets(entry.Arterias));
     }
+
+    // moradas.dev repeats the same street verbatim when more than one door number range falls in
+    // this postal code but the segments happen to be identical; Distinct() on the record's value
+    // equality collapses those back down to one entry.
+    private static IReadOnlyList<PostalCodeStreet> MapStreets(List<MoradasArteria>? arterias) =>
+        (arterias ?? [])
+            .Where(a => !string.IsNullOrWhiteSpace(a.Street))
+            .Select(a => new PostalCodeStreet(a.Street!.Trim(), string.IsNullOrWhiteSpace(a.Troco) ? null : a.Troco.Trim()))
+            .Distinct()
+            .ToList();
 
     [GeneratedRegex(@"^\d{4}-\d{3}$")]
     private static partial Regex PortugalPostalCodePattern();

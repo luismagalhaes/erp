@@ -7,11 +7,11 @@ namespace Erp.Dependencies;
 
 public static class DependencyInjection
 {
-    private const string DefaultPostalCodeBaseAddress = "https://json.geoapi.pt/";
+    private const string DefaultPostalCodeBaseAddress = "https://moradas.dev/";
     private const string DefaultVatNumberValidationBaseAddress = "https://ec.europa.eu/taxation_customs/vies/rest-api/";
 
     /// <summary>
-    /// Registers the free, keyless external lookups shared across modules: geoapi.pt for
+    /// Registers the free, keyless external lookups shared across modules: moradas.dev for
     /// postal codes, and the EU VIES REST API for company NIF/NIPC validation. Base addresses
     /// are read from configuration ("Dependencies:PostalCodeBaseAddress" and
     /// "Dependencies:VatNumberValidationBaseAddress"), falling back to the well-known public

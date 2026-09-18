@@ -42,7 +42,7 @@
     </MudItem>
     <MudItem xs="12" sm="3" md="3">
         <PostalCodeField Value="@Model.PostalCode" ValueChanged="OnPostalCodeChangedAsync" Country="@Model.Country"
-                         LookupResolved="OnPostalCodeResolvedAsync"
+                         LookupResolved="OnPostalCodeResolvedAsync" StreetSelected="OnStreetSelectedAsync"
                          Label="@Localizer["PartnerForm_PostalCodeLabel"]" />
     </MudItem>
     <MudItem xs="12" sm="3" md="3">
@@ -126,6 +126,13 @@
         return NotifyChangedAsync();
     }
 
+    /// <summary>The user picked a street off the drawer, so this time the address is overwritten.</summary>
+    private Task OnStreetSelectedAsync(string address)
+    {
+        Model.Address = address;
+        return NotifyChangedAsync();
+    }
+
     /// <summary>
     /// Runs the module-11 check and, for a company NIF, queries VIES: fills the name when it is
     /// still blank and reports what came back, good or bad, instead of failing silently.
@@ -168,6 +175,12 @@
 
             if (string.IsNullOrWhiteSpace(Model.Address) && !string.IsNullOrWhiteSpace(result.RegisteredAddress))
                 Model.Address = result.RegisteredAddress;
+
+            if (string.IsNullOrWhiteSpace(Model.PostalCode) && !string.IsNullOrWhiteSpace(result.RegisteredPostalCode))
+                Model.PostalCode = result.RegisteredPostalCode;
+
+            if (string.IsNullOrWhiteSpace(Model.City) && !string.IsNullOrWhiteSpace(result.RegisteredCity))
+                Model.City = result.RegisteredCity;
 
             _taxIdLookupSeverity = Severity.Success;
             _taxIdLookupMessage = string.Format(Localizer["PartnerForm_TaxIdFoundMessage"], result.RegisteredName);

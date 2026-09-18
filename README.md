@@ -94,7 +94,7 @@ graph TB
     subgraph Shared["Shared"]
         FiscalPT["Erp.FiscalPT<br/>assinatura · SAF-T<br/>webservices da AT"]
         Storage["Erp.Storage<br/>AppDbContext · UnitOfWork"]
-        Dependencies["Erp.Dependencies<br/>código postal (geoapi.pt)<br/>NIF/NIPC (VIES)"]
+        Dependencies["Erp.Dependencies<br/>código postal (moradas.dev)<br/>NIF/NIPC (VIES)"]
     end
 
     Sales -.-> FiscalPT
@@ -117,7 +117,7 @@ graph TB
 
 **Módulos → `Erp.FiscalPT`/`Erp.Storage`/`Erp.Dependencies` (tracejado)** é dependência de biblioteca partilhada, não chamada de rede — os três hosts continuam a correr como processos separados, ligados só pelas setas cheias (OIDC, REST/OData, client credentials).
 
-`Erp.Dependencies` agrupa integrações públicas sem estado de negócio, reutilizáveis por qualquer módulo: `IPostalCodeLookupService` (geoapi.pt, preenchimento automático de localidade a partir do código postal) e `IVatNumberValidationService` (validação estrutural do módulo 11 do NIF/NIPC, com consulta ao VIES para NIFs de empresa). O `Erp.Api` expõe-nas em `LookupsController` (`GET api/lookups/postal-codes/{postalCode}` e `GET api/lookups/vat-numbers/{nif}`), e o `Erp.Main` consome-as via `LookupApiClient` — usado em `PostalCodeField` (preenchimento da localidade) e em `PartnerFormFields`/`NewInvoice` (procura de NIF em clientes, fornecedores e faturação).
+`Erp.Dependencies` agrupa integrações públicas sem estado de negócio, reutilizáveis por qualquer módulo: `IPostalCodeLookupService` (moradas.dev, preenchimento automático de localidade a partir do código postal) e `IVatNumberValidationService` (validação estrutural do módulo 11 do NIF/NIPC, com consulta ao VIES para NIFs de empresa). O `Erp.Api` expõe-nas em `LookupsController` (`GET api/lookups/postal-codes/{postalCode}` e `GET api/lookups/vat-numbers/{nif}`), e o `Erp.Main` consome-as via `LookupApiClient` — usado em `PostalCodeField` (preenchimento da localidade) e em `PartnerFormFields`/`NewInvoice` (procura de NIF em clientes, fornecedores e faturação).
 
 ### Ligações em runtime
 
@@ -134,7 +134,7 @@ graph LR
     ATSeries["AT — SeriesWSService<br/>(SOAP)"]
     ATTransport["AT — Documentos de<br/>Transporte (SOAP)"]
     SMTP["SMTP<br/>(Brevo, via MailKit)"]
-    GeoApi["geoapi.pt<br/>(código postal, REST)"]
+    MoradasDev["moradas.dev<br/>(código postal, REST)"]
     Vies["VIES<br/>(NIF/NIPC, REST)"]
     Vault[["Infisical<br/>(cofre de segredos)"]]
     AppInsights["Application Insights<br/>(OpenTelemetry)"]
@@ -151,7 +151,7 @@ graph LR
     Api -->|"SOAP + WS-Security<br/>certificado cliente"| ATSeries
     Api -->|"SOAP + WS-Security<br/>certificado cliente"| ATTransport
 
-    Api --> |REST| GeoApi
+    Api --> |REST| MoradasDev
     Api --> |REST| Vies
     Api -->|SMTP| SMTP
 
@@ -165,7 +165,7 @@ graph LR
 
 As credenciais para `SeriesWSService` e `Documentos de Transporte` são **por empresa** (`CompanyAtCredential`, ver [Configuração e segredos](#configuração-e-segredos)); o certificado cliente e a chave pública de cifra são partilhados pela instalação inteira.
 
-`geoapi.pt` e `VIES` são consultados sem credenciais (endpoints públicos) através dos serviços em `Erp.Dependencies` — o `Erp.Api` chama-os diretamente a pedido da UI, sem persistir os resultados; se um dos dois estiver em baixo, apenas a sugestão automática (localidade a partir do código postal, ou validação/nome a partir do NIF) fica indisponível, sem impedir a submissão manual do formulário.
+`moradas.dev` e `VIES` são consultados sem credenciais (endpoints públicos) através dos serviços em `Erp.Dependencies` — o `Erp.Api` chama-os diretamente a pedido da UI, sem persistir os resultados; se um dos dois estiver em baixo, apenas a sugestão automática (localidade a partir do código postal, ou validação/nome a partir do NIF) fica indisponível, sem impedir a submissão manual do formulário.
 
 ---
 
@@ -229,7 +229,7 @@ O `Erp.Sales` e o `Erp.Purchasing` referenciam o `Erp.Inventory`, para que emiti
 | [Erp.Common](src/Shared/Erp.Common/) | Constantes que descrevem o contrato do access token — roles, claims, scopes e api resources — partilhadas pela `Erp.Api` e pelo `Erp.Main`, para não dependerem de um projeto do Identity. E o `IUnitOfWork`, que os serviços usam para gravar e abrir transações sem saberem que existe EF Core. |
 | [Erp.Storage](src/Shared/Erp.Storage/) | O `AppDbContext` que todos os módulos de negócio partilham, as migrations e o `IModuleModelConfiguration` com que cada módulo declara as suas tabelas. Não referencia módulo nenhum. |
 | [Erp.FiscalPT](src/Shared/Erp.FiscalPT/) | Primitivas de fiscalidade portuguesa: string e assinatura RSA dos documentos, ATCUD, número de documento, mensagem e imagem do código QR, arredondamento fiscal, os geradores e validadores do **SAF-T (PT)** e do **ficheiro de inventário** (com os XSD oficiais embebidos), e os clientes SOAP dos webservices da AT ([`AtWebservice/Series`](src/Shared/Erp.FiscalPT/AtWebservice/Series/), [`AtWebservice/TransportDocuments`](src/Shared/Erp.FiscalPT/AtWebservice/TransportDocuments/)) — esta última parte é que traz uma dependência real de infraestrutura (`HttpClient`), ao contrário do resto da biblioteca. |
-| [Erp.Dependencies](src/Shared/Erp.Dependencies/) | Integrações públicas sem estado de negócio, reutilizáveis por qualquer módulo: `IPostalCodeLookupService` (código postal → localidade, via [geoapi.pt](https://json.geoapi.pt/)) e `IVatNumberValidationService` (validação estrutural do módulo 11 do NIF/NIPC, com consulta ao [VIES](https://ec.europa.eu/taxation_customs/vies/) para NIFs de empresa). Registada com `AddErpDependencies(configuration)`; os URLs base vêm de `Dependencies:PostalCodeBaseAddress`/`Dependencies:VatNumberValidationBaseAddress` em `appsettings.json`, com fallback para os endpoints públicos por omissão. |
+| [Erp.Dependencies](src/Shared/Erp.Dependencies/) | Integrações públicas sem estado de negócio, reutilizáveis por qualquer módulo: `IPostalCodeLookupService` (código postal → localidade, via [moradas.dev](https://moradas.dev/)) e `IVatNumberValidationService` (validação estrutural do módulo 11 do NIF/NIPC, com consulta ao [VIES](https://ec.europa.eu/taxation_customs/vies/) para NIFs de empresa). Registada com `AddErpDependencies(configuration)`; os URLs base vêm de `Dependencies:PostalCodeBaseAddress`/`Dependencies:VatNumberValidationBaseAddress` em `appsettings.json`, com fallback para os endpoints públicos por omissão. |
 
 ### Notification
 
@@ -422,7 +422,7 @@ dotnet test Erp.slnx --filter "Category!=E2E"
 
 ### Testes de unidade — 941, sem base de dados
 
-As camadas Application são testadas com storages substituídos (NSubstitute), a biblioteca fiscal é testada diretamente — incluindo a validação dos ficheiros SAF-T e de inventário contra os XSD oficiais — e o cliente de email, a obtenção de tokens do Identity e as integrações keyless em [`Erp.Dependencies`](tests/Erp.Dependencies.Tests/) (geoapi.pt e VIES) com um `HttpMessageHandler` de teste que grava os pedidos e devolve respostas guionadas, sem rede nenhuma. O `NifValidator` (módulo 11) é testado à parte, por ser lógica pura sem HTTP. [`Erp.Api.Tests`](tests/Erp.Api.Tests/) testa o `RequireCompanyAccessFilter` isoladamente — um `ActionExecutingContext` construído à mão, sem host nenhum a correr — cobrindo o SuperAdmin a passar sem consultar a base, o `[AllowAnyCompany]` a saltar a verificação, e o `companyId` a ser encontrado tanto num parâmetro direto como numa propriedade `CompanyId` do corpo do pedido. Correm em segundos e não precisam de nada instalado.
+As camadas Application são testadas com storages substituídos (NSubstitute), a biblioteca fiscal é testada diretamente — incluindo a validação dos ficheiros SAF-T e de inventário contra os XSD oficiais — e o cliente de email, a obtenção de tokens do Identity e as integrações keyless em [`Erp.Dependencies`](tests/Erp.Dependencies.Tests/) (moradas.dev e VIES) com um `HttpMessageHandler` de teste que grava os pedidos e devolve respostas guionadas, sem rede nenhuma. O `NifValidator` (módulo 11) é testado à parte, por ser lógica pura sem HTTP. [`Erp.Api.Tests`](tests/Erp.Api.Tests/) testa o `RequireCompanyAccessFilter` isoladamente — um `ActionExecutingContext` construído à mão, sem host nenhum a correr — cobrindo o SuperAdmin a passar sem consultar a base, o `[AllowAnyCompany]` a saltar a verificação, e o `companyId` a ser encontrado tanto num parâmetro direto como numa propriedade `CompanyId` do corpo do pedido. Correm em segundos e não precisam de nada instalado.
 
 ### Testes de integração — 39, contra SQL Server
 
@@ -1248,5 +1248,5 @@ O componente QuestPDF lê estas flags e decide o que renderizar (secções condi
 4. Confirmar processo de certificação do software de faturação.
 5. Reconstruir os documentos prioritários (fatura, guia de remessa) em QuestPDF.
 
-    Api --> |REST| GeoApi
+    Api --> |REST| MoradasDev
     Api --> |REST| Vies

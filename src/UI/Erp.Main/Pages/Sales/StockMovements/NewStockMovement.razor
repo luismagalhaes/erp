@@ -130,7 +130,8 @@
                                   Required="true" />
                 </MudItem>
                 <MudItem xs="6" sm="3" md="3">
-                    <PostalCodeField @bind-Value="_shipFromPostalCode" Label="@L["NewStockMovement_PostalCodeLabel"]" />
+                    <PostalCodeField @bind-Value="_shipFromPostalCode" StreetSelected="OnShipFromStreetSelected"
+                                     Label="@L["NewStockMovement_PostalCodeLabel"]" />
                 </MudItem>
                 <MudItem xs="6" sm="3" md="3">
                     <MudTextField @bind-Value="_shipFromCity" Label="@L["NewStockMovement_CityLabel"]" Variant="Variant.Outlined" Margin="Margin.Dense" />
@@ -144,7 +145,8 @@
                                   Required="true" />
                 </MudItem>
                 <MudItem xs="6" sm="3" md="3">
-                    <PostalCodeField @bind-Value="_shipToPostalCode" Label="@L["NewStockMovement_PostalCodeLabel"]" />
+                    <PostalCodeField @bind-Value="_shipToPostalCode" StreetSelected="OnShipToStreetSelected"
+                                     Label="@L["NewStockMovement_PostalCodeLabel"]" />
                 </MudItem>
                 <MudItem xs="6" sm="3" md="3">
                     <MudTextField @bind-Value="_shipToCity" Label="@L["NewStockMovement_CityLabel"]" Variant="Variant.Outlined" Margin="Margin.Dense" />
@@ -306,6 +308,10 @@
     private string _shipToCity = string.Empty;
     private string _shipToPostalCode = string.Empty;
 
+    private void OnShipFromStreetSelected(string address) => _shipFromAddress = address;
+
+    private void OnShipToStreetSelected(string address) => _shipToAddress = address;
+
     private List<SalesSeries> _series = [];
     private List<ProductListItem> _products = [];
     private List<Partner> _customers = [];
@@ -332,6 +338,11 @@
     private IReadOnlyList<DocumentTotalsSummary.TaxLine> TaxBreakdown =>
     [
         .. _lines
+            // A line with no product chosen yet still carries the editor's default 23% — real for
+            // no article at all, so it has no business in the breakdown until one is picked. Code,
+            // not ProductId: an eco-fee companion line has a ProductCode but no catalog ProductId,
+            // and a free-text code (empty catalog) never gets a ProductId either.
+            .Where(line => !string.IsNullOrWhiteSpace(line.ProductCode))
             .GroupBy(line => (line.TaxCode, line.TaxPercentage))
             .OrderByDescending(group => group.Key.TaxPercentage)
             .Select(group => new DocumentTotalsSummary.TaxLine(

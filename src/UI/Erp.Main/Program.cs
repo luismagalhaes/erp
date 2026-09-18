@@ -1,3 +1,4 @@
+using Duende.AccessTokenManagement.OpenIdConnect;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.OpenIdConnect;
@@ -73,6 +74,14 @@ builder.Services
         options.SlidingExpiration = true;
         options.LoginPath = "/authentication/login";
         options.AccessDeniedPath = "/access-denied";
+
+        // The cookie outlives the access token by weeks, not minutes — without this, every API
+        // call after the access token's own, much shorter lifetime expires would keep sending a
+        // stale Bearer token and get a 401 back, even though the user still looks signed in.
+        // Duende.AccessTokenManagement refreshes it automatically instead (see
+        // AddOpenIdConnectAccessTokenManagement below); this just revokes the refresh token too
+        // once the user actually signs out, so it cannot be replayed afterwards.
+        options.Events.OnSigningOut = async e => await e.HttpContext.RevokeRefreshTokenAsync();
     })
     .AddOpenIdConnect(options =>
     {
@@ -111,7 +120,11 @@ builder.Services
 // MudBlazor
 builder.Services.AddMudServices();
 
-builder.Services.AddTransient<UserAccessTokenHandler>();
+// Backs AddUserAccessTokenHandler() below: refreshes an expired access token with the saved
+// refresh_token before a request goes out, instead of sending a stale one and letting the API
+// reject it with a 401.
+builder.Services.AddOpenIdConnectAccessTokenManagement();
+
 builder.Services.AddScoped(sp =>
 {
     var navigation = sp.GetRequiredService<NavigationManager>();
@@ -122,36 +135,36 @@ builder.Services.AddScoped(sp =>
 var apiBaseAddress = new Uri(builder.Configuration["Services:Api"]!);
 
 builder.Services.AddHttpClient<CoreApiClient>(client => client.BaseAddress = apiBaseAddress)
-    .AddHttpMessageHandler<UserAccessTokenHandler>();
+    .AddUserAccessTokenHandler();
 
 builder.Services.AddHttpClient<SalesApiClient>(client => client.BaseAddress = apiBaseAddress)
-    .AddHttpMessageHandler<UserAccessTokenHandler>();
+    .AddUserAccessTokenHandler();
 
 builder.Services.AddHttpClient<SeriesApiClient>(client => client.BaseAddress = apiBaseAddress)
-    .AddHttpMessageHandler<UserAccessTokenHandler>();
+    .AddUserAccessTokenHandler();
 
 builder.Services.AddHttpClient<SaftApiClient>(client => client.BaseAddress = apiBaseAddress)
-    .AddHttpMessageHandler<UserAccessTokenHandler>();
+    .AddUserAccessTokenHandler();
 
 builder.Services.AddHttpClient<CatalogApiClient>(client => client.BaseAddress = apiBaseAddress)
-    .AddHttpMessageHandler<UserAccessTokenHandler>();
+    .AddUserAccessTokenHandler();
 
 builder.Services.AddHttpClient<LookupApiClient>(client => client.BaseAddress = apiBaseAddress)
-    .AddHttpMessageHandler<UserAccessTokenHandler>();
+    .AddUserAccessTokenHandler();
 
 builder.Services.AddHttpClient<StockApiClient>(client => client.BaseAddress = apiBaseAddress)
-    .AddHttpMessageHandler<UserAccessTokenHandler>();
+    .AddUserAccessTokenHandler();
 
 builder.Services.AddHttpClient<PurchasingApiClient>(client => client.BaseAddress = apiBaseAddress)
-    .AddHttpMessageHandler<UserAccessTokenHandler>();
+    .AddUserAccessTokenHandler();
 
 builder.Services.AddHttpClient<NotificationApiClient>(client => client.BaseAddress = apiBaseAddress)
-    .AddHttpMessageHandler<UserAccessTokenHandler>();
+    .AddUserAccessTokenHandler();
 
 // The Identity host stays separate: it is the token issuer and serves the users API.
 builder.Services.AddHttpClient<IdentityApiClient>(client =>
     client.BaseAddress = new Uri(builder.Configuration["Services:IdentityApi"]!))
-    .AddHttpMessageHandler<UserAccessTokenHandler>();
+    .AddUserAccessTokenHandler();
 
 // A service that stops responding must surface as an error on the page, not as a spinner that
 // sits there for the 100 second default of HttpClient.

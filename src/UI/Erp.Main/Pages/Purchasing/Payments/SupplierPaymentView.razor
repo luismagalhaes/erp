@@ -1,0 +1,271 @@
+@page "/supplier-payments/{Id:guid}"
+@attribute [Authorize]
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.AspNetCore.Components.Web
+@using MudBlazor
+@using Erp.Main.Components.Common
+@using Erp.Main.Models
+@using Erp.Main.Services
+@using Erp.Main.Resources
+@using Microsoft.Extensions.Localization
+@inject PurchasingApiClient Purchasing
+@inject NavigationManager Navigation
+@inject ISnackbar Snackbar
+@inject IStringLocalizer<MainResources> L
+
+<PageTitle>@(_payment?.Number ?? L["SupplierPaymentView_DefaultTitle"])</PageTitle>
+
+<MudStack Spacing="4">
+    <PageHeader Title="@(_payment?.Number ?? L["SupplierPaymentView_DefaultTitle"])" Breadcrumbs="Breadcrumbs">
+        <Actions>
+            <MudButton Variant="Variant.Text" StartIcon="@Icons.Material.Filled.ArrowBack"
+                       OnClick="@(() => Navigation.NavigateTo("supplier-payments"))">
+                @L["Common_Back"]
+            </MudButton>
+        </Actions>
+    </PageHeader>
+
+    @if (!string.IsNullOrWhiteSpace(_error))
+    {
+        <MudAlert Severity="Severity.Error" Dense="true">@_error</MudAlert>
+    }
+
+    @if (_loading)
+    {
+        <MudProgressLinear Indeterminate="true" Color="Color.Primary" />
+    }
+    else if (_payment is null)
+    {
+        <MudAlert Severity="Severity.Warning">@L["SupplierPaymentView_NotFound"]</MudAlert>
+    }
+    else
+    {
+        @if (_payment.IsVoided)
+        {
+            <MudAlert Severity="Severity.Error">
+                @string.Format(L["SupplierPaymentView_VoidedAlert"], _payment.VoidedAtUtc?.ToString("yyyy-MM-dd HH:mm"), _payment.VoidReason)
+            </MudAlert>
+        }
+
+        <MudPaper Elevation="0" Class="pa-4 erp-card erp-form">
+            <MudGrid>
+                <MudItem xs="12" md="4">
+                    <MudText Typo="Typo.caption" Color="Color.Secondary">@L["SupplierPaymentView_SupplierLabel"]</MudText>
+                    <MudText>@_payment.Supplier.Name</MudText>
+                    <MudText Typo="Typo.body2" Color="Color.Secondary">@string.Format(L["SupplierPaymentView_TaxIdPrefix"], _payment.Supplier.TaxId)</MudText>
+                </MudItem>
+                <MudItem xs="6" md="2">
+                    <MudText Typo="Typo.caption" Color="Color.Secondary">@L["SupplierPaymentView_DateLabel"]</MudText>
+                    <MudText>@_payment.PaymentDate.ToString("yyyy-MM-dd")</MudText>
+                </MudItem>
+                <MudItem xs="6" md="3">
+                    <MudText Typo="Typo.caption" Color="Color.Secondary">@L["SupplierPaymentView_RecordedAtLabel"]</MudText>
+                    <MudText>@_payment.CreatedAtUtc.ToString("yyyy-MM-dd HH:mm") UTC</MudText>
+                </MudItem>
+                <MudItem xs="12" md="3">
+                    <MudText Typo="Typo.caption" Color="Color.Secondary">@L["SupplierPaymentView_TotalLabel"]</MudText>
+                    <MudText Typo="Typo.h5" Color="Color.Primary">@_payment.Total.ToString("N2")</MudText>
+                </MudItem>
+
+                @if (!string.IsNullOrWhiteSpace(_payment.Description))
+                {
+                    <MudItem xs="12">
+                        <MudText Typo="Typo.caption" Color="Color.Secondary">@L["SupplierPaymentView_NotesLabel"]</MudText>
+                        <MudText>@_payment.Description</MudText>
+                    </MudItem>
+                }
+            </MudGrid>
+
+            <MudAlert Severity="Severity.Info" Dense="true" Class="mt-3">
+                @L["SupplierPaymentView_NotFiscalInfo"]
+            </MudAlert>
+        </MudPaper>
+
+        <MudPaper Elevation="0" Class="pa-2 erp-card erp-form">
+            <MudTable Items="_payment.Lines" Dense="true" Hover="true" Striped="true" Breakpoint="Breakpoint.Sm">
+                <ToolBarContent>
+                    <MudText Typo="Typo.h6">@L["SupplierPaymentView_DocumentsTitle"]</MudText>
+                </ToolBarContent>
+                <HeaderContent>
+                    <MudTh Style="width: 50px;">#</MudTh>
+                    <MudTh>@L["SupplierPaymentView_TypeColumn"]</MudTh>
+                    <MudTh>@L["SupplierPaymentView_DocumentColumn"]</MudTh>
+                    <MudTh>@L["SupplierPaymentView_DocumentDateColumn"]</MudTh>
+                    <MudTh Style="text-align: right;">@L["SupplierPaymentView_AppliedColumn"]</MudTh>
+                    <MudTh Style="width: 70px; text-align: right;">@L["Common_ActionsColumn"]</MudTh>
+                </HeaderContent>
+                <RowTemplate>
+                    <MudTd DataLabel="#">@context.LineNumber</MudTd>
+                    <MudTd DataLabel="@L["SupplierPaymentView_TypeColumn"]">
+                        <MudChip T="string" Size="Size.Small" Variant="Variant.Text"
+                                 Color="@(context.IsCredit ? Color.Success : Color.Default)">@context.DocumentType</MudChip>
+                        @if (context.IsCredit)
+                        {
+                            <MudChip T="string" Size="Size.Small" Variant="Variant.Text" Color="Color.Success">
+                                @L["NewSupplierPayment_CreditChip"]
+                            </MudChip>
+                        }
+                        @if (context.DocumentKind == PayableDocumentKinds.SelfBilledInvoice)
+                        {
+                            <MudChip T="string" Size="Size.Small" Variant="Variant.Text" Color="Color.Info">
+                                @L["NewSupplierPayment_SelfBilledChip"]
+                            </MudChip>
+                        }
+                    </MudTd>
+                    <MudTd DataLabel="@L["SupplierPaymentView_DocumentColumn"]">
+                        <MudText Typo="Typo.body2" Class="erp-mono">@context.DocumentNumber</MudText>
+                    </MudTd>
+                    <MudTd DataLabel="@L["SupplierPaymentView_DocumentDateColumn"]">@context.DocumentDate.ToString("yyyy-MM-dd")</MudTd>
+                    <MudTd DataLabel="@L["SupplierPaymentView_AppliedColumn"]" Style="text-align: right;">
+                        @((context.IsCredit ? -context.AppliedAmount : context.AppliedAmount).ToString("N2"))
+                    </MudTd>
+                    <MudTd DataLabel="@L["Common_ActionsColumn"]" Style="text-align: right;">
+                        <MudIconButton Icon="@Icons.Material.Filled.Visibility" Size="Size.Small"
+                                       title="@L["SupplierPaymentView_ViewDocumentTitle"]"
+                                       OnClick="@(() => Navigation.NavigateTo(PayableDocumentKinds.ViewRoute(context.DocumentKind, context.DocumentId)))" />
+                    </MudTd>
+                </RowTemplate>
+            </MudTable>
+
+            @if (_payment.Lines.Any(line => line.IsCredit))
+            {
+                <MudStack Row="true" Justify="Justify.FlexEnd" Spacing="6" Class="pa-2">
+                    <MudText Typo="Typo.body2">
+                        @L["NewSupplierPayment_DocumentsTotalLabel"]: <strong>@_payment.Lines.Where(line => !line.IsCredit).Sum(line => line.AppliedAmount).ToString("N2")</strong>
+                    </MudText>
+                    <MudText Typo="Typo.body2" Color="Color.Success">
+                        @L["NewSupplierPayment_CreditTotalLabel"]: <strong>@((-_payment.Lines.Where(line => line.IsCredit).Sum(line => line.AppliedAmount)).ToString("N2"))</strong>
+                    </MudText>
+                    <MudText Typo="Typo.body2">
+                        @L["SupplierPaymentView_TotalLabel"]: <strong>@_payment.Total.ToString("N2")</strong>
+                    </MudText>
+                </MudStack>
+            }
+        </MudPaper>
+
+        @if (_payment.Methods.Count == 0)
+        {
+            <MudAlert Severity="Severity.Info" Dense="true">@L["SupplierPaymentView_CoveredByCreditInfo"]</MudAlert>
+        }
+        else
+        {
+        <MudPaper Elevation="0" Class="pa-2 erp-card erp-form">
+            <MudTable Items="_payment.Methods" Dense="true" Hover="true" Striped="true" Breakpoint="Breakpoint.Sm">
+                <ToolBarContent>
+                    <MudText Typo="Typo.h6">@L["SupplierPaymentView_MethodsTitle"]</MudText>
+                </ToolBarContent>
+                <HeaderContent>
+                    <MudTh>@L["SupplierPaymentView_MethodColumn"]</MudTh>
+                    <MudTh>@L["SupplierPaymentView_DateLabel"]</MudTh>
+                    <MudTh Style="text-align: right;">@L["SupplierPaymentView_AmountColumn"]</MudTh>
+                </HeaderContent>
+                <RowTemplate>
+                    <MudTd DataLabel="@L["SupplierPaymentView_MethodColumn"]">@PaymentMechanismOptions.Describe(context.Mechanism)</MudTd>
+                    <MudTd DataLabel="@L["SupplierPaymentView_DateLabel"]">@context.PaymentDate.ToString("yyyy-MM-dd")</MudTd>
+                    <MudTd DataLabel="@L["SupplierPaymentView_AmountColumn"]" Style="text-align: right;">@context.Amount.ToString("N2")</MudTd>
+                </RowTemplate>
+            </MudTable>
+        </MudPaper>
+        }
+
+        @if (!_payment.IsVoided)
+        {
+            <MudExpansionPanels>
+                <MudExpansionPanel Text="@L["SupplierPaymentView_VoidPanelTitle"]">
+                    <MudText Typo="Typo.body2" Color="Color.Secondary" Class="mb-3">
+                        @L["SupplierPaymentView_VoidHelpText"]
+                    </MudText>
+
+                    <MudStack Row="true" Spacing="2" AlignItems="AlignItems.Center">
+                        <MudTextField @bind-Value="_reason" @bind-Value:after="StateHasChanged" Immediate="true"
+                                      Label="@L["SupplierPaymentView_ReasonLabel"]" Variant="Variant.Outlined" Margin="Margin.Dense"
+                                      Style="max-width: 480px;" />
+                        <MudButton Variant="Variant.Filled" Color="Color.Error"
+                                   StartIcon="@Icons.Material.Filled.Cancel"
+                                   Disabled="@(_working || string.IsNullOrWhiteSpace(_reason))"
+                                   OnClick="VoidAsync">
+                            @L["SupplierPaymentView_VoidButton"]
+                        </MudButton>
+                    </MudStack>
+                </MudExpansionPanel>
+            </MudExpansionPanels>
+        }
+    }
+</MudStack>
+
+@code {
+    [Parameter]
+    public Guid Id { get; set; }
+
+    private bool _loading = true;
+    private bool _working;
+    private string? _error;
+    private string _reason = string.Empty;
+    private Guid? _loadedId;
+
+    private SupplierPayment? _payment;
+
+    private List<BreadcrumbItem> Breadcrumbs =>
+    [
+        new(L["SupplierPayments_Title"].Value, href: "supplier-payments"),
+        new(_payment?.Number ?? L["SupplierPaymentView_DefaultTitle"].Value, href: null, disabled: true)
+    ];
+
+    protected override async Task OnParametersSetAsync()
+    {
+        // A layout re-render sets the parameters again; only reload when the route changed.
+        if (_loadedId == Id)
+            return;
+
+        _loadedId = Id;
+        await LoadAsync();
+    }
+
+    private async Task LoadAsync()
+    {
+        _loading = true;
+        _error = null;
+
+        try
+        {
+            _payment = await Purchasing.GetSupplierPaymentAsync(Id);
+        }
+        catch (Exception ex)
+        {
+            _error = string.Format(L["SupplierPaymentView_LoadError"], ex.Message);
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private async Task VoidAsync()
+    {
+        _working = true;
+        _error = null;
+
+        try
+        {
+            var (payment, error) = await Purchasing.VoidSupplierPaymentAsync(Id, _reason.Trim());
+
+            if (payment is null)
+            {
+                _error = error ?? L["SupplierPaymentView_VoidFallbackError"];
+                return;
+            }
+
+            _payment = payment;
+            _reason = string.Empty;
+            Snackbar.Add(L["SupplierPaymentView_VoidSuccess"], Severity.Success);
+        }
+        catch (Exception ex)
+        {
+            _error = string.Format(L["SupplierPaymentView_VoidError"], ex.Message);
+        }
+        finally
+        {
+            _working = false;
+        }
+    }
+}

@@ -5,6 +5,7 @@
 @using Microsoft.AspNetCore.Components.Web
 @using Microsoft.Extensions.Localization
 @using MudBlazor
+@using Erp.Main.Components.Common
 @using Erp.Main.Models
 @using Erp.Main.Models.Core
 @using Erp.Main.Resources
@@ -15,17 +16,17 @@
 @inject ISnackbar Snackbar
 @inject IStringLocalizer<MainResources> Localizer
 
-<PageTitle>@(IsNew ? Localizer["BrandEditor_NewTitle"] : Localizer["BrandEditor_EditTitle"])</PageTitle>
+<PageTitle>@Title</PageTitle>
 
-<MudStack Spacing="4">
-    <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center">
-        <MudText Typo="Typo.h4">@(IsNew ? Localizer["BrandEditor_NewTitle"] : Localizer["BrandEditor_EditTitle"])</MudText>
-
-        <MudButton Variant="Variant.Text" StartIcon="@Icons.Material.Filled.ArrowBack"
-                   OnClick="@(() => Navigation.NavigateTo("brands"))">
-            @Localizer["Common_Back"]
-        </MudButton>
-    </MudStack>
+<MudStack Spacing="3">
+    <PageHeader Title="@Title" Breadcrumbs="Breadcrumbs">
+        <Actions>
+            <MudButton Variant="Variant.Text" StartIcon="@Icons.Material.Filled.ArrowBack"
+                       OnClick="@(() => Navigation.NavigateTo("brands"))">
+                @Localizer["Common_Back"]
+            </MudButton>
+        </Actions>
+    </PageHeader>
 
     @if (!string.IsNullOrWhiteSpace(_error))
     {
@@ -38,34 +39,32 @@
     }
     else
     {
-        <MudPaper Elevation="1" Class="pa-4">
-            <MudGrid Spacing="3">
-                <MudItem xs="12" sm="3" md="3">
-                    <MudTextField @bind-Value="_code" Label="@Localizer["Common_CodeColumn"]" Variant="Variant.Outlined" Margin="Margin.Dense"
-                                  Disabled="@(!IsNew)"
-                                  HelperText="@(!IsNew ? Localizer["BrandEditor_CodeHelperText"].Value : Localizer["Common_CodeOptionalHelperText"].Value)" />
-                </MudItem>
-                <MudItem xs="12" sm="9" md="9">
-                    <MudTextField @bind-Value="_name" Label="@Localizer["Common_NameColumn"]" Variant="Variant.Outlined" Margin="Margin.Dense" Required="true" />
-                </MudItem>
-
+        <EditorCard Title="@Title" Icon="@Icons.Material.Filled.Sell">
+            <HeaderActions>
                 @if (!IsNew)
                 {
-                    <MudItem xs="12">
-                        <MudSwitch @bind-Value="_isActive" Color="Color.Primary" Label="@Localizer["BrandEditor_ActiveLabel"]" />
-                    </MudItem>
+                    <MudSwitch @bind-Value="_isActive" Color="Color.Primary" Size="Size.Small" Label="@Localizer["BrandEditor_ActiveLabel"]" />
                 }
-            </MudGrid>
+            </HeaderActions>
+            <ChildContent>
+                @* Name first, then the code: the code is numbered by the API and never typed here. *@
+                <MudGrid Spacing="3">
+                    <MudItem xs="12" sm="9">
+                        <MudTextField @bind-Value="_name" Immediate="true" Label="@Localizer["Common_NameColumn"]"
+                                      Variant="Variant.Outlined" Margin="Margin.Dense" Required="true" />
+                    </MudItem>
+                    <MudItem xs="12" sm="3">
+                        <MudTextField Value="_code" ReadOnly="true" Disabled="true" Label="@Localizer["Common_CodeColumn"]"
+                                      Variant="Variant.Outlined" Margin="Margin.Dense"
+                                      Placeholder="@Localizer["PartnerForm_CodeAutomaticPlaceholder"]" />
+                    </MudItem>
+                </MudGrid>
+            </ChildContent>
+        </EditorCard>
 
-            <MudStack Row="true" Justify="Justify.FlexEnd" Class="mt-4">
-                <MudButton Variant="Variant.Filled" Color="Color.Primary"
-                           StartIcon="@Icons.Material.Filled.Save"
-                           Disabled="@(_saving || !CanSave)"
-                           OnClick="SaveAsync">
-                    @Localizer["Common_SaveButton"]
-                </MudButton>
-            </MudStack>
-        </MudPaper>
+        <FormActions Busy="_saving" Disabled="@(!CanSave)"
+                     OnSubmit="SaveAsync"
+                     OnCancel="@(() => Navigation.NavigateTo("brands"))" />
     }
 </MudStack>
 
@@ -74,6 +73,14 @@
     public Guid? Id { get; set; }
 
     private bool IsNew => Id is null;
+
+    private string Title => IsNew ? Localizer["BrandEditor_NewTitle"] : Localizer["BrandEditor_EditTitle"];
+
+    private List<BreadcrumbItem> Breadcrumbs =>
+    [
+        new(Localizer["Brands_PageTitle"].Value, href: "brands"),
+        new(Title, href: null, disabled: true)
+    ];
 
     private bool _loading;
     private bool _saving;
@@ -136,12 +143,10 @@
 
         try
         {
-            if (IsNew && string.IsNullOrWhiteSpace(_code))
-                _code = CodeGenerator.Generate();
-
+            // A blank code asks the API for the next number.
             var error = IsNew
                 ? await Catalog.CreateBrandAsync(new CreateBrandRequest(
-                    Company.SelectedCompanyId, _code.Trim(), _name.Trim()))
+                    Company.SelectedCompanyId, string.Empty, _name.Trim()))
                 : await Catalog.UpdateBrandAsync(Id!.Value, new UpdateBrandRequest(_name.Trim(), _isActive));
 
             if (error is not null)

@@ -13,6 +13,7 @@
 @inject CatalogApiClient Catalog
 @inject StockApiClient StockApi
 @inject CompanyState Company
+@inject WarehouseState WarehouseState
 @inject NavigationManager Navigation
 @inject ISnackbar Snackbar
 @inject IStringLocalizer<MainResources> L
@@ -106,6 +107,7 @@
                     <MudTh Style="width: 100px;">@L["PurchaseOrderEditor_QuantityColumn"]</MudTh>
                     <MudTh Style="width: 90px;">@L["PurchaseOrderEditor_UnitColumn"]</MudTh>
                     <MudTh Style="width: 130px;">@L["PurchaseOrderEditor_UnitCostColumn"]</MudTh>
+                    <MudTh Style="width: 100px;">@L["PurchaseOrderEditor_DiscountColumn"]</MudTh>
                     <MudTh Style="width: 150px;">@L["PurchaseOrderEditor_TaxColumn"]</MudTh>
                     <MudTh Style="width: 110px; text-align: right;">@L["PurchaseOrderEditor_TotalColumn"]</MudTh>
                     <MudTh Style="width: 70px; text-align: right;">@L["PurchaseOrderEditor_ActionsColumn"]</MudTh>
@@ -143,6 +145,10 @@
                     <MudTd DataLabel="@L["PurchaseOrderEditor_UnitCostColumn"]">
                         <MudNumericField @bind-Value="context.UnitPrice" @bind-Value:after="StateHasChanged"
                                          Margin="Margin.Dense" Min="0" Format="N2" />
+                    </MudTd>
+                    <MudTd DataLabel="@L["PurchaseOrderEditor_DiscountColumn"]">
+                        <MudNumericField @bind-Value="context.DiscountPercentage" @bind-Value:after="StateHasChanged"
+                                         Margin="Margin.Dense" Min="0" Max="100" Format="N2" Adornment="Adornment.End" AdornmentText="%" />
                     </MudTd>
                     <MudTd DataLabel="@L["PurchaseOrderEditor_TaxColumn"]">
                         <MudSelect T="string" Value="context.TaxCode"
@@ -245,6 +251,7 @@
     protected override async Task OnInitializedAsync()
     {
         Company.Changed += OnCompanyChanged;
+        WarehouseState.Changed += OnWarehouseStateChanged;
         await Company.EnsureLoadedAsync();
     }
 
@@ -284,8 +291,8 @@
             var (suppliers, suppliersError) = await Catalog.GetSuppliersAsync(Company.SelectedCompanyId);
             _suppliers = [.. suppliers.Where(supplier => supplier.IsActive)];
 
-            var (warehouses, warehousesError) = await StockApi.GetWarehousesAsync(Company.SelectedCompanyId);
-            _warehouses = [.. warehouses.Where(warehouse => warehouse.IsActive)];
+            await WarehouseState.EnsureLoadedAsync();
+            _warehouses = [.. WarehouseState.Warehouses];
 
             var (products, productsError) = await Catalog.GetProductsAsync(Company.SelectedCompanyId);
             _products = [.. products.Where(product => product.IsActive)];
@@ -294,10 +301,10 @@
             var (rates, _) = await Catalog.GetVatRatesAsync();
             _taxRates = [.. rates.Where(x => x.FiscalRegion == "PT" && x.IsActive)];
 
-            _error = suppliersError ?? warehousesError ?? productsError;
+            _error = suppliersError ?? WarehouseState.LoadError ?? productsError;
 
-            _warehouseId ??= _warehouses.FirstOrDefault(warehouse => warehouse.IsDefault)?.Id
-                             ?? _warehouses.FirstOrDefault()?.Id;
+            if (IsNew)
+                _warehouseId = WarehouseState.HasWarehouse ? WarehouseState.SelectedWarehouseId : null;
 
             if (!IsNew)
                 await LoadOrderAsync();
@@ -351,7 +358,8 @@
                 UnitOfMeasure = line.UnitOfMeasure,
                 UnitPrice = line.UnitPrice,
                 TaxCode = line.TaxCode,
-                TaxPercentage = line.TaxPercentage
+                TaxPercentage = line.TaxPercentage,
+                DiscountPercentage = line.DiscountPercentage
             });
         }
 
@@ -411,7 +419,8 @@
                     line.UnitOfMeasure,
                     "PT",
                     line.TaxCode,
-                    line.TaxPercentage))
+                    line.TaxPercentage,
+                    line.DiscountPercentage))
                 .ToList();
 
             var orderDate = DateOnly.FromDateTime(_orderDate!.Value);
@@ -457,7 +466,8 @@
     private void GoBack() =>
         Navigation.NavigateTo(IsNew ? "purchase-orders" : $"purchase-orders/{Id}");
 
-    private static decimal LineTotal(LineEditor line) => Round(line.Quantity * line.UnitPrice);
+    private static decimal LineTotal(LineEditor line) =>
+        Round(Round(line.Quantity * line.UnitPrice) * (1 - line.DiscountPercentage / 100m));
 
     private static decimal Round(decimal value) => Math.Round(value, 2, MidpointRounding.AwayFromZero);
 
@@ -472,7 +482,19 @@
         public decimal UnitPrice { get; set; }
         public string TaxCode { get; set; } = "NOR";
         public decimal TaxPercentage { get; set; } = 23m;
+        public decimal DiscountPercentage { get; set; }
     }
 
-    public void Dispose() => Company.Changed -= OnCompanyChanged;
+    public void Dispose()
+    {
+        Company.Changed -= OnCompanyChanged;
+        WarehouseState.Changed -= OnWarehouseStateChanged;
+    }
+
+    private void OnWarehouseStateChanged() => InvokeAsync(() =>
+    {
+        if (IsNew)
+            _warehouseId = WarehouseState.HasWarehouse ? WarehouseState.SelectedWarehouseId : null;
+        StateHasChanged();
+    });
 }

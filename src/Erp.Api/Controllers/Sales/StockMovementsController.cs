@@ -1,7 +1,9 @@
 using System.Security.Claims;
+using Erp.Api.Security;
 using Erp.Api.Services;
 using Erp.Core.Infrastructure.Application;
 using Erp.FiscalPT.AtWebservice.TransportDocuments;
+using Erp.Sales.Domain;
 using Erp.Sales.Infrastructure.Application;
 using Erp.Sales.Infrastructure.Contracts;
 using Microsoft.AspNetCore.Authorization;
@@ -18,6 +20,7 @@ namespace Erp.Api.Controllers.Sales;
 [Route("api/stock-movements")]
 [Authorize]
 [Produces("application/json")]
+[ScopedEntity(typeof(StockMovement))]
 public sealed class StockMovementsController(
     IStockMovementService stockMovementService,
     IWarehouseService warehouseService,

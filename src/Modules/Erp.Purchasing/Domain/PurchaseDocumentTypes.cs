@@ -27,6 +27,16 @@ public static class PurchaseDocumentTypes
         All.Contains(documentType, StringComparer.Ordinal);
 
     /// <summary>
+    /// Types that leave us owing money, and so can be settled by a payment. A fatura-recibo was paid
+    /// when it was issued, and a nota de crédito lowers the debt instead of creating it — the same
+    /// split as on the sales side.
+    /// </summary>
+    public static readonly string[] SettledByPayment = [Invoice, SimplifiedInvoice, DebitNote];
+
+    public static bool IsSettledByPayment(string documentType) =>
+        SettledByPayment.Contains(documentType, StringComparer.Ordinal);
+
+    /// <summary>
     /// True for the documents that give value back rather than charge it. A credit note from a
     /// supplier reduces what we owe and reverses the input VAT we deducted.
     /// </summary>

@@ -23,7 +23,13 @@ public sealed class PurchaseOrderLine
     /// <summary>What the supplier is charging. Becomes the cost the goods enter stock with.</summary>
     public decimal UnitPrice { get; set; }
 
-    /// <summary>Line total without VAT.</summary>
+    /// <summary>Discount agreed with the supplier, as a percentage of the gross line amount.</summary>
+    public decimal DiscountPercentage { get; set; }
+
+    /// <summary>The discount in currency, worked out from <see cref="DiscountPercentage"/>.</summary>
+    public decimal DiscountAmount { get; set; }
+
+    /// <summary>Line total without VAT, after the discount.</summary>
     public decimal LineAmount { get; set; }
 
     public string TaxCountryRegion { get; set; } = "PT";

@@ -1,7 +1,9 @@
 using System.Security.Claims;
+using Erp.Api.Security;
 using Erp.Api.Services;
 using Erp.Common;
 using Erp.FiscalPT.AtWebservice.Series;
+using Erp.SeriesRegistry.Domain;
 using Erp.SeriesRegistry.Infrastructure.Application;
 using Erp.SeriesRegistry.Infrastructure.Contracts;
 using Microsoft.AspNetCore.Authorization;
@@ -15,6 +17,7 @@ namespace Erp.Api.Controllers.SeriesRegistry;
 [Route("api/series")]
 [Authorize]
 [Produces("application/json")]
+[ScopedEntity(typeof(Series))]
 public sealed class SeriesController(ISeriesService seriesService, ILogger<SeriesController> logger) : ControllerBase
 {
     /// <summary>Lists the series of a company.</summary>

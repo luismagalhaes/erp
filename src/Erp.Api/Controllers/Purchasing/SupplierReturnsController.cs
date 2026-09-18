@@ -1,6 +1,8 @@
 using System.Security.Claims;
+using Erp.Api.Security;
 using Erp.Api.Services;
 using Erp.Core.Infrastructure.Application;
+using Erp.Purchasing.Domain;
 using Erp.Purchasing.Infrastructure.Application;
 using Erp.Purchasing.Infrastructure.Contracts;
 using Microsoft.AspNetCore.Authorization;
@@ -22,6 +24,7 @@ namespace Erp.Api.Controllers.Purchasing;
 [Route("api/supplier-returns")]
 [Authorize]
 [Produces("application/json")]
+[ScopedEntity(typeof(SupplierReturn))]
 public sealed class SupplierReturnsController(
     ISupplierReturnService returnService,
     ISupplierService supplierService,

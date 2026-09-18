@@ -1,0 +1,80 @@
+@page "/eco-fee-types"
+@attribute [Authorize]
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.AspNetCore.Components.Web
+@using Microsoft.Extensions.Localization
+@using MudBlazor
+@using Erp.Main.Components.Common
+@using Erp.Main.Models
+@using Erp.Main.Resources
+@using Erp.Main.Services
+@inject CatalogApiClient Catalog
+@inject CompanyState Company
+@inject NavigationManager Navigation
+@inject IStringLocalizer<MainResources> Localizer
+
+<PageTitle>@Localizer["EcoFeeTypes_PageTitle"]</PageTitle>
+
+<MudStack Spacing="4">
+    <PageHeader Title="@Localizer["EcoFeeTypes_PageTitle"]" Description="@Localizer["EcoFeeTypes_PageDescription"]">
+        <Actions>
+            <MudButton Variant="Variant.Filled" Color="Color.Primary"
+                       StartIcon="@Icons.Material.Filled.Add"
+                       Disabled="@(!Company.HasCompany)"
+                       OnClick="@(() => Navigation.NavigateTo("eco-fee-types/new"))">
+                @Localizer["EcoFeeTypes_NewEcoFeeType"]
+            </MudButton>
+        </Actions>
+    </PageHeader>
+
+    <DataGrid T="EcoFeeType"
+              LoadAsync="@((companyId, query, ct) => Catalog.QueryEcoFeeTypesAsync(companyId, query, ct))"
+              SearchFields="SearchFields" DefaultOrderBy="Code"
+              SearchPlaceholder="@Localizer["EcoFeeTypes_SearchPlaceholder"]"
+              EmptyIcon="@Icons.Material.Filled.Recycling"
+              EmptyTitle="@Localizer["EcoFeeTypes_EmptyTitle"]"
+              EmptyDescription="@Localizer["EcoFeeTypes_EmptyDescription"]"
+              ItemsLabel="@Localizer["EcoFeeTypes_ItemsLabel"]"
+              LoadErrorMessage="@Localizer["EcoFeeTypes_LoadErrorMessage"]">
+        <Columns>
+            <PropertyColumn Property="x => x.Code" Title="@Localizer["Common_CodeColumn"]" />
+            <PropertyColumn Property="x => x.Description" Title="@Localizer["Common_NameColumn"]" />
+            <PropertyColumn Property="x => x.CalculationBasis" Title="@Localizer["EcoFeeTypes_BasisColumn"]">
+                <CellTemplate>@EcoFeeCalculationBases.Describe(context.Item.CalculationBasis)</CellTemplate>
+            </PropertyColumn>
+            <PropertyColumn Property="x => x.Rate" Title="@Localizer["EcoFeeTypes_RateColumn"]">
+                <CellTemplate>@context.Item.Rate.ToString("N4")</CellTemplate>
+            </PropertyColumn>
+            <PropertyColumn Property="x => x.ManagingEntityName" Title="@Localizer["EcoFeeTypes_ManagingEntityColumn"]" />
+            <PropertyColumn Property="x => x.IsActive" Title="@Localizer["Common_StatusColumn"]">
+                <CellTemplate>
+                    <MudChip T="string" Size="Size.Small" Variant="Variant.Text"
+                             Color="@(context.Item.IsActive ? Color.Success : Color.Default)">
+                        @(context.Item.IsActive ? Localizer["Brands_Active"] : Localizer["Brands_Inactive"])
+                    </MudChip>
+                </CellTemplate>
+            </PropertyColumn>
+            <TemplateColumn Title="" Sortable="false" Filterable="false" Hideable="false"
+                            StickyRight="true"
+                            CellClass="erp-numeric" HeaderClass="erp-numeric">
+                <CellTemplate>
+                    <MudMenu Icon="@Icons.Material.Filled.MoreVert" Size="Size.Small"
+                             AnchorOrigin="Origin.BottomRight" TransformOrigin="Origin.TopRight">
+                        <MudMenuItem Icon="@Icons.Material.Filled.Edit"
+                                     OnClick="@(() => Navigation.NavigateTo($"eco-fee-types/{context.Item.Id}"))">
+                            @Localizer["Common_EditAction"]
+                        </MudMenuItem>
+                    </MudMenu>
+                </CellTemplate>
+            </TemplateColumn>
+        </Columns>
+    </DataGrid>
+</MudStack>
+
+@code {
+    /// <summary>
+    /// Maps the toolbar search to the DTO members the API exposes, so a renamed column never
+    /// produces an invalid $filter.
+    /// </summary>
+    private static readonly string[] SearchFields = ["Code", "Description", "ManagingEntityName"];
+}

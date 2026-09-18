@@ -50,6 +50,21 @@ public abstract class ApiClientBase(HttpClient http)
             : default;
     }
 
+    /// <summary>Like <see cref="GetSingleAsync{T}"/>, but says why when the API refuses.</summary>
+    protected async Task<(T? Item, string? Error)> GetSingleOrErrorAsync<T>(string route, CancellationToken cancellationToken)
+    {
+        var response = await Http.GetAsync(route, cancellationToken);
+
+        return response.IsSuccessStatusCode
+            ? (await response.Content.ReadFromJsonAsync<T>(cancellationToken), null)
+            : (default, await ApiResponse.ReadErrorAsync(response, cancellationToken));
+    }
+
+    /// <summary>The period of a statement, as the query string the statement endpoints read.</summary>
+    protected static string PeriodQuery(DateOnly? startDate, DateOnly? endDate) =>
+        (startDate is { } start ? $"&startDate={start:yyyy-MM-dd}" : string.Empty)
+        + (endDate is { } end ? $"&endDate={end:yyyy-MM-dd}" : string.Empty);
+
     /// <summary>Returns null when it worked, or the message the API gave for refusing.</summary>
     protected static async Task<string?> SendAsync(
         Func<Task<HttpResponseMessage>> send,

@@ -1,4 +1,6 @@
 using System.Security.Claims;
+using Erp.Api.Security;
+using Erp.Api.Services;
 using Erp.Core.Infrastructure.Application;
 using Erp.Core.Infrastructure.Contracts;
 using Erp.Common;
@@ -23,7 +25,12 @@ public sealed class AccessController(IUserCompanyService userCompanyService) : C
         return Ok(companies);
     }
 
+    /// <summary>
+    /// A caller checking its own access has to get a real answer whether it has one or not — that
+    /// is the whole point of the endpoint — so it is exempt from <see cref="RequireCompanyAccessFilter"/>.
+    /// </summary>
     [HttpGet("me/companies/{companyId:guid}/role")]
+    [AllowAnyCompany]
     public async Task<ActionResult<UserCompanyRoleDto>> GetMyRole(Guid companyId, CancellationToken cancellationToken)
     {
         var userId = GetCurrentUserId();
@@ -37,7 +44,15 @@ public sealed class AccessController(IUserCompanyService userCompanyService) : C
         return Ok(new UserCompanyRoleDto(companyId, role));
     }
 
+    /// <summary>
+    /// Checks an arbitrary user's role in an arbitrary company — meant for service to service
+    /// checks, never for a regular client, so it is restricted to SuperAdmin. It is also exempt
+    /// from <see cref="RequireCompanyAccessFilter"/>: that filter checks the caller's own company
+    /// membership, which is beside the point here, since the whole request is about someone else's.
+    /// </summary>
     [HttpPost("check-role")]
+    [Authorize(Policy = Policies.Admin)]
+    [AllowAnyCompany]
     public async Task<ActionResult<CheckRoleResponse>> CheckRole([FromBody] CheckRoleRequest request, CancellationToken cancellationToken)
     {
         var allowed = await userCompanyService.HasRoleAsync(request.UserId, request.CompanyId, request.Role, cancellationToken);

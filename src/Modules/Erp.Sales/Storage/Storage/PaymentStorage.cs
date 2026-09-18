@@ -22,6 +22,22 @@ public sealed class PaymentStorage(AppDbContext dbContext) : IPaymentStorage
             .ToListAsync(cancellationToken);
     }
 
+    public async Task<IReadOnlyList<Payment>> GetForPartyAsync(
+        Guid companyId,
+        string partyTaxId,
+        DateOnly? endDate = null,
+        CancellationToken cancellationToken = default)
+    {
+        return await dbContext.Set<Payment>()
+            .AsNoTracking()
+            .Include(x => x.StatusChanges)
+            .Where(x => x.CompanyId == companyId && x.PartyTaxId == partyTaxId)
+            .Where(x => endDate == null || x.TransactionDate <= endDate)
+            .OrderBy(x => x.TransactionDate)
+            .ThenBy(x => x.SystemEntryDateUtc)
+            .ToListAsync(cancellationToken);
+    }
+
     /// <summary>
     /// The status is derived from the append-only status changes, which the entity resolves in
     /// memory. Here the same rule is written as a subquery so the database can filter and sort by

@@ -1,0 +1,127 @@
+@using MudBlazor
+@using Erp.Main.Models.Sales
+@using Erp.Main.Resources
+@using Microsoft.Extensions.Localization
+@inject IStringLocalizer<MainResources> L
+
+@*
+    How money was received: one or more methods that have to add up to a total. While there is a
+    single method it follows the total; once the user splits the payment, the amounts are theirs.
+*@
+<MudTable Items="Methods" Dense="true" Hover="true" Breakpoint="Breakpoint.Sm" Elevation="0">
+    <HeaderContent>
+        <MudTh>@L["PaymentMethods_MethodColumn"]</MudTh>
+        <MudTh Style="width: 170px;">@L["PaymentMethods_DateColumn"]</MudTh>
+        <MudTh Style="width: 160px; text-align: right;">@L["PaymentMethods_AmountColumn"]</MudTh>
+        <MudTh Style="width: 60px; text-align: right;"></MudTh>
+    </HeaderContent>
+    <RowTemplate>
+        <MudTd DataLabel="@L["PaymentMethods_MethodColumn"]">
+            <MudSelect T="string" @bind-Value="context.Mechanism" @bind-Value:after="NotifyAsync" Margin="Margin.Dense" Variant="Variant.Outlined">
+                @foreach (var mechanism in PaymentMechanismOptions.All)
+                {
+                    <MudSelectItem T="string" Value="@mechanism.Code">@mechanism.Label</MudSelectItem>
+                }
+            </MudSelect>
+        </MudTd>
+        <MudTd DataLabel="@L["PaymentMethods_DateColumn"]">
+            <MudDatePicker @bind-Date="context.PaymentDate" @bind-Date:after="NotifyAsync" Margin="Margin.Dense"
+                           Variant="Variant.Outlined" DateFormat="yyyy-MM-dd" />
+        </MudTd>
+        <MudTd DataLabel="@L["PaymentMethods_AmountColumn"]">
+            <MudNumericField T="decimal" @bind-Value="context.Amount" @bind-Value:after="NotifyAsync" Margin="Margin.Dense"
+                             Variant="Variant.Outlined" Min="0" Format="N2" />
+        </MudTd>
+        <MudTd Style="text-align: right;">
+            <MudIconButton Icon="@Icons.Material.Filled.Delete" Size="Size.Small" Color="Color.Error"
+                           title="@L["PaymentMethods_RemoveTitle"]"
+                           Disabled="@(Methods.Count == 1)"
+                           OnClick="@(() => RemoveAsync(context))" />
+        </MudTd>
+    </RowTemplate>
+</MudTable>
+
+<MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center" Class="mt-2">
+    <MudButton Variant="Variant.Text" Color="Color.Primary" Size="Size.Small"
+               StartIcon="@Icons.Material.Filled.Add" OnClick="AddAsync">
+        @L["PaymentMethods_AddButton"]
+    </MudButton>
+
+    @if (Methods.Count > 0 && MethodsTotal != Total)
+    {
+        <MudStack Row="true" Spacing="2" AlignItems="AlignItems.Center">
+            <MudText Typo="Typo.body2" Color="Color.Warning">
+                @string.Format(
+                    Missing > 0 ? L["PaymentMethods_MissingWarning"] : L["PaymentMethods_ExcessWarning"],
+                    MethodsTotal.ToString("N2"),
+                    Total.ToString("N2"),
+                    Math.Abs(Missing).ToString("N2"))
+            </MudText>
+            <MudButton Variant="Variant.Text" Color="Color.Primary" Size="Size.Small" OnClick="SettleRemainderAsync">
+                @L["PaymentMethods_SettleRemainderButton"]
+            </MudButton>
+        </MudStack>
+    }
+</MudStack>
+
+@code {
+    /// <summary>A method being filled in. Mutable on purpose: the fields bind straight to it.</summary>
+    public sealed class MethodLine
+    {
+        public string Mechanism { get; set; } = "NU";
+        public decimal Amount { get; set; }
+        public DateTime? PaymentDate { get; set; } = DateTime.Today;
+    }
+
+    [Parameter, EditorRequired] public List<MethodLine> Methods { get; set; } = [];
+
+    /// <summary>What the methods have to add up to.</summary>
+    [Parameter] public decimal Total { get; set; }
+
+    [Parameter] public EventCallback Changed { get; set; }
+
+    private decimal MethodsTotal => Math.Round(Methods.Sum(method => method.Amount), 2, MidpointRounding.AwayFromZero);
+
+    /// <summary>What is still to be covered: positive when money is missing, negative when it is over.</summary>
+    private decimal Missing => Total - MethodsTotal;
+
+    /// <summary>Puts what is missing on the last method, which is what the user would type anyway.</summary>
+    private async Task SettleRemainderAsync()
+    {
+        var last = Methods[^1];
+        last.Amount = Math.Max(last.Amount + Missing, 0m);
+
+        await NotifyAsync();
+    }
+
+    /// <summary>True when the methods can be sent: each filled in, and together exactly the total.</summary>
+    public static bool AreComplete(IReadOnlyList<MethodLine> methods, decimal total) =>
+        methods.Count > 0
+        && methods.All(method => method.Amount > 0 && method.PaymentDate is not null)
+        && Math.Round(methods.Sum(method => method.Amount), 2, MidpointRounding.AwayFromZero) == total;
+
+    protected override void OnParametersSet()
+    {
+        if (Methods.Count == 0)
+            Methods.Add(new MethodLine());
+
+        if (Methods.Count == 1)
+            Methods[0].Amount = Total;
+    }
+
+    private async Task AddAsync()
+    {
+        Methods.Add(new MethodLine { Amount = Math.Max(Total - MethodsTotal, 0m) });
+        await NotifyAsync();
+    }
+
+    private async Task RemoveAsync(MethodLine method)
+    {
+        if (Methods.Count > 1)
+            Methods.Remove(method);
+
+        await NotifyAsync();
+    }
+
+    private Task NotifyAsync() => Changed.InvokeAsync();
+}

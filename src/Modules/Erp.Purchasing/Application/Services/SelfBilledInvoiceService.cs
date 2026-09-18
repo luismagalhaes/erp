@@ -25,6 +25,7 @@ public sealed class SelfBilledInvoiceService(
     ISelfBilledInvoiceStorage invoiceStorage,
     IGoodsReceiptStorage receiptStorage,
     ISeriesStorage seriesStorage,
+    ISupplierPaymentStorage paymentStorage,
     IDocumentSigner signer,
     IUnitOfWork unitOfWork,
     IOptions<FiscalOptions> fiscalOptions) : ISelfBilledInvoiceService
@@ -209,6 +210,15 @@ public sealed class SelfBilledInvoiceService(
         if (invoice is null)
             return null;
 
+        // A paid invoice cannot simply disappear from the current account: the money is still out.
+        var paid = await paymentStorage.GetPaidAmountsAsync([invoice.Id], cancellationToken);
+
+        if (paid.TryGetValue(invoice.Id, out var amount) && amount > 0)
+        {
+            throw new InvalidOperationException(
+                $"Self-billed invoice '{invoice.DocumentNumber}' has payments against it. Void them first.");
+        }
+
         var statusChange = invoice.Void(reason, userId, DateTime.UtcNow);
 
         // No transaction and no stock to put back: this document never moved any. What it undoes is
@@ -293,11 +303,12 @@ public sealed class SelfBilledInvoiceService(
             if (!TaxCodes.All.Contains(line.TaxCode, StringComparer.Ordinal))
                 throw new ArgumentException($"Line {lineNumber} has an unknown tax code '{line.TaxCode}'.", nameof(requestLines));
 
-            if (string.Equals(line.TaxCode, TaxCodes.Exempt, StringComparison.Ordinal)
-                && string.IsNullOrWhiteSpace(line.TaxExemptionReason))
-            {
-                throw new ArgumentException($"Line {lineNumber} is exempt and requires an exemption reason.", nameof(requestLines));
-            }
+            // An exempt line cites the tax authority's table; any other line carries no exemption.
+            var (exemptionCode, exemptionReason, exemptionError) =
+                TaxExemptionReasons.Resolve(line.TaxCode, line.TaxExemptionCode, line.TaxExemptionReason);
+
+            if (exemptionError is not null)
+                throw new ArgumentException($"Line {lineNumber} {exemptionError}", nameof(requestLines));
 
             ReceiptOrigin? origin = null;
 
@@ -331,8 +342,8 @@ public sealed class SelfBilledInvoiceService(
                 TaxCode = line.TaxCode,
                 TaxPercentage = line.TaxPercentage,
                 TaxAmount = taxAmount,
-                TaxExemptionCode = line.TaxExemptionCode,
-                TaxExemptionReason = line.TaxExemptionReason
+                TaxExemptionCode = exemptionCode,
+                TaxExemptionReason = exemptionReason
             });
 
             lineNumber++;

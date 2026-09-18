@@ -46,7 +46,11 @@ public sealed record ProductListItem(
     string? BrandName,
     bool IsActive,
     decimal UnitCost = 0m,
-    string InventoryCategory = "M");
+    string InventoryCategory = "M",
+    string? DefaultTaxExemptionCode = null,
+    Guid? EcoFeeTypeId = null,
+    string? EcoFeeTypeCode = null,
+    decimal? EcoFeeWeightKg = null);
 
 public sealed record CreateProductRequest(
     Guid CompanyId,
@@ -63,7 +67,10 @@ public sealed record CreateProductRequest(
     Guid? SubfamilyId = null,
     Guid? BrandId = null,
     decimal UnitCost = 0m,
-    string InventoryCategory = "M");
+    string InventoryCategory = "M",
+    string? DefaultTaxExemptionCode = null,
+    Guid? EcoFeeTypeId = null,
+    decimal? EcoFeeWeightKg = null);
 
 public sealed record UpdateProductRequest(
     string Description,
@@ -79,7 +86,10 @@ public sealed record UpdateProductRequest(
     Guid? BrandId,
     bool IsActive,
     decimal UnitCost = 0m,
-    string InventoryCategory = "M");
+    string InventoryCategory = "M",
+    string? DefaultTaxExemptionCode = null,
+    Guid? EcoFeeTypeId = null,
+    decimal? EcoFeeWeightKg = null);
 
 /// <summary>
 /// ProductCategory of the inventory communication, for the product editor. A different vocabulary
@@ -157,4 +167,46 @@ public static class FiscalRegions
 
     public static string Describe(string code) =>
         All.FirstOrDefault(region => region.Code == code).Name ?? code;
+}
+
+// --- Eco-fees (Ecovalor) ---
+
+public sealed record EcoFeeType(
+    Guid Id,
+    string Code,
+    string Description,
+    string CalculationBasis,
+    decimal Rate,
+    string ManagingEntityName,
+    bool IsActive,
+    string FeeProductCode);
+
+public sealed record CreateEcoFeeTypeRequest(
+    Guid CompanyId,
+    string Code,
+    string Description,
+    string CalculationBasis,
+    decimal Rate,
+    string ManagingEntityName);
+
+public sealed record UpdateEcoFeeTypeRequest(
+    string Description,
+    decimal Rate,
+    string ManagingEntityName,
+    bool IsActive);
+
+/// <summary>The two calculation bases an eco-fee can use: a flat amount per unit, or per kilogram.</summary>
+public static class EcoFeeCalculationBases
+{
+    public const string PerUnit = "PerUnit";
+    public const string PerKg = "PerKg";
+
+    public static readonly (string Code, string Label)[] All =
+    [
+        (PerUnit, "Por unidade"),
+        (PerKg, "Por quilograma")
+    ];
+
+    public static string Describe(string code) =>
+        All.FirstOrDefault(basis => basis.Code == code).Label ?? code;
 }

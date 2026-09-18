@@ -49,7 +49,7 @@
     }
     else
     {
-        <MudPaper Elevation="1" Class="pa-4">
+        <MudPaper Elevation="0" Class="pa-4 erp-card erp-form">
             <MudGrid>
                 <MudItem xs="6" md="3">
                     <MudText Typo="Typo.caption" Color="Color.Secondary">@Localizer["InventoryCountSheet_ProductsLabel"]</MudText>
@@ -99,7 +99,7 @@
             </MudAlert>
         }
 
-        <MudPaper Elevation="1" Class="pa-2">
+        <MudPaper Elevation="0" Class="pa-2 erp-card erp-form">
             <MudTable Items="Visible" Hover="true" Striped="true" Dense="true" Breakpoint="Breakpoint.Sm">
                 <ToolBarContent>
                     <MudTextField @bind-Value="_filter" @bind-Value:after="StateHasChanged" Immediate="true"
@@ -200,7 +200,7 @@
         <MudGrid>
             <MudItem xs="12" md="7">
                 <MudSelect T="Guid?" Value="_addProductId" ValueChanged="OnAddProductChanged"
-                           Label="@Localizer["InventoryCountSheet_AddProductLabel"]" Variant="Variant.Outlined" Required="true">
+                           Label="@Localizer["InventoryCountSheet_AddProductLabel"]" Variant="Variant.Outlined" Margin="Margin.Dense" Required="true">
                     @foreach (var product in _products)
                     {
                         <MudSelectItem T="Guid?" Value="@product.Id">
@@ -211,7 +211,7 @@
             </MudItem>
             <MudItem xs="12" md="5">
                 <MudSelect T="Guid?" @bind-Value="_addWarehouseId" @bind-Value:after="StateHasChanged"
-                           Label="@Localizer["InventoryCountSheet_AddWarehouseLabel"]" Variant="Variant.Outlined" Required="true"
+                           Label="@Localizer["InventoryCountSheet_AddWarehouseLabel"]" Variant="Variant.Outlined" Margin="Margin.Dense" Required="true"
                            Disabled="@(_count?.WarehouseId is not null)"
                            HelperText="@(_count?.WarehouseId is not null ? (string?)Localizer["InventoryCountSheet_AddWarehouseHelperText"] : null)">
                     @foreach (var warehouse in _warehouses)
@@ -224,7 +224,7 @@
             </MudItem>
             <MudItem xs="12" md="5">
                 <MudNumericField T="decimal?" @bind-Value="_addUnitCost" Label="@Localizer["InventoryCountSheet_AddUnitCostLabel"]"
-                                 Variant="Variant.Outlined" Format="N4" Clearable="true" />
+                                 Variant="Variant.Outlined" Margin="Margin.Dense" Format="N4" Clearable="true" />
             </MudItem>
             <MudItem xs="12" md="7" Class="d-flex align-center">
                 <MudText Typo="Typo.caption" Color="Color.Secondary">

@@ -355,4 +355,56 @@ public class StockMovementServiceTests
 
         result.Should().BeNull();
     }
+
+    /// <summary>A delivery note discounts a line the same way an invoice does.</summary>
+    [Fact]
+    public async Task IssueAsync_takes_the_line_discount_off_the_taxable_amount()
+    {
+        var series = GivenSeries();
+
+        // 3 x 50.00 = 150.00; 10% off = 15.00; taxable 135.00; VAT 23% = 31.05.
+        var issued = await CreateService().IssueAsync(
+            Request(_companyId, series.Id, lines: Line() with { DiscountPercentage = 10m }),
+            "user-1");
+
+        var line = issued.Lines.Single();
+        line.DiscountAmount.Should().Be(15m);
+        line.LineAmount.Should().Be(135m);
+        issued.GrossLinesTotal.Should().Be(150m);
+        issued.DiscountTotal.Should().Be(15m);
+        issued.NetTotal.Should().Be(135m);
+        issued.TaxPayable.Should().Be(31.05m);
+        issued.GrossTotal.Should().Be(166.05m);
+    }
+
+    /// <summary>The VAT is grouped by rate, so the screen can show the same breakdown an invoice does.</summary>
+    [Fact]
+    public async Task IssueAsync_groups_the_tax_by_rate()
+    {
+        var series = GivenSeries();
+
+        var issued = await CreateService().IssueAsync(
+            Request(
+                _companyId,
+                series.Id,
+                lines: [Line(taxPercentage: 23m), Line(quantity: 1, unitPrice: 100m, taxCode: "RED", taxPercentage: 6m)]),
+            "user-1");
+
+        issued.Taxes.Should().NotBeNull();
+        issued.Taxes!.Should().HaveCount(2);
+        issued.Taxes.Single(tax => tax.TaxPercentage == 6m).TaxableBase.Should().Be(100m);
+        issued.Taxes.Single(tax => tax.TaxPercentage == 23m).TaxAmount.Should().Be(34.50m);
+    }
+
+    [Fact]
+    public async Task IssueAsync_refuses_a_discount_outside_0_to_100()
+    {
+        var series = GivenSeries();
+
+        var act = () => CreateService().IssueAsync(
+            Request(_companyId, series.Id, lines: Line() with { DiscountPercentage = 120m }),
+            "user-1");
+
+        await act.Should().ThrowAsync<ArgumentException>().WithMessage("*discount*");
+    }
 }

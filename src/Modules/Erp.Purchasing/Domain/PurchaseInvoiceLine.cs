@@ -37,7 +37,16 @@ public sealed class PurchaseInvoiceLine
 
     public decimal UnitPrice { get; set; }
 
-    /// <summary>Line total without VAT.</summary>
+    /// <summary>
+    /// Discount as it appears on the supplier's document. When this line comes from a receipt or
+    /// order, it is carried forward unchanged \u2014 the integrating document must not silently drop it.
+    /// </summary>
+    public decimal DiscountPercentage { get; set; }
+
+    /// <summary>The discount in currency, worked out from <see cref="DiscountPercentage"/>.</summary>
+    public decimal DiscountAmount { get; set; }
+
+    /// <summary>Line total without VAT, after the discount.</summary>
     public decimal LineAmount { get; set; }
 
     public string TaxCountryRegion { get; set; } = "PT";

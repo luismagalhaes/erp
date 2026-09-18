@@ -10,6 +10,7 @@
 @using Microsoft.Extensions.Localization
 @inject StockApiClient StockApi
 @inject CompanyState Company
+@inject WarehouseState WarehouseState
 @inject NavigationManager Navigation
 @inject ISnackbar Snackbar
 @inject IStringLocalizer<MainResources> Localizer
@@ -42,21 +43,21 @@
     }
     else
     {
-        <MudPaper Elevation="1" Class="pa-4">
+        <MudPaper Elevation="0" Class="pa-4 erp-card erp-form">
             <MudGrid>
                 <MudItem xs="12" md="4">
                     <MudTextField @bind-Value="_reference" @bind-Value:after="StateHasChanged" Immediate="true"
-                                  Label="@Localizer["InventoryCountOpen_ReferenceLabel"]" Variant="Variant.Outlined" Required="true"
+                                  Label="@Localizer["InventoryCountOpen_ReferenceLabel"]" Variant="Variant.Outlined" Margin="Margin.Dense" Required="true"
                                   HelperText="@Localizer["InventoryCountOpen_ReferenceHelperText"]" />
                 </MudItem>
                 <MudItem xs="12" md="4">
                     <MudDatePicker @bind-Date="_countDate" Label="@Localizer["InventoryCountOpen_CountDateLabel"]"
-                                   Variant="Variant.Outlined" DateFormat="yyyy-MM-dd"
+                                   Variant="Variant.Outlined" Margin="Margin.Dense" DateFormat="yyyy-MM-dd"
                                    HelperText="@Localizer["InventoryCountOpen_CountDateHelperText"]" />
                 </MudItem>
                 <MudItem xs="12" md="4">
                     <MudSelect T="Guid?" @bind-Value="_warehouseId" Label="@Localizer["InventoryCountOpen_WarehouseLabel"]"
-                               Variant="Variant.Outlined" Clearable="true"
+                               Variant="Variant.Outlined" Margin="Margin.Dense" Clearable="true"
                                HelperText="@Localizer["InventoryCountOpen_WarehouseHelperText"]">
                         @foreach (var warehouse in _warehouses)
                         {
@@ -69,7 +70,7 @@
 
                 <MudItem xs="12">
                     <MudTextField @bind-Value="_productCodes" Label="@Localizer["InventoryCountOpen_ProductsLabel"]"
-                                  Variant="Variant.Outlined" Lines="2"
+                                  Variant="Variant.Outlined" Margin="Margin.Dense" Lines="2"
                                   HelperText="@Localizer["InventoryCountOpen_ProductsHelperText"]" />
                 </MudItem>
 
@@ -140,9 +141,10 @@
 
         try
         {
-            var (warehouses, error) = await StockApi.GetWarehousesAsync(Company.SelectedCompanyId);
-            _warehouses = [.. warehouses.Where(warehouse => warehouse.IsActive)];
-            _error = error;
+            await WarehouseState.EnsureLoadedAsync();
+            _warehouses = [.. WarehouseState.Warehouses];
+            _error = WarehouseState.LoadError;
+            _warehouseId ??= WarehouseState.HasWarehouse ? WarehouseState.SelectedWarehouseId : null;
         }
         catch (Exception ex)
         {

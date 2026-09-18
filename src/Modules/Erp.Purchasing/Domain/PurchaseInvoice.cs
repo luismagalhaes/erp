@@ -160,9 +160,17 @@ public sealed class PurchaseInvoice
             if (line.Quantity <= 0)
                 throw new ArgumentException($"Line {lineNumber} invoices no quantity.", nameof(lines));
 
+            if (line.DiscountPercentage is < 0 or > 100)
+                throw new ArgumentException($"Line {lineNumber} has a discount outside 0 to 100%.", nameof(lines));
+
             line.InvoiceId = Id;
             line.LineNumber = lineNumber++;
-            line.LineAmount = FiscalRounding.Amount(line.Quantity * line.UnitPrice);
+
+            // The discount is worked out on the rounded gross amount, so gross minus discount is
+            // exactly the taxable amount \u2014 the same rule the order and receipt use.
+            var grossAmount = FiscalRounding.Amount(line.Quantity * line.UnitPrice);
+            line.DiscountAmount = FiscalRounding.Amount(grossAmount * line.DiscountPercentage / 100m);
+            line.LineAmount = grossAmount - line.DiscountAmount;
             line.TaxAmount = FiscalRounding.Amount(line.LineAmount * line.TaxPercentage / 100m);
 
             Lines.Add(line);

@@ -1,0 +1,521 @@
+@page "/supplier-payments/new"
+@attribute [Authorize]
+@implements IDisposable
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.AspNetCore.Components.Web
+@using MudBlazor
+@using Erp.Main.Components.Common
+@using Erp.Main.Models
+@using Erp.Main.Services
+@using Erp.Main.Resources
+@using Microsoft.Extensions.Localization
+@inject PurchasingApiClient Purchasing
+@inject CompanyState Company
+@inject NavigationManager Navigation
+@inject ISnackbar Snackbar
+@inject IStringLocalizer<MainResources> L
+
+<PageTitle>@L["NewSupplierPayment_Title"]</PageTitle>
+
+<MudStack Spacing="4">
+    <PageHeader Title="@L["NewSupplierPayment_Title"]" Breadcrumbs="Breadcrumbs">
+        <Actions>
+            <MudButton Variant="Variant.Text" StartIcon="@Icons.Material.Filled.ArrowBack"
+                       OnClick="@(() => Navigation.NavigateTo("supplier-payments"))">
+                @L["Common_Back"]
+            </MudButton>
+        </Actions>
+    </PageHeader>
+
+    @if (!string.IsNullOrWhiteSpace(_error))
+    {
+        <MudAlert Severity="Severity.Error" Dense="true">@_error</MudAlert>
+    }
+
+    @if (_loading)
+    {
+        <MudProgressLinear Indeterminate="true" Color="Color.Primary" />
+    }
+    else if (_payable.Count == 0)
+    {
+        <MudAlert Severity="Severity.Info">@L["NewSupplierPayment_NothingOwedInfo"]</MudAlert>
+    }
+    else
+    {
+        <MudPaper Elevation="0" Class="pa-4 erp-card erp-form">
+            <MudGrid>
+                <MudItem xs="12" md="5">
+                    <MudSelect T="Guid" Value="_supplierId" ValueChanged="OnSupplierChanged"
+                               Label="@L["NewSupplierPayment_SupplierLabel"]" Variant="Variant.Outlined" Margin="Margin.Dense" Required="true"
+                               HelperText="@L["NewSupplierPayment_SupplierHelpText"]">
+                        @foreach (var supplier in _suppliers)
+                        {
+                            <MudSelectItem T="Guid" Value="@supplier.Id">
+                                @string.Format(L["NewSupplierPayment_SupplierOption"], supplier.Name, supplier.TaxId, supplier.Outstanding.ToString("N2"))
+                            </MudSelectItem>
+                        }
+                    </MudSelect>
+                </MudItem>
+                <MudItem xs="12" md="3">
+                    <MudDatePicker @bind-Date="_paymentDate" Label="@L["NewSupplierPayment_DateLabel"]"
+                                   Variant="Variant.Outlined" Margin="Margin.Dense" DateFormat="yyyy-MM-dd" />
+                </MudItem>
+                <MudItem xs="12" md="4">
+                    <MudTextField @bind-Value="_description" Label="@L["NewSupplierPayment_NotesLabel"]" Variant="Variant.Outlined" Margin="Margin.Dense" />
+                </MudItem>
+            </MudGrid>
+        </MudPaper>
+
+        <MudPaper Elevation="0" Class="pa-4 erp-card erp-form">
+            <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center" Class="mb-3">
+                <MudText Typo="Typo.h6">@L["NewSupplierPayment_DocumentsSectionTitle"]</MudText>
+                <MudButton Variant="Variant.Text" Color="Color.Primary" Size="Size.Small"
+                           Disabled="@(_visibleDocuments.Count == 0)"
+                           OnClick="SelectAll">
+                    @L["NewSupplierPayment_SettleAllButton"]
+                </MudButton>
+            </MudStack>
+
+            <MudTable Items="_visibleDocuments" Dense="true" Hover="true" Striped="true" Breakpoint="Breakpoint.Sm">
+                <HeaderContent>
+                    <MudTh Style="width: 60px;"></MudTh>
+                    <MudTh>@L["NewSupplierPayment_TypeColumn"]</MudTh>
+                    <MudTh>@L["NewSupplierPayment_DocumentColumn"]</MudTh>
+                    <MudTh>@L["NewSupplierPayment_DateColumn"]</MudTh>
+                    <MudTh>@L["NewSupplierPayment_DueDateColumn"]</MudTh>
+                    <MudTh Style="text-align: right;">@L["NewSupplierPayment_TotalColumn"]</MudTh>
+                    <MudTh Style="text-align: right;">@L["NewSupplierPayment_PaidColumn"]</MudTh>
+                    <MudTh Style="text-align: right;">@L["NewSupplierPayment_OutstandingColumn"]</MudTh>
+                    <MudTh Style="width: 150px; text-align: right;">@L["NewSupplierPayment_ToPayColumn"]</MudTh>
+                </HeaderContent>
+                <RowTemplate>
+                    <MudTd>
+                        <MudCheckBox T="bool" Value="@IsSelected(context)"
+                                     ValueChanged="@(selected => ToggleDocument(context, selected))"
+                                     Color="Color.Primary" Dense="true" />
+                    </MudTd>
+                    <MudTd DataLabel="@L["NewSupplierPayment_TypeColumn"]">
+                        <MudChip T="string" Size="Size.Small" Variant="Variant.Text"
+                                 Color="@(context.IsCredit ? Color.Success : Color.Default)">@context.DocumentType</MudChip>
+                        @if (context.IsCredit)
+                        {
+                            <MudChip T="string" Size="Size.Small" Variant="Variant.Text" Color="Color.Success">
+                                @L["NewSupplierPayment_CreditChip"]
+                            </MudChip>
+                        }
+                        @if (context.DocumentKind == PayableDocumentKinds.SelfBilledInvoice)
+                        {
+                            <MudChip T="string" Size="Size.Small" Variant="Variant.Text" Color="Color.Info">
+                                @L["NewSupplierPayment_SelfBilledChip"]
+                            </MudChip>
+                        }
+                    </MudTd>
+                    <MudTd DataLabel="@L["NewSupplierPayment_DocumentColumn"]">
+                        <MudText Typo="Typo.body2" Class="erp-mono">@context.DocumentNumber</MudText>
+                    </MudTd>
+                    <MudTd DataLabel="@L["NewSupplierPayment_DateColumn"]">@context.DocumentDate.ToString("yyyy-MM-dd")</MudTd>
+                    <MudTd DataLabel="@L["NewSupplierPayment_DueDateColumn"]">
+                        <MudText Typo="Typo.body2" Color="@(IsOverdue(context) ? Color.Error : Color.Default)">
+                            @(context.DueDate?.ToString("yyyy-MM-dd") ?? "—")
+                        </MudText>
+                    </MudTd>
+                    @* A credit note counts the other way; the sign is shown, the figures stay as on the paper. *@
+                    <MudTd DataLabel="@L["NewSupplierPayment_TotalColumn"]" Style="text-align: right;">@Signed(context, context.GrossTotal)</MudTd>
+                    <MudTd DataLabel="@L["NewSupplierPayment_PaidColumn"]" Style="text-align: right;">@Signed(context, context.PaidAmount)</MudTd>
+                    <MudTd DataLabel="@L["NewSupplierPayment_OutstandingColumn"]" Style="text-align: right;">@Signed(context, context.OutstandingAmount)</MudTd>
+                    <MudTd DataLabel="@L["NewSupplierPayment_ToPayColumn"]" Style="text-align: right;">
+                        @if (IsSelected(context))
+                        {
+                            <MudNumericField T="decimal" Value="@_selected[context.DocumentId]"
+                                             ValueChanged="@(amount => SetAmount(context, amount))"
+                                             Margin="Margin.Dense" Min="0" Max="@context.OutstandingAmount" Format="N2" />
+                        }
+                        else
+                        {
+                            <MudText Typo="Typo.body2" Color="Color.Secondary">—</MudText>
+                        }
+                    </MudTd>
+                </RowTemplate>
+                <NoRecordsContent>
+                    <MudText Typo="Typo.body2" Color="Color.Secondary">@L["NewSupplierPayment_NoDocuments"]</MudText>
+                </NoRecordsContent>
+            </MudTable>
+        </MudPaper>
+
+        @if (CoveredByCredit)
+        {
+            <MudAlert Severity="Severity.Info" Dense="true">@L["NewSupplierPayment_CoveredByCreditInfo"]</MudAlert>
+        }
+        else
+        {
+        <MudPaper Elevation="0" Class="pa-4 erp-card erp-form">
+            <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center" Class="mb-3">
+                <MudText Typo="Typo.h6">@L["NewSupplierPayment_MethodsSectionTitle"]</MudText>
+                <MudButton Variant="Variant.Outlined" Color="Color.Primary" Size="Size.Small"
+                           StartIcon="@Icons.Material.Filled.Add" OnClick="AddMethod">
+                    @L["NewSupplierPayment_AddMethodButton"]
+                </MudButton>
+            </MudStack>
+
+            <MudTable Items="_methods" Dense="true" Hover="true" Striped="true" Breakpoint="Breakpoint.Sm">
+                <HeaderContent>
+                    <MudTh>@L["NewSupplierPayment_MethodColumn"]</MudTh>
+                    <MudTh Style="width: 160px;">@L["NewSupplierPayment_DateColumn"]</MudTh>
+                    <MudTh Style="width: 160px; text-align: right;">@L["NewSupplierPayment_AmountColumn"]</MudTh>
+                    <MudTh Style="width: 70px; text-align: right;">@L["Common_ActionsColumn"]</MudTh>
+                </HeaderContent>
+                <RowTemplate>
+                    <MudTd DataLabel="@L["NewSupplierPayment_MethodColumn"]">
+                        <MudSelect @bind-Value="context.Mechanism" Margin="Margin.Dense">
+                            @foreach (var mechanism in PaymentMechanismOptions.All)
+                            {
+                                <MudSelectItem T="string" Value="@mechanism.Code">@mechanism.Label</MudSelectItem>
+                            }
+                        </MudSelect>
+                    </MudTd>
+                    <MudTd DataLabel="@L["NewSupplierPayment_DateColumn"]">
+                        <MudDatePicker @bind-Date="context.PaymentDate" Margin="Margin.Dense" DateFormat="yyyy-MM-dd" />
+                    </MudTd>
+                    <MudTd DataLabel="@L["NewSupplierPayment_AmountColumn"]" Style="text-align: right;">
+                        <MudNumericField @bind-Value="context.Amount" Margin="Margin.Dense" Min="0" Format="N2" />
+                    </MudTd>
+                    <MudTd DataLabel="@L["Common_ActionsColumn"]" Style="text-align: right;">
+                        <MudIconButton Icon="@Icons.Material.Filled.Delete" Size="Size.Small" Color="Color.Error"
+                                       title="@L["NewSupplierPayment_RemoveMethodTitle"]"
+                                       Disabled="@(_methods.Count == 1)"
+                                       OnClick="@(() => RemoveMethod(context))" />
+                    </MudTd>
+                </RowTemplate>
+            </MudTable>
+
+            <MudButton Variant="Variant.Text" Color="Color.Primary" Size="Size.Small" Class="mt-2"
+                       Disabled="@(_methods.Count != 1 || SelectedTotal <= 0)"
+                       OnClick="MatchMethodToTotal">
+                @L["NewSupplierPayment_MatchToTotalButton"]
+            </MudButton>
+        </MudPaper>
+        }
+
+        <MudPaper Elevation="0" Class="pa-4 erp-card erp-form">
+            <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center">
+                <MudStack Row="true" Spacing="6">
+                    <MudStack Spacing="0">
+                        <MudText Typo="Typo.caption" Color="Color.Secondary">@L["NewSupplierPayment_SelectedDocumentsLabel"]</MudText>
+                        <MudText Typo="Typo.h6">@_selected.Count</MudText>
+                    </MudStack>
+                    <MudStack Spacing="0">
+                        <MudText Typo="Typo.caption" Color="Color.Secondary">@L["NewSupplierPayment_DocumentsTotalLabel"]</MudText>
+                        <MudText Typo="Typo.h6">@DebitTotal.ToString("N2")</MudText>
+                    </MudStack>
+                    <MudStack Spacing="0">
+                        <MudText Typo="Typo.caption" Color="Color.Secondary">@L["NewSupplierPayment_CreditTotalLabel"]</MudText>
+                        <MudText Typo="Typo.h6" Color="@(CreditTotal > 0 ? Color.Success : Color.Default)">
+                            @((-CreditTotal).ToString("N2"))
+                        </MudText>
+                    </MudStack>
+                    @if (!CoveredByCredit)
+                    {
+                        <MudStack Spacing="0">
+                            <MudText Typo="Typo.caption" Color="Color.Secondary">@L["NewSupplierPayment_MethodsTotalLabel"]</MudText>
+                            <MudText Typo="Typo.h6" Color="@(MethodsTotal == SelectedTotal ? Color.Default : Color.Warning)">
+                                @MethodsTotal.ToString("N2")
+                            </MudText>
+                        </MudStack>
+                    }
+                    <MudStack Spacing="0">
+                        <MudText Typo="Typo.caption" Color="Color.Secondary">@L["NewSupplierPayment_PaymentTotalLabel"]</MudText>
+                        <MudText Typo="Typo.h5" Color="Color.Primary">@SelectedTotal.ToString("N2")</MudText>
+                    </MudStack>
+                </MudStack>
+
+                <MudButton Variant="Variant.Filled" Color="Color.Primary" Size="Size.Large"
+                           StartIcon="@Icons.Material.Filled.Payments"
+                           Disabled="@(_saving || !CanRecord)"
+                           OnClick="RecordAsync">
+                    @(_saving ? L["NewSupplierPayment_RecordingButton"] : L["NewSupplierPayment_RecordButton"])
+                </MudButton>
+            </MudStack>
+
+            @if (SelectedTotal < 0)
+            {
+                <MudAlert Severity="Severity.Warning" Dense="true" Class="mt-3">
+                    @string.Format(L["NewSupplierPayment_CreditExceedsWarning"], CreditTotal.ToString("N2"), DebitTotal.ToString("N2"))
+                </MudAlert>
+            }
+            else if (_selected.Count > 0 && !HasDebit)
+            {
+                <MudAlert Severity="Severity.Warning" Dense="true" Class="mt-3">
+                    @L["NewSupplierPayment_CreditAloneWarning"]
+                </MudAlert>
+            }
+            else if (_selected.Count > 0 && !CoveredByCredit && MethodsTotal != SelectedTotal)
+            {
+                <MudAlert Severity="Severity.Warning" Dense="true" Class="mt-3">
+                    @string.Format(L["NewSupplierPayment_MismatchWarning"], MethodsTotal.ToString("N2"), SelectedTotal.ToString("N2"))
+                </MudAlert>
+            }
+        </MudPaper>
+    }
+</MudStack>
+
+@code {
+    /// <summary>Opens the page with this supplier already chosen, when it has anything owed.</summary>
+    [SupplyParameterFromQuery(Name = "supplierId")]
+    public Guid? InitialSupplierId { get; set; }
+
+    private bool _loading = true;
+    private bool _saving;
+    private string? _error;
+
+    private Guid _supplierId;
+    private DateTime? _paymentDate = DateTime.Today;
+    private string _description = string.Empty;
+
+    private List<PayableDocument> _payable = [];
+    private List<SupplierOption> _suppliers = [];
+    private List<PayableDocument> _visibleDocuments = [];
+    private readonly List<MethodEditor> _methods = [new()];
+
+    /// <summary>Amount applied to each selected document, keyed by document.</summary>
+    private readonly Dictionary<Guid, decimal> _selected = [];
+
+    private List<BreadcrumbItem> Breadcrumbs =>
+    [
+        new(L["SupplierPayments_Title"].Value, href: "supplier-payments"),
+        new(L["NewSupplierPayment_Title"].Value, href: null, disabled: true)
+    ];
+
+    /// <summary>What the selected invoices settle.</summary>
+    private decimal DebitTotal => SumSelected(isCredit: false);
+
+    /// <summary>What the selected credit notes take off.</summary>
+    private decimal CreditTotal => SumSelected(isCredit: true);
+
+    /// <summary>The money that leaves: invoices less credit.</summary>
+    private decimal SelectedTotal => DebitTotal - CreditTotal;
+
+    private bool HasDebit => _selected.Keys.Any(id => !FindDocument(id).IsCredit);
+
+    /// <summary>The credit pays the invoices entirely, so no money moves and no method is needed.</summary>
+    private bool CoveredByCredit => HasDebit && CreditTotal > 0 && SelectedTotal == 0;
+
+    private decimal MethodsTotal =>
+        Math.Round(_methods.Sum(method => method.Amount), 2, MidpointRounding.AwayFromZero);
+
+    private bool CanRecord =>
+        _supplierId != Guid.Empty
+        && _paymentDate is not null
+        && HasDebit
+        && _selected.Values.All(amount => amount > 0)
+        && SelectedTotal >= 0
+        && (CoveredByCredit
+            || (_methods.All(method => method.Amount > 0 && method.PaymentDate is not null)
+                && MethodsTotal == SelectedTotal));
+
+    private PayableDocument FindDocument(Guid documentId) =>
+        _visibleDocuments.First(document => document.DocumentId == documentId);
+
+    private decimal SumSelected(bool isCredit) =>
+        Math.Round(
+            _selected.Where(entry => FindDocument(entry.Key).IsCredit == isCredit).Sum(entry => entry.Value),
+            2,
+            MidpointRounding.AwayFromZero);
+
+    private static string Signed(PayableDocument document, decimal amount) =>
+        (document.IsCredit ? -amount : amount).ToString("N2");
+
+    protected override async Task OnInitializedAsync()
+    {
+        Company.Changed += OnCompanyChanged;
+        await Company.EnsureLoadedAsync();
+        await LoadAsync();
+    }
+
+    private async void OnCompanyChanged() => await InvokeAsync(LoadAsync);
+
+    private async Task LoadAsync()
+    {
+        _loading = true;
+        _error = Company.LoadError;
+
+        if (!Company.HasCompany)
+        {
+            _payable = [];
+            _suppliers = [];
+            _loading = false;
+            StateHasChanged();
+            return;
+        }
+
+        try
+        {
+            // The supplier list comes from what is still owed: offering a supplier with nothing to
+            // pay would only lead to an empty payment.
+            var (payable, error) = await Purchasing.GetPayableDocumentsAsync(Company.SelectedCompanyId);
+            _payable = [.. payable];
+            _error ??= error;
+
+            _suppliers = [.. _payable
+                .GroupBy(document => document.SupplierId)
+                .Select(group => new SupplierOption(
+                    group.Key,
+                    group.First().SupplierName,
+                    group.First().SupplierTaxId,
+                    group.Sum(document => document.IsCredit ? -document.OutstandingAmount : document.OutstandingAmount)))
+                .OrderBy(supplier => supplier.Name)];
+
+            var initial = _suppliers.FirstOrDefault(supplier => supplier.Id == InitialSupplierId)
+                          ?? _suppliers.FirstOrDefault();
+
+            OnSupplierChanged(initial?.Id ?? Guid.Empty);
+        }
+        catch (Exception ex)
+        {
+            _error = string.Format(L["NewSupplierPayment_LoadError"], ex.Message);
+        }
+        finally
+        {
+            _loading = false;
+            StateHasChanged();
+        }
+    }
+
+    /// <summary>Changing supplier restarts the selection: a payment settles one supplier only.</summary>
+    private void OnSupplierChanged(Guid supplierId)
+    {
+        _supplierId = supplierId;
+        _selected.Clear();
+        _visibleDocuments = [.. _payable.Where(document => document.SupplierId == supplierId)];
+        SyncSingleMethodAmount();
+    }
+
+    private bool IsSelected(PayableDocument document) => _selected.ContainsKey(document.DocumentId);
+
+    private static bool IsOverdue(PayableDocument document) =>
+        document.DueDate is { } due && due < DateOnly.FromDateTime(DateTime.Today);
+
+    private void ToggleDocument(PayableDocument document, bool selected)
+    {
+        if (!selected)
+            _selected.Remove(document.DocumentId);
+        else if (document.IsCredit)
+            _selected[document.DocumentId] = CreditToUse(document);
+        else
+            _selected[document.DocumentId] = document.OutstandingAmount;
+
+        SyncSingleMethodAmount();
+    }
+
+    /// <summary>
+    /// A credit note proposes only as much as the selected invoices can absorb, so ticking it never
+    /// makes the payment negative. With no invoice selected yet, it proposes all its credit.
+    /// </summary>
+    private decimal CreditToUse(PayableDocument creditNote)
+    {
+        _selected.Remove(creditNote.DocumentId);
+        var room = DebitTotal - CreditTotal;
+
+        return room > 0 ? Math.Min(creditNote.OutstandingAmount, room) : creditNote.OutstandingAmount;
+    }
+
+    private void SetAmount(PayableDocument document, decimal amount)
+    {
+        // Never let the form propose more than the document owes; the API would reject it anyway.
+        _selected[document.DocumentId] = Math.Clamp(amount, 0m, document.OutstandingAmount);
+        SyncSingleMethodAmount();
+    }
+
+    /// <summary>Every invoice in full, then the credit notes for as much as the invoices can take.</summary>
+    private void SelectAll()
+    {
+        _selected.Clear();
+
+        foreach (var document in _visibleDocuments.Where(document => !document.IsCredit))
+            _selected[document.DocumentId] = document.OutstandingAmount;
+
+        foreach (var creditNote in _visibleDocuments.Where(document => document.IsCredit))
+        {
+            var credit = CreditToUse(creditNote);
+
+            if (DebitTotal - CreditTotal > 0 && credit > 0)
+                _selected[creditNote.DocumentId] = credit;
+        }
+
+        SyncSingleMethodAmount();
+    }
+
+    private void AddMethod() => _methods.Add(new MethodEditor());
+
+    private void RemoveMethod(MethodEditor method)
+    {
+        if (_methods.Count > 1)
+            _methods.Remove(method);
+    }
+
+    private void MatchMethodToTotal() => _methods[0].Amount = SelectedTotal;
+
+    /// <summary>
+    /// While there is a single payment method, it follows the total being paid. Once the user
+    /// splits the payment across several methods, the amounts are theirs to set.
+    /// </summary>
+    private void SyncSingleMethodAmount()
+    {
+        if (_methods.Count == 1)
+            _methods[0].Amount = Math.Max(SelectedTotal, 0m);
+    }
+
+    private async Task RecordAsync()
+    {
+        _saving = true;
+        _error = null;
+
+        try
+        {
+            var request = new CreateSupplierPaymentRequest(
+                Company.SelectedCompanyId,
+                _supplierId,
+                DateOnly.FromDateTime(_paymentDate!.Value),
+                [.. _selected.Select(entry => new SupplierPaymentLineRequest(
+                    FindDocument(entry.Key).DocumentKind,
+                    entry.Key,
+                    entry.Value))],
+                CoveredByCredit
+                    ? []
+                    : [.. _methods.Select(method => new SupplierPaymentMethodRequest(
+                        method.Mechanism,
+                        method.Amount,
+                        DateOnly.FromDateTime(method.PaymentDate!.Value)))],
+                string.IsNullOrWhiteSpace(_description) ? null : _description.Trim());
+
+            var (payment, error) = await Purchasing.RecordSupplierPaymentAsync(request);
+
+            if (payment is null)
+            {
+                _error = error ?? L["NewSupplierPayment_RecordFailed"];
+                return;
+            }
+
+            Snackbar.Add(string.Format(L["NewSupplierPayment_RecordedSuccess"], payment.Number), Severity.Success);
+            Navigation.NavigateTo($"supplier-payments/{payment.Id}");
+        }
+        catch (Exception ex)
+        {
+            _error = string.Format(L["NewSupplierPayment_RecordError"], ex.Message);
+        }
+        finally
+        {
+            _saving = false;
+        }
+    }
+
+    private sealed record SupplierOption(Guid Id, string Name, string TaxId, decimal Outstanding);
+
+    private sealed class MethodEditor
+    {
+        public string Mechanism { get; set; } = "TB";
+        public decimal Amount { get; set; }
+        public DateTime? PaymentDate { get; set; } = DateTime.Today;
+    }
+
+    public void Dispose() => Company.Changed -= OnCompanyChanged;
+}

@@ -1,0 +1,206 @@
+@page "/eco-fee-types/new"
+@page "/eco-fee-types/{Id:guid}"
+@attribute [Authorize]
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.AspNetCore.Components.Web
+@using Microsoft.Extensions.Localization
+@using MudBlazor
+@using Erp.Main.Components.Common
+@using Erp.Main.Models
+@using Erp.Main.Models.Core
+@using Erp.Main.Resources
+@using Erp.Main.Services
+@inject CatalogApiClient Catalog
+@inject CompanyState Company
+@inject NavigationManager Navigation
+@inject ISnackbar Snackbar
+@inject IStringLocalizer<MainResources> Localizer
+
+<PageTitle>@Title</PageTitle>
+
+<MudStack Spacing="3">
+    <PageHeader Title="@Title" Breadcrumbs="Breadcrumbs">
+        <Actions>
+            <MudButton Variant="Variant.Text" StartIcon="@Icons.Material.Filled.ArrowBack"
+                       OnClick="@(() => Navigation.NavigateTo("eco-fee-types"))">
+                @Localizer["Common_Back"]
+            </MudButton>
+        </Actions>
+    </PageHeader>
+
+    @if (!string.IsNullOrWhiteSpace(_error))
+    {
+        <MudAlert Severity="Severity.Error" Dense="true">@_error</MudAlert>
+    }
+
+    @if (_loading)
+    {
+        <MudProgressLinear Indeterminate="true" Color="Color.Primary" />
+    }
+    else
+    {
+        <EditorCard Title="@Title" Icon="@Icons.Material.Filled.Recycling"
+                    Description="@Localizer["EcoFeeTypeEditor_Description"]">
+            <HeaderActions>
+                @if (!IsNew)
+                {
+                    <MudSwitch @bind-Value="_isActive" Color="Color.Primary" Size="Size.Small" Label="@Localizer["BrandEditor_ActiveLabel"]" />
+                }
+            </HeaderActions>
+            <ChildContent>
+                <MudGrid Spacing="3">
+                    <MudItem xs="12" sm="3">
+                        <MudTextField @bind-Value="_code" Immediate="true" Disabled="@(!IsNew)" Label="@Localizer["Common_CodeColumn"]"
+                                      Variant="Variant.Outlined" Margin="Margin.Dense" Required="true" />
+                    </MudItem>
+                    <MudItem xs="12" sm="9">
+                        <MudTextField @bind-Value="_description" Immediate="true" Label="@Localizer["Common_NameColumn"]"
+                                      Variant="Variant.Outlined" Margin="Margin.Dense" Required="true" />
+                    </MudItem>
+                    <MudItem xs="12" sm="4">
+                        <MudSelect T="string" @bind-Value="_calculationBasis" Label="@Localizer["EcoFeeTypes_BasisColumn"]"
+                                   Variant="Variant.Outlined" Margin="Margin.Dense" Disabled="@(!IsNew)">
+                            @foreach (var basis in EcoFeeCalculationBases.All)
+                            {
+                                <MudSelectItem T="string" Value="@basis.Code">@basis.Label</MudSelectItem>
+                            }
+                        </MudSelect>
+                    </MudItem>
+                    <MudItem xs="12" sm="4">
+                        <MudNumericField @bind-Value="_rate" Label="@RateLabel"
+                                         Variant="Variant.Outlined" Margin="Margin.Dense" Min="0" Format="N4" Required="true" />
+                    </MudItem>
+                    <MudItem xs="12" sm="4">
+                        <MudTextField @bind-Value="_managingEntityName" Immediate="true" Label="@Localizer["EcoFeeTypes_ManagingEntityColumn"]"
+                                      Variant="Variant.Outlined" Margin="Margin.Dense" Required="true"
+                                      HelperText="@Localizer["EcoFeeTypeEditor_ManagingEntityHelp"]" />
+                    </MudItem>
+                </MudGrid>
+            </ChildContent>
+        </EditorCard>
+
+        <FormActions Busy="_saving" Disabled="@(!CanSave)"
+                     OnSubmit="SaveAsync"
+                     OnCancel="@(() => Navigation.NavigateTo("eco-fee-types"))" />
+    }
+</MudStack>
+
+@code {
+    [Parameter]
+    public Guid? Id { get; set; }
+
+    private bool IsNew => Id is null;
+
+    private string Title => IsNew ? Localizer["EcoFeeTypeEditor_NewTitle"] : Localizer["EcoFeeTypeEditor_EditTitle"];
+
+    private List<BreadcrumbItem> Breadcrumbs =>
+    [
+        new(Localizer["EcoFeeTypes_PageTitle"].Value, href: "eco-fee-types"),
+        new(Title, href: null, disabled: true)
+    ];
+
+    private string RateLabel => _calculationBasis == EcoFeeCalculationBases.PerKg
+        ? Localizer["EcoFeeTypeEditor_RatePerKgLabel"]
+        : Localizer["EcoFeeTypeEditor_RatePerUnitLabel"];
+
+    private bool _loading;
+    private bool _saving;
+    private string? _error;
+
+    private bool _loaded;
+    private Guid? _loadedId;
+
+    private string _code = string.Empty;
+    private string _description = string.Empty;
+    private string _calculationBasis = EcoFeeCalculationBases.PerUnit;
+    private decimal _rate;
+    private string _managingEntityName = string.Empty;
+    private bool _isActive = true;
+
+    private bool CanSave =>
+        Company.HasCompany
+        && (!IsNew || !string.IsNullOrWhiteSpace(_code))
+        && !string.IsNullOrWhiteSpace(_description)
+        && !string.IsNullOrWhiteSpace(_managingEntityName)
+        && _rate > 0;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        await Company.EnsureLoadedAsync();
+
+        // A layout re-render sets the parameters again; only reload when the route changed.
+        if (_loaded && _loadedId == Id)
+            return;
+
+        _loaded = true;
+        _loadedId = Id;
+
+        if (IsNew)
+            return;
+
+        _loading = true;
+
+        try
+        {
+            var ecoFeeType = await Catalog.GetEcoFeeTypeAsync(Id!.Value);
+
+            if (ecoFeeType is null)
+            {
+                _error = Localizer["EcoFeeTypeEditor_NotFound"];
+                return;
+            }
+
+            _code = ecoFeeType.Code;
+            _description = ecoFeeType.Description;
+            _calculationBasis = ecoFeeType.CalculationBasis;
+            _rate = ecoFeeType.Rate;
+            _managingEntityName = ecoFeeType.ManagingEntityName;
+            _isActive = ecoFeeType.IsActive;
+        }
+        catch (Exception ex)
+        {
+            _error = string.Format(Localizer["EcoFeeTypeEditor_LoadError"], ex.Message);
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private async Task SaveAsync()
+    {
+        _saving = true;
+        _error = null;
+
+        try
+        {
+            var error = IsNew
+                ? await Catalog.CreateEcoFeeTypeAsync(new CreateEcoFeeTypeRequest(
+                    Company.SelectedCompanyId,
+                    _code.Trim(),
+                    _description.Trim(),
+                    _calculationBasis,
+                    _rate,
+                    _managingEntityName.Trim()))
+                : await Catalog.UpdateEcoFeeTypeAsync(Id!.Value, new UpdateEcoFeeTypeRequest(
+                    _description.Trim(), _rate, _managingEntityName.Trim(), _isActive));
+
+            if (error is not null)
+            {
+                _error = error;
+                return;
+            }
+
+            Snackbar.Add(IsNew ? Localizer["EcoFeeTypeEditor_Created"].Value : Localizer["EcoFeeTypeEditor_Updated"].Value, Severity.Success);
+            Navigation.NavigateTo("eco-fee-types");
+        }
+        catch (Exception ex)
+        {
+            _error = string.Format(Localizer["EcoFeeTypeEditor_SaveError"], ex.Message);
+        }
+        finally
+        {
+            _saving = false;
+        }
+    }
+}

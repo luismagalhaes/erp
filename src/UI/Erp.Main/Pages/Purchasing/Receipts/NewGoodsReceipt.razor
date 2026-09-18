@@ -12,6 +12,7 @@
 @inject CatalogApiClient Catalog
 @inject StockApiClient StockApi
 @inject CompanyState Company
+@inject WarehouseState WarehouseState
 @inject NavigationManager Navigation
 @inject ISnackbar Snackbar
 @inject IStringLocalizer<MainResources> L
@@ -113,6 +114,7 @@
                             <MudTh Style="text-align: right;">@L["NewGoodsReceipt_PendingColumn"]</MudTh>
                             <MudTh Style="width: 140px;">@L["NewGoodsReceipt_ToReceiveColumn"]</MudTh>
                             <MudTh Style="width: 140px;">@L["NewGoodsReceipt_UnitCostColumn"]</MudTh>
+                            <MudTh Style="width: 110px;">@L["NewGoodsReceipt_DiscountColumn"]</MudTh>
                         </HeaderContent>
                         <RowTemplate>
                             <MudTd>
@@ -157,6 +159,13 @@
                                                      Margin="Margin.Dense" Min="0" Format="N2" />
                                 }
                             </MudTd>
+                            <MudTd DataLabel="@L["NewGoodsReceipt_DiscountColumn"]">
+                                @if (Chosen(context) is { } chosenDiscount)
+                                {
+                                    <MudNumericField @bind-Value="chosenDiscount.DiscountPercentage" @bind-Value:after="StateHasChanged"
+                                                     Margin="Margin.Dense" Min="0" Max="100" Format="N2" Adornment="Adornment.End" AdornmentText="%" />
+                                }
+                            </MudTd>
                         </RowTemplate>
                     </MudTable>
                 }
@@ -185,6 +194,7 @@
                             <MudTh Style="width: 120px;">@L["NewGoodsReceipt_QuantityColumn"]</MudTh>
                             <MudTh Style="width: 90px;">@L["NewGoodsReceipt_UnitColumn"]</MudTh>
                             <MudTh Style="width: 140px;">@L["NewGoodsReceipt_UnitCostColumn"]</MudTh>
+                            <MudTh Style="width: 110px;">@L["NewGoodsReceipt_DiscountColumn"]</MudTh>
                             <MudTh Style="width: 70px; text-align: right;">@L["NewGoodsReceipt_ActionsColumn"]</MudTh>
                         </HeaderContent>
                         <RowTemplate>
@@ -213,6 +223,10 @@
                             <MudTd DataLabel="@L["NewGoodsReceipt_UnitCostColumn"]">
                                 <MudNumericField @bind-Value="context.UnitCost" @bind-Value:after="StateHasChanged"
                                                  Margin="Margin.Dense" Min="0" Format="N2" />
+                            </MudTd>
+                            <MudTd DataLabel="@L["NewGoodsReceipt_DiscountColumn"]">
+                                <MudNumericField @bind-Value="context.DiscountPercentage" @bind-Value:after="StateHasChanged"
+                                                 Margin="Margin.Dense" Min="0" Max="100" Format="N2" Adornment="Adornment.End" AdornmentText="%" />
                             </MudTd>
                             <MudTd DataLabel="@L["NewGoodsReceipt_ActionsColumn"]" Style="text-align: right;">
                                 <MudIconButton Size="Size.Small" Icon="@Icons.Material.Filled.Delete"
@@ -274,8 +288,8 @@
     private int LineCount => _chosen.Count(line => line.Quantity > 0) + ValidFreeLines.Count();
 
     private decimal TotalCost =>
-        _chosen.Where(line => line.Quantity > 0).Sum(line => Round(line.Quantity * line.UnitCost))
-        + ValidFreeLines.Sum(line => Round(line.Quantity * line.UnitCost));
+        _chosen.Where(line => line.Quantity > 0).Sum(line => Round(Round(line.Quantity * line.UnitCost) * (1 - line.DiscountPercentage / 100m)))
+        + ValidFreeLines.Sum(line => Round(Round(line.Quantity * line.UnitCost) * (1 - line.DiscountPercentage / 100m)));
 
     private IEnumerable<FreeLine> ValidFreeLines =>
         _freeLines.Where(line => line.Quantity > 0 && !string.IsNullOrWhiteSpace(line.ProductCode));
@@ -285,6 +299,7 @@
     protected override async Task OnInitializedAsync()
     {
         Company.Changed += OnCompanyChanged;
+        WarehouseState.Changed += OnWarehouseStateChanged;
         await Company.EnsureLoadedAsync();
         await LoadAsync();
     }
@@ -312,16 +327,15 @@
             var (suppliers, suppliersError) = await Catalog.GetSuppliersAsync(Company.SelectedCompanyId);
             _suppliers = [.. suppliers.Where(supplier => supplier.IsActive)];
 
-            var (warehouses, warehousesError) = await StockApi.GetWarehousesAsync(Company.SelectedCompanyId);
-            _warehouses = [.. warehouses.Where(warehouse => warehouse.IsActive)];
+            await WarehouseState.EnsureLoadedAsync();
+            _warehouses = [.. WarehouseState.Warehouses];
 
             var (products, productsError) = await Catalog.GetProductsAsync(Company.SelectedCompanyId);
             _products = [.. products.Where(product => product.IsActive)];
 
-            _error = suppliersError ?? warehousesError ?? productsError;
+            _error = suppliersError ?? WarehouseState.LoadError ?? productsError;
 
-            _warehouseId ??= _warehouses.FirstOrDefault(warehouse => warehouse.IsDefault)?.Id
-                             ?? _warehouses.FirstOrDefault()?.Id;
+            _warehouseId ??= WarehouseState.HasWarehouse ? WarehouseState.SelectedWarehouseId : null;
         }
         catch (Exception ex)
         {
@@ -391,7 +405,8 @@
                 ProductDescription = line.ProductDescription,
                 UnitOfMeasure = line.UnitOfMeasure,
                 Quantity = line.PendingQuantity,
-                UnitCost = line.UnitPrice
+                UnitCost = line.UnitPrice,
+                DiscountPercentage = line.DiscountPercentage
             });
         }
         else if (!chosen && existing is not null)
@@ -440,7 +455,8 @@
                     line.Quantity,
                     line.UnitCost,
                     line.UnitOfMeasure,
-                    line.LineId))
+                    line.LineId,
+                    line.DiscountPercentage))
                 .Concat(ValidFreeLines.Select(line => new GoodsReceiptLineRequest(
                     line.ProductCode.Trim(),
                     string.IsNullOrWhiteSpace(line.ProductDescription)
@@ -448,7 +464,8 @@
                         : line.ProductDescription.Trim(),
                     line.Quantity,
                     line.UnitCost,
-                    line.UnitOfMeasure)))
+                    line.UnitOfMeasure,
+                    DiscountPercentage: line.DiscountPercentage)))
                 .ToList();
 
             var (receipt, error) = await Purchasing.CreateReceiptAsync(new CreateGoodsReceiptRequest(
@@ -488,6 +505,7 @@
         public string UnitOfMeasure { get; set; } = "UN";
         public decimal Quantity { get; set; }
         public decimal UnitCost { get; set; }
+        public decimal DiscountPercentage { get; set; }
     }
 
     private sealed class FreeLine
@@ -498,7 +516,18 @@
         public string UnitOfMeasure { get; set; } = "UN";
         public decimal Quantity { get; set; } = 1;
         public decimal UnitCost { get; set; }
+        public decimal DiscountPercentage { get; set; }
     }
 
-    public void Dispose() => Company.Changed -= OnCompanyChanged;
+    public void Dispose()
+    {
+        Company.Changed -= OnCompanyChanged;
+        WarehouseState.Changed -= OnWarehouseStateChanged;
+    }
+
+    private void OnWarehouseStateChanged() => InvokeAsync(() =>
+    {
+        _warehouseId = WarehouseState.HasWarehouse ? WarehouseState.SelectedWarehouseId : null;
+        StateHasChanged();
+    });
 }

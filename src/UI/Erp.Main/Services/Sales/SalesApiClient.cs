@@ -1,5 +1,6 @@
 using System.Net.Http.Json;
 using Erp.Common;
+using Erp.Common.Statements;
 using Erp.Main.Models.Core;
 using Erp.Main.Models.Inventory;
 using Erp.Main.Models.Notification;
@@ -126,6 +127,19 @@ public class SalesApiClient(HttpClient http) : ApiClientBase(http)
 
         return response.IsSuccessStatusCode ? null : await ApiResponse.ReadErrorAsync(response, cancellationToken);
     }
+
+    // --- Customer statements ---
+
+    /// <summary>A customer's current account over a period; no dates means everything.</summary>
+    public Task<(AccountStatement? Statement, string? Error)> GetCustomerStatementAsync(
+        Guid companyId,
+        Guid customerId,
+        DateOnly? startDate = null,
+        DateOnly? endDate = null,
+        CancellationToken cancellationToken = default) =>
+        GetSingleOrErrorAsync<AccountStatement>(
+            $"api/customer-statements?companyId={companyId}&customerId={customerId}{PeriodQuery(startDate, endDate)}",
+            cancellationToken);
 
     // --- Receipts ---
 

@@ -1,4 +1,6 @@
+using Erp.Api.Security;
 using Erp.Api.Services;
+using Erp.Core.Domain;
 using Erp.Core.Infrastructure.Application;
 using Erp.Core.Infrastructure.Contracts;
 using Microsoft.AspNetCore.Authorization;
@@ -15,6 +17,7 @@ namespace Erp.Api.Controllers.Core;
 [Route("api/products")]
 [Authorize(Policy = Policies.Read)]
 [Produces("application/json")]
+[ScopedEntity(typeof(Product))]
 public sealed class ProductsController(IProductService productService, ILogger<ProductsController> logger) : ControllerBase
 {
     /// <summary>Lists the products of a company.</summary>

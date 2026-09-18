@@ -1,6 +1,8 @@
 using System.Security.Claims;
+using Erp.Api.Security;
 using Erp.Api.Services;
 using Erp.Core.Infrastructure.Application;
+using Erp.Sales.Domain;
 using Erp.Sales.Infrastructure.Application;
 using Erp.Sales.Infrastructure.Contracts;
 using Microsoft.AspNetCore.Authorization;
@@ -14,6 +16,7 @@ namespace Erp.Api.Controllers.Sales;
 [Route("api/invoices")]
 [Authorize]
 [Produces("application/json")]
+[ScopedEntity(typeof(SalesDocument))]
 public sealed class InvoicesController(
     ISalesDocumentService salesDocumentService,
     IWarehouseService warehouseService,

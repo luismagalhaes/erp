@@ -1,4 +1,4 @@
-﻿using Erp.Core.Domain;
+using Erp.Core.Domain;
 using Erp.Storage;
 using Microsoft.EntityFrameworkCore;
 
@@ -114,6 +114,7 @@ public sealed class CoreModelConfiguration : IModuleModelConfiguration
             entity.Property(x => x.UnitOfMeasure).HasMaxLength(20).IsRequired();
             entity.Property(x => x.DefaultTaxCountryRegion).HasMaxLength(5).IsRequired();
             entity.Property(x => x.DefaultTaxCode).HasMaxLength(10).IsRequired();
+            entity.Property(x => x.DefaultTaxExemptionCode).HasMaxLength(10);
             entity.Property(x => x.Barcode).HasMaxLength(60);
 
             entity.Property(x => x.UnitPrice).HasPrecision(19, 6);
@@ -136,6 +137,30 @@ public sealed class CoreModelConfiguration : IModuleModelConfiguration
             entity.HasOne(x => x.Brand)
                 .WithMany(x => x.Products)
                 .HasForeignKey(x => x.BrandId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.Property(x => x.EcoFeeWeightKg).HasPrecision(19, 6);
+
+            entity.HasOne(x => x.EcoFeeType)
+                .WithMany()
+                .HasForeignKey(x => x.EcoFeeTypeId)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        modelBuilder.Entity<EcoFeeType>(entity =>
+        {
+            entity.HasKey(x => x.Id);
+            entity.Property(x => x.Code).HasMaxLength(30).IsRequired();
+            entity.Property(x => x.Description).HasMaxLength(200).IsRequired();
+            entity.Property(x => x.ManagingEntityName).HasMaxLength(200).IsRequired();
+            entity.Property(x => x.CalculationBasis).HasConversion<string>().HasMaxLength(20).IsRequired();
+            entity.Property(x => x.Rate).HasPrecision(19, 6);
+
+            entity.HasIndex(x => new { x.CompanyId, x.Code }).IsUnique();
+
+            entity.HasOne(x => x.FeeProduct)
+                .WithMany()
+                .HasForeignKey(x => x.FeeProductId)
                 .OnDelete(DeleteBehavior.Restrict);
         });
 

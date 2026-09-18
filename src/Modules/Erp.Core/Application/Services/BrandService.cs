@@ -15,6 +15,9 @@ public sealed class BrandService(IBrandStorage storage) : IBrandService
 
     public IQueryable<BrandDto> Query(Guid companyId) => storage.Query(companyId);
 
+    public Task<bool> CodeExistsAsync(Guid companyId, string code, CancellationToken cancellationToken = default) =>
+        storage.CodeExistsAsync(companyId, code, cancellationToken);
+
     public async Task<BrandDto?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
     {
         var brand = await storage.GetByIdAsync(id, cancellationToken);
@@ -75,6 +78,9 @@ public sealed class ProductFamilyService(IProductFamilyStorage storage) : IProdu
     }
 
     public IQueryable<ProductFamilyDto> Query(Guid companyId) => storage.Query(companyId);
+
+    public Task<bool> CodeExistsAsync(Guid companyId, string code, CancellationToken cancellationToken = default) =>
+        storage.CodeExistsAsync(companyId, code, cancellationToken);
 
     public async Task<ProductFamilyDto?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
     {
@@ -142,6 +148,9 @@ public sealed class ProductSubfamilyService(
     }
 
     public IQueryable<ProductSubfamilyDto> Query(Guid companyId) => storage.Query(companyId);
+
+    public Task<bool> CodeExistsAsync(Guid companyId, string code, CancellationToken cancellationToken = default) =>
+        storage.CodeExistsAsync(companyId, code, cancellationToken);
 
     public async Task<ProductSubfamilyDto?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
     {

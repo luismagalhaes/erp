@@ -43,12 +43,21 @@ else
     <div class="print-parties">
         <div class="print-box">
             <div class="label">@L["InvoicePrint_CustomerLabel"]</div>
-            <div><strong>@_invoice.CustomerName</strong></div>
+            <div><strong>@_invoice.CustomerTaxId — @_invoice.CustomerName</strong></div>
             @if (!string.IsNullOrWhiteSpace(_invoice.CustomerAddress))
             {
                 <div>@_invoice.CustomerAddress</div>
             }
-            <div>@L["InvoicePrint_TaxIdPrefix", _invoice.CustomerTaxId]</div>
+            @if (!string.IsNullOrWhiteSpace(PostalCodeAndCity))
+            {
+                <div>@PostalCodeAndCity</div>
+            }
+        </div>
+
+        <div class="print-box">
+            <div class="label">@L["InvoicePrint_DatesLabel"]</div>
+            <div>@L["InvoicePrint_DocumentDatePrefix", _invoice.DocumentDate.ToString("yyyy-MM-dd")]</div>
+            <div>@L["InvoicePrint_DueDatePrefix", _invoice.DueDate?.ToString("yyyy-MM-dd") ?? "—"]</div>
         </div>
 
         @* Menção obrigatória num documento retificativo. *@
@@ -71,6 +80,7 @@ else
                 <th class="num" style="width: 60px;">@L["InvoicePrint_QuantityColumn"]</th>
                 <th style="width: 34px;">@L["InvoicePrint_UnitColumn"]</th>
                 <th class="num" style="width: 70px;">@L["InvoicePrint_PriceColumn"]</th>
+                <th class="num" style="width: 44px;">@L["InvoicePrint_DiscountColumn"]</th>
                 <th class="num" style="width: 44px;">@L["InvoicePrint_TaxColumn"]</th>
                 <th class="num" style="width: 76px;">@L["InvoicePrint_ValueColumn"]</th>
             </tr>
@@ -91,6 +101,7 @@ else
                     <td class="num">@line.Quantity.ToString("N3")</td>
                     <td>@line.UnitOfMeasure</td>
                     <td class="num">@line.UnitPrice.ToString("N2")</td>
+                    <td class="num">@(line.DiscountPercentage == 0 ? string.Empty : $"{line.DiscountPercentage:0.##}%")</td>
                     <td class="num">@line.TaxPercentage.ToString("N0")%</td>
                     <td class="num">@line.LineAmount.ToString("N2")</td>
                 </tr>
@@ -124,11 +135,37 @@ else
         </div>
 
         <div class="print-totals">
+            <div class="row"><span>@L["DocumentTotals_GrossLinesLabel"]</span><span>@_invoice.GrossLinesTotal.ToString("N2")</span></div>
+            <div class="row"><span>@L["DocumentTotals_DiscountLabel"]</span><span>@((-_invoice.DiscountTotal).ToString("N2"))</span></div>
             <div class="row"><span>@L["InvoicePrint_NetTotalLabel"]</span><span>@_invoice.NetTotal.ToString("N2")</span></div>
             <div class="row"><span>@L["InvoicePrint_TaxLabel"]</span><span>@_invoice.TaxPayable.ToString("N2")</span></div>
             <div class="row grand"><span>@L["InvoicePrint_TotalLabel"]</span><span>@_invoice.GrossTotal.ToString("N2") EUR</span></div>
         </div>
     </div>
+
+    @* A fatura-recibo was paid when it was issued, and the paper has to say how. *@
+    @if (_invoice.Payments is { Count: > 0 } payments)
+    {
+        <table class="print-table" style="width: auto;">
+            <thead>
+                <tr>
+                    <th>@L["PaymentMethods_MethodColumn"]</th>
+                    <th style="width: 80px;">@L["PaymentMethods_DateColumn"]</th>
+                    <th class="num" style="width: 90px;">@L["PaymentMethods_AmountColumn"]</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var payment in payments)
+                {
+                    <tr>
+                        <td>@PaymentMechanismOptions.Describe(payment.Mechanism)</td>
+                        <td>@payment.PaymentDate.ToString("yyyy-MM-dd")</td>
+                        <td class="num">@payment.Amount.ToString("N2")</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    }
 
     @if (_exemptionReasons.Count > 0)
     {
@@ -159,6 +196,10 @@ else
     private InvoiceDetail? _invoice;
     private CompanyDetail? _company;
     private List<string> _exemptionReasons = [];
+
+    private string PostalCodeAndCity =>
+        string.Join(" ", new[] { _invoice?.CustomerPostalCode, _invoice?.CustomerCity }
+            .Where(part => !string.IsNullOrWhiteSpace(part)));
 
     protected override async Task OnParametersSetAsync()
     {

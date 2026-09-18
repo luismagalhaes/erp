@@ -1,5 +1,7 @@
 using System.Security.Claims;
+using Erp.Api.Security;
 using Erp.Api.Services;
+using Erp.Inventory.Domain;
 using Erp.Inventory.Infrastructure.Application;
 using Erp.Inventory.Infrastructure.Contracts;
 using Microsoft.AspNetCore.Authorization;
@@ -16,6 +18,7 @@ namespace Erp.Api.Controllers.Inventory;
 [Route("api/inventory-counts")]
 [Authorize]
 [Produces("application/json")]
+[ScopedEntity(typeof(InventoryCount))]
 public sealed class InventoryCountsController(IInventoryCountService countService, ILogger<InventoryCountsController> logger) : ControllerBase
 {
     [HttpGet]

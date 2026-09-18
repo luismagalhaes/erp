@@ -136,6 +136,9 @@ builder.Services.AddHttpClient<SaftApiClient>(client => client.BaseAddress = api
 builder.Services.AddHttpClient<CatalogApiClient>(client => client.BaseAddress = apiBaseAddress)
     .AddHttpMessageHandler<UserAccessTokenHandler>();
 
+builder.Services.AddHttpClient<LookupApiClient>(client => client.BaseAddress = apiBaseAddress)
+    .AddHttpMessageHandler<UserAccessTokenHandler>();
+
 builder.Services.AddHttpClient<StockApiClient>(client => client.BaseAddress = apiBaseAddress)
     .AddHttpMessageHandler<UserAccessTokenHandler>();
 
@@ -157,6 +160,7 @@ builder.Services.ConfigureAll<Microsoft.Extensions.Http.HttpClientFactoryOptions
 
 // Company currently selected in the header, shared by every page of the circuit.
 builder.Services.AddScoped<CompanyState>();
+builder.Services.AddScoped<WarehouseState>();
 
 var app = builder.Build();
 

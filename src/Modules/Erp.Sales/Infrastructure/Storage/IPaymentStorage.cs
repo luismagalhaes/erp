@@ -7,6 +7,13 @@ public interface IPaymentStorage
 {
     Task<IReadOnlyList<Payment>> GetAllAsync(Guid companyId, CancellationToken cancellationToken = default);
 
+    /// <summary>One party's receipts up to a date, with their status changes. Read by the statement.</summary>
+    Task<IReadOnlyList<Payment>> GetForPartyAsync(
+        Guid companyId,
+        string partyTaxId,
+        DateOnly? endDate = null,
+        CancellationToken cancellationToken = default);
+
     /// <summary>
     /// The listing projection of a company's receipts, left as a query so the database applies the
     /// grid's filtering, sorting and paging.

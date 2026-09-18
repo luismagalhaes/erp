@@ -8,4 +8,7 @@ public sealed class SaftDocumentTotals
     public decimal NetTotal { get; init; }
 
     public decimal GrossTotal { get; init; }
+
+    /// <summary>How the document was paid when issued, written as Payment. Only a fatura-recibo has any.</summary>
+    public IReadOnlyList<SaftPaymentMethod> Payments { get; init; } = [];
 }

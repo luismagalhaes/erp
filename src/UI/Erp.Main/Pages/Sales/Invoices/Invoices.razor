@@ -34,7 +34,7 @@
     </PageHeader>
 
     <DataGrid T="InvoiceListItem"
-              LoadAsync="@((companyId, query, ct) => SalesApi.QueryInvoicesAsync(companyId, query, ct))"
+              LoadAsync="LoadAsync"
               SearchFields="SearchFields" DefaultOrderBy="DocumentDate desc,DocumentNumber desc"
               SearchPlaceholder="@L["Invoices_SearchPlaceholder"]"
               EmptyIcon="@Icons.Material.Filled.ReceiptLong"
@@ -51,6 +51,7 @@
             </PropertyColumn>
             <PropertyColumn Property="x => x.Atcud" Title="@L["Invoices_AtcudColumn"]" CellClass="erp-mono" />
             <PropertyColumn Property="x => x.DocumentDate" Title="@L["Invoices_DateColumn"]" Format="yyyy-MM-dd" />
+            <PropertyColumn Property="x => x.DueDate" Title="@L["Invoices_DueDateColumn"]" Format="yyyy-MM-dd" />
             <PropertyColumn Property="x => x.CustomerName" Title="@L["Invoices_CustomerColumn"]" />
             <PropertyColumn Property="x => x.CustomerTaxId" Title="@L["Invoices_TaxIdColumn"]" />
             <PropertyColumn Property="x => x.NetTotal" Title="@L["Invoices_NetTotalColumn"]" Format="N2"
@@ -90,6 +91,21 @@
     /// produces an invalid $filter.
     /// </summary>
     private static readonly string[] SearchFields = ["DocumentNumber", "CustomerName", "CustomerTaxId"];
+
+    /// <summary>
+    /// Credit and debit notes live in the same table as the invoices they correct and have their own
+    /// listing, so they are kept out of this one. The restriction goes into the query, so the count
+    /// and the paging the grid receives are already the invoices'.
+    /// </summary>
+    private Task<(IReadOnlyList<InvoiceListItem> Items, int Count, string? Error)> LoadAsync(
+        Guid companyId, ODataQuery query, CancellationToken cancellationToken)
+    {
+        query.Filter(string.Join(
+            " or ",
+            InvoiceTypes.Sale.Select(type => $"DocumentType eq {ODataQuery.Literal(type)}")));
+
+        return SalesApi.QueryInvoicesAsync(companyId, query, cancellationToken);
+    }
 
     private string DescribeStatus(string status) => status switch
     {

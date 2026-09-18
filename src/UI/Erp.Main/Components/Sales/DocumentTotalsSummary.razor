@@ -1,0 +1,81 @@
+@using MudBlazor
+@using Erp.Main.Resources
+@using Microsoft.Extensions.Localization
+@inject IStringLocalizer<MainResources> L
+
+@*
+    The foot of a sales document, the same on the form that issues it and on the page that shows it:
+    the VAT broken down by rate on one side, and the totals — ilíquido, descontos, líquido, taxas,
+    total — on the other.
+*@
+<MudGrid Spacing="3">
+    <MudItem xs="12" md="7">
+        <MudText Typo="Typo.subtitle2" Class="mb-2">@L["DocumentTotals_TaxBreakdownTitle"]</MudText>
+        <MudSimpleTable Dense="true" Hover="true" Bordered="false" Class="erp-grid">
+            <thead>
+                <tr>
+                    <th>@L["DocumentTotals_RateColumn"]</th>
+                    <th style="text-align: right;">@L["DocumentTotals_TaxableBaseColumn"]</th>
+                    <th style="text-align: right;">@L["DocumentTotals_TaxAmountColumn"]</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (Taxes.Count == 0)
+                {
+                    <tr><td colspan="3"><MudText Typo="Typo.body2" Color="Color.Secondary">—</MudText></td></tr>
+                }
+                @foreach (var tax in Taxes)
+                {
+                    <tr>
+                        <td>@tax.Label (@tax.Percentage.ToString("0.##")%)</td>
+                        <td style="text-align: right;">@tax.TaxableBase.ToString("N2") €</td>
+                        <td style="text-align: right;">@tax.TaxAmount.ToString("N2") €</td>
+                    </tr>
+                }
+            </tbody>
+        </MudSimpleTable>
+    </MudItem>
+
+    <MudItem xs="12" md="5">
+        <MudStack Spacing="1">
+            <MudStack Row="true" Justify="Justify.SpaceBetween">
+                <MudText Typo="Typo.body2">@L["DocumentTotals_GrossLinesLabel"]</MudText>
+                <MudText Typo="Typo.body2">@GrossLinesTotal.ToString("N2") €</MudText>
+            </MudStack>
+            <MudStack Row="true" Justify="Justify.SpaceBetween">
+                <MudText Typo="Typo.body2">@L["DocumentTotals_DiscountLabel"]</MudText>
+                <MudText Typo="Typo.body2">@((-DiscountTotal).ToString("N2")) €</MudText>
+            </MudStack>
+            <MudStack Row="true" Justify="Justify.SpaceBetween">
+                <MudText Typo="Typo.body2">@L["DocumentTotals_NetLabel"]</MudText>
+                <MudText Typo="Typo.body2">@NetTotal.ToString("N2") €</MudText>
+            </MudStack>
+            <MudStack Row="true" Justify="Justify.SpaceBetween">
+                <MudText Typo="Typo.body2">@L["DocumentTotals_TaxLabel"]</MudText>
+                <MudText Typo="Typo.body2">@TaxTotal.ToString("N2") €</MudText>
+            </MudStack>
+            <MudDivider Class="my-1" />
+            <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center">
+                <MudText Typo="Typo.h6">@L["DocumentTotals_TotalLabel"]</MudText>
+                <MudText Typo="Typo.h5" Color="Color.Primary">@GrossTotal.ToString("N2") €</MudText>
+            </MudStack>
+        </MudStack>
+    </MudItem>
+</MudGrid>
+
+@code {
+    /// <summary>One line of the VAT breakdown.</summary>
+    public sealed record TaxLine(string Label, decimal Percentage, decimal TaxableBase, decimal TaxAmount);
+
+    [Parameter] public decimal GrossLinesTotal { get; set; }
+
+    [Parameter] public decimal DiscountTotal { get; set; }
+
+    [Parameter] public decimal NetTotal { get; set; }
+
+    [Parameter] public decimal TaxTotal { get; set; }
+
+    [Parameter] public decimal GrossTotal { get; set; }
+
+    [Parameter] public IReadOnlyList<TaxLine> Taxes { get; set; } = [];
+}

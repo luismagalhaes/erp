@@ -35,11 +35,11 @@
         <MudAlert Severity="Severity.Error" Dense="true">@_error</MudAlert>
     }
 
-    <MudPaper Elevation="1" Class="pa-4">
+    <MudPaper Elevation="0" Class="pa-4 erp-card erp-form">
         <MudGrid>
             <MudItem xs="12" md="6">
                 <MudTextField @bind-Value="_productCode" @bind-Value:after="StateHasChanged" Immediate="true"
-                              Label="@Localizer["StockCheck_ProductLabel"]" Variant="Variant.Outlined"
+                              Label="@Localizer["StockCheck_ProductLabel"]" Variant="Variant.Outlined" Margin="Margin.Dense"
                               HelperText="@Localizer["StockCheck_ProductHelperText"]" />
             </MudItem>
             <MudItem xs="12" md="6" Class="d-flex align-center">
@@ -84,7 +84,7 @@
             }
         }
 
-        <MudPaper Elevation="1" Class="pa-2">
+        <MudPaper Elevation="0" Class="pa-2 erp-card erp-form">
             <MudTable Items="Visible" Hover="true" Striped="true" Dense="true" Breakpoint="Breakpoint.Sm">
                 <ToolBarContent>
                     <MudText Typo="Typo.h6">@Localizer["StockCheck_ResultTitle"]</MudText>

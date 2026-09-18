@@ -14,13 +14,16 @@
         @Localizer["Print_BackButton"]
     </MudButton>
 
-    <MudSelect T="string" Value="Copy" ValueChanged="OnCopyChanged" Dense="true" Margin="Margin.Dense"
-               Variant="Variant.Outlined" Style="max-width: 160px;">
-        @foreach (var copy in Copies)
-        {
-            <MudSelectItem T="string" Value="@copy">@copy</MudSelectItem>
-        }
-    </MudSelect>
+    @if (ShowCopies)
+    {
+        <MudSelect T="string" Value="Copy" ValueChanged="OnCopyChanged" Dense="true" Margin="Margin.Dense"
+                   Variant="Variant.Outlined" Style="max-width: 160px;">
+            @foreach (var copy in Copies)
+            {
+                <MudSelectItem T="string" Value="@copy">@copy</MudSelectItem>
+            }
+        </MudSelect>
+    }
 
     <MudButton Variant="Variant.Filled" Color="Color.Primary" Size="Size.Small"
                StartIcon="@Icons.Material.Filled.Print" OnClick="PrintAsync">
@@ -40,6 +43,10 @@
 
     [Parameter]
     public string BackUrl { get; set; } = string.Empty;
+
+    /// <summary>Only fiscal documents are issued in copies; a report has no use for the selector.</summary>
+    [Parameter]
+    public bool ShowCopies { get; set; } = true;
 
     private Task OnCopyChanged(string copy) => CopyChanged.InvokeAsync(copy);
 

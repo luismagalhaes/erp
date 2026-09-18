@@ -87,6 +87,19 @@ public interface ISupplierStorage
     Task SaveChangesAsync(CancellationToken cancellationToken = default);
 }
 
+public interface IEcoFeeTypeStorage
+{
+    Task<IReadOnlyList<EcoFeeType>> GetAllAsync(Guid companyId, CancellationToken cancellationToken = default);
+
+    /// <summary>The listing left unmaterialised so the grid OData options run in the database.</summary>
+    IQueryable<EcoFeeTypeDto> Query(Guid companyId);
+
+    Task<EcoFeeType?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default);
+    Task<bool> CodeExistsAsync(Guid companyId, string code, CancellationToken cancellationToken = default);
+    Task AddAsync(EcoFeeType ecoFeeType, CancellationToken cancellationToken = default);
+    Task SaveChangesAsync(CancellationToken cancellationToken = default);
+}
+
 /// <summary>Not company scoped — the rows are seeded once by migration, never created through this.</summary>
 public interface IVatRateStorage
 {

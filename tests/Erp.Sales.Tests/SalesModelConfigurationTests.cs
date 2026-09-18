@@ -32,7 +32,7 @@ public class SalesModelConfigurationTests
             .UseSqlServer("Server=(localdb)\\MSSQLLocalDB;Database=ErpModelOnly;")
             .Options;
 
-        using var context = new AppDbContext(options, [new SalesModelConfiguration()]);
+        using var context = new AppDbContext(options, [new SalesModelConfiguration()], new NullCurrentUserContext());
 
         return context.Model;
     }
@@ -79,7 +79,7 @@ public class SalesModelConfigurationTests
             .UseSqlServer("Server=(localdb)\\MSSQLLocalDB;Database=ErpModelOnly;")
             .Options;
 
-        using var context = new AppDbContext(options, [new SalesModelConfiguration()]);
+        using var context = new AppDbContext(options, [new SalesModelConfiguration()], new NullCurrentUserContext());
 
         var sql = context.Set<StockMovement>()
             .AsNoTracking()

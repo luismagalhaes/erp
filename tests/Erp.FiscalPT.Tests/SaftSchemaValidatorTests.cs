@@ -192,6 +192,63 @@ public class SaftSchemaValidatorTests
         errors.Should().BeEmpty();
     }
 
+    /// <summary>
+    /// A fatura-recibo carries its payment in DocumentTotals, and a discounted line its discount in
+    /// SettlementAmount. Both are optional elements with a fixed place in the sequence.
+    /// </summary>
+    [Fact]
+    public void Validate_accepts_a_discounted_line_and_the_payment_of_a_fatura_recibo()
+    {
+        var invoice = Invoice(invoiceNo: "FR A2026/1", invoiceType: "FR");
+        var discounted = new SaftInvoice
+        {
+            InvoiceNo = invoice.InvoiceNo,
+            Atcud = invoice.Atcud,
+            InvoiceType = invoice.InvoiceType,
+            DocumentStatus = invoice.DocumentStatus,
+            Hash = invoice.Hash,
+            HashControl = invoice.HashControl,
+            Period = invoice.Period,
+            InvoiceDate = invoice.InvoiceDate,
+            SystemEntryDate = invoice.SystemEntryDate,
+            CustomerId = invoice.CustomerId,
+            Lines =
+            [
+                new SaftInvoiceLine
+                {
+                    LineNumber = 1,
+                    ProductCode = "ART001",
+                    ProductDescription = "Artigo de teste",
+                    Quantity = 2,
+                    UnitPrice = 90m,
+                    SettlementAmount = 20m,
+                    TaxPointDate = new DateOnly(2026, 1, 15),
+                    Description = "Artigo de teste",
+                    Amount = 180m,
+                    Tax = Tax()
+                }
+            ],
+            Totals = new SaftDocumentTotals
+            {
+                TaxPayable = 41.40m,
+                NetTotal = 180m,
+                GrossTotal = 221.40m,
+                Payments = [new SaftPaymentMethod { PaymentMechanism = "NU", PaymentAmount = 221.40m, PaymentDate = new DateOnly(2026, 1, 15) }]
+            }
+        };
+
+        var file = new SaftAuditFile
+        {
+            Header = Header(),
+            Customers = [Customer()],
+            Products = [Product()],
+            TaxTable = [TaxEntry()],
+            Invoices = [discounted]
+        };
+
+        SaftSchemaValidator.Validate(SaftXmlWriter.Build(file)).Should().BeEmpty();
+    }
+
     [Fact]
     public void Validate_accepts_a_file_with_only_the_master_files()
     {

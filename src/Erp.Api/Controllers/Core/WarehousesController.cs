@@ -1,4 +1,6 @@
+using Erp.Api.Security;
 using Erp.Api.Services;
+using Erp.Core.Domain;
 using Erp.Core.Infrastructure.Application;
 using Erp.Core.Infrastructure.Contracts;
 using Microsoft.AspNetCore.Authorization;
@@ -14,6 +16,7 @@ namespace Erp.Api.Controllers.Core;
 [Route("api/warehouses")]
 [Authorize(Policy = Policies.Read)]
 [Produces("application/json")]
+[ScopedEntity(typeof(Warehouse))]
 public sealed class WarehousesController(IWarehouseService warehouseService, ILogger<WarehousesController> logger) : ControllerBase
 {
     [HttpGet]

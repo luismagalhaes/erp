@@ -3,6 +3,8 @@
 @using Microsoft.AspNetCore.Authorization
 @using Microsoft.AspNetCore.Components.Web
 @using MudBlazor
+@using Erp.Main.Components.Common
+@using Erp.Main.Components.Sales
 @using Erp.Main.Models
 @using Erp.Main.Services
 @using Microsoft.Extensions.Localization
@@ -65,7 +67,7 @@
             </MudAlert>
         }
 
-        <MudPaper Elevation="1" Class="pa-4">
+        <MudPaper Elevation="0" Class="pa-4 erp-card erp-form">
             <MudGrid>
                 <MudItem xs="12" md="3">
                     <MudText Typo="Typo.caption" Color="Color.Secondary">
@@ -90,7 +92,7 @@
             </MudGrid>
         </MudPaper>
 
-        <MudPaper Elevation="1" Class="pa-4">
+        <MudPaper Elevation="0" Class="pa-4 erp-card erp-form">
             <MudText Typo="Typo.h6" Class="mb-3">@L["StockMovementView_TransportTitle"]</MudText>
             <MudGrid>
                 <MudItem xs="12" md="4">
@@ -122,7 +124,7 @@
             </MudGrid>
         </MudPaper>
 
-        <MudPaper Elevation="1" Class="pa-2">
+        <MudPaper Elevation="0" Class="pa-2 erp-card erp-form">
             <MudTable Items="_movement.Lines" Dense="true" Hover="true" Striped="true" Breakpoint="Breakpoint.Sm">
                 <HeaderContent>
                     <MudTh>@L["StockMovementView_NumberColumn"]</MudTh>
@@ -130,6 +132,7 @@
                     <MudTh>@L["StockMovementView_DescriptionColumn"]</MudTh>
                     <MudTh Style="text-align: right;">@L["StockMovementView_QuantityColumn"]</MudTh>
                     <MudTh Style="text-align: right;">@L["StockMovementView_UnitPriceColumn"]</MudTh>
+                    <MudTh Style="text-align: right;">@L["NewInvoice_DiscountColumn"]</MudTh>
                     <MudTh Style="text-align: right;">@L["StockMovementView_BaseColumn"]</MudTh>
                     <MudTh Style="text-align: right;">@L["StockMovementView_TaxColumn"]</MudTh>
                 </HeaderContent>
@@ -139,35 +142,22 @@
                     <MudTd DataLabel="@L["StockMovementView_DescriptionColumn"]">@context.ProductDescription</MudTd>
                     <MudTd DataLabel="@L["StockMovementView_QuantityColumn"]" Style="text-align: right;">@context.Quantity.ToString("N3")</MudTd>
                     <MudTd DataLabel="@L["StockMovementView_UnitPriceColumn"]" Style="text-align: right;">@context.UnitPrice.ToString("N2")</MudTd>
+                    <MudTd DataLabel="@L["NewInvoice_DiscountColumn"]" Style="text-align: right;">@DescribeDiscount(context.DiscountPercentage)</MudTd>
                     <MudTd DataLabel="@L["StockMovementView_BaseColumn"]" Style="text-align: right;">@context.LineAmount.ToString("N2")</MudTd>
                     <MudTd DataLabel="@L["StockMovementView_TaxColumn"]" Style="text-align: right;">@context.TaxAmount.ToString("N2")</MudTd>
                 </RowTemplate>
             </MudTable>
         </MudPaper>
 
-        <MudStack Row="true" Spacing="4" Justify="Justify.FlexEnd">
-            <MudPaper Elevation="1" Class="pa-4" Style="min-width: 300px;">
-                <MudStack Spacing="2">
-                    <MudStack Row="true" Justify="Justify.SpaceBetween">
-                        <MudText Typo="Typo.body2">@L["StockMovementView_TotalQuantityLabel"]</MudText>
-                        <MudText Typo="Typo.body2">@_movement.TotalQuantity.ToString("N3")</MudText>
-                    </MudStack>
-                    <MudStack Row="true" Justify="Justify.SpaceBetween">
-                        <MudText Typo="Typo.body2">@L["StockMovementView_NetTotalLabel"]</MudText>
-                        <MudText Typo="Typo.body2">@_movement.NetTotal.ToString("N2")</MudText>
-                    </MudStack>
-                    <MudStack Row="true" Justify="Justify.SpaceBetween">
-                        <MudText Typo="Typo.body2">@L["StockMovementView_TaxLabel"]</MudText>
-                        <MudText Typo="Typo.body2">@_movement.TaxPayable.ToString("N2")</MudText>
-                    </MudStack>
-                    <MudDivider />
-                    <MudStack Row="true" Justify="Justify.SpaceBetween">
-                        <MudText Typo="Typo.h6">@L["StockMovementView_TotalLabel"]</MudText>
-                        <MudText Typo="Typo.h6" Color="Color.Primary">@_movement.GrossTotal.ToString("N2")</MudText>
-                    </MudStack>
-                </MudStack>
-            </MudPaper>
-        </MudStack>
+        <EditorCard Title="@L["NewInvoice_SummarySectionTitle"]" Icon="@Icons.Material.Filled.Calculate"
+                    Description="@string.Format(L["NewStockMovement_TotalQuantityDescription"], _movement.TotalQuantity.ToString("N3"))">
+            <DocumentTotalsSummary GrossLinesTotal="_movement.GrossLinesTotal"
+                                   DiscountTotal="_movement.DiscountTotal"
+                                   NetTotal="_movement.NetTotal"
+                                   TaxTotal="_movement.TaxPayable"
+                                   GrossTotal="_movement.GrossTotal"
+                                   Taxes="TaxBreakdown" />
+        </EditorCard>
 
         <MudExpansionPanels Elevation="1">
             <MudExpansionPanel Text="@L["StockMovementView_CommunicationTitle"]" Expanded="@string.IsNullOrWhiteSpace(_movement.AtDocCodeId)">
@@ -207,8 +197,8 @@
                         @L["StockMovementView_VoidHelp"]
                     </MudText>
                     <MudStack Row="true" Spacing="2" AlignItems="AlignItems.Center">
-                        <MudTextField @bind-Value="_voidReason" Label="@L["StockMovementView_ReasonLabel"]" Variant="Variant.Outlined"
-                                      Margin="Margin.Dense" Style="max-width: 480px;" />
+                        <MudTextField @bind-Value="_voidReason" Label="@L["StockMovementView_ReasonLabel"]" Variant="Variant.Outlined" Margin="Margin.Dense"
+                                      Style="max-width: 480px;" />
                         <MudButton Variant="Variant.Filled" Color="Color.Error"
                                    StartIcon="@Icons.Material.Filled.Cancel"
                                    Disabled="@(_working || string.IsNullOrWhiteSpace(_voidReason))"
@@ -233,6 +223,16 @@
     private Guid? _loadedId;
 
     private StockMovementDetail? _movement;
+
+    private IReadOnlyList<DocumentTotalsSummary.TaxLine> TaxBreakdown =>
+        _movement?.Taxes is not { } taxes
+            ? []
+            : [.. taxes
+                .OrderByDescending(tax => tax.TaxPercentage)
+                .Select(tax => new DocumentTotalsSummary.TaxLine(tax.TaxCode, tax.TaxPercentage, tax.TaxableBase, tax.TaxAmount))];
+
+    private static string DescribeDiscount(decimal percentage) =>
+        percentage == 0 ? "â€”" : $"{percentage:0.##}%";
 
     protected override async Task OnParametersSetAsync()
     {

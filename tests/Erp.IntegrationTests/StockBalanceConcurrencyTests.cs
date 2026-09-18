@@ -1,6 +1,8 @@
 using Erp.Inventory.Domain;
 using Erp.Inventory.Infrastructure.Application;
 using Erp.Inventory.Infrastructure.Contracts;
+using Erp.Sales.Infrastructure.Application;
+using Erp.Sales.Infrastructure.Contracts;
 using Erp.Storage;
 using FluentAssertions;
 using Microsoft.EntityFrameworkCore;
@@ -54,6 +56,38 @@ public class StockBalanceConcurrencyTests(SqlServerFixture fixture)
 
         balances.Should().ContainSingle().Which.Quantity.Should().Be(
             Concurrent, "every movement has to land, not just the last one to write");
+    }
+
+    /// <summary>
+    /// One document, the same product on two lines. The balance of a product that had none yet is
+    /// created by the first line and is still unsaved when the second one reads it: if that reading
+    /// misses it, a second balance is started and the unique index refuses the whole document.
+    /// </summary>
+    [Fact]
+    public async Task One_document_moving_the_same_product_twice_keeps_a_single_balance()
+    {
+        var scenario = await new CompanyScenario(fixture).CreateAsync();
+        var series = await scenario.GivenCommunicatedSeriesAsync("FT", stockEffect: "Out");
+
+        await scenario.InScopeAsync(services =>
+            services.GetRequiredService<ISalesDocumentService>().IssueAsync(
+                new CreateInvoiceRequest(
+                    scenario.CompanyId,
+                    series,
+                    new DateOnly(2026, 3, 15),
+                    new CustomerRequest("500999999", "Cliente Teste", "Rua do Cliente"),
+                    [
+                        new CreateInvoiceLineRequest("ART001", "Artigo de teste", 2m, 100m, "NOR", 23m),
+                        new CreateInvoiceLineRequest("ART001", "Artigo de teste", 3m, 100m, "NOR", 23m)
+                    ],
+                    WarehouseId: scenario.WarehouseId),
+                "user-1"));
+
+        var balances = await scenario.InScopeAsync(services =>
+            services.GetRequiredService<IStockService>()
+                .GetBalancesAsync(scenario.CompanyId, scenario.WarehouseId, "ART001"));
+
+        balances.Should().ContainSingle().Which.Quantity.Should().Be(-5m, "both lines took goods out");
     }
 
     /// <summary>

@@ -56,11 +56,11 @@
     }
     else
     {
-        <MudPaper Elevation="1" Class="pa-4">
+        <MudPaper Elevation="0" Class="pa-4 erp-card erp-form">
             <MudText Typo="Typo.h6" Class="mb-3">@L["NewPayment_DocumentSectionTitle"]</MudText>
             <MudGrid>
                 <MudItem xs="12" md="5">
-                    <MudSelect @bind-Value="_seriesId" Label="@L["NewPayment_SeriesLabel"]" Variant="Variant.Outlined" Required="true">
+                    <MudSelect @bind-Value="_seriesId" Label="@L["NewPayment_SeriesLabel"]" Variant="Variant.Outlined" Margin="Margin.Dense" Required="true">
                         @foreach (var series in _series)
                         {
                             <MudSelectItem T="Guid" Value="@series.Id">
@@ -71,20 +71,20 @@
                 </MudItem>
                 <MudItem xs="12" md="3">
                     <MudDatePicker @bind-Date="_transactionDate" Label="@L["NewPayment_DateLabel"]"
-                                   Variant="Variant.Outlined" DateFormat="yyyy-MM-dd" />
+                                   Variant="Variant.Outlined" Margin="Margin.Dense" DateFormat="yyyy-MM-dd" />
                 </MudItem>
                 <MudItem xs="12" md="4">
-                    <MudTextField @bind-Value="_description" Label="@L["NewPayment_NotesLabel"]" Variant="Variant.Outlined" />
+                    <MudTextField @bind-Value="_description" Label="@L["NewPayment_NotesLabel"]" Variant="Variant.Outlined" Margin="Margin.Dense" />
                 </MudItem>
             </MudGrid>
         </MudPaper>
 
-        <MudPaper Elevation="1" Class="pa-4">
+        <MudPaper Elevation="0" Class="pa-4 erp-card erp-form">
             <MudText Typo="Typo.h6" Class="mb-3">@L["NewPayment_CustomerSectionTitle"]</MudText>
             <MudGrid>
                 <MudItem xs="12" md="6">
                     <MudSelect T="string" Value="_partyTaxId" ValueChanged="OnCustomerChanged"
-                               Label="@L["NewPayment_CustomerLabel"]" Variant="Variant.Outlined" Required="true"
+                               Label="@L["NewPayment_CustomerLabel"]" Variant="Variant.Outlined" Margin="Margin.Dense" Required="true"
                                HelperText="@L["NewPayment_CustomerHelpText"]">
                         @foreach (var customer in _customers)
                         {
@@ -95,12 +95,12 @@
                     </MudSelect>
                 </MudItem>
                 <MudItem xs="12" md="6">
-                    <MudTextField @bind-Value="_partyName" Label="@L["NewPayment_NameLabel"]" Variant="Variant.Outlined" Required="true" />
+                    <MudTextField @bind-Value="_partyName" Label="@L["NewPayment_NameLabel"]" Variant="Variant.Outlined" Margin="Margin.Dense" Required="true" />
                 </MudItem>
             </MudGrid>
         </MudPaper>
 
-        <MudPaper Elevation="1" Class="pa-4">
+        <MudPaper Elevation="0" Class="pa-4 erp-card erp-form">
             <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center" Class="mb-3">
                 <MudText Typo="Typo.h6">@L["NewPayment_InvoicesSectionTitle"]</MudText>
                 <MudButton Variant="Variant.Text" Color="Color.Primary" Size="Size.Small"
@@ -154,7 +154,7 @@
             </MudTable>
         </MudPaper>
 
-        <MudPaper Elevation="1" Class="pa-4">
+        <MudPaper Elevation="0" Class="pa-4 erp-card erp-form">
             <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center" Class="mb-3">
                 <MudText Typo="Typo.h6">@L["NewPayment_MethodsSectionTitle"]</MudText>
                 <MudButton Variant="Variant.Outlined" Color="Color.Primary" Size="Size.Small"
@@ -201,7 +201,7 @@
             </MudButton>
         </MudPaper>
 
-        <MudPaper Elevation="1" Class="pa-4">
+        <MudPaper Elevation="0" Class="pa-4 erp-card erp-form">
             <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center">
                 <MudStack Row="true" Spacing="6">
                     <MudStack Spacing="0">

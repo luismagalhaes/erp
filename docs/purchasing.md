@@ -479,9 +479,17 @@ a autofaturação e não ao mesmo tempo, para que uma falha se saiba logo de que
 > mudar**. A regra está em [`SeriesState`](../src/Shared/Erp.FiscalPT/Documents/SeriesState.cs), no
 > `Erp.FiscalPT`, ao lado do ATCUD que dela se constrói.
 
-Fora deste plano, e deliberadamente: contas correntes de fornecedores e pagamentos (é outro módulo),
-lançamento contabilístico (Accounting), e a conferência contra o e-Fatura (precisa dos *webservices*
-da AT, que ainda não estão integrados para nada).
+Fora deste plano, e deliberadamente: lançamento contabilístico (Accounting), e a conferência contra o
+e-Fatura (precisa dos *webservices* da AT, que ainda não estão integrados para nada).
+
+> [!NOTE]
+> **As contas correntes de fornecedores e os pagamentos estavam aqui, e saíram.** A ideia inicial era
+> um módulo à parte; acabaram no `Erp.Purchasing`, pela mesma razão que os recibos vivem no
+> `Erp.Sales`: liquidam documentos deste módulo, e um módulo novo só para isso trazia uma fronteira
+> sem nada a separar. O `SupplierPayment` espelha o `Payment` das vendas nas regras, mas **não é
+> documento fiscal** — não tem série nem assinatura, e o número (`PAG2026/3`) é nosso. As notas de
+> crédito do fornecedor descontam no próprio pagamento. Detalhes em
+> [Pagamentos a fornecedores](../README.md#pagamentos-a-fornecedores).
 
 ---
 

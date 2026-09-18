@@ -94,6 +94,7 @@ graph TB
     subgraph Shared["Shared"]
         FiscalPT["Erp.FiscalPT<br/>assinatura · SAF-T<br/>webservices da AT"]
         Storage["Erp.Storage<br/>AppDbContext · UnitOfWork"]
+        Dependencies["Erp.Dependencies<br/>código postal (geoapi.pt)<br/>NIF/NIPC (VIES)"]
     end
 
     Sales -.-> FiscalPT
@@ -104,6 +105,7 @@ graph TB
     Purchasing -.-> Storage
     Inventory -.-> Storage
     Notification -.-> Storage
+    Core -.-> Dependencies
 
     Main["Erp.Main<br/>Blazor Server"] -->|"REST + OData<br/>JWT Bearer"| API
     Identity["Erp.Identity<br/>Duende IdentityServer"]
@@ -113,7 +115,9 @@ graph TB
     Identity -->|"client credentials<br/>enfileirar email"| Notification
 ```
 
-**Módulos → `Erp.FiscalPT`/`Erp.Storage` (tracejado)** é dependência de biblioteca partilhada, não chamada de rede — os três hosts continuam a correr como processos separados, ligados só pelas setas cheias (OIDC, REST/OData, client credentials).
+**Módulos → `Erp.FiscalPT`/`Erp.Storage`/`Erp.Dependencies` (tracejado)** é dependência de biblioteca partilhada, não chamada de rede — os três hosts continuam a correr como processos separados, ligados só pelas setas cheias (OIDC, REST/OData, client credentials).
+
+`Erp.Dependencies` agrupa integrações públicas sem estado de negócio, reutilizáveis por qualquer módulo: `IPostalCodeLookupService` (geoapi.pt, preenchimento automático de localidade a partir do código postal) e `IVatNumberValidationService` (validação estrutural do módulo 11 do NIF/NIPC, com consulta ao VIES para NIFs de empresa). O `Erp.Api` expõe-nas em `LookupsController` (`GET api/lookups/postal-codes/{postalCode}` e `GET api/lookups/vat-numbers/{nif}`), e o `Erp.Main` consome-as via `LookupApiClient` — usado em `PostalCodeField` (preenchimento da localidade) e em `PartnerFormFields`/`NewInvoice` (procura de NIF em clientes, fornecedores e faturação).
 
 ### Ligações em runtime
 
@@ -130,6 +134,8 @@ graph LR
     ATSeries["AT — SeriesWSService<br/>(SOAP)"]
     ATTransport["AT — Documentos de<br/>Transporte (SOAP)"]
     SMTP["SMTP<br/>(Brevo, via MailKit)"]
+    GeoApi["geoapi.pt<br/>(código postal, REST)"]
+    Vies["VIES<br/>(NIF/NIPC, REST)"]
     Vault[["Infisical<br/>(cofre de segredos)"]]
     AppInsights["Application Insights<br/>(OpenTelemetry)"]
 
@@ -145,6 +151,8 @@ graph LR
     Api -->|"SOAP + WS-Security<br/>certificado cliente"| ATSeries
     Api -->|"SOAP + WS-Security<br/>certificado cliente"| ATTransport
 
+    Api --> |REST| GeoApi
+    Api --> |REST| Vies
     Api -->|SMTP| SMTP
 
     Api -.->|segredos no arranque| Vault
@@ -156,6 +164,8 @@ graph LR
 ```
 
 As credenciais para `SeriesWSService` e `Documentos de Transporte` são **por empresa** (`CompanyAtCredential`, ver [Configuração e segredos](#configuração-e-segredos)); o certificado cliente e a chave pública de cifra são partilhados pela instalação inteira.
+
+`geoapi.pt` e `VIES` são consultados sem credenciais (endpoints públicos) através dos serviços em `Erp.Dependencies` — o `Erp.Api` chama-os diretamente a pedido da UI, sem persistir os resultados; se um dos dois estiver em baixo, apenas a sugestão automática (localidade a partir do código postal, ou validação/nome a partir do NIF) fica indisponível, sem impedir a submissão manual do formulário.
 
 ---
 
@@ -189,10 +199,10 @@ Controllers/Core/           Access, Companies, UserCompanies,
                             Customers, Suppliers, Warehouses
 Controllers/SeriesRegistry/ Series
 Controllers/FiscalPT/       Saft
-Controllers/Sales/          Invoices, StockMovements, Payments
+Controllers/Sales/          Invoices, StockMovements, Payments, CustomerStatements
 Controllers/Inventory/      Stock, InventoryCounts, InventoryFile
 Controllers/Purchasing/     PurchaseOrders, GoodsReceipts, SupplierReturns, PurchaseInvoices,
-                           SelfBilledInvoices
+                           SelfBilledInvoices, SupplierPayments, SupplierStatements
 Controllers/Notification/   Notifications
 Controllers/HealthController.cs
 ```
@@ -219,6 +229,7 @@ O `Erp.Sales` e o `Erp.Purchasing` referenciam o `Erp.Inventory`, para que emiti
 | [Erp.Common](src/Shared/Erp.Common/) | Constantes que descrevem o contrato do access token — roles, claims, scopes e api resources — partilhadas pela `Erp.Api` e pelo `Erp.Main`, para não dependerem de um projeto do Identity. E o `IUnitOfWork`, que os serviços usam para gravar e abrir transações sem saberem que existe EF Core. |
 | [Erp.Storage](src/Shared/Erp.Storage/) | O `AppDbContext` que todos os módulos de negócio partilham, as migrations e o `IModuleModelConfiguration` com que cada módulo declara as suas tabelas. Não referencia módulo nenhum. |
 | [Erp.FiscalPT](src/Shared/Erp.FiscalPT/) | Primitivas de fiscalidade portuguesa: string e assinatura RSA dos documentos, ATCUD, número de documento, mensagem e imagem do código QR, arredondamento fiscal, os geradores e validadores do **SAF-T (PT)** e do **ficheiro de inventário** (com os XSD oficiais embebidos), e os clientes SOAP dos webservices da AT ([`AtWebservice/Series`](src/Shared/Erp.FiscalPT/AtWebservice/Series/), [`AtWebservice/TransportDocuments`](src/Shared/Erp.FiscalPT/AtWebservice/TransportDocuments/)) — esta última parte é que traz uma dependência real de infraestrutura (`HttpClient`), ao contrário do resto da biblioteca. |
+| [Erp.Dependencies](src/Shared/Erp.Dependencies/) | Integrações públicas sem estado de negócio, reutilizáveis por qualquer módulo: `IPostalCodeLookupService` (código postal → localidade, via [geoapi.pt](https://json.geoapi.pt/)) e `IVatNumberValidationService` (validação estrutural do módulo 11 do NIF/NIPC, com consulta ao [VIES](https://ec.europa.eu/taxation_customs/vies/) para NIFs de empresa). Registada com `AddErpDependencies(configuration)`; os URLs base vêm de `Dependencies:PostalCodeBaseAddress`/`Dependencies:VatNumberValidationBaseAddress` em `appsettings.json`, com fallback para os endpoints públicos por omissão. |
 
 ### Notification
 
@@ -287,6 +298,20 @@ A `Admin` é a única que não olha para o scope: a administração do tenant de
 Em contrapartida, como o scope deixou de ser exigido, qualquer token que traga a role `SuperAdmin` satisfaz a `Admin`, mesmo tendo sido emitido só com `erp.read`. A contenção passa a assentar inteiramente no controlo de quem recebe a role.
 
 Os scopes são lidos da claim `scope`, aceitando tanto a forma separada por espaços como claims repetidas.
+
+**Pertença à empresa é validada por um filtro global, não por cada controller.** As políticas acima decidem *o que* um token pode fazer (ler, escrever, administrar) — nenhuma delas sabe *a que empresa*. Até este ponto, um `companyId` viajava em cada pedido como um valor qualquer (`?companyId=` ou `CompanyId` no corpo) e nenhum endpoint verificava se o utilizador pertencia mesmo a essa empresa: qualquer token com `erp.read`/`erp.write` conseguia ler ou escrever dados de **qualquer** empresa, bastava mudar o GUID. [`RequireCompanyAccessFilter`](src/Erp.Api/Services/Security/RequireCompanyAccessFilter.cs) fecha isto uma vez, para toda a API, em vez de cada um dos 24 controllers repetir a verificação: corre em todas as ações, encontra o `companyId` que a ação recebeu — parâmetro de rota, de query ou propriedade `CompanyId` do corpo — e recusa com 403 a menos que o chamador pertença a essa empresa ([`IUserCompanyService.CanAccessCompanyAsync`](src/Modules/Erp.Core/Infrastructure/Application/IUserCompanyService.cs), que já existia mas nunca era chamado) ou seja `SuperAdmin`. Um `companyId` vazio continua a ser rejeitado pela própria ação, como já era — o filtro só entra quando há um valor concreto para verificar. As poucas ações que legitimamente atravessam empresas (um chamador a perguntar pelo seu próprio acesso) ficam isentas com `[AllowAnyCompany]`, em vez de o filtro as ignorar silenciosamente.
+
+**E também um filtro na base de dados, como segunda camada.** O filtro acima é a barreira correta — recusa o pedido antes de qualquer query correr, com um 403 explícito — mas depende de reconhecer o `companyId` na forma que a ação recebeu, e um novo endpoint, ou um serviço com um bug a consultar a empresa errada por dentro, podia continuar a passar-lhe ao lado. [`AppDbContext`](src/Shared/Erp.Storage/AppDbContext.cs) aplica um `HasQueryFilter` genérico a **toda** a entidade com uma coluna `Guid CompanyId` — encontrada por reflexão, já que `Erp.Storage` continua deliberadamente sem conhecer nenhum tipo de módulo nenhum — que só deixa passar uma linha cuja empresa esteja entre as do chamador atual. É isto que fecha também o IDOR das ações que só recebem um `{id:guid}` (por exemplo `GET /api/brands/{id}`): mesmo sem `companyId` nenhum para o filtro da API verificar, uma linha de outra empresa deixa de existir para a query, e o pedido responde 404 em vez de devolver os dados.
+
+Quem o chamador é chega ao `AppDbContext` por [`ICurrentUserContext`](src/Shared/Erp.Storage/ICurrentUserContext.cs), resolvido uma vez por pedido por [`CurrentUserContextMiddleware`](src/Erp.Api/Services/Security/CurrentUserContextMiddleware.cs) — depois da autorização, para nunca gastar essa consulta num pedido que ia ser recusado de qualquer forma. Fora de um pedido HTTP real — migrações no arranque, o `Erp.IntegrationTests` a construir o `AppDbContext` diretamente, um futuro *worker* em background — o filtro fica sempre desligado por omissão ([`NullCurrentUserContext`](src/Shared/Erp.Storage/NullCurrentUserContext.cs), registado em `AddStorage`): nenhum desses é um chamador cujo acesso precise de ser policiado, e é assim que os testes de integração existentes continuam a passar sem qualquer alteração. A tabela de pertenças (`UserCompany`) fica de fora do filtro genérico ([`SkipTenantFilterAttribute`](src/Shared/Erp.Common/SkipTenantFilterAttribute.cs)) — filtrá-la também criaria um ciclo: a própria pergunta "a que empresas pertence este utilizador" deixaria de encontrar resposta, porque precisaria da resposta para se fazer a si própria. Uma verificação irmã no `SaveChanges` cobre a escrita: gravar uma linha para uma empresa fora das do chamador é recusado com uma exceção, antes de chegar à base de dados.
+
+A prova de que isto funciona não está em ler o código — é o [`ICurrentUserContext`](src/Shared/Erp.Storage/ICurrentUserContext.cs) referenciado no filtro através de `this`, não de um valor capturado, precisamente para que o EF Core o volte a ligar à instância que está mesmo a correr a query, e não à que por acaso construiu o modelo (que o EF Core cria e guarda em cache uma única vez). [`TenantIsolationTests`](tests/Erp.IntegrationTests/TenantIsolationTests.cs) prova-o com dois `AppDbContext` reais, construídos a partir do mesmo modelo em cache, contra o LocalDB: um para cada empresa, cada um só a ver as suas próprias linhas — sem o qual ficaria só uma afirmação, não um facto verificado.
+
+**Esse 404 ambíguo também está corrigido, sem tocar em cada módulo.** [`TenantAwareNotFoundFilter`](src/Erp.Api/Services/Security/TenantAwareNotFoundFilter.cs) corre depois da ação, só nos controllers marcados com `[ScopedEntity(typeof(...))]` — os 19 cujo `{id:guid}` não tem `companyId` nenhum para `RequireCompanyAccessFilter` verificar à partida: `BrandsController`, `CustomersController`, `EcoFeeTypesController`, `ProductFamiliesController`, `ProductSubfamiliesController`, `ProductsController`, `SuppliersController`, `WarehousesController`, `InventoryCountsController`, `GoodsReceiptsController`, `PurchaseInvoicesController`, `PurchaseOrdersController`, `SelfBilledInvoicesController`, `SupplierPaymentsController`, `SupplierReturnsController`, `InvoicesController`, `PaymentsController`, `StockMovementsController` e `SeriesController`. Quando a ação responde 404, o filtro pergunta a [`AppDbContext.ExistsForAnotherCompanyAsync`](src/Shared/Erp.Storage/AppDbContext.cs) — a única função autorizada a olhar para lá do filtro por empresa, e só para responder sim ou não, nunca para devolver a linha — se aquele id existe nalguma empresa. Se existir, o 404 vira 403: a linha não é de quem perguntou, não é que não exista. `[AllowAnyCompany]` e um `SuperAdmin` ficam de fora, pela mesma razão que já ficam de fora do `RequireCompanyAccessFilter`.
+
+O código construído por reflexão (`Set<T>`, `IgnoreQueryFilters<T>`, `AnyAsync<T>`, cada um resolvido por `MakeGenericMethod`) é exatamente o tipo que compila sem avisos e só mostra o erro a correr: a primeira versão tinha um `AmbiguousMatchException` no `IgnoreQueryFilters` — duas sobrecargas, `GetMethod` sem desempate — que só apareceu quando [`TenantIsolationTests`](tests/Erp.IntegrationTests/TenantIsolationTests.cs) o correu contra o LocalDB a sério.
+
+Ao mesmo tempo corrigiram-se dois problemas vizinhos que a mesma revisão expôs: `POST /api/access/check-role` respondia a qualquer token autenticado, mesmo sem `erp.read`, dizendo se um `UserId` arbitrário tinha um papel numa `CompanyId` arbitrária — passou a exigir `Admin`. E `GET /api/user-companies` (que lista pertenças) só exigia `Read`, apesar de o `POST`/`PUT`/`DELETE` já exigirem `Admin` havia muito — a UI que o chama (`/companies`) já só é visível a `SuperAdmin`, por isso a API passou a exigi-lo também, em vez de ser mais permissiva do que a própria interface que a usa.
 
 **Clients semeados**:
 
@@ -393,20 +418,21 @@ Criar uma migração continua a ser manual, com os comandos acima; **aplicá-la 
 dotnet test Erp.slnx --filter "Category!=E2E"
 ```
 
-**799 testes em nove projetos**, em duas famílias com propósitos diferentes. Um décimo projeto, `Erp.E2ETests`, guarda testes de browser à parte — não correm neste comando porque precisam dos hosts a correr localmente (ver [abaixo](#testes-end-to-end--playwright-contra-a-ui-real)).
+**980 testes em onze projetos**, em duas famílias com propósitos diferentes. Um décimo segundo projeto, `Erp.E2ETests`, guarda testes de browser à parte — não correm neste comando porque precisam dos hosts a correr localmente (ver [abaixo](#testes-end-to-end--playwright-contra-a-ui-real)).
 
-### Testes de unidade — 778, sem base de dados
+### Testes de unidade — 941, sem base de dados
 
-As camadas Application são testadas com storages substituídos (NSubstitute), a biblioteca fiscal é testada diretamente — incluindo a validação dos ficheiros SAF-T e de inventário contra os XSD oficiais — e o cliente de email e a obtenção de tokens do Identity com um `HttpMessageHandler` e um `TimeProvider` de teste. Correm em segundos e não precisam de nada instalado.
+As camadas Application são testadas com storages substituídos (NSubstitute), a biblioteca fiscal é testada diretamente — incluindo a validação dos ficheiros SAF-T e de inventário contra os XSD oficiais — e o cliente de email, a obtenção de tokens do Identity e as integrações keyless em [`Erp.Dependencies`](tests/Erp.Dependencies.Tests/) (geoapi.pt e VIES) com um `HttpMessageHandler` de teste que grava os pedidos e devolve respostas guionadas, sem rede nenhuma. O `NifValidator` (módulo 11) é testado à parte, por ser lógica pura sem HTTP. [`Erp.Api.Tests`](tests/Erp.Api.Tests/) testa o `RequireCompanyAccessFilter` isoladamente — um `ActionExecutingContext` construído à mão, sem host nenhum a correr — cobrindo o SuperAdmin a passar sem consultar a base, o `[AllowAnyCompany]` a saltar a verificação, e o `companyId` a ser encontrado tanto num parâmetro direto como numa propriedade `CompanyId` do corpo do pedido. Correm em segundos e não precisam de nada instalado.
 
-### Testes de integração — 21, contra SQL Server
+### Testes de integração — 39, contra SQL Server
 
-Existem para responder às duas perguntas que um storage substituído **não consegue** responder:
+Existem para responder às três perguntas que um storage substituído **não consegue** responder:
 
 - **O modelo concorda com o esquema?** Uma coluna que o modelo chama de uma maneira e a migração de outra compila, migra, e só falha na primeira consulta — com um erro que parece uma migração partida e não é.
 - **Os bloqueios de linha serializam mesmo alguma coisa?** A numeração das séries, os números internos e os saldos de stock assentam inteiramente em `WITH (UPDLOCK, HOLDLOCK, ROWLOCK)`. Um substituto devolve a mesma linha aos dois chamadores e ambos passam, exista o bloqueio ou não.
+- **O filtro por empresa do `AppDbContext` sobrevive a duas instâncias reais ao mesmo tempo?** É exatamente o que um storage substituído não tem forma de exercitar: o filtro é construído uma vez, quando o EF Core constrói e guarda o modelo em cache, e só uma base de dados real com dois `AppDbContext` genuínos, um por empresa, prova que continua a ver o chamador certo em cada um — ver [`TenantIsolationTests`](tests/Erp.IntegrationTests/TenantIsolationTests.cs) e a secção sobre isto em [Autenticação e autorização](#autenticação-e-autorização).
 
-Não é teoria: até hoje apanharam **quatro bugs reais** que os testes de unidade davam por bons — o primeiro movimento de um artigo a rebentar sob concorrência, o acerto de existências sem transação nenhuma, o `Invalid column name 'ShipFrom_Address'` ao faturar a partir de guias, e nove em cada dez receções simultâneas a falhar por colisão de número.
+Não é teoria: até hoje apanharam **cinco bugs reais** que os testes de unidade davam por bons — o primeiro movimento de um artigo a rebentar sob concorrência, o acerto de existências sem transação nenhuma, o `Invalid column name 'ShipFrom_Address'` ao faturar a partir de guias, nove em cada dez receções simultâneas a falhar por colisão de número, e uma fatura com o mesmo artigo em duas linhas a morrer contra o índice único do saldo de stock: a segunda linha não encontrava o saldo que a primeira ainda não tinha gravado e começava outro. O mesmo padrão tinha apanhado antes o contador dos códigos do ficheiro mestre — ambas as leituras passaram a olhar primeiro para o que a transação já tem em mãos.
 
 **Preparação, uma vez:**
 
@@ -452,7 +478,7 @@ Actions → Run workflow → escolher "staging" ou "production"
 
 **`build-and-test`** compila a solução inteira e corre os testes com `--filter "Category!=Integration"` — os de integração ficam de fora porque precisam de SQL Server e correm à parte, na job seguinte (ver [Testes](#testes)). Publica o relatório e os `.trx` como artefactos, mesmo quando falha. Corre em todo o PR, e também como primeiro passo de um `workflow_dispatch`.
 
-**`integration-tests`** só corre por `workflow_dispatch`, nunca em PR. Depende de `build-and-test` ter passado, abre uma regra de *firewall* na Azure SQL só para o IP do próprio *runner*, corre os 21 testes de integração contra uma base de dados dedicada — nunca a de staging/produção, ver [Testes](#testes) — e fecha a regra no fim, mesmo que os testes falhem. Detalhes de configuração nos comentários da própria job em [dotnet-ci.yml](.github/workflows/dotnet-ci.yml).
+**`integration-tests`** só corre por `workflow_dispatch`, nunca em PR. Depende de `build-and-test` ter passado, abre uma regra de *firewall* na Azure SQL só para o IP do próprio *runner*, corre os 30 testes de integração contra uma base de dados dedicada — nunca a de staging/produção, ver [Testes](#testes) — e fecha a regra no fim, mesmo que os testes falhem. Detalhes de configuração nos comentários da própria job em [dotnet-ci.yml](.github/workflows/dotnet-ci.yml).
 
 **`deploy`** só corre por `workflow_dispatch` — em `Actions → Build and Test ERP Solution → Run workflow`, escolhendo `staging` ou `production` num menu — nunca por push nem PR. Depende de `build-and-test` e `integration-tests` terem passado, e para cada uma das três apps (`api`, `identity`, `main`) faz `dotnet publish` e despacha com `azure/webapps-deploy@v3` para a Web App do ambiente escolhido, com o *publish profile* correspondente. `staging` aceita qualquer *branch* escolhido no próprio `workflow_dispatch`, para testar antes do *merge*; `production` só corre se esse *branch* for `main`. Compila de novo em cada corrida — ao contrário de um modelo com *promote*, aqui staging e produção não partilham o mesmo binário, porque são duas execuções manuais independentes, normalmente em momentos diferentes.
 
@@ -544,6 +570,16 @@ Todos os módulos de negócio são servidos por um único host (`Erp.Api`) e um 
 
 ### Endpoints do módulo Core
 
+**Uma empresa nova nasce com um armazém.** Criar uma empresa cria também o armazém `01` — *Armazém principal* — marcado como o predefinido e com a morada da própria empresa, gravado na mesma transação. Sem ele a gestão de stocks não arranca: um documento que movimenta existências precisa de um armazém, e uma empresa acabada de criar não tinha nenhum.
+
+**Os códigos do ficheiro mestre são sequenciais** — 1, 2, 3 — para clientes, fornecedores, famílias, subfamílias e marcas. Não se escrevem no ecrã: o campo é só de leitura e o número sai de um contador com bloqueio de linha, o mesmo que numera as encomendas e as receções, por empresa e por tipo de ficha. Um código que **venha no pedido é respeitado** — é assim que uma importação traz os seus — e o contador salta o que já estiver ocupado. A composição é feita pelo host ([`MasterDataCodes`](src/Erp.Api/Services/MasterDataCodes.cs)), pela mesma razão que as séries de uma empresa nova: o catálogo não sabe o que é um contador.
+
+**O NIF é opcional na ficha**, tanto no cliente como no fornecedor: uma ficha abre-se muitas vezes antes de se saber o número, e a API continua a exigir um, por isso vale o de consumidor final até alguém escrever o verdadeiro.
+
+**O código postal segue o país.** Em Portugal só se aceita `XXXX-XXX`, com dígitos — o formato que o SAF-T e os *webservices* da AT esperam — e o ecrã escreve o hífen sozinho. Noutro país fica como for escrito. A regra vive em [`PostalCodes`](src/Shared/Erp.Common/PostalCodes.cs) e é aplicada nas fichas, na empresa e no cliente de cada fatura.
+
+**Ecovalor — taxas de gestão de resíduos (baterias, óleos, etc.).** Desde 2020 a lei (DL 152-D/2017) exige que estas taxas apareçam **numa linha própria do documento**, nunca embutidas no preço do artigo, com IVA à taxa normal acrescido por cima. Um artigo aponta para um [`EcoFeeType`](src/Modules/Erp.Core/Domain/EcoFeeType.cs) — código, cálculo por unidade ou por quilograma, valor e entidade gestora — e criar o tipo cria automaticamente o pseudo-artigo (`ProductType = "I"`, taxas e encargos no SAF-T) em que a taxa é faturada. Ao adicionar à fatura ou à guia um artigo com Ecovalor associado, a UI gera de imediato a linha da taxa a seguir à do artigo, com a mesma quantidade; essa linha é uma linha normal para efeitos de totais, IVA, impressão e SAF-T, mas fica marcada (`IsEcoFee`) para nunca movimentar stock — uma taxa não é um artigo em armazém. **Toda a empresa nova nasce já com dois Ecovalor** (baterias, óleos), com valores de partida que têm de ser confirmados/ajustados à tabela oficial em vigor.
+
 | Método | Rota | Autorização |
 |---|---|---|
 | `GET` | `/api/companies` | `Read` |
@@ -563,6 +599,12 @@ Todos os módulos de negócio são servidos por um único host (`Erp.Api`) e um 
 | `GET` `POST` `PUT` | `/api/customers` | `Read` / `Write` |
 | `GET` `POST` `PUT` | `/api/suppliers` | `Read` / `Write` |
 | `GET` `POST` `PUT` | `/api/warehouses?companyId=` | `Read` / `Write` |
+| `GET` | `/api/vat-rates` · `/api/vat-rates/odata` | `Read` |
+| `GET` | `/api/vat-rates/exemption-reasons` | `Read` |
+| `PUT` | `/api/vat-rates/{id}` | `Admin` |
+| `GET` `POST` `PUT` | `/api/eco-fee-types` | `Read` / `Write` |
+| `GET` | `/api/lookups/postal-codes/{postalCode}` | `Read` |
+| `GET` | `/api/lookups/vat-numbers/{nif}` | `Read` |
 | `GET` | `/api/access/me/companies` | Autenticado |
 | `GET` | `/api/access/me/companies/{companyId}/role` | Autenticado |
 | `POST` | `/api/access/check-role` | Autenticado |
@@ -573,7 +615,15 @@ Todos os módulos de negócio são servidos por um único host (`Erp.Api`) e um 
 
 Além da faturação, o módulo emite os **documentos de movimentação de mercadorias** — guias de remessa (`GR`), transporte (`GT`), ativos próprios (`GA`), consignação (`GC`) e devolução (`GD`), exportados no SAF-T em `MovementOfGoods`. Seguem exatamente as mesmas regras dos documentos de faturação: numeração sequencial por série, cadeia de assinatura, ATCUD, código QR e imutabilidade. Acrescentam o que o regime de bens em circulação exige: locais de carga e descarga, início do transporte, matrícula do veículo, e o **código que a AT devolve na comunicação prévia** — sem o qual a mercadoria não pode circular.
 
-As **notas de crédito e de débito** identificam o documento que corrigem e o motivo, como exige o artigo 36.º n.º 5 do CIVA. A regra vale nos dois sentidos: uma `NC` ou `ND` sem referência é recusada, e uma `FT`, `FS` ou `FR` com referência também. O documento corrigido tem de ser da mesma empresa, não estar anulado e não ser ele próprio retificativo; o seu número é copiado para o documento novo e sai no SAF-T em `References/Reference` e `Reason` de cada linha, além de constar do documento impresso. **Um documento não pode ser creditado além do seu valor**: as notas de crédito já emitidas contra ele contam para esse tecto e as anuladas não, enquanto as notas de débito não são limitadas, porque acrescentam ao que é devido em vez de retirarem. A linha do documento a creditar é bloqueada antes de se ler o já creditado, para que duas notas emitidas ao mesmo tempo por séries diferentes não passem ambas. Emitem-se em `/credit-notes/new`, partindo da fatura — as linhas vêm dela, e credita-se tudo ou ajustam-se as quantidades.
+A fatura leva o que a lei e a cobrança pedem, e que não estava lá: **descontos de linha**, **data de vencimento** e a **morada completa do cliente**. O desconto é uma percentagem por linha, calculada sobre o valor ilíquido já arredondado, e o rodapé do documento diz *Total ilíquido*, *Total descontos*, *Total líquido*, *Total taxas* e *Total*, com o IVA aberto por taxa. No SAF-T o desconto viaja em `SettlementAmount` e o `UnitPrice` exportado já vem líquido dele, para que quantidade × preço dê o valor tributável. O vencimento nunca é anterior à data do documento, não é assinado e não vai no SAF-T: serve a cobrança e a conta corrente.
+
+As **guias levam o mesmo desconto de linha** que a fatura, e o mesmo rodapé — ilíquido, descontos, líquido, taxas e total, com o IVA aberto por taxa. A aritmética é a mesma e o desconto viaja no SAF-T da mesma maneira, em `SettlementAmount` com o preço unitário já líquido.
+
+A **fatura-recibo (`FR`) é paga na emissão**, por isso pede os meios de pagamento como um recibo: têm de somar exatamente o total, e nenhum outro tipo os aceita. Saem no SAF-T em `DocumentTotals/Payment` e no documento impresso. O seu vencimento é o próprio dia.
+
+Uma **linha isenta cita a tabela da AT**. O código de isenção (`M01` a `M99`) passou a ser obrigatório em vez de um texto livre, e a menção legal — o que o SAF-T pede em `TaxExemptionReason` — vem da própria tabela quando não for escrita. A lista vive em [`TaxExemptionReasons`](src/Shared/Erp.FiscalPT/Documents/TaxExemptionReasons.cs), no `Erp.FiscalPT`, inclui os códigos acrescentados desde 2023 (`M44`, `M45`, `M46`) e é servida em `GET /api/vat-rates/exemption-reasons`. Vale para as faturas, as guias e a autofaturação, e há um teste que confirma que nenhuma menção passa os 60 caracteres que o esquema aceita. **A ficha do artigo guarda o seu motivo** quando é isento, e a linha que o usa já vem preenchida: escreve-se uma vez, não em cada documento.
+
+As **notas de crédito e de débito** identificam o documento que corrigem e o motivo, como exige o artigo 36.º n.º 5 do CIVA. A regra vale nos dois sentidos: uma `NC` ou `ND` sem referência é recusada, e uma `FT`, `FS` ou `FR` com referência também. O documento corrigido tem de ser da mesma empresa, não estar anulado e não ser ele próprio retificativo; o seu número é copiado para o documento novo e sai no SAF-T em `References/Reference` e `Reason` de cada linha, além de constar do documento impresso. **Um documento não pode ser creditado além do seu valor**: as notas de crédito já emitidas contra ele contam para esse tecto e as anuladas não, enquanto as notas de débito não são limitadas, porque acrescentam ao que é devido em vez de retirarem. A linha do documento a creditar é bloqueada antes de se ler o já creditado, para que duas notas emitidas ao mesmo tempo por séries diferentes não passem ambas. Emitem-se em `/credit-notes/new`, partindo da fatura: escolhe-se primeiro o **cliente** e só depois o documento dele a corrigir — as linhas vêm dela, com os descontos que tinha, e credita-se tudo ou ajustam-se as quantidades.
 
 O **documento impresso** tem página própria para cada família (`/invoices/{id}/print` e as equivalentes das guias e dos recibos), em HTML dimensionado para A4 e com um layout sem menu nem barra. As menções que a lei exige vivem em componentes partilhados em vez de copiadas por página: o cabeçalho com o emitente completo e a designação por extenso, e o rodapé com os 4 caracteres do hash seguidos de *Processado por programa certificado n.º XXXX/AT*, o ATCUD e o código QR — este renderizado pelo `QrCodeImage` do `Erp.FiscalPT`, que usa o renderizador de bytes do QRCoder e por isso não depende de nenhuma biblioteca de desenho. O número do certificado é lido do campo `R` do próprio QR, não da configuração atual: um documento emitido antes de o certificado mudar continua a imprimir o número com que foi emitido.
 
@@ -747,6 +797,49 @@ O regime exige duas coisas distintas, e ambas ficam registadas: o **acordo prév
 | `POST` | `/api/self-billed-invoices/{id}/accept` | `Write` |
 | `POST` | `/api/self-billed-invoices/{id}/void` | `Write` |
 
+### Pagamentos a fornecedores
+
+A **conta corrente de fornecedores**, espelho dos recibos do Sales: um pagamento diz **que documentos liquida e por que valor**, e por que meios o dinheiro saiu. As regras são as mesmas — não se paga mais do que o documento ainda deve, nem um documento anulado, nem o mesmo documento duas vezes no mesmo pagamento, e os meios de pagamento somam exatamente o total. Anular um pagamento devolve os documentos à dívida.
+
+A diferença que manda em tudo o resto: **não é um documento fiscal**. O recibo deste dinheiro é do fornecedor, por isso aqui não há série, assinatura, ATCUD nem SAF-T — o número é nosso (`PAG2026/3`), dado pelo mesmo contador das encomendas e receções. Ainda assim não se edita: corrige-se anulando e registando outro.
+
+Liquida **faturas de fornecedor** (`FT`, `FS`, `ND`) e **autofaturas** (`FT`); a fatura-recibo fica de fora, porque já veio paga. Cada linha guarda o tipo de documento (`PurchaseInvoice` ou `SelfBilledInvoice`), porque vivem em tabelas diferentes. O que já está pago é derivado das linhas dos pagamentos não anulados, e o bloqueio da linha do contador serializa os pagamentos da empresa nesse ano, para que dois pedidos simultâneos não paguem a mesma fatura duas vezes.
+
+**As notas de crédito descontam.** Entram no pagamento como linhas próprias, e o valor que sai é *documentos liquidados − crédito usado*. Os montantes ficam positivos, como no papel; o sinal vem do tipo `NC` e não é guardado, para não poder discordar do documento. Cada nota tem um **crédito disponível** — o seu total menos o que pagamentos anteriores já usaram — e não se usa mais do que isso. Um pagamento tem sempre de liquidar pelo menos uma fatura (uma nota sozinha não paga nada) e o crédito usado não pode exceder o que se liquida. Quando o crédito cobre as faturas por inteiro, o pagamento fica a zero e **sem meios de pagamento**: é uma compensação, não sai dinheiro. Anular o pagamento devolve o crédito à nota. As notas continuam a não ligar a uma fatura específica — o desconto é sobre o pagamento, não sobre uma fatura em particular.
+
+O outro lado da regra vive nas faturas: **uma fatura, nota de crédito ou autofatura já usada num pagamento não se anula**, e não se corrige para um total abaixo do já liquidado — anula-se primeiro o pagamento.
+
+| Método | Rota | Autorização |
+|---|---|---|
+| `GET` | `/api/supplier-payments?companyId=&supplierId=` | `Read` |
+| `GET` | `/api/supplier-payments/odata?companyId=` | `Read` |
+| `GET` | `/api/supplier-payments/payable-documents?companyId=&supplierId=` | `Read` |
+| `GET` | `/api/supplier-payments/{id}` | `Read` |
+| `POST` | `/api/supplier-payments` | `Write` |
+| `POST` | `/api/supplier-payments/{id}/void` | `Write` |
+
+### Extratos de conta corrente
+
+O extrato de **cliente** (Sales) e o de **fornecedor** (Purchasing) não guardam nada: são lidos dos próprios documentos e pagamentos, por isso nunca podem discordar deles. A aritmética — saldo inicial, saldo acumulado por linha, totais — vive num sítio só, o [`AccountStatementBuilder`](src/Shared/Erp.Common/Statements/AccountStatementBuilder.cs) em `Erp.Common`, e os dois módulos só dizem que documentos entram e de que lado.
+
+| Movimento | Cliente | Fornecedor |
+|---|---|---|
+| Fatura, fatura simplificada, nota de débito (e autofatura, do lado do fornecedor) | Débito | Crédito |
+| Nota de crédito | Crédito | Débito |
+| Fatura-recibo | Débito **e** crédito na mesma linha — já veio paga, o saldo não mexe | Idem |
+| Recibo / pagamento | Crédito, pelo total | Débito, pelo **dinheiro que saiu** |
+
+O saldo positivo é sempre dinheiro em aberto: o que o cliente nos deve, ou o que devemos ao fornecedor. Com data inicial, tudo o que está antes entra no **saldo inicial**; sem datas, o extrato é o histórico completo. No mesmo dia, os documentos vêm antes dos pagamentos que os liquidam. Documentos e pagamentos anulados ficam de fora, como em todo o cálculo da dívida.
+
+Um pagamento a fornecedor entra pelo **total que saiu** e não pelo que as linhas liquidaram: a nota de crédito já baixou o saldo quando foi registada, e o pagamento que usa o crédito não a pode descontar outra vez. Um pagamento feito só com crédito aparece a zero.
+
+O cliente é identificado nos documentos **pelo NIF** — não há id do cliente numa fatura — por isso o host lê a ficha no Core e entrega o NIF e o nome ao Sales. O fornecedor tem id nos documentos de compra.
+
+| Método | Rota | Autorização |
+|---|---|---|
+| `GET` | `/api/customer-statements?companyId=&customerId=&startDate=&endDate=` | `Read` |
+| `GET` | `/api/supplier-statements?companyId=&supplierId=&startDate=&endDate=` | `Read` |
+
 ---
 
 ## API do Identity
@@ -787,6 +880,7 @@ A empresa ativa escolhe-se no cabeçalho e é partilhada por todas as páginas (
 
 | Rota | Página |
 |---|---|
+| `/` | Dashboard — cartões estáticos (0 faturas, 0 clientes, 0 artigos, 0,00 €), sem query nem gráfico nenhum ainda; ver [Estado atual e limitações conhecidas](#estado-atual-e-limitações-conhecidas) |
 | `/invoices` | Lista de faturas |
 | `/invoices/new` | Emissão de fatura |
 | `/invoices/from-movements` | Fatura a partir de guias por faturar, com quantidades ajustáveis |
@@ -803,10 +897,12 @@ A empresa ativa escolhe-se no cabeçalho e é partilhada por todas as páginas (
 | `/invoices/{id}/print` | Documento impresso, com QR, ATCUD, menções legais e cópias |
 | `/stock-movements/{id}/print` | Guia impressa, com locais, transporte e código da AT |
 | `/payments/{id}/print` | Recibo impresso, com faturas liquidadas e meios de pagamento |
+| `/customer-statements` | Extrato de conta corrente de cliente, por período (aceita `?customerId=&startDate=&endDate=`; também aberto a partir da ficha do cliente) |
+| `/customer-statements/print` | Extrato de cliente impresso, com saldo inicial, movimentos e saldo final |
 | `/series` | Séries de faturação |
 | `/series/new`, `/series/{id}` | Criar série, registar o código de validação da AT e alterar o efeito no stock |
 | `/stock` | Existências por armazém, com razão de movimentos e acerto manual |
-| `/stock/check` | Teste de stock: saldo guardado contra soma dos movimentos |
+| `/stock/check` | Teste de stock: saldo guardado contra soma dos movimentos. Fora do menu — é uma verificação de manutenção, não trabalho do dia a dia |
 | `/companies/{id}` | Ficha da empresa: dados, utilizadores com acesso, e **armazéns** |
 | `/inventory-counts` | Contagens de inventário |
 | `/inventory-counts/new` | Abrir contagem, total ou parcial, com a opção de começar a zero |
@@ -828,11 +924,17 @@ A empresa ativa escolhe-se no cabeçalho e é partilhada por todas as páginas (
 | `/self-billed-invoices/new` | Emitir em nome do fornecedor, a partir do que foi recebido e está por faturar |
 | `/self-billed-invoices/{id}` | Autofatura, com registo de aceitação e anulação |
 | `/self-billed-invoices/{id}/print` | Documento impresso, com a menção "Autofaturação" |
+| `/supplier-payments` | Pagamentos a fornecedores |
+| `/supplier-payments/new` | Pagar, a partir das faturas e autofaturas em dívida do fornecedor, descontando notas de crédito (aceita `?supplierId=`) |
+| `/supplier-payments/{id}` | Pagamento, com documentos liquidados, meios de pagamento e anulação |
+| `/supplier-statements` | Extrato de conta corrente de fornecedor, por período (aceita `?supplierId=&startDate=&endDate=`; também aberto a partir da ficha do fornecedor) |
+| `/supplier-statements/print` | Extrato de fornecedor impresso |
 | `/products` | Ficheiro de artigos, com filtros por família, marca e texto |
 | `/products/new`, `/products/{id}` | Criar e editar artigo |
 | `/product-families`, `/product-families/new`, `/product-families/{id}` | Famílias |
 | `/product-subfamilies`, `/product-subfamilies/new`, `/product-subfamilies/{id}` | Subfamílias, agrupadas por família |
 | `/brands`, `/brands/new`, `/brands/{id}` | Marcas |
+| `/eco-fee-types`, `/eco-fee-types/new`, `/eco-fee-types/{id}` | Ecovalor — taxas de gestão de resíduos (baterias, óleos, etc.) associáveis aos artigos |
 | `/customers`, `/customers/new`, `/customers/{id}` | Clientes |
 | `/suppliers`, `/suppliers/new`, `/suppliers/{id}` | Fornecedores |
 | `/companies` | Empresas |
@@ -888,6 +990,7 @@ Registo honesto do que ainda não está feito, para evitar surpresas:
 - **Dados mestre no Core** — o catálogo de artigos (com família, subfamília e marca), os clientes, os fornecedores e os armazéns vivem no módulo Core, porque são partilhados: Sales fatura-os, Purchasing vai comprá-los e Inventory reporta-os. Cada documento emitido guarda a sua própria cópia, pelo que editá-los nunca altera o que já foi faturado.
 - **Módulos por implementar** — Accounting e Reporting ainda não existem: entram como pasta de controllers e camadas próprias quando forem escritos. Core, SeriesRegistry, Sales, Inventory, Notification e **Purchasing** estão completos: o [plano de compras](docs/purchasing.md#fases) está todo feito, das encomendas ao custeio.
 - **Menu com links por escrever** — Contabilidade e Relatórios ainda não têm páginas: clicá-las leva a `/not-found`.
+- **Dashboard é só maquete** — os quatro cartões em `/` (faturas do mês, clientes ativos, artigos em stock, volume de vendas) estão fixos a zero em código, sem chamada nenhuma à API. Não há biblioteca de gráficos instalada (nenhum `MudChart`/ApexCharts no projeto) nem endpoint de agregados para os alimentar — quando isto for feito a sério, precisa das duas coisas, não só do ecrã.
 - **Comunicação à AT por webservice: séries e guias de transporte, não tudo o resto** — [`AtSeriesClient`](src/Shared/Erp.FiscalPT/AtWebservice/Series/AtSeriesClient.cs) (registar/anular/finalizar série) e [`AtTransportDocumentClient`](src/Shared/Erp.FiscalPT/AtWebservice/TransportDocuments/AtTransportDocumentClient.cs) (guias) chamam mesmo a AT, mas exigem credenciais do subutilizador por empresa (`Backoffice → Empresas → AT`) e a chave pública de autenticação da AT no cofre — sem isso os botões "Comunicar à AT" falham. A comunicação de séries também aceita um registo manual do código de validação (`POST /api/series/{id}/communicate-manually`), para quando a AT não está acessível — as guias, por agora, não têm esse recurso. `Consultar Séries` (só leitura) e a comunicação de anulação de uma guia já comunicada ficaram de fora.
 - **Custeio: médio ponderado, não FIFO** — o stock é valorizado ao custo médio ponderado das compras, calculado a partir do razão. O FIFO exigiria guardar camadas de custo e consumi-las por ordem, que é outra estrutura; o médio ponderado tira-se do razão sem nada de novo. O custo da ficha do artigo sobreviveu apenas como recurso último, para artigos que nenhuma compra chegou a custear, e o ficheiro de inventário diz quantas linhas precisaram dele.
 - **Testes de integração só correm no deploy, não em cada PR** — desde que existe a job `integration-tests` (ver [Integração contínua e deploy](#integração-contínua-e-deploy)), [Erp.IntegrationTests](tests/Erp.IntegrationTests/) corre no CI contra uma Azure SQL dedicada, mas só em `workflow_dispatch` — um bug destes só aparece quando alguém pede um deploy, não no PR que o introduziu. Ficou assim porque a base de dados dedicada é paga (o Free tier só cobre uma) e a *fixture* apaga todas as tabelas no arranque, o que exclui usar staging ou correr em paralelo com outro PR. Um SQL Server em contentor no `build-and-test` resolveria isto — sem custo, sem *firewall*, isolado por natureza — mas exige rever a *fixture* (hoje pensada para uma base persistente, não uma efémera por corrida).
@@ -895,6 +998,7 @@ Registo honesto do que ainda não está feito, para evitar surpresas:
 - **SMTP configurado em dev/staging, não em produção** — o envio usa MailKit ([`SmtpEmailSender`](src/Modules/Erp.Notification/Application/Services/SmtpEmailSender.cs)); sem `Smtp:Host` ou `Smtp:FromEmail`, recusa-se com uma mensagem própria para cada um (`"Smtp:Host is not configured."` / `"Smtp:FromEmail is not configured."`, verifica o `Host` primeiro), capturada pelo [`NotificationProcessingService`](src/Modules/Erp.Notification/Application/Services/NotificationProcessingService.cs) que marca a notificação como `Failed` — o `EmailQueueWorker` só trata do intervalo de repetição, não do envio em si. `appsettings.Development.json`/`Staging.json` já têm `Smtp:Host`/`FromEmail` reais; `appsettings.Production.json` está vazio, por isso em produção isto só funciona se o cofre tiver as duas chaves — hoje só `Smtp:UserName`/`Password` estão documentadas como vindas do cofre. Visível no backoffice de notificações; resolve-se com configuração, não com código.
 - **Constantes duplicadas** — os scopes, roles e claims vivem em [Erp.Common](src/Shared/Erp.Common/Constants.cs), usado pela `Erp.Api` e pelo `Erp.Main`, mas o Identity mantém a sua cópia em `Erp.Identity.Common`. Os valores coincidem, mas alterar só um dos lados põe o seed e a API em desacordo sem erro de compilação.
 - **Cobertura de testes desigual** — a lógica fiscal, a emissão, o stock e os serviços do Core estão cobertos; as camadas Storage (EF Core) e as páginas Blazor não têm testes.
+- **Ecovalor: valores de partida, não a tabela oficial** — os dois Ecovalor criados com cada empresa nova (baterias, óleos) têm um código, base de cálculo e entidade gestora corretos, mas o valor é um ponto de partida a confirmar contra a portaria em vigor, não um número verificado nesta sessão. Na nota de crédito, a linha do Ecovalor é só mais uma linha da fatura de origem — fica selecionada por omissão como todas as outras, mas nada impede o utilizador de a destacar do artigo a que pertence (por exemplo, creditar o artigo sem creditar a taxa).
 - **Deploy sem aprovação formal** — o job `deploy` (ver [Integração contínua e deploy](#integração-contínua-e-deploy)) só corre por `workflow_dispatch`, nunca por push, porque **Required reviewers em *environments* do GitHub exige plano Pro/Team/Enterprise para repositórios privados** — no Free essa opção não aparece. A autorização hoje é "só quem tem acesso ao repositório consegue clicar em Run workflow", não uma aprovação registada por outra pessoa. Corrige-se fazendo *upgrade* do plano do GitHub e voltando a gatilhar por `environment:` com *reviewers*.
 - **Client do Identity só aceita `localhost`** — o `RedirectUris`/`PostLogoutRedirectUris`/`AllowedCorsOrigins` do client `blazor-wasm` está fixo em código ([Constants.Clients](src/Identity/Erp.Identity.Common/Constants/Constants.cs#L103-L111), usado em [SeedData.cs](src/Identity/Erp.Identity.Storage/Data/SeedData.cs#L160-L162)), não vem de `appsettings`. Um Erp.Main publicado em staging/produção tenta redirecionar para o seu URL real depois do login, e o Identity recusa por não estar na lista — falha com *invalid_redirect_uri*, mesmo que o `appsettings.Staging.json` do Erp.Main já esteja correto (ver [Checklist para pôr um ambiente novo](#checklist-para-pôr-um-ambiente-novo-stagingprodução-a-funcionar)). Falta acrescentar o URL de cada ambiente a essa lista, ou tornar isto configurável.
 
@@ -926,7 +1030,7 @@ Os nomes dos secrets no Infisical seguem a convenção de variável de ambiente 
 
 | Host | Fica em `appsettings.*.json` (não secreto) | Vem do cofre |
 |---|---|---|
-| Erp.Api | `IdentityServer:Authority`, `AT:SeriesUrl`, `AT:TransportDocumentsUrl`, `Smtp:Host`/`Port`/`UseSsl`/`FromEmail`/`FromName`, `NotificationWorker:BatchSize`/`PollingIntervalSeconds`, `Fiscal:IssuerTaxId`/`CertificateNumber`/`KeyVersion` | `ConnectionStrings:ErpDb`, `Smtp:UserName`, `Smtp:Password`, `AT:ClientCertificateBase64`, `AT:ClientCertificatePassword`, `AT:SigningKeyPem`, `AT:PublicKeyPem`, `ApplicationInsights:ConnectionString` |
+| Erp.Api | `IdentityServer:Authority`, `AT:SeriesUrl`, `AT:TransportDocumentsUrl`, `Smtp:Host`/`Port`/`UseSsl`/`FromEmail`/`FromName`, `NotificationWorker:BatchSize`/`PollingIntervalSeconds`, `Fiscal:IssuerTaxId`/`CertificateNumber`/`KeyVersion`, `Dependencies:PostalCodeBaseAddress`/`VatNumberValidationBaseAddress` | `ConnectionStrings:ErpDb`, `Smtp:UserName`, `Smtp:Password`, `AT:ClientCertificateBase64`, `AT:ClientCertificatePassword`, `AT:SigningKeyPem`, `AT:PublicKeyPem`, `ApplicationInsights:ConnectionString` |
 | Erp.Identity | `IdentityServer:Authority`, `NotificationService:BaseUrl`, `ServiceAuthentication:Authority`/`ClientId`/`Scope` | `ConnectionStrings:IdentityDb`, `ServiceAuthentication:ClientSecret`, `AdminUser:Email`/`FirstName`/`LastName`/`Password`, `ApplicationInsights:ConnectionString` |
 | Erp.Main | `OidcConfiguration:*`, `Services:Api`/`IdentityApi` | — (`blazor-wasm` é um client público, sem secret) |
 
@@ -1143,3 +1247,6 @@ O componente QuestPDF lê estas flags e decide o que renderizar (secções condi
 3. Implementar geração da string do QR Code conforme especificação da AT.
 4. Confirmar processo de certificação do software de faturação.
 5. Reconstruir os documentos prioritários (fatura, guia de remessa) em QuestPDF.
+
+    Api --> |REST| GeoApi
+    Api --> |REST| Vies

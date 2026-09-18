@@ -21,6 +21,22 @@ public sealed class SalesDocumentStorage(AppDbContext dbContext) : ISalesDocumen
             .ToListAsync(cancellationToken);
     }
 
+    public async Task<IReadOnlyList<SalesDocument>> GetForCustomerAsync(
+        Guid companyId,
+        string customerTaxId,
+        DateOnly? endDate = null,
+        CancellationToken cancellationToken = default)
+    {
+        return await dbContext.Set<SalesDocument>()
+            .AsNoTracking()
+            .Include(x => x.StatusChanges)
+            .Where(x => x.CompanyId == companyId && x.CustomerTaxId == customerTaxId)
+            .Where(x => endDate == null || x.DocumentDate <= endDate)
+            .OrderBy(x => x.DocumentDate)
+            .ThenBy(x => x.SystemEntryDateUtc)
+            .ToListAsync(cancellationToken);
+    }
+
     /// <summary>
     /// The status is derived from the append-only status changes, which the entity resolves in
     /// memory. Here the same rule is written as a subquery so the database can filter and sort by
@@ -38,6 +54,7 @@ public sealed class SalesDocumentStorage(AppDbContext dbContext) : ISalesDocumen
                 DocumentType = x.DocumentType,
                 Atcud = x.Atcud,
                 DocumentDate = x.DocumentDate,
+                DueDate = x.DueDate,
                 CustomerName = x.CustomerName,
                 CustomerTaxId = x.CustomerTaxId,
                 NetTotal = x.NetTotal,
@@ -55,6 +72,7 @@ public sealed class SalesDocumentStorage(AppDbContext dbContext) : ISalesDocumen
         return await dbContext.Set<SalesDocument>()
             .Include(x => x.Lines)
             .Include(x => x.TaxSummaries)
+            .Include(x => x.Payments)
             .Include(x => x.StatusChanges)
             .FirstOrDefaultAsync(x => x.Id == id, cancellationToken);
     }
@@ -70,6 +88,7 @@ public sealed class SalesDocumentStorage(AppDbContext dbContext) : ISalesDocumen
             .AsSplitQuery()
             .Include(x => x.Lines)
             .Include(x => x.TaxSummaries)
+            .Include(x => x.Payments)
             .Include(x => x.StatusChanges)
             .Where(x => x.CompanyId == companyId && x.DocumentDate >= startDate && x.DocumentDate <= endDate)
             .OrderBy(x => x.SeriesId)

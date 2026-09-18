@@ -1,9 +1,12 @@
 @using MudBlazor
+@using Erp.Main.Components.Common
 @using Erp.Main.Models
 @using Erp.Main.Models.Core
 @using Microsoft.Extensions.Localization
 @using Erp.Main.Resources
+@using Erp.Main.Services
 @inject IStringLocalizer<MainResources> Localizer
+@inject LookupApiClient Lookups
 
 @*
     Customers and suppliers are filled in the same way, so they share these fields.
@@ -12,25 +15,25 @@
     model changes here, and anything it derives from the model — a save button enabled by
     Model.IsValid, for one — would stay frozen at whatever it was on first render.
 
-    The three fields that decide validity are Immediate so the parent reacts as the user types,
-    instead of only when the field loses focus. The grid sticks to multiples of 3 columns (md) on
-    every row, so the boxes line up instead of one row being split 4-and-4 and the next 6-and-3.
+    The first row reads name, tax id, code. The code is never typed here: the API numbers new
+    records 1, 2, 3... and keeps whatever an import brings, so on screen it is only ever shown.
 *@
 <MudGrid Spacing="3">
-    <MudItem xs="12" sm="6" md="3">
-        <MudTextField @bind-Value="Model.Code" @bind-Value:after="NotifyChangedAsync" Immediate="true"
-                      Label="@Localizer["PartnerForm_CodeLabel"]" Variant="Variant.Outlined" Margin="Margin.Dense"
-                      Required="@RequireCode" Disabled="@(!AllowCodeEdit)"
-                      HelperText="@CodeHelperText" />
-    </MudItem>
     <MudItem xs="12" sm="6" md="6">
         <MudTextField @bind-Value="Model.Name" @bind-Value:after="NotifyChangedAsync" Immediate="true"
                       Label="@Localizer["PartnerForm_NameLabel"]" Variant="Variant.Outlined" Margin="Margin.Dense" Required="true" />
     </MudItem>
-    <MudItem xs="12" sm="6" md="3">
+    <MudItem xs="12" sm="3" md="3">
         <MudTextField @bind-Value="Model.TaxId" @bind-Value:after="NotifyChangedAsync" Immediate="true"
                       Label="@Localizer["PartnerForm_TaxIdLabel"]" Variant="Variant.Outlined" Margin="Margin.Dense"
-                      Required="@RequireTaxId" HelperText="@TaxIdHelperText" />
+                      Required="@RequireTaxId" HelperText="@TaxIdHelperText"
+                      Adornment="Adornment.End" AdornmentIcon="@Icons.Material.Filled.Search"
+                      OnAdornmentClick="LookupTaxIdAsync" AdornmentAriaLabel="@Localizer["PartnerForm_TaxIdLookupTooltip"]" />
+    </MudItem>
+    <MudItem xs="12" sm="3" md="3">
+        <MudTextField Value="Model.Code" ReadOnly="true" Disabled="true"
+                      Label="@Localizer["PartnerForm_CodeLabel"]" Variant="Variant.Outlined" Margin="Margin.Dense"
+                      Placeholder="@Localizer["PartnerForm_CodeAutomaticPlaceholder"]" />
     </MudItem>
 
     <MudItem xs="12" sm="6" md="6">
@@ -38,8 +41,9 @@
                       Label="@Localizer["PartnerForm_AddressLabel"]" Variant="Variant.Outlined" Margin="Margin.Dense" />
     </MudItem>
     <MudItem xs="12" sm="3" md="3">
-        <MudTextField @bind-Value="Model.PostalCode" @bind-Value:after="NotifyChangedAsync"
-                      Label="@Localizer["PartnerForm_PostalCodeLabel"]" Variant="Variant.Outlined" Margin="Margin.Dense" />
+        <PostalCodeField Value="@Model.PostalCode" ValueChanged="OnPostalCodeChangedAsync" Country="@Model.Country"
+                         LookupResolved="OnPostalCodeResolvedAsync"
+                         Label="@Localizer["PartnerForm_PostalCodeLabel"]" />
     </MudItem>
     <MudItem xs="12" sm="3" md="3">
         <MudTextField @bind-Value="Model.City" @bind-Value:after="NotifyChangedAsync"
@@ -64,6 +68,13 @@
                       Label="@Localizer["PartnerForm_PhoneLabel"]" Variant="Variant.Outlined" Margin="Margin.Dense" />
     </MudItem>
 
+    @if (!string.IsNullOrWhiteSpace(_taxIdLookupMessage))
+    {
+        <MudItem xs="12">
+            <MudAlert Severity="@_taxIdLookupSeverity" Dense="true">@_taxIdLookupMessage</MudAlert>
+        </MudItem>
+    }
+
     @if (ShowActive)
     {
         <MudItem xs="12">
@@ -84,13 +95,6 @@
     [Parameter]
     public EventCallback<PartnerFormModel> ModelChanged { get; set; }
 
-    [Parameter]
-    public bool AllowCodeEdit { get; set; } = true;
-
-    /// <summary>False for a customer: a blank code is filled in automatically on save.</summary>
-    [Parameter]
-    public bool RequireCode { get; set; } = true;
-
     /// <summary>False for a customer: a blank tax id defaults to the final-consumer id on save.</summary>
     [Parameter]
     public bool RequireTaxId { get; set; } = true;
@@ -101,11 +105,79 @@
     [Parameter]
     public string? ActiveLabel { get; set; }
 
-    private string? CodeHelperText => !AllowCodeEdit
-        ? Localizer["PartnerForm_CodeHelperText"].Value
-        : (RequireCode ? null : Localizer["PartnerForm_CodeOptionalHelperText"].Value);
-
     private string TaxIdHelperText => Localizer["PartnerForm_TaxIdHelperText"].Value;
+
+    private string? _taxIdLookupMessage;
+    private Severity _taxIdLookupSeverity = Severity.Info;
+    private bool _lookingUpTaxId;
+
+    private Task OnPostalCodeChangedAsync(string? value)
+    {
+        Model.PostalCode = value ?? string.Empty;
+        return NotifyChangedAsync();
+    }
+
+    /// <summary>Fills in the city when it is still blank; an existing value is never overwritten.</summary>
+    private Task OnPostalCodeResolvedAsync(PostalCodeLookupResult result)
+    {
+        if (string.IsNullOrWhiteSpace(Model.City))
+            Model.City = result.Locality ?? result.Municipality ?? string.Empty;
+
+        return NotifyChangedAsync();
+    }
+
+    /// <summary>
+    /// Runs the module-11 check and, for a company NIF, queries VIES: fills the name when it is
+    /// still blank and reports what came back, good or bad, instead of failing silently.
+    /// </summary>
+    private async Task LookupTaxIdAsync()
+    {
+        if (_lookingUpTaxId || string.IsNullOrWhiteSpace(Model.TaxId))
+            return;
+
+        _lookingUpTaxId = true;
+        _taxIdLookupMessage = null;
+
+        try
+        {
+            var result = await Lookups.GetVatNumberAsync(Model.TaxId);
+
+            if (result is null || !result.IsStructurallyValid)
+            {
+                _taxIdLookupSeverity = Severity.Error;
+                _taxIdLookupMessage = Localizer["PartnerForm_TaxIdInvalidMessage"];
+                return;
+            }
+
+            if (result.Source != VatNumberValidationSource.Vies)
+            {
+                _taxIdLookupSeverity = Severity.Success;
+                _taxIdLookupMessage = Localizer["PartnerForm_TaxIdValidMessage"];
+                return;
+            }
+
+            if (result.IsRegisteredInVies != true)
+            {
+                _taxIdLookupSeverity = Severity.Warning;
+                _taxIdLookupMessage = Localizer["PartnerForm_TaxIdNotRegisteredMessage"];
+                return;
+            }
+
+            if (string.IsNullOrWhiteSpace(Model.Name) && !string.IsNullOrWhiteSpace(result.RegisteredName))
+                Model.Name = result.RegisteredName;
+
+            if (string.IsNullOrWhiteSpace(Model.Address) && !string.IsNullOrWhiteSpace(result.RegisteredAddress))
+                Model.Address = result.RegisteredAddress;
+
+            _taxIdLookupSeverity = Severity.Success;
+            _taxIdLookupMessage = string.Format(Localizer["PartnerForm_TaxIdFoundMessage"], result.RegisteredName);
+        }
+        finally
+        {
+            _lookingUpTaxId = false;
+            await NotifyChangedAsync();
+        }
+    }
 
     private Task NotifyChangedAsync() => ModelChanged.InvokeAsync(Model);
 }

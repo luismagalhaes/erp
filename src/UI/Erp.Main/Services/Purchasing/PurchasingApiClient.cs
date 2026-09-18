@@ -1,4 +1,5 @@
 using System.Net.Http.Json;
+using Erp.Common.Statements;
 using Erp.Main.Models.Core;
 using Erp.Main.Models.Inventory;
 using Erp.Main.Models.Notification;
@@ -418,6 +419,80 @@ public sealed class PurchasingApiClient(HttpClient http) : ApiClientBase(http)
             return (null, await ApiResponse.ReadErrorAsync(response, cancellationToken));
 
         return (await response.Content.ReadFromJsonAsync<SelfBilledInvoice>(cancellationToken), null);
+    }
+
+    // --- Supplier statements ---
+
+    /// <summary>A supplier's current account over a period; no dates means everything.</summary>
+    public Task<(AccountStatement? Statement, string? Error)> GetSupplierStatementAsync(
+        Guid companyId,
+        Guid supplierId,
+        DateOnly? startDate = null,
+        DateOnly? endDate = null,
+        CancellationToken cancellationToken = default) =>
+        GetSingleOrErrorAsync<AccountStatement>(
+            $"api/supplier-statements?companyId={companyId}&supplierId={supplierId}{PeriodQuery(startDate, endDate)}",
+            cancellationToken);
+
+    // --- Supplier payments ---
+
+    /// <summary>Server side supplier payment listing, filtered, sorted and paged by the database.</summary>
+    public Task<(IReadOnlyList<SupplierPaymentListItem> Items, int Count, string? Error)> QuerySupplierPaymentsAsync(
+        Guid companyId, ODataQuery query, CancellationToken cancellationToken = default) =>
+        GetODataAsync<SupplierPaymentListItem>($"api/supplier-payments/odata?companyId={companyId}{query.ToQueryString()}", cancellationToken);
+
+    public async Task<SupplierPayment?> GetSupplierPaymentAsync(Guid id, CancellationToken cancellationToken = default)
+    {
+        var response = await Http.GetAsync($"api/supplier-payments/{id}", cancellationToken);
+        return response.IsSuccessStatusCode
+            ? await response.Content.ReadFromJsonAsync<SupplierPayment>(cancellationToken)
+            : null;
+    }
+
+    /// <summary>Supplier documents that still owe money, which are what a payment can be built from.</summary>
+    public async Task<(IReadOnlyList<PayableDocument> Items, string? Error)> GetPayableDocumentsAsync(
+        Guid companyId,
+        Guid? supplierId = null,
+        CancellationToken cancellationToken = default)
+    {
+        var url = $"api/supplier-payments/payable-documents?companyId={companyId}";
+
+        if (supplierId is { } supplier)
+            url += $"&supplierId={supplier}";
+
+        var response = await Http.GetAsync(url, cancellationToken);
+
+        if (!response.IsSuccessStatusCode)
+            return ([], await ApiResponse.ReadErrorAsync(response, cancellationToken));
+
+        var items = await response.Content.ReadFromJsonAsync<List<PayableDocument>>(cancellationToken);
+        return (items ?? [], null);
+    }
+
+    public async Task<(SupplierPayment? Payment, string? Error)> RecordSupplierPaymentAsync(
+        CreateSupplierPaymentRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        var response = await Http.PostAsJsonAsync("api/supplier-payments", request, cancellationToken);
+
+        if (!response.IsSuccessStatusCode)
+            return (null, await ApiResponse.ReadErrorAsync(response, cancellationToken));
+
+        return (await response.Content.ReadFromJsonAsync<SupplierPayment>(cancellationToken), null);
+    }
+
+    public async Task<(SupplierPayment? Payment, string? Error)> VoidSupplierPaymentAsync(
+        Guid id,
+        string reason,
+        CancellationToken cancellationToken = default)
+    {
+        var response = await Http.PostAsJsonAsync(
+            $"api/supplier-payments/{id}/void", new VoidSupplierPaymentRequest(reason), cancellationToken);
+
+        if (!response.IsSuccessStatusCode)
+            return (null, await ApiResponse.ReadErrorAsync(response, cancellationToken));
+
+        return (await response.Content.ReadFromJsonAsync<SupplierPayment>(cancellationToken), null);
     }
 
     private async Task<(PurchaseOrder? Order, string? Error)> PostAsync(

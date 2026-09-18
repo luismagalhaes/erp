@@ -25,4 +25,7 @@ public sealed record StockMovementDetailDto(
     string QrCodePayload,
     string? AtDocCodeId,
     DateTime? CommunicatedAtUtc,
-    IReadOnlyList<StockMovementLineDto> Lines);
+    IReadOnlyList<StockMovementLineDto> Lines,
+    decimal GrossLinesTotal = 0m,
+    decimal DiscountTotal = 0m,
+    IReadOnlyList<MovementTaxDto>? Taxes = null);

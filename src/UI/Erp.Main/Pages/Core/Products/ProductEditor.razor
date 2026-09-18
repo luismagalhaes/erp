@@ -1,10 +1,12 @@
-﻿@page "/products/new"
+@page "/products/new"
 @page "/products/{Id:guid}"
 @attribute [Authorize]
 @using Microsoft.AspNetCore.Authorization
 @using Microsoft.AspNetCore.Components.Web
 @using MudBlazor
 @using Erp.Main.Components.Common
+@using Erp.FiscalPT.Documents
+@using Erp.FiscalPT.Documents
 @using Erp.Main.Models
 @using Erp.Main.Services
 @using Erp.Main.Resources
@@ -45,6 +47,8 @@
                            OnClick="@(() => Navigation.NavigateTo("product-families"))">@Localizer["ProductEditor_FamiliesButton"]</MudButton>
                 <MudButton Variant="Variant.Text" Size="Size.Small" StartIcon="@Icons.Material.Filled.Sell"
                            OnClick="@(() => Navigation.NavigateTo("brands"))">@Localizer["ProductEditor_BrandsButton"]</MudButton>
+                <MudButton Variant="Variant.Text" Size="Size.Small" StartIcon="@Icons.Material.Filled.Recycling"
+                           OnClick="@(() => Navigation.NavigateTo("eco-fee-types"))">@Localizer["ProductEditor_EcoFeeTypesButton"]</MudButton>
                 @if (!IsNew)
                 {
                     <MudSwitch @bind-Value="_isActive" Color="Color.Primary" Size="Size.Small" Label="@Localizer["ProductEditor_ActiveLabel"]" />
@@ -123,6 +127,20 @@
                             }
                         </MudSelect>
                     </MudItem>
+                    @if (_taxCode == TaxCodes.Exempt)
+                    {
+                        @* An article taxed at zero says why, once, instead of on every document. *@
+                        <MudItem xs="12" sm="4" md="4">
+                            <MudSelect T="string" @bind-Value="_taxExemptionCode" ToStringFunc="@(code => code)"
+                                       Label="@Localizer["NewInvoice_ExemptionCodePlaceholder"]" Variant="Variant.Outlined"
+                                       Margin="Margin.Dense" Required="true" Error="@string.IsNullOrWhiteSpace(_taxExemptionCode)">
+                                @foreach (var reason in TaxExemptionReasons.All)
+                                {
+                                    <MudSelectItem T="string" Value="@reason.Code">@reason.Code â€” @reason.Description</MudSelectItem>
+                                }
+                            </MudSelect>
+                        </MudItem>
+                    }
                     <MudItem xs="12" sm="2" md="2">
                         <MudSelect T="string" Value="_taxCountryRegion" ValueChanged="OnRegionChanged"
                                    Label="@Localizer["ProductEditor_TaxRegionLabel"]" Variant="Variant.Outlined"
@@ -150,6 +168,25 @@
                             <MudAlert Severity="Severity.Info" Dense="true">
                                 @Localizer["ProductEditor_BiologicalAssetsNotice"]
                             </MudAlert>
+                        </MudItem>
+                    }
+
+                    @* Batteries, lubricating oils and similar: an eco-fee the article always
+                       invoices alongside itself, on its own line, as the law requires. *@
+                    <MudItem xs="12" sm="6" md="4">
+                        <MudSelect T="Guid?" @bind-Value="_ecoFeeTypeId" Label="@Localizer["ProductEditor_EcoFeeTypeLabel"]"
+                                   Variant="Variant.Outlined" Margin="Margin.Dense" Clearable="true">
+                            @foreach (var ecoFeeType in _ecoFeeTypes.Where(x => x.IsActive))
+                            {
+                                <MudSelectItem T="Guid?" Value="@ecoFeeType.Id">@ecoFeeType.Description</MudSelectItem>
+                            }
+                        </MudSelect>
+                    </MudItem>
+                    @if (SelectedEcoFeeType is { CalculationBasis: EcoFeeCalculationBases.PerKg })
+                    {
+                        <MudItem xs="12" sm="6" md="2">
+                            <MudNumericField @bind-Value="_ecoFeeWeightKg" Label="@Localizer["ProductEditor_EcoFeeWeightLabel"]"
+                                             Variant="Variant.Outlined" Margin="Margin.Dense" Min="0" Format="N3" />
                         </MudItem>
                     }
                 </MudGrid>
@@ -196,6 +233,7 @@
     private decimal _unitPrice;
     private decimal _unitCost;
     private string _taxCode = "NOR";
+    private string? _taxExemptionCode;
     private decimal _taxPercentage = 23m;
     private string _taxCountryRegion = "PT";
     private bool _isActive = true;
@@ -203,13 +241,18 @@
     private Guid? _familyId;
     private Guid? _subfamilyId;
     private Guid? _brandId;
+    private Guid? _ecoFeeTypeId;
+    private decimal? _ecoFeeWeightKg;
 
     private List<ProductFamily> _families = [];
     private List<ProductSubfamily> _subfamilies = [];
     private List<Brand> _brands = [];
+    private List<EcoFeeType> _ecoFeeTypes = [];
 
     private IEnumerable<ProductSubfamily> AvailableSubfamilies =>
         _subfamilies.Where(subfamily => subfamily.FamilyId == _familyId);
+
+    private EcoFeeType? SelectedEcoFeeType => _ecoFeeTypes.FirstOrDefault(x => x.Id == _ecoFeeTypeId);
 
     private bool CanSave =>
         Company.HasCompany
@@ -252,10 +295,13 @@
             _unitPrice = product.UnitPrice;
             _unitCost = product.UnitCost;
             _taxCode = product.DefaultTaxCode;
+            _taxExemptionCode = product.DefaultTaxExemptionCode;
             _taxPercentage = product.DefaultTaxPercentage;
             _familyId = product.FamilyId;
             _subfamilyId = product.SubfamilyId;
             _brandId = product.BrandId;
+            _ecoFeeTypeId = product.EcoFeeTypeId;
+            _ecoFeeWeightKg = product.EcoFeeWeightKg;
             _isActive = product.IsActive;
         }
         catch (Exception ex)
@@ -285,6 +331,9 @@
         var (rates, _) = await Catalog.GetVatRatesAsync();
         _allTaxRates = [.. rates];
 
+        var (ecoFeeTypes, _) = await Catalog.GetEcoFeeTypesAsync(Company.SelectedCompanyId);
+        _ecoFeeTypes = [.. ecoFeeTypes];
+
         _error = familiesError;
     }
 
@@ -309,6 +358,10 @@
     {
         _taxCode = taxCode;
         _taxPercentage = TaxRates.First(rate => rate.Code == taxCode).Percentage;
+
+        // Only an exempt article cites a reason; changing the rate drops one that no longer applies.
+        if (taxCode != TaxCodes.Exempt)
+            _taxExemptionCode = null;
     }
 
     private async Task SaveAsync()
@@ -336,7 +389,10 @@
                     _subfamilyId,
                     _brandId,
                     _unitCost,
-                    _inventoryCategory))
+                    _inventoryCategory,
+                    _taxExemptionCode,
+                    _ecoFeeTypeId,
+                    _ecoFeeWeightKg))
                 : await Catalog.UpdateProductAsync(Id!.Value, new UpdateProductRequest(
                     _description.Trim(),
                     _unitPrice,
@@ -351,7 +407,10 @@
                     _brandId,
                     _isActive,
                     _unitCost,
-                    _inventoryCategory));
+                    _inventoryCategory,
+                    _taxExemptionCode,
+                    _ecoFeeTypeId,
+                    _ecoFeeWeightKg));
 
             if (error is not null)
             {

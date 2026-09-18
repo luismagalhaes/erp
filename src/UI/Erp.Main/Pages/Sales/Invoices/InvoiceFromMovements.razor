@@ -56,11 +56,11 @@
     }
     else
     {
-        <MudPaper Elevation="1" Class="pa-4">
+        <MudPaper Elevation="0" Class="pa-4 erp-card erp-form">
             <MudGrid>
                 <MudItem xs="12" md="5">
                     <MudSelect T="string" Value="_partyTaxId" ValueChanged="OnCustomerChanged"
-                               Label="@L["InvoiceFromMovements_CustomerLabel"]" Variant="Variant.Outlined" Required="true"
+                               Label="@L["InvoiceFromMovements_CustomerLabel"]" Variant="Variant.Outlined" Margin="Margin.Dense" Required="true"
                                HelperText="@L["InvoiceFromMovements_CustomerHelpText"]">
                         @foreach (var customer in _customers)
                         {
@@ -71,7 +71,7 @@
                     </MudSelect>
                 </MudItem>
                 <MudItem xs="12" md="4">
-                    <MudSelect @bind-Value="_seriesId" Label="@L["InvoiceFromMovements_SeriesLabel"]" Variant="Variant.Outlined" Required="true">
+                    <MudSelect @bind-Value="_seriesId" Label="@L["InvoiceFromMovements_SeriesLabel"]" Variant="Variant.Outlined" Margin="Margin.Dense" Required="true">
                         @foreach (var series in _series)
                         {
                             <MudSelectItem T="Guid" Value="@series.Id">
@@ -81,13 +81,13 @@
                     </MudSelect>
                 </MudItem>
                 <MudItem xs="12" md="3">
-                    <MudDatePicker @bind-Date="_documentDate" Label="@L["InvoiceFromMovements_DateLabel"]" Variant="Variant.Outlined"
+                    <MudDatePicker @bind-Date="_documentDate" Label="@L["InvoiceFromMovements_DateLabel"]" Variant="Variant.Outlined" Margin="Margin.Dense"
                                    DateFormat="yyyy-MM-dd" />
                 </MudItem>
             </MudGrid>
         </MudPaper>
 
-        <MudPaper Elevation="1" Class="pa-4">
+        <MudPaper Elevation="0" Class="pa-4 erp-card erp-form">
             <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center" Class="mb-3">
                 <MudText Typo="Typo.h6">@L["InvoiceFromMovements_LinesSectionTitle"]</MudText>
                 <MudButtonGroup Variant="Variant.Outlined" Size="Size.Small">
@@ -154,7 +154,7 @@
             </MudTable>
         </MudPaper>
 
-        <MudPaper Elevation="1" Class="pa-4">
+        <MudPaper Elevation="0" Class="pa-4 erp-card erp-form">
             <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center">
                 <MudStack Row="true" Spacing="6">
                     <MudStack Spacing="0">

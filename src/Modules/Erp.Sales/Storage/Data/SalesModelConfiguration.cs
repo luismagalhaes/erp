@@ -24,6 +24,8 @@ public sealed class SalesModelConfiguration : IModuleModelConfiguration
             entity.Property(x => x.CustomerTaxId).HasMaxLength(30).IsRequired();
             entity.Property(x => x.CustomerName).HasMaxLength(200).IsRequired();
             entity.Property(x => x.CustomerAddress).HasMaxLength(400);
+            entity.Property(x => x.CustomerPostalCode).HasMaxLength(20);
+            entity.Property(x => x.CustomerCity).HasMaxLength(100);
             entity.Property(x => x.CustomerCountry).HasMaxLength(2).IsRequired();
             entity.Property(x => x.CreatedByUserId).HasMaxLength(450);
             entity.Property(x => x.RectifiedDocumentNumber).HasMaxLength(60);
@@ -41,11 +43,18 @@ public sealed class SalesModelConfiguration : IModuleModelConfiguration
             entity.Ignore(x => x.EffectiveStatus);
             entity.Ignore(x => x.IsVoided);
             entity.Ignore(x => x.IsRectifying);
+            entity.Ignore(x => x.GrossLinesTotal);
+            entity.Ignore(x => x.DiscountTotal);
 
             // Numbering has no gaps and no repeats inside a series.
             entity.HasIndex(x => new { x.SeriesId, x.SequenceNumber }).IsUnique();
             entity.HasIndex(x => new { x.CompanyId, x.DocumentNumber }).IsUnique();
             entity.HasIndex(x => new { x.CompanyId, x.DocumentDate });
+
+            entity.HasMany(x => x.Payments)
+                .WithOne(x => x.Document)
+                .HasForeignKey(x => x.DocumentId)
+                .OnDelete(DeleteBehavior.Restrict);
 
             entity.HasOne(x => x.Series)
                 .WithMany()
@@ -89,9 +98,14 @@ public sealed class SalesModelConfiguration : IModuleModelConfiguration
 
             entity.Property(x => x.Quantity).HasPrecision(19, 6);
             entity.Property(x => x.UnitPrice).HasPrecision(19, 6);
+            entity.Property(x => x.DiscountPercentage).HasPrecision(5, 2);
+            entity.Property(x => x.DiscountAmount).HasPrecision(19, 2);
             entity.Property(x => x.LineAmount).HasPrecision(19, 2);
             entity.Property(x => x.TaxPercentage).HasPrecision(5, 2);
             entity.Property(x => x.TaxAmount).HasPrecision(19, 2);
+
+            entity.Ignore(x => x.GrossAmount);
+            entity.Ignore(x => x.NetUnitPrice);
 
             entity.HasIndex(x => new { x.DocumentId, x.LineNumber }).IsUnique();
 
@@ -101,6 +115,14 @@ public sealed class SalesModelConfiguration : IModuleModelConfiguration
             entity.HasOne<StockMovementLine>()
                 .WithMany()
                 .HasForeignKey(x => x.OriginatingLineId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            // Which article line an eco-fee line belongs to.
+            entity.HasIndex(x => x.EcoFeeForLineId);
+
+            entity.HasOne<SalesDocumentLine>()
+                .WithMany()
+                .HasForeignKey(x => x.EcoFeeForLineId)
                 .OnDelete(DeleteBehavior.Restrict);
         });
 
@@ -205,11 +227,24 @@ public sealed class SalesModelConfiguration : IModuleModelConfiguration
 
             entity.Property(x => x.Quantity).HasPrecision(19, 6);
             entity.Property(x => x.UnitPrice).HasPrecision(19, 6);
+            entity.Property(x => x.DiscountPercentage).HasPrecision(5, 2);
+            entity.Property(x => x.DiscountAmount).HasPrecision(19, 2);
             entity.Property(x => x.LineAmount).HasPrecision(19, 2);
             entity.Property(x => x.TaxPercentage).HasPrecision(5, 2);
             entity.Property(x => x.TaxAmount).HasPrecision(19, 2);
 
+            entity.Ignore(x => x.GrossAmount);
+            entity.Ignore(x => x.NetUnitPrice);
+
             entity.HasIndex(x => new { x.MovementId, x.LineNumber }).IsUnique();
+
+            // Which article line an eco-fee line belongs to.
+            entity.HasIndex(x => x.EcoFeeForLineId);
+
+            entity.HasOne<StockMovementLine>()
+                .WithMany()
+                .HasForeignKey(x => x.EcoFeeForLineId)
+                .OnDelete(DeleteBehavior.Restrict);
         });
 
         modelBuilder.Entity<MovementStatusChange>(entity =>
@@ -295,6 +330,17 @@ public sealed class SalesModelConfiguration : IModuleModelConfiguration
                 .WithMany()
                 .HasForeignKey(x => x.OriginatingDocumentId)
                 .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        modelBuilder.Entity<SalesDocumentPayment>(entity =>
+        {
+            entity.ToTable("SalesDocumentPayment");
+            entity.HasKey(x => x.Id);
+
+            entity.Property(x => x.Mechanism).HasMaxLength(2).IsRequired();
+            entity.Property(x => x.Amount).HasPrecision(19, 2);
+
+            entity.HasIndex(x => x.DocumentId);
         });
 
         modelBuilder.Entity<PaymentMethodEntry>(entity =>

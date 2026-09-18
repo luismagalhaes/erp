@@ -1,5 +1,7 @@
 using System.Security.Claims;
+using Erp.Api.Security;
 using Erp.Api.Services;
+using Erp.Sales.Domain;
 using Erp.Sales.Infrastructure.Application;
 using Erp.Sales.Infrastructure.Contracts;
 using Microsoft.AspNetCore.Authorization;
@@ -16,6 +18,7 @@ namespace Erp.Api.Controllers.Sales;
 [Route("api/payments")]
 [Authorize]
 [Produces("application/json")]
+[ScopedEntity(typeof(Payment))]
 public sealed class PaymentsController(IPaymentService paymentService, ILogger<PaymentsController> logger) : ControllerBase
 {
     /// <summary>Lists the receipts issued by a company, most recent first.</summary>

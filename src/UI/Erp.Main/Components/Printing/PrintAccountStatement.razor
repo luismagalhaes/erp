@@ -1,0 +1,137 @@
+@using MudBlazor
+@using Erp.Main.Models.Core
+@using Erp.Main.Services
+@using Erp.Main.Resources
+@using Microsoft.Extensions.Localization
+@inject CompanyState Company
+@inject CoreApiClient CoreApi
+@inject IStringLocalizer<MainResources> L
+
+@*
+    A current account statement on paper. It is a report, not a fiscal document: no copies, no
+    signature, no QR — the header names the company and the party, and the table does the rest.
+*@
+
+<PrintToolbar ShowCopies="false" BackUrl="@BackUrl" />
+
+@if (_loading)
+{
+    <MudProgressLinear Indeterminate="true" Color="Color.Primary" />
+}
+else if (_statement is null)
+{
+    <MudAlert Severity="Severity.Error">@(_error ?? L["Statement_ChoosePartyInfo"])</MudAlert>
+}
+else
+{
+    <PrintDocumentHeader Company="_company"
+                         Designation="@Designation"
+                         DocumentNumber="@Period"
+                         DocumentDate="DateOnly.FromDateTime(DateTime.Today)"
+                         Copy="" />
+
+    <div class="print-parties">
+        <div class="print-box">
+            <div class="label">@PartyLabel</div>
+            <div><strong>@_statement.PartyName</strong></div>
+            <div>NIF @_statement.PartyTaxId</div>
+        </div>
+    </div>
+
+    <table class="print-table">
+        <thead>
+            <tr>
+                <th style="width: 80px;">@L["Statement_DateColumn"]</th>
+                <th style="width: 50px;">@L["Statement_TypeColumn"]</th>
+                <th>@L["Statement_DocumentColumn"]</th>
+                <th style="width: 80px;">@L["Statement_DueDateColumn"]</th>
+                <th class="num" style="width: 90px;">@L["Statement_DebitColumn"]</th>
+                <th class="num" style="width: 90px;">@L["Statement_CreditColumn"]</th>
+                <th class="num" style="width: 90px;">@L["Statement_BalanceColumn"]</th>
+            </tr>
+        </thead>
+        <tbody>
+            @if (_statement.StartDate is not null)
+            {
+                <tr>
+                    <td>@_statement.StartDate.Value.ToString("yyyy-MM-dd")</td>
+                    <td></td>
+                    <td colspan="4"><em>@L["Statement_OpeningBalanceLabel"]</em></td>
+                    <td class="num">@_statement.OpeningBalance.ToString("N2")</td>
+                </tr>
+            }
+            @foreach (var entry in _statement.Entries)
+            {
+                <tr>
+                    <td>@entry.Date.ToString("yyyy-MM-dd")</td>
+                    <td>@entry.DocumentType</td>
+                    <td>@entry.DocumentNumber</td>
+                    <td>@(entry.DueDate?.ToString("yyyy-MM-dd"))</td>
+                    <td class="num">@(entry.Debit == 0 ? string.Empty : entry.Debit.ToString("N2"))</td>
+                    <td class="num">@(entry.Credit == 0 ? string.Empty : entry.Credit.ToString("N2"))</td>
+                    <td class="num">@entry.Balance.ToString("N2")</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+
+    <div class="print-summary">
+        <div></div>
+        <div class="print-totals">
+            <div class="row"><span>@L["Statement_OpeningBalanceLabel"]</span><span>@_statement.OpeningBalance.ToString("N2")</span></div>
+            <div class="row"><span>@L["Statement_TotalDebitLabel"]</span><span>@_statement.TotalDebit.ToString("N2")</span></div>
+            <div class="row"><span>@L["Statement_TotalCreditLabel"]</span><span>@_statement.TotalCredit.ToString("N2")</span></div>
+            <div class="row grand"><span>@L["Statement_ClosingBalanceLabel"]</span><span>@_statement.ClosingBalance.ToString("N2") EUR</span></div>
+            <div class="row"><span>@BalanceMeaning</span><span></span></div>
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter, EditorRequired] public string Designation { get; set; } = string.Empty;
+
+    [Parameter, EditorRequired] public string PartyLabel { get; set; } = string.Empty;
+
+    [Parameter, EditorRequired] public string BalanceMeaning { get; set; } = string.Empty;
+
+    [Parameter, EditorRequired] public string BackUrl { get; set; } = string.Empty;
+
+    [Parameter] public Guid? PartyId { get; set; }
+
+    [Parameter] public DateOnly? StartDate { get; set; }
+
+    [Parameter] public DateOnly? EndDate { get; set; }
+
+    [Parameter, EditorRequired]
+    public Func<Guid, Guid, DateOnly?, DateOnly?, Task<(AccountStatement? Statement, string? Error)>> LoadStatement { get; set; } = null!;
+
+    private bool _loading = true;
+    private string? _error;
+    private AccountStatement? _statement;
+    private CompanyDetail? _company;
+
+    private string Period =>
+        $"{StartDate?.ToString("yyyy-MM-dd") ?? "…"} — {EndDate?.ToString("yyyy-MM-dd") ?? DateTime.Today.ToString("yyyy-MM-dd")}";
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            await Company.EnsureLoadedAsync();
+
+            if (!Company.HasCompany || PartyId is not { } partyId)
+                return;
+
+            _company = await CoreApi.GetCompanyAsync(Company.SelectedCompanyId);
+            (_statement, _error) = await LoadStatement(Company.SelectedCompanyId, partyId, StartDate, EndDate);
+        }
+        catch (Exception ex)
+        {
+            _error = string.Format(L["Statement_LoadError"], ex.Message);
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+}

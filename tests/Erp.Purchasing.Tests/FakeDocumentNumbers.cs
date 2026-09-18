@@ -27,4 +27,17 @@ public sealed class FakeDocumentNumbers : IDocumentNumbers
 
         return Task.FromResult($"{prefix}{year}/{last}");
     }
+
+    public Task<int> NextSequenceAsync(
+        Guid companyId,
+        string key,
+        CancellationToken cancellationToken = default)
+    {
+        var counter = (companyId, key, 0);
+
+        _counters.TryGetValue(counter, out var last);
+        _counters[counter] = ++last;
+
+        return Task.FromResult(last);
+    }
 }

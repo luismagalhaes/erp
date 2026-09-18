@@ -50,6 +50,12 @@ public sealed class Product
 
     public decimal DefaultTaxPercentage { get; set; } = 23m;
 
+    /// <summary>
+    /// The exemption reason from the tax authority's table, for an article taxed at zero. Copied
+    /// onto every line the article goes on, so the reason is filled in once and not per document.
+    /// </summary>
+    public string? DefaultTaxExemptionCode { get; set; }
+
     /// <summary>EAN or other barcode, exported as SAF-T ProductNumberCode.</summary>
     public string? Barcode { get; set; }
 
@@ -58,6 +64,12 @@ public sealed class Product
     public Guid? SubfamilyId { get; set; }
 
     public Guid? BrandId { get; set; }
+
+    /// <summary>The eco-fee this article carries (e.g. the battery or oil Ecovalor), if any.</summary>
+    public Guid? EcoFeeTypeId { get; set; }
+
+    /// <summary>Net weight in kilograms, used when the linked eco-fee is charged per kilogram.</summary>
+    public decimal? EcoFeeWeightKg { get; set; }
 
     public bool IsActive { get; set; } = true;
 
@@ -70,4 +82,6 @@ public sealed class Product
     public ProductSubfamily? Subfamily { get; set; }
 
     public Brand? Brand { get; set; }
+
+    public EcoFeeType? EcoFeeType { get; set; }
 }

@@ -36,21 +36,21 @@
     }
     else
     {
-        <MudPaper Elevation="1" Class="pa-4">
+        <MudPaper Elevation="0" Class="pa-4 erp-card erp-form">
             <MudGrid>
                 <MudItem xs="12" md="3">
                     <MudNumericField T="int" Value="_fiscalYear" ValueChanged="OnYearChangedAsync"
-                                     Label="@L["InventoryFileExport_PeriodLabel"]" Variant="Variant.Outlined" Min="2000" Max="2100" />
+                                     Label="@L["InventoryFileExport_PeriodLabel"]" Variant="Variant.Outlined" Margin="Margin.Dense" Min="2000" Max="2100" />
                 </MudItem>
                 <MudItem xs="12" md="4">
                     <MudDatePicker Date="_endDate" DateChanged="OnEndDateChangedAsync"
-                                   Label="@L["InventoryFileExport_ReferenceDateLabel"]" Variant="Variant.Outlined"
+                                   Label="@L["InventoryFileExport_ReferenceDateLabel"]" Variant="Variant.Outlined" Margin="Margin.Dense"
                                    DateFormat="yyyy-MM-dd"
                                    HelperText="@L["InventoryFileExport_ReferenceDateHelperText"]" />
                 </MudItem>
                 <MudItem xs="12" md="4">
                     <MudSelect T="bool" Value="_valued" ValueChanged="OnValuedChangedAsync"
-                               Label="@L["InventoryFileExport_TypeLabel"]" Variant="Variant.Outlined">
+                               Label="@L["InventoryFileExport_TypeLabel"]" Variant="Variant.Outlined" Margin="Margin.Dense">
                         <MudSelectItem T="bool" Value="true">@L["InventoryFileExport_ValuedOption"]</MudSelectItem>
                         <MudSelectItem T="bool" Value="false">@L["InventoryFileExport_QuantitiesOnlyOption"]</MudSelectItem>
                     </MudSelect>
@@ -73,7 +73,7 @@
             </MudGrid>
         </MudPaper>
 
-        <MudPaper Elevation="1" Class="pa-4">
+        <MudPaper Elevation="0" Class="pa-4 erp-card erp-form">
             <MudText Typo="Typo.h6" Class="mb-3">@L["InventoryFileExport_FileContentTitle"]</MudText>
 
             @if (_summary is null)

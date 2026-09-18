@@ -21,6 +21,7 @@ public static class DependencyInjection
         services.AddScoped<IPurchaseInvoiceStorage, PurchaseInvoiceStorage>();
         services.AddScoped<ISupplierReturnStorage, SupplierReturnStorage>();
         services.AddScoped<ISelfBilledInvoiceStorage, SelfBilledInvoiceStorage>();
+        services.AddScoped<ISupplierPaymentStorage, SupplierPaymentStorage>();
 
         return services;
     }

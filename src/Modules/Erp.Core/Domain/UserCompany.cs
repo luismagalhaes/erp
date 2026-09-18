@@ -1,5 +1,9 @@
+using Erp.Common;
+
 namespace Erp.Core.Domain;
 
+/// <summary>Exempt from the tenant filter — see <see cref="SkipTenantFilterAttribute"/>.</summary>
+[SkipTenantFilter]
 public class UserCompany
 {
     public Guid Id { get; set; }

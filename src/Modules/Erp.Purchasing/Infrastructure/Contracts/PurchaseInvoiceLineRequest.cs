@@ -22,4 +22,5 @@ public sealed record PurchaseInvoiceLineRequest(
     decimal TaxPercentage = 23m,
     string DeductionNature = "Inventory",
     Guid? ReceiptLineId = null,
-    Guid? ReturnLineId = null);
+    Guid? ReturnLineId = null,
+    decimal DiscountPercentage = 0m);

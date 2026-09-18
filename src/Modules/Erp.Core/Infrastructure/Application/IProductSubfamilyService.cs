@@ -10,6 +10,9 @@ public interface IProductSubfamilyService
     IQueryable<ProductSubfamilyDto> Query(Guid companyId);
 
     Task<ProductSubfamilyDto?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default);
+
+    /// <summary>True when the company already uses this code. Lets the host skip taken codes when numbering.</summary>
+    Task<bool> CodeExistsAsync(Guid companyId, string code, CancellationToken cancellationToken = default);
     Task<ProductSubfamilyDto> CreateAsync(CreateProductSubfamilyRequest request, CancellationToken cancellationToken = default);
     Task<ProductSubfamilyDto?> UpdateAsync(Guid id, UpdateProductSubfamilyRequest request, CancellationToken cancellationToken = default);
 }

@@ -42,10 +42,10 @@
     }
     else if (IsNew)
     {
-        <MudPaper Elevation="1" Class="pa-4">
+        <MudPaper Elevation="0" Class="pa-4 erp-card erp-form">
             <MudGrid>
                 <MudItem xs="12" md="3">
-                    <MudSelect @bind-Value="_documentType" Label="@L["SeriesEditor_DocumentTypeLabel"]" Variant="Variant.Outlined">
+                    <MudSelect @bind-Value="_documentType" Label="@L["SeriesEditor_DocumentTypeLabel"]" Variant="Variant.Outlined" Margin="Margin.Dense">
                         @foreach (var type in DocumentTypes)
                         {
                             <MudSelectItem T="string" Value="@type.Code">@type.Code — @type.Label</MudSelectItem>
@@ -54,19 +54,19 @@
                 </MudItem>
                 <MudItem xs="12" md="3">
                     <MudTextField @bind-Value="_seriesCode" Label="@L["SeriesEditor_SeriesCodeLabel"]"
-                                  Variant="Variant.Outlined" Required="true" Placeholder="A2026" />
+                                  Variant="Variant.Outlined" Margin="Margin.Dense" Required="true" Placeholder="A2026" />
                 </MudItem>
                 <MudItem xs="12" md="3">
                     <MudNumericField @bind-Value="_initialSequence" Label="@L["SeriesEditor_InitialSequenceLabel"]"
-                                     Variant="Variant.Outlined" Min="1" />
+                                     Variant="Variant.Outlined" Margin="Margin.Dense" Min="1" />
                 </MudItem>
                 <MudItem xs="12" md="3">
                     <MudTextField @bind-Value="_establishmentCode" Label="@L["SeriesEditor_EstablishmentLabel"]"
-                                  Variant="Variant.Outlined" HelperText="@L["SeriesEditor_OptionalHelperText"]" />
+                                  Variant="Variant.Outlined" Margin="Margin.Dense" HelperText="@L["SeriesEditor_OptionalHelperText"]" />
                 </MudItem>
 
                 <MudItem xs="12" md="4">
-                    <MudSelect @bind-Value="_stockEffect" Label="@L["SeriesEditor_StockEffectLabel"]" Variant="Variant.Outlined"
+                    <MudSelect @bind-Value="_stockEffect" Label="@L["SeriesEditor_StockEffectLabel"]" Variant="Variant.Outlined" Margin="Margin.Dense"
                                HelperText="@L["SeriesEditor_DefaultStockEffectHelperText", _documentType, StockEffects.Describe(DefaultStockEffectFor(_documentType))]">
                         @foreach (var effect in StockEffects.All)
                         {
@@ -106,7 +106,7 @@
     }
     else if (_series is not null)
     {
-        <MudPaper Elevation="1" Class="pa-4">
+        <MudPaper Elevation="0" Class="pa-4 erp-card erp-form">
             <MudGrid>
                 <MudItem xs="12" md="3">
                     <MudText Typo="Typo.caption" Color="Color.Secondary">@L["SeriesEditor_DocumentTypeColumn"]</MudText>
@@ -138,7 +138,7 @@
             </MudAlert>
         </MudPaper>
 
-        <MudPaper Elevation="1" Class="pa-4">
+        <MudPaper Elevation="0" Class="pa-4 erp-card erp-form">
             <MudText Typo="Typo.h6" Class="mb-2">@L["SeriesEditor_StockEffectSectionTitle"]</MudText>
             <MudText Typo="Typo.body2" Color="Color.Secondary" Class="mb-3">
                 O que os <strong>@L["SeriesEditor_StockEffectSectionNoticeEmphasis"]</strong> @L["SeriesEditor_StockEffectSectionNoticeText"]
@@ -162,7 +162,7 @@
             </MudStack>
         </MudPaper>
 
-        <MudPaper Elevation="1" Class="pa-4">
+        <MudPaper Elevation="0" Class="pa-4 erp-card erp-form">
             <MudText Typo="Typo.h6" Class="mb-2">@L["SeriesEditor_CommunicationSectionTitle"]</MudText>
             <MudText Typo="Typo.body2" Color="Color.Secondary" Class="mb-3">
                 @L["SeriesEditor_CommunicationSectionNotice"]
@@ -204,7 +204,7 @@
 
         @if (_series.Status == "Communicated")
         {
-            <MudPaper Elevation="1" Class="pa-4">
+            <MudPaper Elevation="0" Class="pa-4 erp-card erp-form">
                 <MudText Typo="Typo.h6" Class="mb-2">@L["SeriesEditor_CancelSectionTitle"]</MudText>
                 <MudText Typo="Typo.body2" Color="Color.Secondary" Class="mb-3">
                     @L["SeriesEditor_CancelSectionNotice"]
@@ -220,7 +220,7 @@
 
         @if (_series.Status is "Communicated" or "Active")
         {
-            <MudPaper Elevation="1" Class="pa-4">
+            <MudPaper Elevation="0" Class="pa-4 erp-card erp-form">
                 <MudText Typo="Typo.h6" Class="mb-2">@L["SeriesEditor_FinalizeSectionTitle"]</MudText>
                 <MudText Typo="Typo.body2" Color="Color.Secondary" Class="mb-3">
                     @L["SeriesEditor_FinalizeSectionNotice"]

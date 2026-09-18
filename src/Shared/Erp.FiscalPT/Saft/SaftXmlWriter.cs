@@ -195,7 +195,8 @@ public static class SaftXmlWriter
                 new XElement(Ns + amountElement, Money(line.Amount)),
                 BuildTax(line.Tax),
                 Optional("TaxExemptionReason", line.TaxExemptionReason),
-                Optional("TaxExemptionCode", line.TaxExemptionCode)));
+                Optional("TaxExemptionCode", line.TaxExemptionCode),
+                line.SettlementAmount == 0 ? null : new XElement(Ns + "SettlementAmount", Money(line.SettlementAmount))));
         }
 
         element.Add(BuildTotals(invoice.Totals));
@@ -364,7 +365,11 @@ public static class SaftXmlWriter
         new(Ns + "DocumentTotals",
             new XElement(Ns + "TaxPayable", Money(totals.TaxPayable)),
             new XElement(Ns + "NetTotal", Money(totals.NetTotal)),
-            new XElement(Ns + "GrossTotal", Money(totals.GrossTotal)));
+            new XElement(Ns + "GrossTotal", Money(totals.GrossTotal)),
+            totals.Payments.Select(method => new XElement(Ns + "Payment",
+                new XElement(Ns + "PaymentMechanism", method.PaymentMechanism),
+                new XElement(Ns + "PaymentAmount", Money(method.PaymentAmount)),
+                new XElement(Ns + "PaymentDate", Date(method.PaymentDate)))));
 
     private static XElement BuildShippingPoint(string name, SaftShippingPoint point)
     {

@@ -119,4 +119,37 @@ public class IssueMovesStockTests
             "user-1",
             Arg.Any<CancellationToken>());
     }
+
+    /// <summary>
+    /// An eco-fee line ("Ecovalor") is a monetary charge, not an article: it carries no stock of its
+    /// own, so the recorder never sees it, even though it is an ordinary line everywhere else on the
+    /// document.
+    /// </summary>
+    [Fact]
+    public async Task IssueAsync_leaves_eco_fee_lines_out_of_the_stock_it_records()
+    {
+        var series = _context.GivenCommunicatedSeries(_companyId, stockEffect: StockEffect.Out);
+
+        var request = Request(series.Id, _warehouseId) with
+        {
+            Lines =
+            [
+                SalesTestContext.Line(),
+                SalesTestContext.Line() with
+                {
+                    ProductCode = "ECOVALOR-BAT",
+                    ProductDescription = "Ecovalor - Pilhas e baterias",
+                    IsEcoFee = true,
+                    EcoFeeForLineNumber = 1
+                }
+            ]
+        };
+
+        await _context.CreateService().IssueAsync(request, "user-1");
+
+        await _context.StockRecorder.Received(1).RecordAsync(
+            Arg.Is<RecordDocumentStockRequest>(r => r.Lines.Count == 1 && r.Lines[0].ProductCode == "ART001"),
+            "user-1",
+            Arg.Any<CancellationToken>());
+    }
 }

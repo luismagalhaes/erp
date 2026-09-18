@@ -14,6 +14,8 @@ public static class DependencyInjection
         services.AddScoped<IPurchaseInvoiceService, PurchaseInvoiceService>();
         services.AddScoped<ISupplierReturnService, SupplierReturnService>();
         services.AddScoped<ISelfBilledInvoiceService, SelfBilledInvoiceService>();
+        services.AddScoped<ISupplierPaymentService, SupplierPaymentService>();
+        services.AddScoped<ISupplierStatementService, SupplierStatementService>();
 
         // The self-billing SAF-T, one file per supplier. Registered alongside the Sales source; the
         // exporter tells them apart by file type, so neither can end up in the other's file.

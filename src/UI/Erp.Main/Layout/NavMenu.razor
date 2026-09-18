@@ -18,6 +18,7 @@
         <MudNavLink Href="invoices" Icon="@Icons.Material.Filled.ReceiptLong">@Localizer["NavMenu_Invoices"]</MudNavLink>
         <MudNavLink Href="credit-notes" Icon="@Icons.Material.Filled.CreditCard">@Localizer["NavMenu_CreditNotes"]</MudNavLink>
         <MudNavLink Href="payments" Icon="@Icons.Material.Filled.Payments">@Localizer["NavMenu_Payments"]</MudNavLink>
+        <MudNavLink Href="customer-statements" Icon="@Icons.Material.Filled.AccountBalanceWallet">@Localizer["NavMenu_CustomerStatements"]</MudNavLink>
         @* GR, GT, GA, GC e GD: documentos fiscais emitidos pelo módulo de vendas, não movimentos de existências. *@
         <MudNavLink Href="stock-movements" Icon="@Icons.Material.Filled.LocalShipping">@Localizer["NavMenu_StockMovements"]</MudNavLink>
     </MudNavGroup>
@@ -27,13 +28,13 @@
         <MudNavLink Href="product-families" Icon="@Icons.Material.Filled.AccountTree">@Localizer["NavMenu_Families"]</MudNavLink>
         <MudNavLink Href="product-subfamilies" Icon="@Icons.Material.Filled.Segment">@Localizer["NavMenu_Subfamilies"]</MudNavLink>
         <MudNavLink Href="brands" Icon="@Icons.Material.Filled.Sell">@Localizer["NavMenu_Brands"]</MudNavLink>
+        <MudNavLink Href="eco-fee-types" Icon="@Icons.Material.Filled.Recycling">@Localizer["NavMenu_EcoFeeTypes"]</MudNavLink>
     </MudNavGroup>
 
     <MudNavGroup Title="@Localizer["NavMenu_StockGroup"]" Icon="@Icons.Material.Filled.Warehouse" Expanded="false">
         @* Armazéns vivem na ficha da empresa, como os utilizadores: são a estrutura dela. *@
         <MudNavLink Href="stock" Icon="@Icons.Material.Filled.Inventory2">@Localizer["NavMenu_StockBalances"]</MudNavLink>
         <MudNavLink Href="inventory-counts" Icon="@Icons.Material.Filled.PlaylistAddCheck">@Localizer["NavMenu_InventoryCounts"]</MudNavLink>
-        <MudNavLink Href="stock/check" Icon="@Icons.Material.Filled.FactCheck">@Localizer["NavMenu_StockCheck"]</MudNavLink>
     </MudNavGroup>
 
     <MudNavGroup Title="@Localizer["NavMenu_PurchasingGroup"]" Icon="@Icons.Material.Filled.ShoppingCart" Expanded="false">
@@ -42,19 +43,13 @@
         <MudNavLink Href="supplier-returns" Icon="@Icons.Material.Filled.Undo">@Localizer["NavMenu_SupplierReturns"]</MudNavLink>
         <MudNavLink Href="supplier-invoices" Icon="@Icons.Material.Filled.RequestPage">@Localizer["NavMenu_SupplierInvoices"]</MudNavLink>
         <MudNavLink Href="self-billed-invoices" Icon="@Icons.Material.Filled.Gavel">@Localizer["NavMenu_SelfBilledInvoices"]</MudNavLink>
-    </MudNavGroup>
-
-    <MudNavGroup Title="@Localizer["NavMenu_AccountingGroup"]" Icon="@Icons.Material.Filled.AccountBalance" Expanded="false">
-        <MudNavLink Href="journal-entries" Icon="@Icons.Material.Filled.BookmarkAdd">@Localizer["NavMenu_JournalEntries"]</MudNavLink>
-        <MudNavLink Href="chart-of-accounts" Icon="@Icons.Material.Filled.AccountTree">@Localizer["NavMenu_ChartOfAccounts"]</MudNavLink>
-        <MudNavLink Href="trial-balance" Icon="@Icons.Material.Filled.TableChart">@Localizer["NavMenu_TrialBalance"]</MudNavLink>
+        <MudNavLink Href="supplier-payments" Icon="@Icons.Material.Filled.Payments">@Localizer["NavMenu_SupplierPayments"]</MudNavLink>
+        <MudNavLink Href="supplier-statements" Icon="@Icons.Material.Filled.AccountBalanceWallet">@Localizer["NavMenu_SupplierStatements"]</MudNavLink>
     </MudNavGroup>
 
     <MudNavGroup Title="@Localizer["NavMenu_ReportsGroup"]" Icon="@Icons.Material.Filled.Assessment" Expanded="false">
         <MudNavLink Href="saft" Icon="@Icons.Material.Filled.FileDownload">@Localizer["NavMenu_Saft"]</MudNavLink>
         <MudNavLink Href="inventory-file" Icon="@Icons.Material.Filled.Inventory">@Localizer["NavMenu_InventoryFile"]</MudNavLink>
-        <MudNavLink Href="reports/vat" Icon="@Icons.Material.Filled.Percent">@Localizer["NavMenu_VatReport"]</MudNavLink>
-        <MudNavLink Href="reports" Icon="@Icons.Material.Filled.BarChart">@Localizer["NavMenu_Reports"]</MudNavLink>
     </MudNavGroup>
 
     <MudNavGroup Title="@Localizer["NavMenu_SettingsGroup"]" Icon="@Icons.Material.Filled.Settings" Expanded="false">

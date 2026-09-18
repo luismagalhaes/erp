@@ -1,4 +1,7 @@
+using Erp.Common;
+using Erp.Api.Security;
 using Erp.Api.Services;
+using Erp.Core.Domain;
 using Erp.Core.Infrastructure.Application;
 using Erp.Core.Infrastructure.Contracts;
 using Microsoft.AspNetCore.Authorization;
@@ -12,7 +15,8 @@ namespace Erp.Api.Controllers.Core;
 [Route("api/product-subfamilies")]
 [Authorize(Policy = Policies.Read)]
 [Produces("application/json")]
-public sealed class ProductSubfamiliesController(IProductSubfamilyService subfamilyService, ILogger<ProductSubfamiliesController> logger) : ControllerBase
+[ScopedEntity(typeof(ProductSubfamily))]
+public sealed class ProductSubfamiliesController(IProductSubfamilyService subfamilyService, MasterDataCodes masterDataCodes, ILogger<ProductSubfamiliesController> logger) : ControllerBase
 {
     /// <summary>
     /// Lists the subfamilies of a company, optionally limited to one family.
@@ -68,7 +72,17 @@ public sealed class ProductSubfamiliesController(IProductSubfamilyService subfam
     {
         try
         {
-            var created = await subfamilyService.CreateAsync(request, cancellationToken);
+            if (request is null)
+                return BadRequest(new { error = "A request body is required." });
+
+            // A blank code is numbered 1, 2, 3...; a code that comes in, from an import, is kept.
+            var created = await masterDataCodes.CreateAsync(
+                request.CompanyId,
+                request.Code,
+                Constants.CodeCounters.ProductSubfamilies,
+                (code, ct) => subfamilyService.CodeExistsAsync(request.CompanyId, code, ct),
+                code => subfamilyService.CreateAsync(request with { Code = code }, cancellationToken),
+                cancellationToken);
             return CreatedAtAction(nameof(GetById), new { id = created.Id }, created);
         }
         catch (ArgumentException ex)

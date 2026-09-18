@@ -23,6 +23,7 @@ public class SelfBilledInvoiceServiceTests
     private readonly ISelfBilledInvoiceStorage _invoices = Substitute.For<ISelfBilledInvoiceStorage>();
     private readonly IGoodsReceiptStorage _receipts = Substitute.For<IGoodsReceiptStorage>();
     private readonly ISeriesStorage _series = Substitute.For<ISeriesStorage>();
+    private readonly ISupplierPaymentStorage _payments = Substitute.For<ISupplierPaymentStorage>();
     private readonly IDocumentSigner _signer = Substitute.For<IDocumentSigner>();
     private readonly IUnitOfWork _unitOfWork = Substitute.For<IUnitOfWork>();
     private readonly ITransaction _transaction = Substitute.For<ITransaction>();
@@ -90,6 +91,7 @@ public class SelfBilledInvoiceServiceTests
         new(_invoices,
             _receipts,
             _series,
+            _payments,
             _signer,
             _unitOfWork,
             Options.Create(new FiscalOptions { IssuerTaxId = "500123456", CertificateNumber = "9999" }));
@@ -285,7 +287,7 @@ public class SelfBilledInvoiceServiceTests
 
         var act = () => CreateService().IssueAsync(Request(series, line));
 
-        await act.Should().ThrowAsync<ArgumentException>().WithMessage("*exemption reason*");
+        await act.Should().ThrowAsync<ArgumentException>().WithMessage("*exemption code*");
     }
 
     [Fact]

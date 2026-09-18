@@ -1,3 +1,4 @@
+using Erp.Common;
 using Erp.Core.Domain;
 using Erp.Core.Infrastructure.Application;
 using Erp.Core.Infrastructure.Contracts;
@@ -14,6 +15,9 @@ public sealed class CustomerService(ICustomerStorage storage) : ICustomerService
     }
 
     public IQueryable<PartnerDto> Query(Guid companyId) => storage.Query(companyId);
+
+    public Task<bool> CodeExistsAsync(Guid companyId, string code, CancellationToken cancellationToken = default) =>
+        storage.CodeExistsAsync(companyId, code, cancellationToken);
 
     public async Task<PartnerDto?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
     {
@@ -98,6 +102,9 @@ public sealed class SupplierService(ISupplierStorage storage) : ISupplierService
 
     public IQueryable<PartnerDto> Query(Guid companyId) => storage.Query(companyId);
 
+    public Task<bool> CodeExistsAsync(Guid companyId, string code, CancellationToken cancellationToken = default) =>
+        storage.CodeExistsAsync(companyId, code, cancellationToken);
+
     public async Task<PartnerDto?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
     {
         var supplier = await storage.GetByIdAsync(id, cancellationToken);
@@ -180,6 +187,7 @@ internal static class PartnerValidation
         ArgumentException.ThrowIfNullOrWhiteSpace(request.Code);
         ArgumentException.ThrowIfNullOrWhiteSpace(request.Name);
         ArgumentException.ThrowIfNullOrWhiteSpace(request.TaxId);
+        ValidatePostalCode(request.PostalCode, request.Country);
     }
 
     public static void ValidateUpdate(UpdatePartnerRequest request)
@@ -187,6 +195,14 @@ internal static class PartnerValidation
         ArgumentNullException.ThrowIfNull(request);
         ArgumentException.ThrowIfNullOrWhiteSpace(request.Name);
         ArgumentException.ThrowIfNullOrWhiteSpace(request.TaxId);
+        ValidatePostalCode(request.PostalCode, request.Country);
+    }
+
+    /// <summary>A Portuguese postal code is XXXX-XXX, digits only; anything else would fail the SAF-T.</summary>
+    private static void ValidatePostalCode(string? postalCode, string? country)
+    {
+        if (!PostalCodes.IsValid(postalCode, country))
+            throw new ArgumentException($"Postal code '{postalCode}' is not in the Portuguese format XXXX-XXX.", nameof(postalCode));
     }
 
     public static string? Normalize(string? value) =>

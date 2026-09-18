@@ -15,4 +15,14 @@ public interface IDocumentNumbers
         string prefix,
         int year,
         CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// The next plain number of a counter that never restarts — 1, 2, 3 — for codes that carry no
+    /// year, such as the codes of customers, suppliers and catalogue entries. Same locking rules as
+    /// <see cref="NextAsync"/>: call it inside the transaction that writes what it numbers.
+    /// </summary>
+    Task<int> NextSequenceAsync(
+        Guid companyId,
+        string key,
+        CancellationToken cancellationToken = default);
 }

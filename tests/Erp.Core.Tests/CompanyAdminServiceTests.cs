@@ -11,7 +11,58 @@ public class CompanyAdminServiceTests
 {
     private readonly ICompanyStorage _storage = Substitute.For<ICompanyStorage>();
 
-    private CompanyAdminService CreateService() => new(_storage);
+    private readonly IWarehouseStorage _warehouses = Substitute.For<IWarehouseStorage>();
+
+    private readonly IProductStorage _products = Substitute.For<IProductStorage>();
+
+    private readonly IEcoFeeTypeStorage _ecoFeeTypes = Substitute.For<IEcoFeeTypeStorage>();
+
+    private CompanyAdminService CreateService() => new(_storage, _warehouses, _products, _ecoFeeTypes);
+
+    /// <summary>Stock has nowhere to go until a company has a default warehouse.</summary>
+    [Fact]
+    public async Task CreateAsync_gives_the_company_a_default_warehouse()
+    {
+        Warehouse? added = null;
+        _warehouses.When(x => x.AddAsync(Arg.Any<Warehouse>(), Arg.Any<CancellationToken>()))
+            .Do(call => added = call.Arg<Warehouse>());
+
+        var created = await CreateService().CreateAsync(
+            new CreateCompanyRequest("Alfa", "500000001", City: "Lisboa"));
+
+        added.Should().NotBeNull();
+        added!.CompanyId.Should().Be(created.Id);
+        added.IsDefault.Should().BeTrue();
+        added.IsActive.Should().BeTrue();
+        added.Code.Should().Be(Erp.Common.Constants.DefaultWarehouse.Code);
+        added.City.Should().Be("Lisboa");
+    }
+
+    /// <summary>Batteries and lubricating oils are the eco-fees a small business runs into first.</summary>
+    [Fact]
+    public async Task CreateAsync_gives_the_company_its_default_eco_fee_types()
+    {
+        var addedEcoFeeTypes = new List<EcoFeeType>();
+        _ecoFeeTypes.When(x => x.AddAsync(Arg.Any<EcoFeeType>(), Arg.Any<CancellationToken>()))
+            .Do(call => addedEcoFeeTypes.Add(call.Arg<EcoFeeType>()));
+
+        var addedProducts = new List<Product>();
+        _products.When(x => x.AddAsync(Arg.Any<Product>(), Arg.Any<CancellationToken>()))
+            .Do(call => addedProducts.Add(call.Arg<Product>()));
+
+        var created = await CreateService().CreateAsync(new CreateCompanyRequest("Alfa", "500000001"));
+
+        addedEcoFeeTypes.Should().HaveCount(Erp.Common.Constants.DefaultEcoFeeTypes.All.Length);
+        addedEcoFeeTypes.Should().OnlyContain(x => x.CompanyId == created.Id);
+        addedEcoFeeTypes.Select(x => x.Code).Should().BeEquivalentTo(Erp.Common.Constants.DefaultEcoFeeTypes.All.Select(x => x.Code));
+
+        // Each eco-fee is invoiced as its own pseudo-product, a SAF-T "I" (taxes and fees) article.
+        addedProducts.Should().HaveCount(Erp.Common.Constants.DefaultEcoFeeTypes.All.Length);
+        addedProducts.Should().OnlyContain(x => x.ProductType == "I" && x.CompanyId == created.Id);
+
+        foreach (var ecoFeeType in addedEcoFeeTypes)
+            ecoFeeType.FeeProductId.Should().Be(addedProducts.Single(x => x.ProductCode == ecoFeeType.Code).Id);
+    }
 
     [Fact]
     public async Task GetAllAsync_maps_every_company()

@@ -7,6 +7,7 @@ using Erp.Purchasing.Infrastructure.Application;
 using Erp.Purchasing.Infrastructure.Contracts;
 using Erp.Purchasing.Infrastructure.Storage;
 using Erp.Common;
+using Erp.FiscalPT;
 
 namespace Erp.Purchasing.Application.Services;
 
@@ -207,7 +208,8 @@ public sealed class GoodsReceiptService(
                 line.ProductCode,
                 line.ProductDescription,
                 line.Quantity,
-                UnitCost: line.UnitCost))]);
+                // The stock ledger values goods at what they actually cost, discount included.
+                UnitCost: line.Quantity == 0 ? 0m : FiscalRounding.Amount(line.LineAmount / line.Quantity)))]);
 
         await stockRecorder.RecordAsync(request, userId, cancellationToken);
     }
@@ -220,6 +222,17 @@ public sealed class GoodsReceiptService(
             ? orders.Values.FirstOrDefault(x => x.Lines.Any(y => y.Id == orderLineId))
             : null;
 
+        var orderLine = order?.Lines.FirstOrDefault(x => x.Id == request.OrderLineId);
+
+        // The order line is the source document here: its discount is what the receipt inherits
+        // unless the caller overrides it.
+        var discountPercentage = request.DiscountPercentage != 0m
+            ? request.DiscountPercentage
+            : orderLine?.DiscountPercentage ?? 0m;
+
+        var grossAmount = FiscalRounding.Amount(request.Quantity * request.UnitCost);
+        var discountAmount = FiscalRounding.Amount(grossAmount * discountPercentage / 100m);
+
         return new GoodsReceiptLine
         {
             OrderId = order?.Id,
@@ -228,7 +241,10 @@ public sealed class GoodsReceiptService(
             ProductDescription = request.ProductDescription.Trim(),
             Quantity = request.Quantity,
             UnitOfMeasure = request.UnitOfMeasure,
-            UnitCost = request.UnitCost
+            UnitCost = request.UnitCost,
+            DiscountPercentage = discountPercentage,
+            DiscountAmount = discountAmount,
+            LineAmount = grossAmount - discountAmount
         };
     }
 
@@ -290,5 +306,7 @@ public sealed class GoodsReceiptService(
                     line.Quantity,
                     line.UnitOfMeasure,
                     line.UnitCost,
+                    line.DiscountPercentage,
+                    line.DiscountAmount,
                     line.LineAmount))]);
 }

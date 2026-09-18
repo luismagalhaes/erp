@@ -1,0 +1,75 @@
+@page "/supplier-payments"
+@attribute [Authorize]
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.AspNetCore.Components.Web
+@using MudBlazor
+@using Erp.Main.Components.Common
+@using Erp.Main.Models
+@using Erp.Main.Services
+@using Erp.Main.Resources
+@using Microsoft.Extensions.Localization
+@inject PurchasingApiClient Purchasing
+@inject CompanyState Company
+@inject NavigationManager Navigation
+@inject IStringLocalizer<MainResources> L
+
+<PageTitle>@L["SupplierPayments_Title"]</PageTitle>
+
+<MudStack Spacing="4">
+    <PageHeader Title="@L["SupplierPayments_Title"]">
+        <Actions>
+            <MudButton Variant="Variant.Filled" Color="Color.Primary"
+                       StartIcon="@Icons.Material.Filled.Add"
+                       Disabled="@(!Company.HasCompany)"
+                       OnClick="@(() => Navigation.NavigateTo("supplier-payments/new"))">
+                @L["SupplierPayments_NewAction"]
+            </MudButton>
+        </Actions>
+    </PageHeader>
+
+    <DataGrid T="SupplierPaymentListItem"
+              LoadAsync="@((companyId, query, ct) => Purchasing.QuerySupplierPaymentsAsync(companyId, query, ct))"
+              SearchFields="SearchFields" DefaultOrderBy="PaymentDate desc,Number desc"
+              SearchPlaceholder="@L["SupplierPayments_SearchPlaceholder"]"
+              EmptyIcon="@Icons.Material.Filled.Payments"
+              EmptyTitle="@L["SupplierPayments_EmptyTitle"]"
+              EmptyDescription="@L["SupplierPayments_EmptyDescription"]"
+              ItemsLabel="@L["SupplierPayments_ItemsLabel"]"
+              LoadErrorMessage="@L["SupplierPayments_LoadErrorMessage"]">
+        <Columns>
+            <PropertyColumn Property="x => x.Number" Title="@L["SupplierPayments_NumberColumn"]" CellClass="erp-mono" />
+            <PropertyColumn Property="x => x.PaymentDate" Title="@L["SupplierPayments_DateColumn"]" Format="yyyy-MM-dd" />
+            <PropertyColumn Property="x => x.SupplierName" Title="@L["SupplierPayments_SupplierColumn"]" />
+            <PropertyColumn Property="x => x.SupplierTaxId" Title="@L["SupplierPayments_TaxIdColumn"]" CellClass="erp-mono" />
+            <PropertyColumn Property="x => x.SettledDocumentCount" Title="@L["SupplierPayments_DocumentsColumn"]"
+                            CellClass="erp-numeric" HeaderClass="erp-numeric" />
+            <PropertyColumn Property="x => x.Total" Title="@L["SupplierPayments_TotalColumn"]" Format="N2"
+                            CellClass="erp-numeric" HeaderClass="erp-numeric" />
+            <PropertyColumn Property="x => x.Status" Title="@L["SupplierPayments_StatusColumn"]">
+                <CellTemplate>
+                    <MudChip T="string" Size="Size.Small" Variant="Variant.Text"
+                             Color="@(context.Item.IsVoided ? Color.Error : Color.Success)">
+                        @(context.Item.IsVoided ? L["SupplierPayments_VoidedStatus"] : L["SupplierPayments_RecordedStatus"])
+                    </MudChip>
+                </CellTemplate>
+            </PropertyColumn>
+            <TemplateColumn Title="" Sortable="false" Filterable="false" Hideable="false"
+                            StickyRight="true"
+                            CellClass="erp-numeric" HeaderClass="erp-numeric">
+                <CellTemplate>
+                    <MudMenu Icon="@Icons.Material.Filled.MoreVert" Size="Size.Small"
+                             AnchorOrigin="Origin.BottomRight" TransformOrigin="Origin.TopRight">
+                        <MudMenuItem Icon="@Icons.Material.Filled.Visibility"
+                                     OnClick="@(() => Navigation.NavigateTo($"supplier-payments/{context.Item.Id}"))">
+                            @L["SupplierPayments_OpenAction"]
+                        </MudMenuItem>
+                    </MudMenu>
+                </CellTemplate>
+            </TemplateColumn>
+        </Columns>
+    </DataGrid>
+</MudStack>
+
+@code {
+    private static readonly string[] SearchFields = ["Number", "SupplierName", "SupplierTaxId"];
+}

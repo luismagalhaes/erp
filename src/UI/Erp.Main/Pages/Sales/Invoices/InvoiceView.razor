@@ -4,6 +4,8 @@
 @using Microsoft.AspNetCore.Components.Web
 @using MudBlazor
 @using Microsoft.Extensions.Localization
+@using Erp.Main.Components.Common
+@using Erp.Main.Components.Sales
 @using Erp.Main.Models
 @using Erp.Main.Resources
 @using Erp.Main.Services
@@ -14,19 +16,9 @@
 
 <PageTitle>@(_invoice?.DocumentNumber ?? L["InvoiceView_DefaultTitle"])</PageTitle>
 
-<MudStack Spacing="4">
-    <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center">
-        <MudStack Spacing="0">
-            <MudText Typo="Typo.h4">@(_invoice?.DocumentNumber ?? L["InvoiceView_DefaultTitle"])</MudText>
-            @if (_invoice is not null)
-            {
-                <MudText Typo="Typo.body2" Color="Color.Secondary" Style="font-family: monospace;">
-                    @string.Format(L["InvoiceView_AtcudLabel"], _invoice.Atcud)
-                </MudText>
-            }
-        </MudStack>
-
-        <MudStack Row="true" Spacing="2">
+<MudStack Spacing="3">
+    <PageHeader Title="@(_invoice?.DocumentNumber ?? L["InvoiceView_DefaultTitle"])" Breadcrumbs="Breadcrumbs">
+        <Actions>
             <MudButton Variant="Variant.Outlined" Color="Color.Primary"
                        StartIcon="@Icons.Material.Filled.Print"
                        Disabled="@(_invoice is null)"
@@ -34,11 +26,11 @@
                 @L["InvoiceView_PrintButton"]
             </MudButton>
             <MudButton Variant="Variant.Text" StartIcon="@Icons.Material.Filled.ArrowBack"
-                       OnClick="@(() => Navigation.NavigateTo("invoices"))">
+                       OnClick="@(() => Navigation.NavigateTo(ListRoute))">
                 @L["InvoiceView_BackButton"]
             </MudButton>
-        </MudStack>
-    </MudStack>
+        </Actions>
+    </PageHeader>
 
     @if (!string.IsNullOrWhiteSpace(_error))
     {
@@ -58,25 +50,27 @@
             </MudAlert>
         }
 
-        <MudPaper Elevation="1" Class="pa-4">
-            <MudGrid>
-                <MudItem xs="12" md="3">
+        <EditorCard Title="@InvoiceTypes.Describe(_invoice.DocumentType)" Icon="@Icons.Material.Filled.Receipt"
+                    Description="@string.Format(L["InvoiceView_AtcudLabel"], _invoice.Atcud)">
+            <MudGrid Spacing="3">
+                @* Customer: tax id and name, then address, postal code and city. *@
+                <MudItem xs="12" md="6">
                     <MudText Typo="Typo.caption" Color="Color.Secondary">@L["InvoiceView_CustomerLabel"]</MudText>
-                    <MudText>@_invoice.CustomerName</MudText>
-                    <MudText Typo="Typo.body2" Color="Color.Secondary">@string.Format(L["InvoiceView_TaxIdLabel"], _invoice.CustomerTaxId)</MudText>
+                    <MudText><span class="erp-mono">@_invoice.CustomerTaxId</span> — @_invoice.CustomerName</MudText>
+                    <MudText Typo="Typo.body2" Color="Color.Secondary">@CustomerAddressLine</MudText>
                 </MudItem>
-                <MudItem xs="12" md="3">
+                <MudItem xs="6" md="2">
                     <MudText Typo="Typo.caption" Color="Color.Secondary">@L["InvoiceView_DocumentDateLabel"]</MudText>
                     <MudText>@_invoice.DocumentDate.ToString("yyyy-MM-dd")</MudText>
                 </MudItem>
-                <MudItem xs="12" md="3">
-                    <MudText Typo="Typo.caption" Color="Color.Secondary">@L["InvoiceView_SystemEntryLabel"]</MudText>
-                    <MudText>@_invoice.SystemEntryDateUtc.ToString("yyyy-MM-dd HH:mm:ss") UTC</MudText>
+                <MudItem xs="6" md="2">
+                    <MudText Typo="Typo.caption" Color="Color.Secondary">@L["InvoiceView_DueDateLabel"]</MudText>
+                    <MudText Color="@(IsOverdue ? Color.Error : Color.Default)">@(_invoice.DueDate?.ToString("yyyy-MM-dd") ?? "—")</MudText>
                 </MudItem>
-                <MudItem xs="12" md="3">
+                <MudItem xs="12" md="2">
                     <MudText Typo="Typo.caption" Color="Color.Secondary">@L["InvoiceView_SignatureLabel"]</MudText>
-                    <MudText Style="font-family: monospace;">@_invoice.PrintableHash</MudText>
-                    <MudText Typo="Typo.body2" Color="Color.Secondary">@L["InvoiceView_CertifiedProgramNote"]</MudText>
+                    <MudText Class="erp-mono">@_invoice.PrintableHash</MudText>
+                    <MudText Typo="Typo.caption" Color="Color.Secondary">@_invoice.SystemEntryDateUtc.ToString("yyyy-MM-dd HH:mm:ss") UTC</MudText>
                 </MudItem>
 
                 @if (!string.IsNullOrWhiteSpace(_invoice.RectifiedDocumentNumber))
@@ -84,22 +78,23 @@
                     <MudItem xs="12">
                         <MudText Typo="Typo.caption" Color="Color.Secondary">@L["InvoiceView_RectifiedDocumentLabel"]</MudText>
                         <MudText>
-                            <span style="font-family: monospace;">@_invoice.RectifiedDocumentNumber</span>
+                            <span class="erp-mono">@_invoice.RectifiedDocumentNumber</span>
                             — @_invoice.RectificationReason
                         </MudText>
                     </MudItem>
                 }
             </MudGrid>
-        </MudPaper>
+        </EditorCard>
 
-        <MudPaper Elevation="1" Class="pa-2">
-            <MudTable Items="_invoice.Lines" Dense="true" Hover="true" Striped="true" Breakpoint="Breakpoint.Sm">
+        <EditorCard Title="@L["NewInvoice_LinesSectionTitle"]" Icon="@Icons.Material.Filled.List">
+            <MudTable Items="_invoice.Lines" Dense="true" Hover="true" Striped="true" Breakpoint="Breakpoint.Sm" Elevation="0">
                 <HeaderContent>
                     <MudTh>@L["InvoiceView_LineNumberColumn"]</MudTh>
                     <MudTh>@L["InvoiceView_CodeColumn"]</MudTh>
                     <MudTh>@L["InvoiceView_DescriptionColumn"]</MudTh>
                     <MudTh Style="text-align: right;">@L["InvoiceView_QuantityColumn"]</MudTh>
                     <MudTh Style="text-align: right;">@L["InvoiceView_UnitPriceColumn"]</MudTh>
+                    <MudTh Style="text-align: right;">@L["NewInvoice_DiscountColumn"]</MudTh>
                     <MudTh Style="text-align: right;">@L["InvoiceView_NetColumn"]</MudTh>
                     <MudTh Style="text-align: right;">@L["InvoiceView_TaxColumn"]</MudTh>
                     <MudTh Style="text-align: right;">@L["InvoiceView_TaxAmountColumn"]</MudTh>
@@ -107,35 +102,56 @@
                 <RowTemplate>
                     <MudTd DataLabel="@L["InvoiceView_LineNumberColumn"]">@context.LineNumber</MudTd>
                     <MudTd DataLabel="@L["InvoiceView_CodeColumn"]">@context.ProductCode</MudTd>
-                    <MudTd DataLabel="@L["InvoiceView_DescriptionColumn"]">@context.ProductDescription</MudTd>
+                    <MudTd DataLabel="@L["InvoiceView_DescriptionColumn"]">
+                        @context.ProductDescription
+                        @if (!string.IsNullOrWhiteSpace(context.TaxExemptionCode))
+                        {
+                            <MudText Typo="Typo.caption" Color="Color.Secondary">@context.TaxExemptionCode — @context.TaxExemptionReason</MudText>
+                        }
+                    </MudTd>
                     <MudTd DataLabel="@L["InvoiceView_QuantityColumn"]" Style="text-align: right;">@context.Quantity.ToString("N3")</MudTd>
                     <MudTd DataLabel="@L["InvoiceView_UnitPriceColumn"]" Style="text-align: right;">@context.UnitPrice.ToString("N2")</MudTd>
+                    <MudTd DataLabel="@L["NewInvoice_DiscountColumn"]" Style="text-align: right;">@DescribeDiscount(context.DiscountPercentage)</MudTd>
                     <MudTd DataLabel="@L["InvoiceView_NetColumn"]" Style="text-align: right;">@context.LineAmount.ToString("N2")</MudTd>
-                    <MudTd DataLabel="@L["InvoiceView_TaxColumn"]" Style="text-align: right;">@context.TaxPercentage.ToString("N0")%</MudTd>
+                    <MudTd DataLabel="@L["InvoiceView_TaxColumn"]" Style="text-align: right;">@context.TaxPercentage.ToString("0.##")%</MudTd>
                     <MudTd DataLabel="@L["InvoiceView_TaxAmountColumn"]" Style="text-align: right;">@context.TaxAmount.ToString("N2")</MudTd>
                 </RowTemplate>
             </MudTable>
-        </MudPaper>
+        </EditorCard>
 
-        <MudStack Row="true" Spacing="4" Justify="Justify.FlexEnd">
-            <MudPaper Elevation="1" Class="pa-4" Style="min-width: 280px;">
-                <MudStack Spacing="2">
-                    <MudStack Row="true" Justify="Justify.SpaceBetween">
-                        <MudText Typo="Typo.body2">@L["InvoiceView_TaxableBaseLabel"]</MudText>
-                        <MudText Typo="Typo.body2">@_invoice.NetTotal.ToString("N2")</MudText>
-                    </MudStack>
-                    <MudStack Row="true" Justify="Justify.SpaceBetween">
-                        <MudText Typo="Typo.body2">@L["InvoiceView_TaxLabel"]</MudText>
-                        <MudText Typo="Typo.body2">@_invoice.TaxPayable.ToString("N2")</MudText>
-                    </MudStack>
-                    <MudDivider />
-                    <MudStack Row="true" Justify="Justify.SpaceBetween">
-                        <MudText Typo="Typo.h6">@L["InvoiceView_TotalLabel"]</MudText>
-                        <MudText Typo="Typo.h6" Color="Color.Primary">@_invoice.GrossTotal.ToString("N2")</MudText>
-                    </MudStack>
-                </MudStack>
-            </MudPaper>
-        </MudStack>
+        @if (_invoice.Payments is { Count: > 0 } payments)
+        {
+            <EditorCard Title="@L["NewInvoice_PaymentSectionTitle"]" Icon="@Icons.Material.Filled.Payments">
+                <MudSimpleTable Dense="true" Hover="true" Class="erp-grid">
+                    <thead>
+                        <tr>
+                            <th>@L["PaymentMethods_MethodColumn"]</th>
+                            <th>@L["PaymentMethods_DateColumn"]</th>
+                            <th style="text-align: right;">@L["PaymentMethods_AmountColumn"]</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var payment in payments)
+                        {
+                            <tr>
+                                <td>@PaymentMechanismOptions.Describe(payment.Mechanism)</td>
+                                <td>@payment.PaymentDate.ToString("yyyy-MM-dd")</td>
+                                <td style="text-align: right;">@payment.Amount.ToString("N2") €</td>
+                            </tr>
+                        }
+                    </tbody>
+                </MudSimpleTable>
+            </EditorCard>
+        }
+
+        <EditorCard Title="@L["NewInvoice_SummarySectionTitle"]" Icon="@Icons.Material.Filled.Calculate">
+            <DocumentTotalsSummary GrossLinesTotal="_invoice.GrossLinesTotal"
+                                   DiscountTotal="_invoice.DiscountTotal"
+                                   NetTotal="_invoice.NetTotal"
+                                   TaxTotal="_invoice.TaxPayable"
+                                   GrossTotal="_invoice.GrossTotal"
+                                   Taxes="TaxBreakdown" />
+        </EditorCard>
 
         <MudExpansionPanels Elevation="1">
             <MudExpansionPanel Text="@L["InvoiceView_QrDataTitle"]">
@@ -182,6 +198,34 @@
     private Guid? _loadedId;
     private string _voidReason = string.Empty;
     private InvoiceDetail? _invoice;
+
+    /// <summary>Credit and debit notes have their own listing, so that is where "back" goes.</summary>
+    private string ListRoute =>
+        _invoice is not null && InvoiceTypes.IsRectifying(_invoice.DocumentType) ? "credit-notes" : "invoices";
+
+    private List<BreadcrumbItem> Breadcrumbs =>
+    [
+        new(L[ListRoute == "credit-notes" ? "CreditNotes_PageTitle" : "Invoices_PageTitle"].Value, href: ListRoute),
+        new(_invoice?.DocumentNumber ?? L["InvoiceView_DefaultTitle"].Value, href: null, disabled: true)
+    ];
+
+    private string CustomerAddressLine =>
+        string.Join(" · ", new[] { _invoice?.CustomerAddress, _invoice?.CustomerPostalCode, _invoice?.CustomerCity }
+            .Where(part => !string.IsNullOrWhiteSpace(part)));
+
+    /// <summary>A live document past its due date is worth pointing at; a voided one owes nothing.</summary>
+    private bool IsOverdue =>
+        _invoice is { Status: not "A", DueDate: { } due } && due < DateOnly.FromDateTime(DateTime.Today);
+
+    private IReadOnlyList<DocumentTotalsSummary.TaxLine> TaxBreakdown =>
+        _invoice is null
+            ? []
+            : [.. _invoice.Taxes
+                .OrderByDescending(tax => tax.TaxPercentage)
+                .Select(tax => new DocumentTotalsSummary.TaxLine(tax.TaxCode, tax.TaxPercentage, tax.TaxableBase, tax.TaxAmount))];
+
+    private static string DescribeDiscount(decimal percentage) =>
+        percentage == 0 ? "—" : $"{percentage:0.##}%";
 
     protected override async Task OnParametersSetAsync()
     {

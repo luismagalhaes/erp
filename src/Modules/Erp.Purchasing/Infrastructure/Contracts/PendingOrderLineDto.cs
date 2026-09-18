@@ -19,4 +19,5 @@ public sealed record PendingOrderLineDto(
     decimal Quantity,
     decimal ReceivedQuantity,
     decimal PendingQuantity,
-    decimal UnitPrice);
+    decimal UnitPrice,
+    decimal DiscountPercentage);

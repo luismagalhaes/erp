@@ -39,6 +39,17 @@ public sealed class StockStorage(AppDbContext dbContext) : IStockStorage
         string productCode,
         CancellationToken cancellationToken = default)
     {
+        // A balance started earlier in this same transaction is not in the database yet, so the
+        // query below would not find it and a second balance would be started beside it — which the
+        // unique index then refuses when the document is saved. It happens whenever one document
+        // moves the same product on two lines. It is already locked by the reading that created it.
+        var pending = dbContext.Set<StockBalance>().Local
+            .FirstOrDefault(balance => balance.CompanyId == companyId
+                                       && balance.WarehouseId == warehouseId
+                                       && string.Equals(balance.ProductCode, productCode, StringComparison.Ordinal));
+
+        if (pending is not null)
+            return pending;
 
         // HOLDLOCK, and not only UPDLOCK, because this row very often does not exist yet: the first
         // movement of a product is what creates its balance. An update lock has nothing to hold on

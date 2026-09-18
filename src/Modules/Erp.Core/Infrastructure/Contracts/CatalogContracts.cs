@@ -133,8 +133,16 @@ public sealed record ProductListItemDto
         string? brandName,
         bool isActive,
         decimal unitCost = 0m,
-        string inventoryCategory = "M")
+        string inventoryCategory = "M",
+        string? defaultTaxExemptionCode = null,
+        Guid? ecoFeeTypeId = null,
+        string? ecoFeeTypeCode = null,
+        decimal? ecoFeeWeightKg = null)
     {
+        DefaultTaxExemptionCode = defaultTaxExemptionCode;
+        EcoFeeTypeId = ecoFeeTypeId;
+        EcoFeeTypeCode = ecoFeeTypeCode;
+        EcoFeeWeightKg = ecoFeeWeightKg;
         Id = id;
         ProductCode = productCode;
         Description = description;
@@ -171,6 +179,9 @@ public sealed record ProductListItemDto
 
     public decimal DefaultTaxPercentage { get; init; }
 
+    /// <summary>Exemption reason from the AT table, for an article taxed at zero.</summary>
+    public string? DefaultTaxExemptionCode { get; init; }
+
     public string? Barcode { get; init; }
 
     public Guid? FamilyId { get; init; }
@@ -190,6 +201,14 @@ public sealed record ProductListItemDto
     public decimal UnitCost { get; init; }
 
     public string InventoryCategory { get; init; } = "M";
+
+    /// <summary>The eco-fee this article carries (e.g. the battery or oil Ecovalor), if any.</summary>
+    public Guid? EcoFeeTypeId { get; init; }
+
+    public string? EcoFeeTypeCode { get; init; }
+
+    /// <summary>Net weight in kilograms, used when the linked eco-fee is charged per kilogram.</summary>
+    public decimal? EcoFeeWeightKg { get; init; }
 }
 
 public sealed record CreateProductRequest(
@@ -207,7 +226,10 @@ public sealed record CreateProductRequest(
     Guid? SubfamilyId = null,
     Guid? BrandId = null,
     decimal UnitCost = 0m,
-    string InventoryCategory = "M");
+    string InventoryCategory = "M",
+    string? DefaultTaxExemptionCode = null,
+    Guid? EcoFeeTypeId = null,
+    decimal? EcoFeeWeightKg = null);
 
 public sealed record UpdateProductRequest(
     string Description,
@@ -223,7 +245,10 @@ public sealed record UpdateProductRequest(
     Guid? BrandId,
     bool IsActive,
     decimal UnitCost = 0m,
-    string InventoryCategory = "M");
+    string InventoryCategory = "M",
+    string? DefaultTaxExemptionCode = null,
+    Guid? EcoFeeTypeId = null,
+    decimal? EcoFeeWeightKg = null);
 
 // --- Business partners ---
 
@@ -333,3 +358,65 @@ public sealed record VatRateDto
 }
 
 public sealed record UpdateVatRateRequest(decimal Percentage, bool IsActive);
+
+// --- Eco-fees (Ecovalor) ---
+
+/// <summary>
+/// An eco-fee as the listings see it. Init properties for the same reason as <see cref="BrandDto"/>:
+/// EF Core only maps members over an object initializer, which is what keeps the OData $filter and
+/// $orderby applied afterwards translatable to SQL.
+/// </summary>
+public sealed record EcoFeeTypeDto
+{
+    public EcoFeeTypeDto()
+    {
+    }
+
+    public EcoFeeTypeDto(
+        Guid id,
+        string code,
+        string description,
+        string calculationBasis,
+        decimal rate,
+        string managingEntityName,
+        bool isActive,
+        string feeProductCode)
+    {
+        Id = id;
+        Code = code;
+        Description = description;
+        CalculationBasis = calculationBasis;
+        Rate = rate;
+        ManagingEntityName = managingEntityName;
+        IsActive = isActive;
+        FeeProductCode = feeProductCode;
+    }
+
+    public Guid Id { get; init; }
+    public string Code { get; init; } = string.Empty;
+    public string Description { get; init; } = string.Empty;
+
+    /// <summary>"PerUnit" or "PerKg" — the name of the <c>EcoFeeCalculationBasis</c> value.</summary>
+    public string CalculationBasis { get; init; } = string.Empty;
+
+    public decimal Rate { get; init; }
+    public string ManagingEntityName { get; init; } = string.Empty;
+    public bool IsActive { get; init; }
+
+    /// <summary>The code of the pseudo-product this fee is invoiced as.</summary>
+    public string FeeProductCode { get; init; } = string.Empty;
+}
+
+public sealed record CreateEcoFeeTypeRequest(
+    Guid CompanyId,
+    string Code,
+    string Description,
+    string CalculationBasis,
+    decimal Rate,
+    string ManagingEntityName);
+
+public sealed record UpdateEcoFeeTypeRequest(
+    string Description,
+    decimal Rate,
+    string ManagingEntityName,
+    bool IsActive);

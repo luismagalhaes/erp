@@ -1,0 +1,33 @@
+@page "/customer-statements/print"
+@attribute [Authorize]
+@layout PrintLayout
+@using Microsoft.AspNetCore.Authorization
+@using Erp.Main.Components.Printing
+@using Erp.Main.Layout
+@using Erp.Main.Services
+@using Erp.Main.Resources
+@using Microsoft.Extensions.Localization
+@inject SalesApiClient SalesApi
+@inject IStringLocalizer<MainResources> L
+
+<PageTitle>@L["CustomerStatement_Title"]</PageTitle>
+
+<PrintAccountStatement Designation="@L["CustomerStatement_Designation"]"
+                       PartyLabel="@L["CustomerStatement_CustomerLabel"]"
+                       BalanceMeaning="@L["CustomerStatement_BalanceMeaning"]"
+                       BackUrl="@(CustomerId is { } id ? StatementRoutes.WithQuery("customer-statements", "customerId", id, StartDate, EndDate) : "customer-statements")"
+                       PartyId="CustomerId"
+                       StartDate="StartDate"
+                       EndDate="EndDate"
+                       LoadStatement="@((companyId, customerId, start, end) => SalesApi.GetCustomerStatementAsync(companyId, customerId, start, end))" />
+
+@code {
+    [SupplyParameterFromQuery(Name = "customerId")]
+    public Guid? CustomerId { get; set; }
+
+    [SupplyParameterFromQuery(Name = "startDate")]
+    public DateOnly? StartDate { get; set; }
+
+    [SupplyParameterFromQuery(Name = "endDate")]
+    public DateOnly? EndDate { get; set; }
+}

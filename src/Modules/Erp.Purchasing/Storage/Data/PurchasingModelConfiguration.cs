@@ -68,6 +68,8 @@ public sealed class PurchasingModelConfiguration : IModuleModelConfiguration
 
             entity.Property(x => x.Quantity).HasPrecision(19, 6);
             entity.Property(x => x.UnitPrice).HasPrecision(19, 6);
+            entity.Property(x => x.DiscountPercentage).HasPrecision(5, 2);
+            entity.Property(x => x.DiscountAmount).HasPrecision(19, 6);
             entity.Property(x => x.LineAmount).HasPrecision(19, 6);
             entity.Property(x => x.TaxPercentage).HasPrecision(5, 2);
             entity.Property(x => x.TaxAmount).HasPrecision(19, 6);
@@ -131,6 +133,8 @@ public sealed class PurchasingModelConfiguration : IModuleModelConfiguration
 
             entity.Property(x => x.Quantity).HasPrecision(19, 6);
             entity.Property(x => x.UnitCost).HasPrecision(19, 6);
+            entity.Property(x => x.DiscountPercentage).HasPrecision(5, 2);
+            entity.Property(x => x.DiscountAmount).HasPrecision(19, 6);
             entity.Property(x => x.LineAmount).HasPrecision(19, 6);
 
             entity.HasIndex(x => new { x.ReceiptId, x.LineNumber }).IsUnique();
@@ -209,6 +213,8 @@ public sealed class PurchasingModelConfiguration : IModuleModelConfiguration
 
             entity.Property(x => x.Quantity).HasPrecision(19, 6);
             entity.Property(x => x.UnitPrice).HasPrecision(19, 6);
+            entity.Property(x => x.DiscountPercentage).HasPrecision(5, 2);
+            entity.Property(x => x.DiscountAmount).HasPrecision(19, 6);
             entity.Property(x => x.LineAmount).HasPrecision(19, 6);
             entity.Property(x => x.TaxPercentage).HasPrecision(5, 2);
             entity.Property(x => x.TaxAmount).HasPrecision(19, 6);
@@ -295,6 +301,90 @@ public sealed class PurchasingModelConfiguration : IModuleModelConfiguration
         });
 
         ConfigureSelfBilling(modelBuilder);
+        ConfigureSupplierPayments(modelBuilder);
+    }
+
+    /// <summary>
+    /// Payments to suppliers. Shaped like the rest of Purchasing and not like the receipts in Sales:
+    /// no series and no signature, because the receipt for this money is the supplier's to issue.
+    /// </summary>
+    private static void ConfigureSupplierPayments(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<SupplierPayment>(entity =>
+        {
+            entity.ToTable("SupplierPayment");
+            entity.HasKey(x => x.Id);
+
+            entity.Property(x => x.Number).HasMaxLength(60).IsRequired();
+            entity.Property(x => x.Status).HasConversion<byte>();
+            entity.Property(x => x.Description).HasMaxLength(1000);
+            entity.Property(x => x.VoidReason).HasMaxLength(400);
+            entity.Property(x => x.CreatedByUserId).HasMaxLength(450);
+            entity.Property(x => x.VoidedByUserId).HasMaxLength(450);
+
+            entity.Property(x => x.Total).HasPrecision(19, 6);
+
+            entity.Property(x => x.RowVersion).IsRowVersion();
+
+            entity.HasIndex(x => new { x.CompanyId, x.Number }).IsUnique();
+            entity.HasIndex(x => new { x.CompanyId, x.SupplierId });
+            entity.HasIndex(x => new { x.CompanyId, x.PaymentDate });
+
+            entity.OwnsOne(x => x.Supplier, supplier =>
+            {
+                supplier.Property(x => x.Code).HasColumnName("SupplierCode").HasMaxLength(60).IsRequired();
+                supplier.Property(x => x.Name).HasColumnName("SupplierName").HasMaxLength(200).IsRequired();
+                supplier.Property(x => x.TaxId).HasColumnName("SupplierTaxId").HasMaxLength(30).IsRequired();
+                supplier.Property(x => x.Address).HasColumnName("SupplierAddress").HasMaxLength(400);
+                supplier.Property(x => x.PostalCode).HasColumnName("SupplierPostalCode").HasMaxLength(20);
+                supplier.Property(x => x.City).HasColumnName("SupplierCity").HasMaxLength(100);
+                supplier.Property(x => x.Country).HasColumnName("SupplierCountry").HasMaxLength(2).IsRequired();
+            });
+
+            entity.Navigation(x => x.Supplier).IsRequired();
+
+            entity.HasMany(x => x.Lines)
+                .WithOne(x => x.Payment)
+                .HasForeignKey(x => x.PaymentId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasMany(x => x.Methods)
+                .WithOne(x => x.Payment)
+                .HasForeignKey(x => x.PaymentId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<SupplierPaymentLine>(entity =>
+        {
+            entity.ToTable("SupplierPaymentLine");
+            entity.HasKey(x => x.Id);
+
+            entity.Property(x => x.DocumentKind).HasConversion<byte>();
+            entity.Property(x => x.DocumentType).HasMaxLength(4).IsRequired();
+            entity.Property(x => x.DocumentNumber).HasMaxLength(60).IsRequired();
+            entity.Property(x => x.AppliedAmount).HasPrecision(19, 6);
+
+            entity.HasIndex(x => new { x.PaymentId, x.LineNumber }).IsUnique();
+
+            // What a document still owes is read through this. No foreign key: the document may live
+            // in either of two tables.
+            entity.HasIndex(x => x.DocumentId);
+
+            // Derived from the document type, so they stay out of the table.
+            entity.Ignore(x => x.IsCredit);
+            entity.Ignore(x => x.SignedAmount);
+        });
+
+        modelBuilder.Entity<SupplierPaymentMethod>(entity =>
+        {
+            entity.ToTable("SupplierPaymentMethod");
+            entity.HasKey(x => x.Id);
+
+            entity.Property(x => x.Mechanism).HasMaxLength(2).IsRequired();
+            entity.Property(x => x.Amount).HasPrecision(19, 6);
+
+            entity.HasIndex(x => x.PaymentId);
+        });
     }
 
     /// <summary>

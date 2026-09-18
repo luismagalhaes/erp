@@ -1,4 +1,7 @@
+using Erp.Common;
+using Erp.Api.Security;
 using Erp.Api.Services;
+using Erp.Core.Domain;
 using Erp.Core.Infrastructure.Application;
 using Erp.Core.Infrastructure.Contracts;
 using Microsoft.AspNetCore.Authorization;
@@ -12,7 +15,8 @@ namespace Erp.Api.Controllers.Core;
 [Route("api/brands")]
 [Authorize(Policy = Policies.Read)]
 [Produces("application/json")]
-public sealed class BrandsController(IBrandService brandService, ILogger<BrandsController> logger) : ControllerBase
+[ScopedEntity(typeof(Brand))]
+public sealed class BrandsController(IBrandService brandService, MasterDataCodes masterDataCodes, ILogger<BrandsController> logger) : ControllerBase
 {
     [HttpGet]
     [ProducesResponseType<IReadOnlyList<BrandDto>>(StatusCodes.Status200OK)]
@@ -63,7 +67,17 @@ public sealed class BrandsController(IBrandService brandService, ILogger<BrandsC
     {
         try
         {
-            var created = await brandService.CreateAsync(request, cancellationToken);
+            if (request is null)
+                return BadRequest(new { error = "A request body is required." });
+
+            // A blank code is numbered 1, 2, 3...; a code that comes in, from an import, is kept.
+            var created = await masterDataCodes.CreateAsync(
+                request.CompanyId,
+                request.Code,
+                Constants.CodeCounters.Brands,
+                (code, ct) => brandService.CodeExistsAsync(request.CompanyId, code, ct),
+                code => brandService.CreateAsync(request with { Code = code }, cancellationToken),
+                cancellationToken);
             return CreatedAtAction(nameof(GetById), new { id = created.Id }, created);
         }
         catch (ArgumentException ex)

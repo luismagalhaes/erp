@@ -22,6 +22,14 @@
     <PageHeader Title="@(IsNew ? Localizer["SupplierEditor_NewTitle"] : Localizer["SupplierEditor_EditTitle"])"
                 Breadcrumbs="Breadcrumbs">
         <Actions>
+            @if (Id is { } supplierId)
+            {
+                <MudButton Variant="Variant.Outlined" Color="Color.Primary"
+                           StartIcon="@Icons.Material.Filled.AccountBalanceWallet"
+                           OnClick="@(() => Navigation.NavigateTo($"supplier-statements?supplierId={supplierId}"))">
+                    @Localizer["Statement_OpenButton"]
+                </MudButton>
+            }
             <MudButton Variant="Variant.Text" StartIcon="@Icons.Material.Filled.ArrowBack"
                        OnClick="@(() => Navigation.NavigateTo("suppliers"))">
                 @Localizer["Common_Back"]
@@ -58,11 +66,11 @@
             </HeaderActions>
             <ChildContent>
                 @* ModelChanged is what re-renders this page, so the save button follows what is typed. *@
-                <PartnerFormFields Model="_model" ModelChanged="OnModelChanged" AllowCodeEdit="IsNew" />
+                <PartnerFormFields Model="_model" ModelChanged="OnModelChanged" RequireTaxId="false" />
             </ChildContent>
         </EditorCard>
 
-        <FormActions Busy="_saving" Disabled="@(!_model.IsValid() || !Company.HasCompany)"
+        <FormActions Busy="_saving" Disabled="@(!_model.IsValid(requireTaxId: false) || !Company.HasCompany)"
                      Hint="@(Company.HasCompany ? null : Localizer["SupplierEditor_NoCompanyWarning"].Value)"
                      OnSubmit="SaveAsync"
                      OnCancel="@(() => Navigation.NavigateTo("suppliers"))" />
@@ -144,6 +152,10 @@
 
         try
         {
+            // The tax id is optional here too â€” a supplier can be filed before it is known â€” and the
+            // API still requires one, so the unidentified id stands in until it is.
+            _model.ApplyDefaults();
+
             var error = IsNew
                 ? await Catalog.CreateSupplierAsync(_model.ToCreateRequest(Company.SelectedCompanyId))
                 : await Catalog.UpdateSupplierAsync(Id!.Value, _model.ToUpdateRequest());

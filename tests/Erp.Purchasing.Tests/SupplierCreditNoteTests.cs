@@ -20,6 +20,7 @@ public class SupplierCreditNoteTests
     private readonly IPurchaseInvoiceStorage _invoices = Substitute.For<IPurchaseInvoiceStorage>();
     private readonly IGoodsReceiptStorage _receipts = Substitute.For<IGoodsReceiptStorage>();
     private readonly IStockRecorder _stock = Substitute.For<IStockRecorder>();
+    private readonly ISupplierPaymentStorage _payments = Substitute.For<ISupplierPaymentStorage>();
     private readonly IUnitOfWork _unitOfWork = Substitute.For<IUnitOfWork>();
     private readonly ITransaction _transaction = Substitute.For<ITransaction>();
 
@@ -50,7 +51,7 @@ public class SupplierCreditNoteTests
             .Returns((IReadOnlyDictionary<Guid, decimal>)new Dictionary<Guid, decimal>());
     }
 
-    private PurchaseInvoiceService CreateService() => new(_invoices, _receipts, _stock, _unitOfWork);
+    private PurchaseInvoiceService CreateService() => new(_invoices, _receipts, _stock, _payments, _unitOfWork);
 
     private static readonly PurchaseOrderSupplierDto Supplier =
         new("F001", "Fornecedor Teste, Lda", "501234567");

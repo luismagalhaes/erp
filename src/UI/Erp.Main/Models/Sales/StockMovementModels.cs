@@ -10,6 +10,7 @@ public sealed record MovementLocationRequest(
 
 public sealed record MovementPartyRequest(string? TaxId, string Name, bool IsSupplier = false);
 
+/// <param name="UnitPrice">Price before the line discount.</param>
 public sealed record CreateStockMovementLineRequest(
     string ProductCode,
     string ProductDescription,
@@ -19,8 +20,11 @@ public sealed record CreateStockMovementLineRequest(
     decimal TaxPercentage,
     string UnitOfMeasure = "UN",
     string TaxCountryRegion = "PT",
+    decimal DiscountPercentage = 0m,
     string? TaxExemptionCode = null,
-    string? TaxExemptionReason = null);
+    string? TaxExemptionReason = null,
+    bool IsEcoFee = false,
+    int? EcoFeeForLineNumber = null);
 
 public sealed record CreateStockMovementRequest(
     Guid CompanyId,
@@ -33,7 +37,8 @@ public sealed record CreateStockMovementRequest(
     IReadOnlyList<CreateStockMovementLineRequest> Lines,
     DateTime? MovementEndAtUtc = null,
     string? VehiclePlate = null,
-    string? Comments = null);
+    string? Comments = null,
+    Guid? WarehouseId = null);
 
 public sealed record VoidStockMovementRequest(string Reason);
 
@@ -51,6 +56,8 @@ public sealed record StockMovementListItem(
     string Status,
     string? AtDocCodeId);
 
+/// <param name="UnitPrice">Price before the line discount.</param>
+/// <param name="LineAmount">Line total without VAT, after the discount.</param>
 public sealed record StockMovementLine(
     int LineNumber,
     string ProductCode,
@@ -61,6 +68,20 @@ public sealed record StockMovementLine(
     decimal LineAmount,
     string TaxCode,
     decimal TaxPercentage,
+    decimal TaxAmount,
+    decimal DiscountPercentage = 0m,
+    decimal DiscountAmount = 0m,
+    string? TaxExemptionCode = null,
+    string? TaxExemptionReason = null,
+    bool IsEcoFee = false,
+    int? EcoFeeForLineNumber = null);
+
+/// <summary>The VAT of a goods movement, grouped by rate.</summary>
+public sealed record MovementTax(
+    string TaxCountryRegion,
+    string TaxCode,
+    decimal TaxPercentage,
+    decimal TaxableBase,
     decimal TaxAmount);
 
 public sealed record MovementLocation(
@@ -96,7 +117,10 @@ public sealed record StockMovementDetail(
     string QrCodePayload,
     string? AtDocCodeId,
     DateTime? CommunicatedAtUtc,
-    IReadOnlyList<StockMovementLine> Lines);
+    IReadOnlyList<StockMovementLine> Lines,
+    decimal GrossLinesTotal = 0m,
+    decimal DiscountTotal = 0m,
+    IReadOnlyList<MovementTax>? Taxes = null);
 
 /// <summary>Movement types of the goods in circulation regime, for the UI selects.</summary>
 public static class MovementTypes

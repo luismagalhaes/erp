@@ -12,7 +12,7 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Erp.Storage.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class ErpDbContextModelSnapshot : ModelSnapshot
+    partial class AppDbContextModelSnapshot : ModelSnapshot
     {
         protected override void BuildModel(ModelBuilder modelBuilder)
         {
@@ -212,6 +212,61 @@ namespace Erp.Storage.Migrations
                     b.ToTable("Customer");
                 });
 
+            modelBuilder.Entity("Erp.Core.Domain.EcoFeeType", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("CalculationBasis")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<string>("Code")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("nvarchar(30)");
+
+                    b.Property<Guid>("CompanyId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<Guid>("FeeProductId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("ManagingEntityName")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<decimal>("Rate")
+                        .HasPrecision(19, 6)
+                        .HasColumnType("decimal(19,6)");
+
+                    b.Property<DateTime?>("UpdatedAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("FeeProductId");
+
+                    b.HasIndex("CompanyId", "Code")
+                        .IsUnique();
+
+                    b.ToTable("EcoFeeType");
+                });
+
             modelBuilder.Entity("Erp.Core.Domain.Product", b =>
                 {
                     b.Property<Guid>("Id")
@@ -241,6 +296,10 @@ namespace Erp.Storage.Migrations
                         .HasMaxLength(5)
                         .HasColumnType("nvarchar(5)");
 
+                    b.Property<string>("DefaultTaxExemptionCode")
+                        .HasMaxLength(10)
+                        .HasColumnType("nvarchar(10)");
+
                     b.Property<decimal>("DefaultTaxPercentage")
                         .HasPrecision(5, 2)
                         .HasColumnType("decimal(5,2)");
@@ -249,6 +308,13 @@ namespace Erp.Storage.Migrations
                         .IsRequired()
                         .HasMaxLength(200)
                         .HasColumnType("nvarchar(200)");
+
+                    b.Property<Guid?>("EcoFeeTypeId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<decimal?>("EcoFeeWeightKg")
+                        .HasPrecision(19, 6)
+                        .HasColumnType("decimal(19,6)");
 
                     b.Property<Guid?>("FamilyId")
                         .HasColumnType("uniqueidentifier");
@@ -295,6 +361,8 @@ namespace Erp.Storage.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("BrandId");
+
+                    b.HasIndex("EcoFeeTypeId");
 
                     b.HasIndex("FamilyId");
 
@@ -940,6 +1008,14 @@ namespace Erp.Storage.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
+                    b.Property<decimal>("DiscountAmount")
+                        .HasPrecision(19, 6)
+                        .HasColumnType("decimal(19,6)");
+
+                    b.Property<decimal>("DiscountPercentage")
+                        .HasPrecision(5, 2)
+                        .HasColumnType("decimal(5,2)");
+
                     b.Property<decimal>("LineAmount")
                         .HasPrecision(19, 6)
                         .HasColumnType("decimal(19,6)");
@@ -1092,6 +1168,14 @@ namespace Erp.Storage.Migrations
 
                     b.Property<byte>("DeductionNature")
                         .HasColumnType("tinyint");
+
+                    b.Property<decimal>("DiscountAmount")
+                        .HasPrecision(19, 6)
+                        .HasColumnType("decimal(19,6)");
+
+                    b.Property<decimal>("DiscountPercentage")
+                        .HasPrecision(5, 2)
+                        .HasColumnType("decimal(5,2)");
 
                     b.Property<Guid>("InvoiceId")
                         .HasColumnType("uniqueidentifier");
@@ -1290,6 +1374,14 @@ namespace Erp.Storage.Migrations
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
+
+                    b.Property<decimal>("DiscountAmount")
+                        .HasPrecision(19, 6)
+                        .HasColumnType("decimal(19,6)");
+
+                    b.Property<decimal>("DiscountPercentage")
+                        .HasPrecision(5, 2)
+                        .HasColumnType("decimal(5,2)");
 
                     b.Property<decimal>("LineAmount")
                         .HasPrecision(19, 6)
@@ -1611,6 +1703,145 @@ namespace Erp.Storage.Migrations
                     b.HasIndex("InvoiceId");
 
                     b.ToTable("SelfBilledInvoiceTaxSummary", (string)null);
+                });
+
+            modelBuilder.Entity("Erp.Purchasing.Domain.SupplierPayment", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("CompanyId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("CreatedByUserId")
+                        .HasMaxLength(450)
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<string>("Description")
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<string>("Number")
+                        .IsRequired()
+                        .HasMaxLength(60)
+                        .HasColumnType("nvarchar(60)");
+
+                    b.Property<DateOnly>("PaymentDate")
+                        .HasColumnType("date");
+
+                    b.Property<byte[]>("RowVersion")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("rowversion");
+
+                    b.Property<byte>("Status")
+                        .HasColumnType("tinyint");
+
+                    b.Property<Guid>("SupplierId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<decimal>("Total")
+                        .HasPrecision(19, 6)
+                        .HasColumnType("decimal(19,6)");
+
+                    b.Property<string>("VoidReason")
+                        .HasMaxLength(400)
+                        .HasColumnType("nvarchar(400)");
+
+                    b.Property<DateTime?>("VoidedAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("VoidedByUserId")
+                        .HasMaxLength(450)
+                        .HasColumnType("nvarchar(450)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CompanyId", "Number")
+                        .IsUnique();
+
+                    b.HasIndex("CompanyId", "PaymentDate");
+
+                    b.HasIndex("CompanyId", "SupplierId");
+
+                    b.ToTable("SupplierPayment", (string)null);
+                });
+
+            modelBuilder.Entity("Erp.Purchasing.Domain.SupplierPaymentLine", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<decimal>("AppliedAmount")
+                        .HasPrecision(19, 6)
+                        .HasColumnType("decimal(19,6)");
+
+                    b.Property<DateOnly>("DocumentDate")
+                        .HasColumnType("date");
+
+                    b.Property<Guid>("DocumentId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<byte>("DocumentKind")
+                        .HasColumnType("tinyint");
+
+                    b.Property<string>("DocumentNumber")
+                        .IsRequired()
+                        .HasMaxLength(60)
+                        .HasColumnType("nvarchar(60)");
+
+                    b.Property<string>("DocumentType")
+                        .IsRequired()
+                        .HasMaxLength(4)
+                        .HasColumnType("nvarchar(4)");
+
+                    b.Property<int>("LineNumber")
+                        .HasColumnType("int");
+
+                    b.Property<Guid>("PaymentId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("DocumentId");
+
+                    b.HasIndex("PaymentId", "LineNumber")
+                        .IsUnique();
+
+                    b.ToTable("SupplierPaymentLine", (string)null);
+                });
+
+            modelBuilder.Entity("Erp.Purchasing.Domain.SupplierPaymentMethod", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<decimal>("Amount")
+                        .HasPrecision(19, 6)
+                        .HasColumnType("decimal(19,6)");
+
+                    b.Property<string>("Mechanism")
+                        .IsRequired()
+                        .HasMaxLength(2)
+                        .HasColumnType("nvarchar(2)");
+
+                    b.Property<DateOnly>("PaymentDate")
+                        .HasColumnType("date");
+
+                    b.Property<Guid>("PaymentId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("PaymentId");
+
+                    b.ToTable("SupplierPaymentMethod", (string)null);
                 });
 
             modelBuilder.Entity("Erp.Purchasing.Domain.SupplierReturn", b =>
@@ -2096,6 +2327,10 @@ namespace Erp.Storage.Migrations
                         .HasMaxLength(400)
                         .HasColumnType("nvarchar(400)");
 
+                    b.Property<string>("CustomerCity")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
                     b.Property<string>("CustomerCountry")
                         .IsRequired()
                         .HasMaxLength(2)
@@ -2105,6 +2340,10 @@ namespace Erp.Storage.Migrations
                         .IsRequired()
                         .HasMaxLength(200)
                         .HasColumnType("nvarchar(200)");
+
+                    b.Property<string>("CustomerPostalCode")
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
 
                     b.Property<string>("CustomerTaxId")
                         .IsRequired()
@@ -2123,6 +2362,9 @@ namespace Erp.Storage.Migrations
                         .IsRequired()
                         .HasMaxLength(4)
                         .HasColumnType("nvarchar(4)");
+
+                    b.Property<DateOnly?>("DueDate")
+                        .HasColumnType("date");
 
                     b.Property<decimal>("GrossTotal")
                         .HasPrecision(19, 2)
@@ -2209,8 +2451,22 @@ namespace Erp.Storage.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
+                    b.Property<decimal>("DiscountAmount")
+                        .HasPrecision(19, 2)
+                        .HasColumnType("decimal(19,2)");
+
+                    b.Property<decimal>("DiscountPercentage")
+                        .HasPrecision(5, 2)
+                        .HasColumnType("decimal(5,2)");
+
                     b.Property<Guid>("DocumentId")
                         .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid?>("EcoFeeForLineId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<bool>("IsEcoFee")
+                        .HasColumnType("bit");
 
                     b.Property<decimal>("LineAmount")
                         .HasPrecision(19, 2)
@@ -2280,12 +2536,42 @@ namespace Erp.Storage.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("EcoFeeForLineId");
+
                     b.HasIndex("OriginatingLineId");
 
                     b.HasIndex("DocumentId", "LineNumber")
                         .IsUnique();
 
                     b.ToTable("SalesDocumentLine", (string)null);
+                });
+
+            modelBuilder.Entity("Erp.Sales.Domain.SalesDocumentPayment", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<decimal>("Amount")
+                        .HasPrecision(19, 2)
+                        .HasColumnType("decimal(19,2)");
+
+                    b.Property<Guid>("DocumentId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Mechanism")
+                        .IsRequired()
+                        .HasMaxLength(2)
+                        .HasColumnType("nvarchar(2)");
+
+                    b.Property<DateOnly>("PaymentDate")
+                        .HasColumnType("date");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("DocumentId");
+
+                    b.ToTable("SalesDocumentPayment", (string)null);
                 });
 
             modelBuilder.Entity("Erp.Sales.Domain.StockMovement", b =>
@@ -2503,6 +2789,20 @@ namespace Erp.Storage.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
+                    b.Property<decimal>("DiscountAmount")
+                        .HasPrecision(19, 2)
+                        .HasColumnType("decimal(19,2)");
+
+                    b.Property<decimal>("DiscountPercentage")
+                        .HasPrecision(5, 2)
+                        .HasColumnType("decimal(5,2)");
+
+                    b.Property<Guid?>("EcoFeeForLineId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<bool>("IsEcoFee")
+                        .HasColumnType("bit");
+
                     b.Property<decimal>("LineAmount")
                         .HasPrecision(19, 2)
                         .HasColumnType("decimal(19,2)");
@@ -2563,6 +2863,8 @@ namespace Erp.Storage.Migrations
                         .HasColumnType("decimal(19,6)");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("EcoFeeForLineId");
 
                     b.HasIndex("MovementId", "LineNumber")
                         .IsUnique();
@@ -2687,11 +2989,27 @@ namespace Erp.Storage.Migrations
                     b.Navigation("Company");
                 });
 
+            modelBuilder.Entity("Erp.Core.Domain.EcoFeeType", b =>
+                {
+                    b.HasOne("Erp.Core.Domain.Product", "FeeProduct")
+                        .WithMany()
+                        .HasForeignKey("FeeProductId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("FeeProduct");
+                });
+
             modelBuilder.Entity("Erp.Core.Domain.Product", b =>
                 {
                     b.HasOne("Erp.Core.Domain.Brand", "Brand")
                         .WithMany("Products")
                         .HasForeignKey("BrandId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("Erp.Core.Domain.EcoFeeType", "EcoFeeType")
+                        .WithMany()
+                        .HasForeignKey("EcoFeeTypeId")
                         .OnDelete(DeleteBehavior.Restrict);
 
                     b.HasOne("Erp.Core.Domain.ProductFamily", "Family")
@@ -2705,6 +3023,8 @@ namespace Erp.Storage.Migrations
                         .OnDelete(DeleteBehavior.Restrict);
 
                     b.Navigation("Brand");
+
+                    b.Navigation("EcoFeeType");
 
                     b.Navigation("Family");
 
@@ -3065,6 +3385,86 @@ namespace Erp.Storage.Migrations
                     b.Navigation("Invoice");
                 });
 
+            modelBuilder.Entity("Erp.Purchasing.Domain.SupplierPayment", b =>
+                {
+                    b.OwnsOne("Erp.Purchasing.Domain.SupplierSnapshot", "Supplier", b1 =>
+                        {
+                            b1.Property<Guid>("SupplierPaymentId")
+                                .HasColumnType("uniqueidentifier");
+
+                            b1.Property<string>("Address")
+                                .HasMaxLength(400)
+                                .HasColumnType("nvarchar(400)")
+                                .HasColumnName("SupplierAddress");
+
+                            b1.Property<string>("City")
+                                .HasMaxLength(100)
+                                .HasColumnType("nvarchar(100)")
+                                .HasColumnName("SupplierCity");
+
+                            b1.Property<string>("Code")
+                                .IsRequired()
+                                .HasMaxLength(60)
+                                .HasColumnType("nvarchar(60)")
+                                .HasColumnName("SupplierCode");
+
+                            b1.Property<string>("Country")
+                                .IsRequired()
+                                .HasMaxLength(2)
+                                .HasColumnType("nvarchar(2)")
+                                .HasColumnName("SupplierCountry");
+
+                            b1.Property<string>("Name")
+                                .IsRequired()
+                                .HasMaxLength(200)
+                                .HasColumnType("nvarchar(200)")
+                                .HasColumnName("SupplierName");
+
+                            b1.Property<string>("PostalCode")
+                                .HasMaxLength(20)
+                                .HasColumnType("nvarchar(20)")
+                                .HasColumnName("SupplierPostalCode");
+
+                            b1.Property<string>("TaxId")
+                                .IsRequired()
+                                .HasMaxLength(30)
+                                .HasColumnType("nvarchar(30)")
+                                .HasColumnName("SupplierTaxId");
+
+                            b1.HasKey("SupplierPaymentId");
+
+                            b1.ToTable("SupplierPayment");
+
+                            b1.WithOwner()
+                                .HasForeignKey("SupplierPaymentId");
+                        });
+
+                    b.Navigation("Supplier")
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("Erp.Purchasing.Domain.SupplierPaymentLine", b =>
+                {
+                    b.HasOne("Erp.Purchasing.Domain.SupplierPayment", "Payment")
+                        .WithMany("Lines")
+                        .HasForeignKey("PaymentId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Payment");
+                });
+
+            modelBuilder.Entity("Erp.Purchasing.Domain.SupplierPaymentMethod", b =>
+                {
+                    b.HasOne("Erp.Purchasing.Domain.SupplierPayment", "Payment")
+                        .WithMany("Methods")
+                        .HasForeignKey("PaymentId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Payment");
+                });
+
             modelBuilder.Entity("Erp.Purchasing.Domain.SupplierReturn", b =>
                 {
                     b.OwnsOne("Erp.Purchasing.Domain.SupplierSnapshot", "Supplier", b1 =>
@@ -3241,10 +3641,26 @@ namespace Erp.Storage.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
+                    b.HasOne("Erp.Sales.Domain.SalesDocumentLine", null)
+                        .WithMany()
+                        .HasForeignKey("EcoFeeForLineId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
                     b.HasOne("Erp.Sales.Domain.StockMovementLine", null)
                         .WithMany()
                         .HasForeignKey("OriginatingLineId")
                         .OnDelete(DeleteBehavior.Restrict);
+
+                    b.Navigation("Document");
+                });
+
+            modelBuilder.Entity("Erp.Sales.Domain.SalesDocumentPayment", b =>
+                {
+                    b.HasOne("Erp.Sales.Domain.SalesDocument", "Document")
+                        .WithMany("Payments")
+                        .HasForeignKey("DocumentId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
 
                     b.Navigation("Document");
                 });
@@ -3262,6 +3678,11 @@ namespace Erp.Storage.Migrations
 
             modelBuilder.Entity("Erp.Sales.Domain.StockMovementLine", b =>
                 {
+                    b.HasOne("Erp.Sales.Domain.StockMovementLine", null)
+                        .WithMany()
+                        .HasForeignKey("EcoFeeForLineId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
                     b.HasOne("Erp.Sales.Domain.StockMovement", "Movement")
                         .WithMany("Lines")
                         .HasForeignKey("MovementId")
@@ -3324,6 +3745,13 @@ namespace Erp.Storage.Migrations
                     b.Navigation("TaxSummaries");
                 });
 
+            modelBuilder.Entity("Erp.Purchasing.Domain.SupplierPayment", b =>
+                {
+                    b.Navigation("Lines");
+
+                    b.Navigation("Methods");
+                });
+
             modelBuilder.Entity("Erp.Purchasing.Domain.SupplierReturn", b =>
                 {
                     b.Navigation("Lines");
@@ -3341,6 +3769,8 @@ namespace Erp.Storage.Migrations
             modelBuilder.Entity("Erp.Sales.Domain.SalesDocument", b =>
                 {
                     b.Navigation("Lines");
+
+                    b.Navigation("Payments");
 
                     b.Navigation("StatusChanges");
 

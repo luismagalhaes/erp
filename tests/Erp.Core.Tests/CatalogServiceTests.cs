@@ -13,9 +13,10 @@ public class ProductServiceTests
     private readonly IProductFamilyStorage _families = Substitute.For<IProductFamilyStorage>();
     private readonly IProductSubfamilyStorage _subfamilies = Substitute.For<IProductSubfamilyStorage>();
     private readonly IBrandStorage _brands = Substitute.For<IBrandStorage>();
+    private readonly IEcoFeeTypeStorage _ecoFeeTypes = Substitute.For<IEcoFeeTypeStorage>();
     private readonly Guid _companyId = Guid.NewGuid();
 
-    private ProductService CreateService() => new(_products, _families, _subfamilies, _brands);
+    private ProductService CreateService() => new(_products, _families, _subfamilies, _brands, _ecoFeeTypes);
 
     private CreateProductRequest Request(
         string code = "ART001",

@@ -1,0 +1,33 @@
+@page "/supplier-statements"
+@attribute [Authorize]
+@using Microsoft.AspNetCore.Authorization
+@using Erp.Main.Services
+@using Erp.Main.Resources
+@using Microsoft.Extensions.Localization
+@inject PurchasingApiClient Purchasing
+@inject CatalogApiClient Catalog
+@inject IStringLocalizer<MainResources> L
+
+<PageTitle>@L["SupplierStatement_Title"]</PageTitle>
+
+<AccountStatementPage Title="@L["SupplierStatement_Title"]"
+                      PartyLabel="@L["SupplierStatement_SupplierLabel"]"
+                      BalanceMeaning="@L["SupplierStatement_BalanceMeaning"]"
+                      Route="supplier-statements"
+                      PartyParameter="supplierId"
+                      PartyId="SupplierId"
+                      StartDate="StartDate"
+                      EndDate="EndDate"
+                      LoadParties="@(companyId => Catalog.GetSuppliersAsync(companyId))"
+                      LoadStatement="@((companyId, supplierId, start, end) => Purchasing.GetSupplierStatementAsync(companyId, supplierId, start, end))" />
+
+@code {
+    [SupplyParameterFromQuery(Name = "supplierId")]
+    public Guid? SupplierId { get; set; }
+
+    [SupplyParameterFromQuery(Name = "startDate")]
+    public DateOnly? StartDate { get; set; }
+
+    [SupplyParameterFromQuery(Name = "endDate")]
+    public DateOnly? EndDate { get; set; }
+}

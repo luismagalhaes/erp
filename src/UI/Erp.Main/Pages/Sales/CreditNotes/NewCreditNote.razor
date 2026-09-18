@@ -4,6 +4,7 @@
 @using Microsoft.AspNetCore.Authorization
 @using Microsoft.AspNetCore.Components.Web
 @using MudBlazor
+@using Erp.Main.Components.Common
 @using Erp.Main.Models
 @using Erp.Main.Services
 @using Microsoft.Extensions.Localization
@@ -17,20 +18,15 @@
 
 <PageTitle>@Heading</PageTitle>
 
-<MudStack Spacing="4">
-    <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center">
-        <MudStack Spacing="0">
-            <MudText Typo="Typo.h4">@Heading</MudText>
-            <MudText Typo="Typo.body2" Color="Color.Secondary">
-                @L["NewCreditNote_Description"]
-            </MudText>
-        </MudStack>
-
-        <MudButton Variant="Variant.Text" StartIcon="@Icons.Material.Filled.ArrowBack"
-                   OnClick="@(() => Navigation.NavigateTo("credit-notes"))">
-            @L["NewCreditNote_BackButton"]
-        </MudButton>
-    </MudStack>
+<MudStack Spacing="3">
+    <PageHeader Title="@Heading" Breadcrumbs="Breadcrumbs">
+        <Actions>
+            <MudButton Variant="Variant.Text" StartIcon="@Icons.Material.Filled.ArrowBack"
+                       OnClick="@(() => Navigation.NavigateTo("credit-notes"))">
+                @L["NewCreditNote_BackButton"]
+            </MudButton>
+        </Actions>
+    </PageHeader>
 
     @if (!string.IsNullOrWhiteSpace(_error))
     {
@@ -56,21 +52,32 @@
     }
     else
     {
-        <MudPaper Elevation="1" Class="pa-4">
-            <MudGrid>
-                <MudItem xs="12" md="5">
+        <EditorCard Title="@L["NewCreditNote_DocumentSectionTitle"]" Icon="@Icons.Material.Filled.CreditCard"
+                    Description="@L["NewCreditNote_Description"]">
+            <MudGrid Spacing="3">
+                @* The customer comes first: picking one narrows the invoices to that customer's. *@
+                <MudItem xs="12" md="4">
+                    <MudAutocomplete T="CustomerOption" Value="_customer" ValueChanged="OnCustomerChangedAsync"
+                                     SearchFunc="SearchCustomersAsync"
+                                     ToStringFunc="@(option => option is null ? string.Empty : $"{option.Name} ({option.TaxId})")"
+                                     Label="@L["NewCreditNote_CustomerSelectLabel"]" Variant="Variant.Outlined" Margin="Margin.Dense"
+                                     Clearable="true" ResetValueOnEmptyText="true" Required="true" />
+                </MudItem>
+                <MudItem xs="12" md="4">
                     <MudSelect T="Guid?" Value="_rectifiedDocumentId" ValueChanged="OnDocumentChangedAsync"
-                               Label="@L["NewCreditNote_InvoiceToCorrectLabel"]" Variant="Variant.Outlined" Required="true">
-                        @foreach (var document in _rectifiable)
+                               Label="@L["NewCreditNote_InvoiceToCorrectLabel"]" Variant="Variant.Outlined" Margin="Margin.Dense"
+                               Required="true" Disabled="@(_customer is null)">
+                        @foreach (var document in _visibleDocuments)
                         {
                             <MudSelectItem T="Guid?" Value="@document.Id">
-                                @L["NewCreditNote_InvoiceOption", document.DocumentNumber, document.CustomerName, document.GrossTotal.ToString("N2")]
+                                @L["NewCreditNote_InvoiceOption", document.DocumentNumber, document.DocumentDate.ToString("yyyy-MM-dd"), document.GrossTotal.ToString("N2")]
                             </MudSelectItem>
                         }
                     </MudSelect>
                 </MudItem>
-                <MudItem xs="12" md="3">
-                    <MudSelect @bind-Value="_seriesId" Label="@L["NewCreditNote_SeriesLabel"]" Variant="Variant.Outlined" Required="true">
+                <MudItem xs="12" sm="6" md="2">
+                    <MudSelect @bind-Value="_seriesId" Label="@L["NewCreditNote_SeriesLabel"]" Variant="Variant.Outlined"
+                               Margin="Margin.Dense" Required="true">
                         @foreach (var series in _series)
                         {
                             <MudSelectItem T="Guid" Value="@series.Id">
@@ -79,22 +86,22 @@
                         }
                     </MudSelect>
                 </MudItem>
-                <MudItem xs="12" md="4">
+                <MudItem xs="12" sm="6" md="2">
                     <MudDatePicker @bind-Date="_documentDate" Label="@L["NewCreditNote_DateLabel"]" Variant="Variant.Outlined"
-                                   DateFormat="yyyy-MM-dd" />
+                                   Margin="Margin.Dense" DateFormat="yyyy-MM-dd" />
                 </MudItem>
 
                 <MudItem xs="12">
                     <MudTextField @bind-Value="_reason" @bind-Value:after="StateHasChanged" Immediate="true"
-                                  Label="@L["NewCreditNote_ReasonLabel"]" Variant="Variant.Outlined" Required="true"
-                                  HelperText="@L["NewCreditNote_ReasonHelpText"]" />
+                                  Label="@L["NewCreditNote_ReasonLabel"]" Variant="Variant.Outlined" Margin="Margin.Dense"
+                                  Required="true" HelperText="@L["NewCreditNote_ReasonHelpText"]" />
                 </MudItem>
             </MudGrid>
-        </MudPaper>
+        </EditorCard>
 
         @if (_source is not null)
         {
-            <MudPaper Elevation="1" Class="pa-4">
+            <MudPaper Elevation="0" Class="pa-4 erp-card erp-form">
                 <MudGrid>
                     <MudItem xs="12" md="4">
                         <MudText Typo="Typo.caption" Color="Color.Secondary">@L["NewCreditNote_CustomerLabel"]</MudText>
@@ -123,7 +130,7 @@
                 </MudGrid>
             </MudPaper>
 
-            <MudPaper Elevation="1" Class="pa-4">
+            <MudPaper Elevation="0" Class="pa-4 erp-card erp-form">
                 <MudText Typo="Typo.h6" Class="mb-3">@L["NewCreditNote_LinesSectionTitle"]</MudText>
 
                 <MudTable Items="_lines" Dense="true" Hover="true" Striped="true" Breakpoint="Breakpoint.Sm">
@@ -165,7 +172,7 @@
                 </MudTable>
             </MudPaper>
 
-            <MudPaper Elevation="1" Class="pa-4">
+            <MudPaper Elevation="0" Class="pa-4 erp-card erp-form">
                 <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center">
                     <MudStack Row="true" Spacing="6">
                         <MudStack Spacing="0">
@@ -220,8 +227,20 @@
 
     private List<SalesSeries> _series = [];
     private List<InvoiceListItem> _rectifiable = [];
+    private List<InvoiceListItem> _visibleDocuments = [];
+    private List<CustomerOption> _customers = [];
+    private CustomerOption? _customer;
     private List<CreditLine> _lines = [];
     private InvoiceDetail? _source;
+
+    /// <summary>A customer with documents left to correct, as the picker lists them.</summary>
+    private sealed record CustomerOption(string TaxId, string Name);
+
+    private List<BreadcrumbItem> Breadcrumbs =>
+    [
+        new(L["CreditNotes_PageTitle"].Value, href: "credit-notes"),
+        new(Heading, href: null, disabled: true)
+    ];
 
     private string SelectedDocumentType =>
         _series.FirstOrDefault(x => x.Id == _seriesId)?.DocumentType ?? "NC";
@@ -296,7 +315,14 @@
             var documents = await SalesApi.GetInvoicesAsync(Company.SelectedCompanyId);
             _rectifiable = [.. documents.Where(x => x.Status != "A" && !InvoiceTypes.IsRectifying(x.DocumentType))];
 
-            await OnDocumentChangedAsync(_rectifiable.FirstOrDefault()?.Id);
+            // The customers come from those documents: offering one with nothing to correct would
+            // only lead to an empty list of invoices.
+            _customers = [.. _rectifiable
+                .GroupBy(document => document.CustomerTaxId, StringComparer.Ordinal)
+                .Select(group => new CustomerOption(group.Key, group.First().CustomerName))
+                .OrderBy(customer => customer.Name)];
+
+            await OnCustomerChangedAsync(_customers.Count == 1 ? _customers[0] : null);
         }
         catch (Exception ex)
         {
@@ -307,6 +333,31 @@
             _loading = false;
             StateHasChanged();
         }
+    }
+
+    private Task<IEnumerable<CustomerOption>> SearchCustomersAsync(string? text, CancellationToken cancellationToken)
+    {
+        IEnumerable<CustomerOption> matches = string.IsNullOrWhiteSpace(text)
+            ? _customers
+            : _customers.Where(customer =>
+                customer.Name.Contains(text, StringComparison.OrdinalIgnoreCase)
+                || customer.TaxId.Contains(text, StringComparison.OrdinalIgnoreCase));
+
+        return Task.FromResult(matches);
+    }
+
+    /// <summary>
+    /// Choosing the customer is the first step: the documents to correct are then only theirs, and
+    /// the one at the top — the most recent — is loaded straight away.
+    /// </summary>
+    private async Task OnCustomerChangedAsync(CustomerOption? customer)
+    {
+        _customer = customer;
+        _visibleDocuments = customer is null
+            ? []
+            : [.. _rectifiable.Where(document => string.Equals(document.CustomerTaxId, customer.TaxId, StringComparison.Ordinal))];
+
+        await OnDocumentChangedAsync(_visibleDocuments.FirstOrDefault()?.Id);
     }
 
     /// <summary>
@@ -340,7 +391,9 @@
             UnitPrice = line.UnitPrice,
             TaxCode = line.TaxCode,
             TaxPercentage = line.TaxPercentage,
+            TaxExemptionCode = line.TaxExemptionCode,
             TaxExemptionReason = line.TaxExemptionReason,
+            DiscountPercentage = line.DiscountPercentage,
             Selected = true
         })];
     }
@@ -372,8 +425,20 @@
             line.Selected = false;
     }
 
-    private static decimal LineTotal(CreditLine line) =>
-        line.Selected ? Math.Round(line.Quantity * line.UnitPrice, 2, MidpointRounding.AwayFromZero) : 0m;
+    /// <summary>
+    /// The same arithmetic as the API: the line discount that came from the invoice is taken off the
+    /// rounded gross amount, so a full credit gives back exactly what was charged.
+    /// </summary>
+    private static decimal LineTotal(CreditLine line)
+    {
+        if (!line.Selected)
+            return 0m;
+
+        var gross = Math.Round(line.Quantity * line.UnitPrice, 2, MidpointRounding.AwayFromZero);
+        var discount = Math.Round(gross * line.DiscountPercentage / 100m, 2, MidpointRounding.AwayFromZero);
+
+        return gross - discount;
+    }
 
     private async Task IssueAsync()
     {
@@ -398,7 +463,9 @@
                         line.TaxCode,
                         line.TaxPercentage,
                         line.UnitOfMeasure,
-                        TaxExemptionReason: line.TaxExemptionReason))],
+                        TaxExemptionCode: line.TaxExemptionCode,
+                        TaxExemptionReason: line.TaxExemptionReason,
+                        DiscountPercentage: line.DiscountPercentage))],
                 RectifiedDocumentId: _rectifiedDocumentId,
                 RectificationReason: _reason.Trim());
 
@@ -435,7 +502,9 @@
         public decimal UnitPrice { get; set; }
         public string TaxCode { get; set; } = string.Empty;
         public decimal TaxPercentage { get; set; }
+        public string? TaxExemptionCode { get; set; }
         public string? TaxExemptionReason { get; set; }
+        public decimal DiscountPercentage { get; set; }
     }
 
     public void Dispose() => Company.Changed -= OnCompanyChanged;

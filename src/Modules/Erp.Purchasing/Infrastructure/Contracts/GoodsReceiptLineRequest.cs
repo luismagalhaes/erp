@@ -10,4 +10,5 @@ public sealed record GoodsReceiptLineRequest(
     decimal Quantity,
     decimal UnitCost,
     string UnitOfMeasure = "UN",
-    Guid? OrderLineId = null);
+    Guid? OrderLineId = null,
+    decimal DiscountPercentage = 0m);

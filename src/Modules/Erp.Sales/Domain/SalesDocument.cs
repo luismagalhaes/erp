@@ -53,7 +53,14 @@ public sealed class SalesDocument
 
     public string? CustomerAddress { get; private set; }
 
+    public string? CustomerPostalCode { get; private set; }
+
+    public string? CustomerCity { get; private set; }
+
     public string CustomerCountry { get; private set; } = "PT";
+
+    /// <summary>Until when the customer has to pay. Not signed, and not part of the SAF-T.</summary>
+    public DateOnly? DueDate { get; private set; }
 
     public decimal NetTotal { get; private set; }
 
@@ -95,6 +102,14 @@ public sealed class SalesDocument
 
     public ICollection<DocumentStatusChange> StatusChanges { get; private set; } = [];
 
+    /// <summary>How a fatura-recibo was paid. Empty for every other type.</summary>
+    public ICollection<SalesDocumentPayment> Payments { get; private set; } = [];
+
+    /// <summary>Quantity times price over all lines, before discounts.</summary>
+    public decimal GrossLinesTotal => Lines.Sum(line => line.GrossAmount);
+
+    public decimal DiscountTotal => Lines.Sum(line => line.DiscountAmount);
+
     /// <summary>Required by EF Core.</summary>
     private SalesDocument()
     {
@@ -122,7 +137,9 @@ public sealed class SalesDocument
         string previousHash,
         string hashControl,
         string? createdByUserId,
-        RectifiedDocument? rectifies = null)
+        RectifiedDocument? rectifies = null,
+        DateOnly? dueDate = null,
+        IReadOnlyList<SalesDocumentPayment>? payments = null)
     {
         ArgumentNullException.ThrowIfNull(series);
         ArgumentNullException.ThrowIfNull(customer);
@@ -144,7 +161,10 @@ public sealed class SalesDocument
             CustomerTaxId = customer.TaxId,
             CustomerName = customer.Name,
             CustomerAddress = customer.Address,
+            CustomerPostalCode = customer.PostalCode,
+            CustomerCity = customer.City,
             CustomerCountry = customer.Country,
+            DueDate = dueDate,
             NetTotal = netTotal,
             TaxPayable = taxPayable,
             GrossTotal = grossTotal,
@@ -167,6 +187,12 @@ public sealed class SalesDocument
         {
             summary.DocumentId = document.Id;
             document.TaxSummaries.Add(summary);
+        }
+
+        foreach (var payment in payments ?? [])
+        {
+            payment.DocumentId = document.Id;
+            document.Payments.Add(payment);
         }
 
         return document;

@@ -8,4 +8,5 @@ public sealed record PurchaseOrderLineRequest(
     string UnitOfMeasure = "UN",
     string TaxCountryRegion = "PT",
     string TaxCode = "NOR",
-    decimal TaxPercentage = 23m);
+    decimal TaxPercentage = 23m,
+    decimal DiscountPercentage = 0m);

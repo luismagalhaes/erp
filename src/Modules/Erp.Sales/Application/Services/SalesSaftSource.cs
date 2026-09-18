@@ -53,25 +53,35 @@ public sealed class SalesSaftSource(
         IReadOnlyList<StockMovement> movements,
         IReadOnlyList<Payment> payments)
     {
+        // Receipts and movements carry no address, so they rank below any document of the same day:
+        // the address exported is the latest one a document actually recorded.
         var parties = documents
-            .Select(x => (TaxId: x.CustomerTaxId, x.CustomerName, Address: x.CustomerAddress, Date: x.DocumentDate))
+            .Select(x => (TaxId: x.CustomerTaxId, x.CustomerName, Address: x.CustomerAddress,
+                PostalCode: x.CustomerPostalCode, City: x.CustomerCity, Date: x.DocumentDate, Rank: 1))
             .Concat(movements
                 .Where(x => !x.PartyIsSupplier)
-                .Select(x => (TaxId: x.PartyTaxId, CustomerName: x.PartyName, Address: (string?)null, Date: x.MovementDate)))
+                .Select(x => (TaxId: x.PartyTaxId, CustomerName: x.PartyName, Address: (string?)null,
+                    PostalCode: (string?)null, City: (string?)null, Date: x.MovementDate, Rank: 0)))
             .Concat(payments
-                .Select(x => (TaxId: x.PartyTaxId, CustomerName: x.PartyName, Address: (string?)null, Date: x.TransactionDate)));
+                .Select(x => (TaxId: x.PartyTaxId, CustomerName: x.PartyName, Address: (string?)null,
+                    PostalCode: (string?)null, City: (string?)null, Date: x.TransactionDate, Rank: 0)));
 
         return [.. parties
             .Where(party => !string.IsNullOrWhiteSpace(party.TaxId))
             .GroupBy(party => party.TaxId, StringComparer.Ordinal)
-            .Select(group => group.OrderByDescending(party => party.Date).First())
+            .Select(group => group.OrderByDescending(party => party.Date).ThenByDescending(party => party.Rank).First())
             .OrderBy(party => party.TaxId, StringComparer.Ordinal)
             .Select(party => new SaftCustomer
             {
                 CustomerId = party.TaxId,
                 CustomerTaxId = party.TaxId,
                 CompanyName = party.CustomerName,
-                BillingAddress = new SaftAddress { AddressDetail = party.Address ?? SaftConstants.Unknown }
+                BillingAddress = new SaftAddress
+                {
+                    AddressDetail = party.Address ?? SaftConstants.Unknown,
+                    City = party.City ?? SaftConstants.Unknown,
+                    PostalCode = party.PostalCode
+                }
             })];
     }
 
@@ -160,7 +170,10 @@ public sealed class SalesSaftSource(
                     ProductDescription = line.ProductDescription,
                     Quantity = line.Quantity,
                     UnitOfMeasure = line.UnitOfMeasure,
-                    UnitPrice = line.UnitPrice,
+                    // SAF-T wants the price net of the line discount, so that quantity times price
+                    // gives the amount; the discount itself travels as SettlementAmount.
+                    UnitPrice = line.NetUnitPrice,
+                    SettlementAmount = line.DiscountAmount,
                     TaxPointDate = document.DocumentDate,
                     // A credit or debit note carries the reference on every line.
                     Reference = document.RectifiedDocumentNumber,
@@ -180,7 +193,13 @@ public sealed class SalesSaftSource(
             {
                 TaxPayable = document.TaxPayable,
                 NetTotal = document.NetTotal,
-                GrossTotal = document.GrossTotal
+                GrossTotal = document.GrossTotal,
+                Payments = [.. document.Payments.Select(payment => new SaftPaymentMethod
+                {
+                    PaymentMechanism = payment.Mechanism,
+                    PaymentAmount = payment.Amount,
+                    PaymentDate = payment.PaymentDate
+                })]
             }
         };
     }
@@ -221,7 +240,8 @@ public sealed class SalesSaftSource(
                     ProductDescription = line.ProductDescription,
                     Quantity = line.Quantity,
                     UnitOfMeasure = line.UnitOfMeasure,
-                    UnitPrice = line.UnitPrice,
+                    // Net of the line discount, like on an invoice.
+                    UnitPrice = line.NetUnitPrice,
                     Description = line.ProductDescription,
                     Amount = line.LineAmount,
                     Tax = new SaftTax

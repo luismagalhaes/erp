@@ -125,4 +125,57 @@ public static class Constants
         public const string IdentityApi = "identity-api";
         public const string IdentityApiDisplayName = "Identity API";
     }
+
+    /// <summary>
+    /// The warehouse every new company is created with. Stock needs somewhere to live from the first
+    /// document on, and a company without one cannot move any. It is ordinary data afterwards: it can
+    /// be renamed, and another warehouse can take over as default.
+    /// </summary>
+    public static class DefaultWarehouse
+    {
+        public const string Code = "01";
+        public const string Name = "Armazém principal";
+    }
+
+    /// <summary>
+    /// The eco-fees ("Ecovalor") every new company starts with, so batteries and lubricating oils —
+    /// the two most common waste streams a small business invoices — work out of the box. The rates
+    /// are starting points, not this year's official table: a company edits them to what its waste
+    /// management entity actually charges before it relies on them.
+    /// </summary>
+    public static class DefaultEcoFeeTypes
+    {
+        /// <param name="CalculationBasis">The name of an <c>EcoFeeCalculationBasis</c> value.</param>
+        public static readonly (string Code, string Description, string CalculationBasis, decimal Rate, string ManagingEntityName)[] All =
+        [
+            ("ECOVALOR-BAT", "Ecovalor - Pilhas e baterias", "PerUnit", 0.03m, "Ecopilhas / Amb3E"),
+            ("ECOVALOR-OLEO", "Ecovalor - Óleos lubrificantes", "PerKg", 0.10m, "SOGILUB")
+        ];
+    }
+
+    /// <summary>
+    /// Counters behind the sequential codes of master data (1, 2, 3...). Each key is a counter of its
+    /// own per company; at most 8 characters, the width of the counter's prefix column.
+    /// </summary>
+    public static class CodeCounters
+    {
+        public const string Customers = "CLI";
+        public const string Suppliers = "FOR";
+        public const string ProductFamilies = "FAM";
+        public const string ProductSubfamilies = "SUBFAM";
+        public const string Brands = "MAR";
+    }
+
+    /// <summary>
+    /// Where a line of a current account statement comes from. The API writes it and the UI reads it
+    /// to know which page opens the document.
+    /// </summary>
+    public static class StatementSources
+    {
+        public const string SalesDocument = "SalesDocument";
+        public const string Receipt = "Receipt";
+        public const string PurchaseInvoice = "PurchaseInvoice";
+        public const string SelfBilledInvoice = "SelfBilledInvoice";
+        public const string SupplierPayment = "SupplierPayment";
+    }
 }

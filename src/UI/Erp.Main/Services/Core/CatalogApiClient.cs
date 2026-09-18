@@ -164,8 +164,32 @@ public sealed class CatalogApiClient(HttpClient http) : ApiClientBase(http)
     /// </summary>
     public Task<(IReadOnlyList<VatRate> Items, int Count, string? Error)> QueryVatRatesAsync(
         ODataQuery query, CancellationToken ct = default) =>
-        GetODataAsync<VatRate>($"api/vat-rates/odata{query.ToQueryString()}", ct);
+        // No companyId in front here, so the query string has to be opened explicitly: without the
+        // "?" the path became "odata&$top=…", which the API answers with 405.
+        GetODataAsync<VatRate>($"api/vat-rates/odata?{query.ToQueryString().TrimStart('&')}", ct);
 
     public Task<string?> UpdateVatRateAsync(Guid id, UpdateVatRateRequest request, CancellationToken ct = default) =>
         SendAsync(() => Http.PutAsJsonAsync($"api/vat-rates/{id}", request, ct), ct);
+
+    // --- Eco-fees (Ecovalor) ---
+
+    public Task<(IReadOnlyList<EcoFeeType> Items, string? Error)> GetEcoFeeTypesAsync(Guid companyId, CancellationToken ct = default) =>
+        GetListAsync<EcoFeeType>($"api/eco-fee-types?companyId={companyId}", ct);
+
+    /// <summary>
+    /// Server side eco-fee listing: filtering, sorting and paging are applied by the database
+    /// through OData, so the grid only ever holds the window it is painting.
+    /// </summary>
+    public Task<(IReadOnlyList<EcoFeeType> Items, int Count, string? Error)> QueryEcoFeeTypesAsync(
+        Guid companyId, ODataQuery query, CancellationToken ct = default) =>
+        GetODataAsync<EcoFeeType>($"api/eco-fee-types/odata?companyId={companyId}{query.ToQueryString()}", ct);
+
+    public Task<EcoFeeType?> GetEcoFeeTypeAsync(Guid id, CancellationToken ct = default) =>
+        GetSingleAsync<EcoFeeType>($"api/eco-fee-types/{id}", ct);
+
+    public Task<string?> CreateEcoFeeTypeAsync(CreateEcoFeeTypeRequest request, CancellationToken ct = default) =>
+        SendAsync(() => Http.PostAsJsonAsync("api/eco-fee-types", request, ct), ct);
+
+    public Task<string?> UpdateEcoFeeTypeAsync(Guid id, UpdateEcoFeeTypeRequest request, CancellationToken ct = default) =>
+        SendAsync(() => Http.PutAsJsonAsync($"api/eco-fee-types/{id}", request, ct), ct);
 }

@@ -10,6 +10,7 @@
 @using Microsoft.Extensions.Localization
 @inject StockApiClient StockApi
 @inject CompanyState Company
+@inject WarehouseState WarehouseState
 @inject NavigationManager Navigation
 @inject ISnackbar Snackbar
 @inject IStringLocalizer<MainResources> Localizer
@@ -45,11 +46,11 @@
         </MudAlert>
     }
 
-    <MudPaper Elevation="1" Class="pa-4">
+    <MudPaper Elevation="0" Class="pa-4 erp-card erp-form">
         <MudGrid>
             <MudItem xs="12" md="4">
                 <MudSelect T="Guid?" Value="_warehouseId" ValueChanged="OnWarehouseChangedAsync"
-                           Label="@Localizer["StockBalances_WarehouseLabel"]" Variant="Variant.Outlined" Clearable="true"
+                           Label="@Localizer["StockBalances_WarehouseLabel"]" Variant="Variant.Outlined" Margin="Margin.Dense" Clearable="true"
                            Placeholder="@Localizer["StockBalances_AllPlaceholder"]">
                     @foreach (var warehouse in _warehouses)
                     {
@@ -61,7 +62,7 @@
             </MudItem>
             <MudItem xs="12" md="4">
                 <MudTextField @bind-Value="_search" @bind-Value:after="StateHasChanged" Immediate="true"
-                              Label="@Localizer["StockBalances_FilterLabel"]" Variant="Variant.Outlined"
+                              Label="@Localizer["StockBalances_FilterLabel"]" Variant="Variant.Outlined" Margin="Margin.Dense"
                               Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.Search"
                               HelperText="@Localizer["StockBalances_FilterHelperText"]" />
             </MudItem>
@@ -72,7 +73,7 @@
         </MudGrid>
     </MudPaper>
 
-    <MudPaper Elevation="1" Class="pa-2">
+    <MudPaper Elevation="0" Class="pa-2 erp-card erp-form">
         <MudTable Items="Visible" Hover="true" Striped="true" Dense="true" Loading="_loading"
                   Breakpoint="Breakpoint.Sm" T="StockBalance"
                   OnRowClick="OnRowClickAsync">
@@ -221,26 +222,26 @@
 
         <MudGrid>
             <MudItem xs="12" md="6">
-                <MudTextField Value="@_adjustProductCode" Label="@Localizer["StockBalances_ProductColumn"]" Variant="Variant.Outlined"
+                <MudTextField Value="@_adjustProductCode" Label="@Localizer["StockBalances_ProductColumn"]" Variant="Variant.Outlined" Margin="Margin.Dense"
                               ReadOnly="true" />
             </MudItem>
             <MudItem xs="12" md="6">
                 <MudNumericField T="decimal" Value="_adjustCurrent" Label="@Localizer["StockBalances_CurrentStockLabel"]"
-                                 Variant="Variant.Outlined" ReadOnly="true" Format="N3" />
+                                 Variant="Variant.Outlined" Margin="Margin.Dense" ReadOnly="true" Format="N3" />
             </MudItem>
             <MudItem xs="12" md="6">
                 <MudNumericField T="decimal" Value="_adjustCounted" ValueChanged="OnCountedChanged"
-                                 Label="@Localizer["StockBalances_CountedQuantityLabel"]" Variant="Variant.Outlined" Format="N3" />
+                                 Label="@Localizer["StockBalances_CountedQuantityLabel"]" Variant="Variant.Outlined" Margin="Margin.Dense" Format="N3" />
             </MudItem>
             <MudItem xs="12" md="6">
                 <MudNumericField T="decimal" Value="AdjustDifference" Label="@Localizer["StockBalances_DifferenceLabel"]"
-                                 Variant="Variant.Outlined" ReadOnly="true" Format="N3" />
+                                 Variant="Variant.Outlined" Margin="Margin.Dense" ReadOnly="true" Format="N3" />
             </MudItem>
             @if (AdjustDifference > 0)
             {
                 <MudItem xs="12" md="6">
                     <MudNumericField T="decimal?" @bind-Value="_adjustUnitCost"
-                                     Label="@Localizer["StockBalances_UnitCostLabel"]" Variant="Variant.Outlined" Format="N4"
+                                     Label="@Localizer["StockBalances_UnitCostLabel"]" Variant="Variant.Outlined" Margin="Margin.Dense" Format="N4"
                                      Clearable="true"
                                      HelperText="@Localizer["StockBalances_UnitCostHelperText"]" />
                 </MudItem>
@@ -252,7 +253,7 @@
             }
             <MudItem xs="12">
                 <MudTextField @bind-Value="_adjustReason" @bind-Value:after="StateHasChanged" Immediate="true"
-                              Label="@Localizer["StockBalances_ReasonLabel"]" Variant="Variant.Outlined" Required="true"
+                              Label="@Localizer["StockBalances_ReasonLabel"]" Variant="Variant.Outlined" Margin="Margin.Dense" Required="true"
                               HelperText="@Localizer["StockBalances_ReasonHelperText"]" />
             </MudItem>
         </MudGrid>
@@ -312,6 +313,7 @@
     {
         Company.Changed += OnCompanyChanged;
         await Company.EnsureLoadedAsync();
+        await WarehouseState.EnsureLoadedAsync();
 
         // Coming from the warehouse list, the warehouse to show is on the query string.
         var uri = Navigation.ToAbsoluteUri(Navigation.Uri);
@@ -319,6 +321,8 @@
 
         if (query.TryGetValue("warehouseId", out var value) && Guid.TryParse(value, out var warehouseId))
             _warehouseId = warehouseId;
+        else if (WarehouseState.HasWarehouse)
+            _warehouseId = WarehouseState.SelectedWarehouseId;
 
         await LoadAsync();
     }

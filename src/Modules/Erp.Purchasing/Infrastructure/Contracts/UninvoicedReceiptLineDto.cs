@@ -19,4 +19,5 @@ public sealed record UninvoicedReceiptLineDto(
     decimal ReceivedQuantity,
     decimal InvoicedQuantity,
     decimal PendingQuantity,
-    decimal UnitCost);
+    decimal UnitCost,
+    decimal DiscountPercentage);

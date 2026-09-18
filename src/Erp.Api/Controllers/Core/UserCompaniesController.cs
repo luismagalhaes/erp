@@ -8,7 +8,13 @@ namespace Erp.Api.Controllers.Core;
 
 [ApiController]
 [Route("api/user-companies")]
-[Authorize(Policy = Policies.Read)]
+// Membership management is an admin-only surface end to end: who belongs to which company, and
+// with what role, is exactly the information a SuperAdmin backoffice needs and nobody else does.
+// The reads used to be Read-policy — any client with an erp.read scope, which is essentially every
+// signed-in user — and, unlike every other companyId-scoped controller, GetAll had no companyId
+// to check even when one was given (it happily listed every company's memberships when it was
+// left out), so RequireCompanyAccessFilter could not have closed this one on its own.
+[Authorize(Policy = Policies.Admin)]
 public sealed class UserCompaniesController(IUserCompanyAdminService userCompanyAdminService, ILogger<UserCompaniesController> logger) : ControllerBase
 {
     /// <summary>Lists user memberships, optionally limited to one company.</summary>
@@ -29,7 +35,6 @@ public sealed class UserCompaniesController(IUserCompanyAdminService userCompany
     }
 
     [HttpPost]
-    [Authorize(Policy = Policies.Admin)]
     public async Task<ActionResult<UserCompanyAdminDto>> Create([FromBody] CreateUserCompanyRequest request, CancellationToken cancellationToken)
     {
         try
@@ -50,7 +55,6 @@ public sealed class UserCompaniesController(IUserCompanyAdminService userCompany
     }
 
     [HttpPut("{id:guid}")]
-    [Authorize(Policy = Policies.Admin)]
     public async Task<ActionResult<UserCompanyAdminDto>> Update(Guid id, [FromBody] UpdateUserCompanyRequest request, CancellationToken cancellationToken)
     {
         try
@@ -66,7 +70,6 @@ public sealed class UserCompaniesController(IUserCompanyAdminService userCompany
     }
 
     [HttpDelete("{id:guid}")]
-    [Authorize(Policy = Policies.Admin)]
     public async Task<IActionResult> Delete(Guid id, CancellationToken cancellationToken)
     {
         var deleted = await userCompanyAdminService.DeleteAsync(id, cancellationToken);

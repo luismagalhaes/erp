@@ -3,6 +3,7 @@ using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 
 namespace Erp.Storage;
 
@@ -23,6 +24,12 @@ public static class DependencyInjection
 
         services.AddDbContext<AppDbContext>(options => options.UseSqlServer(connectionString));
         services.AddScoped<IUnitOfWork, UnitOfWork>();
+        services.AddScoped<ITenantExistenceChecker>(sp => sp.GetRequiredService<AppDbContext>());
+
+        // TryAdd: a host that knows about HTTP requests (Erp.Api) overrides this with one that
+        // resolves the caller's own companies; anything else — migrations, background workers, the
+        // integration tests that call AddStorage directly — keeps this always unrestricted default.
+        services.TryAddScoped<ICurrentUserContext, NullCurrentUserContext>();
 
         return services;
     }

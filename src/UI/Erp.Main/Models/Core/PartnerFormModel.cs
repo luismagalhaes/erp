@@ -20,20 +20,20 @@ public sealed class PartnerFormModel
     public string Phone { get; set; } = string.Empty;
     public bool IsActive { get; set; } = true;
 
-    public bool IsValid(bool requireCode = true, bool requireTaxId = true) =>
-        (!requireCode || !string.IsNullOrWhiteSpace(Code))
-        && !string.IsNullOrWhiteSpace(Name)
-        && (!requireTaxId || !string.IsNullOrWhiteSpace(TaxId));
+    /// <summary>
+    /// The code is not checked: it is never typed on screen, and a new record is numbered by the API.
+    /// </summary>
+    public bool IsValid(bool requireTaxId = true) =>
+        !string.IsNullOrWhiteSpace(Name)
+        && (!requireTaxId || !string.IsNullOrWhiteSpace(TaxId))
+        && Erp.Common.PostalCodes.IsValid(PostalCode, Country);
 
     /// <summary>
-    /// Fills in a code and tax id when they were left blank — for a customer, where both are
-    /// optional in the UI even though the API still requires them. Called right before saving.
+    /// Fills in the tax id when it was left blank — for a customer, where it is optional in the UI
+    /// even though the API still requires one. Called right before saving.
     /// </summary>
     public void ApplyDefaults()
     {
-        if (string.IsNullOrWhiteSpace(Code))
-            Code = CodeGenerator.Generate();
-
         if (string.IsNullOrWhiteSpace(TaxId))
             TaxId = FinalConsumerTaxId;
     }

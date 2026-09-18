@@ -6,6 +6,7 @@ using Erp.Purchasing.Infrastructure.Application;
 using Erp.Purchasing.Infrastructure.Contracts;
 using Erp.Purchasing.Infrastructure.Storage;
 using Erp.Common;
+using Erp.FiscalPT;
 
 namespace Erp.Purchasing.Application.Services;
 
@@ -23,6 +24,7 @@ public sealed class PurchaseInvoiceService(
     IPurchaseInvoiceStorage invoiceStorage,
     IGoodsReceiptStorage receiptStorage,
     IStockRecorder stockRecorder,
+    ISupplierPaymentStorage paymentStorage,
     IUnitOfWork unitOfWork) : IPurchaseInvoiceService
 {
     /// <summary>The document type the stock ledger records these movements under.</summary>
@@ -82,7 +84,8 @@ public sealed class PurchaseInvoiceService(
                     x.Line.Quantity,
                     x.Line.Quantity - x.Pending,
                     x.Pending,
-                    x.Line.UnitCost))
+                    x.Line.UnitCost,
+                    x.Line.DiscountPercentage))
                 .OrderBy(line => line.ReceiptDate)
                 .ThenBy(line => line.ReceiptNumber, StringComparer.Ordinal)
         ];
@@ -167,6 +170,15 @@ public sealed class PurchaseInvoiceService(
 
         invoice.ReplaceLines([.. request.Lines.Select(line => ToLine(line, receipts))], request.WarehouseId);
 
+        // Correcting the figures must not leave the supplier paid more than the invoice now says.
+        var paid = await GetPaidAmountAsync(invoice.Id, cancellationToken);
+
+        if (paid > invoice.GrossTotal)
+        {
+            throw new InvalidOperationException(
+                $"Invoice '{invoice.SupplierDocumentNumber}' is already paid {paid:0.00}, more than its new total of {invoice.GrossTotal:0.00}. Void the payment first.");
+        }
+
         await unitOfWork.SaveChangesAsync(cancellationToken);
 
         return Map(invoice);
@@ -183,6 +195,13 @@ public sealed class PurchaseInvoiceService(
         var invoice = await invoiceStorage.GetByIdAsync(id, cancellationToken);
         if (invoice is null)
             return null;
+
+        // A paid invoice cannot simply disappear from the current account: the money is still out.
+        if (await GetPaidAmountAsync(invoice.Id, cancellationToken) > 0)
+        {
+            throw new InvalidOperationException(
+                $"Invoice '{invoice.SupplierDocumentNumber}' has payments against it. Void them first.");
+        }
 
         var movedStock = invoice.MovedStock;
         invoice.Void(reason, userId, DateTime.UtcNow);
@@ -205,6 +224,12 @@ public sealed class PurchaseInvoiceService(
         await transaction.CommitAsync(cancellationToken);
 
         return Map(invoice);
+    }
+
+    private async Task<decimal> GetPaidAmountAsync(Guid invoiceId, CancellationToken cancellationToken)
+    {
+        var paid = await paymentStorage.GetPaidAmountsAsync([invoiceId], cancellationToken);
+        return paid.TryGetValue(invoiceId, out var amount) ? amount : 0m;
     }
 
     /// <summary>
@@ -310,7 +335,9 @@ public sealed class PurchaseInvoiceService(
                 line.ProductDescription,
                 line.Quantity,
                 line.ReceiptLineId,
-                line.UnitPrice))]);
+                // What the goods actually cost, discount included \u2014 the receipt already did this
+                // for lines that moved stock through it.
+                line.Quantity == 0 ? 0m : FiscalRounding.Amount(line.LineAmount / line.Quantity)))]);
 
         await stockRecorder.RecordAsync(request, userId, cancellationToken);
     }
@@ -325,6 +352,13 @@ public sealed class PurchaseInvoiceService(
 
         var receiptLine = receipt?.Lines.FirstOrDefault(x => x.Id == request.ReceiptLineId);
 
+        // The receipt line is the source document here: its discount is what the invoice inherits
+        // unless the caller overrides it — the integrating-document rule applied to money as well
+        // as quantity.
+        var discountPercentage = request.DiscountPercentage != 0m
+            ? request.DiscountPercentage
+            : receiptLine?.DiscountPercentage ?? 0m;
+
         return new PurchaseInvoiceLine
         {
             ReceiptId = receipt?.Id,
@@ -336,6 +370,7 @@ public sealed class PurchaseInvoiceService(
             Quantity = request.Quantity,
             UnitOfMeasure = request.UnitOfMeasure,
             UnitPrice = request.UnitPrice,
+            DiscountPercentage = discountPercentage,
             TaxCountryRegion = request.TaxCountryRegion,
             TaxCode = request.TaxCode,
             TaxPercentage = request.TaxPercentage,
@@ -419,6 +454,8 @@ public sealed class PurchaseInvoiceService(
                     line.Quantity,
                     line.UnitOfMeasure,
                     line.UnitPrice,
+                    line.DiscountPercentage,
+                    line.DiscountAmount,
                     line.LineAmount,
                     line.TaxCountryRegion,
                     line.TaxCode,

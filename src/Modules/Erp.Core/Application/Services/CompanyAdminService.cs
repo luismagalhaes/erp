@@ -1,3 +1,4 @@
+using Erp.Common;
 using Erp.Core.Domain;
 using Erp.Core.Infrastructure.Application;
 using Erp.Core.Infrastructure.Contracts;
@@ -5,7 +6,11 @@ using Erp.Core.Infrastructure.Storage;
 
 namespace Erp.Core.Application.Services;
 
-public sealed class CompanyAdminService(ICompanyStorage storage) : ICompanyAdminService
+public sealed class CompanyAdminService(
+    ICompanyStorage storage,
+    IWarehouseStorage warehouseStorage,
+    IProductStorage productStorage,
+    IEcoFeeTypeStorage ecoFeeTypeStorage) : ICompanyAdminService
 {
     public async Task<IReadOnlyList<CompanyListItemDto>> GetAllAsync(CancellationToken cancellationToken = default)
     {
@@ -35,6 +40,9 @@ public sealed class CompanyAdminService(ICompanyStorage storage) : ICompanyAdmin
         ArgumentException.ThrowIfNullOrWhiteSpace(request.Name);
         ArgumentException.ThrowIfNullOrWhiteSpace(request.TaxId);
 
+        if (!PostalCodes.IsValid(request.PostalCode, request.Country))
+            throw new ArgumentException($"Postal code '{request.PostalCode}' is not in the Portuguese format XXXX-XXX.", nameof(request));
+
         var taxId = request.TaxId.Trim();
 
         if (await storage.TaxIdExistsAsync(taxId, cancellationToken: cancellationToken))
@@ -57,9 +65,61 @@ public sealed class CompanyAdminService(ICompanyStorage storage) : ICompanyAdmin
         };
 
         await storage.AddAsync(company, cancellationToken);
+
+        // Saved together with the company: stock management has nowhere to put anything until a
+        // company has a default warehouse, so one never exists without the other.
+        await warehouseStorage.AddAsync(new Warehouse
+        {
+            CompanyId = company.Id,
+            Code = Constants.DefaultWarehouse.Code,
+            Name = Constants.DefaultWarehouse.Name,
+            Address = company.Address,
+            City = company.City,
+            PostalCode = company.PostalCode,
+            Country = company.Country,
+            IsDefault = true
+        }, cancellationToken);
+
+        // Saved together with the company too: batteries and lubricating oils are the eco-fees a
+        // small business runs into first, so they exist from day one instead of after a support call.
+        await CreateDefaultEcoFeeTypesAsync(company.Id, cancellationToken);
+
         await storage.SaveChangesAsync(cancellationToken);
 
         return Map(company);
+    }
+
+    private async Task CreateDefaultEcoFeeTypesAsync(Guid companyId, CancellationToken cancellationToken)
+    {
+        foreach (var seed in Constants.DefaultEcoFeeTypes.All)
+        {
+            var feeProduct = new Product
+            {
+                CompanyId = companyId,
+                ProductCode = seed.Code,
+                Description = seed.Description,
+                ProductType = "I",
+                InventoryCategory = "M",
+                UnitOfMeasure = seed.CalculationBasis == nameof(EcoFeeCalculationBasis.PerKg) ? "KG" : "UN",
+                UnitPrice = seed.Rate,
+                DefaultTaxCode = FiscalPT.Documents.TaxCodes.Normal,
+                DefaultTaxPercentage = 23m
+            };
+
+            await productStorage.AddAsync(feeProduct, cancellationToken);
+
+            await ecoFeeTypeStorage.AddAsync(new EcoFeeType
+            {
+                CompanyId = companyId,
+                Code = seed.Code,
+                Description = seed.Description,
+                CalculationBasis = Enum.Parse<EcoFeeCalculationBasis>(seed.CalculationBasis),
+                Rate = seed.Rate,
+                ManagingEntityName = seed.ManagingEntityName,
+                FeeProductId = feeProduct.Id,
+                FeeProduct = feeProduct
+            }, cancellationToken);
+        }
     }
 
     public async Task<CompanyDetailDto?> UpdateAsync(Guid id, UpdateCompanyRequest request, CancellationToken cancellationToken = default)
@@ -67,6 +127,9 @@ public sealed class CompanyAdminService(ICompanyStorage storage) : ICompanyAdmin
         ArgumentNullException.ThrowIfNull(request);
         ArgumentException.ThrowIfNullOrWhiteSpace(request.Name);
         ArgumentException.ThrowIfNullOrWhiteSpace(request.TaxId);
+
+        if (!PostalCodes.IsValid(request.PostalCode, request.Country))
+            throw new ArgumentException($"Postal code '{request.PostalCode}' is not in the Portuguese format XXXX-XXX.", nameof(request));
 
         var company = await storage.GetByIdAsync(id, cancellationToken);
         if (company is null)

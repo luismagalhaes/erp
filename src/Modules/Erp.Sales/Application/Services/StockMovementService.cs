@@ -258,13 +258,33 @@ public sealed class StockMovementService(
             if (!TaxCodes.All.Contains(line.TaxCode, StringComparer.Ordinal))
                 throw new ArgumentException($"Line {lineNumber} has an unknown tax code '{line.TaxCode}'.", nameof(requestLines));
 
-            if (string.Equals(line.TaxCode, TaxCodes.Exempt, StringComparison.Ordinal)
-                && string.IsNullOrWhiteSpace(line.TaxExemptionReason))
+            // An exempt line cites the tax authority's table; any other line carries no exemption.
+            var (exemptionCode, exemptionReason, exemptionError) =
+                TaxExemptionReasons.Resolve(line.TaxCode, line.TaxExemptionCode, line.TaxExemptionReason);
+
+            if (exemptionError is not null)
+                throw new ArgumentException($"Line {lineNumber} {exemptionError}", nameof(requestLines));
+
+            if (line.DiscountPercentage is < 0 or > 100)
+                throw new ArgumentException($"Line {lineNumber} has a discount outside 0 to 100%.", nameof(requestLines));
+
+            // An eco-fee line references the line it was generated for by position, since neither
+            // side has a database id yet at request time.
+            Guid? ecoFeeForLineId = null;
+
+            if (line.IsEcoFee)
             {
-                throw new ArgumentException($"Line {lineNumber} is exempt and requires an exemption reason.", nameof(requestLines));
+                if (line.EcoFeeForLineNumber is not { } parentLineNumber)
+                    throw new ArgumentException($"Line {lineNumber} is an eco-fee, so it must say which line it belongs to.", nameof(requestLines));
+
+                ecoFeeForLineId = lines.Find(x => x.LineNumber == parentLineNumber)?.Id
+                    ?? throw new ArgumentException($"Line {lineNumber} references line {parentLineNumber}, which was not found before it.", nameof(requestLines));
             }
 
-            var lineAmount = FiscalRounding.Amount(line.Quantity * line.UnitPrice);
+            // The same arithmetic as an invoice: the discount comes off the rounded gross amount.
+            var grossAmount = FiscalRounding.Amount(line.Quantity * line.UnitPrice);
+            var discountAmount = FiscalRounding.Amount(grossAmount * line.DiscountPercentage / 100m);
+            var lineAmount = grossAmount - discountAmount;
             var taxAmount = FiscalRounding.Amount(lineAmount * line.TaxPercentage / 100m);
 
             lines.Add(new StockMovementLine
@@ -275,13 +295,17 @@ public sealed class StockMovementService(
                 Quantity = line.Quantity,
                 UnitOfMeasure = line.UnitOfMeasure,
                 UnitPrice = line.UnitPrice,
+                DiscountPercentage = line.DiscountPercentage,
+                DiscountAmount = discountAmount,
                 LineAmount = lineAmount,
                 TaxCountryRegion = line.TaxCountryRegion,
                 TaxCode = line.TaxCode,
                 TaxPercentage = line.TaxPercentage,
                 TaxAmount = taxAmount,
-                TaxExemptionCode = line.TaxExemptionCode,
-                TaxExemptionReason = line.TaxExemptionReason
+                TaxExemptionCode = exemptionCode,
+                TaxExemptionReason = exemptionReason,
+                IsEcoFee = line.IsEcoFee,
+                EcoFeeForLineId = ecoFeeForLineId
             });
 
             lineNumber++;
@@ -320,7 +344,9 @@ public sealed class StockMovementService(
             movement.MovementType,
             movement.DocumentNumber,
             movement.Id,
-            [.. movement.Lines.Select(line => new DocumentStockLine(
+            // An eco-fee line carries no real stock — it is a monetary charge, not an article — so it
+            // is left out here even though it is an ordinary line everywhere else on the document.
+            [.. movement.Lines.Where(line => !line.IsEcoFee).Select(line => new DocumentStockLine(
                 line.Id,
                 line.ProductCode,
                 line.ProductDescription,
@@ -415,8 +441,28 @@ public sealed class StockMovementService(
                     line.LineAmount,
                     line.TaxCode,
                     line.TaxPercentage,
-                    line.TaxAmount))
-                .ToList());
+                    line.TaxAmount,
+                    line.DiscountPercentage,
+                    line.DiscountAmount,
+                    line.TaxExemptionCode,
+                    line.TaxExemptionReason,
+                    line.IsEcoFee,
+                    line.EcoFeeForLineId is { } forLineId
+                        ? movement.Lines.FirstOrDefault(l => l.Id == forLineId)?.LineNumber
+                        : null))
+                .ToList(),
+            movement.Lines.Sum(line => line.GrossAmount),
+            movement.Lines.Sum(line => line.DiscountAmount),
+            // The VAT grouped by rate, so the screen shows the same breakdown an invoice does.
+            [.. movement.Lines
+                .GroupBy(line => (line.TaxCountryRegion, line.TaxCode, line.TaxPercentage))
+                .OrderByDescending(group => group.Key.TaxPercentage)
+                .Select(group => new MovementTaxDto(
+                    group.Key.TaxCountryRegion,
+                    group.Key.TaxCode,
+                    group.Key.TaxPercentage,
+                    group.Sum(line => line.LineAmount),
+                    group.Sum(line => line.TaxAmount)))]);
 
     private static MovementLocationDto Map(MovementLocation location) =>
         new(location.Address,

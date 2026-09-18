@@ -22,6 +22,14 @@
     <PageHeader Title="@(IsNew ? Localizer["CustomerEditor_NewTitle"] : Localizer["CustomerEditor_EditTitle"])"
                 Breadcrumbs="Breadcrumbs">
         <Actions>
+            @if (Id is { } customerId)
+            {
+                <MudButton Variant="Variant.Outlined" Color="Color.Primary"
+                           StartIcon="@Icons.Material.Filled.AccountBalanceWallet"
+                           OnClick="@(() => Navigation.NavigateTo($"customer-statements?customerId={customerId}"))">
+                    @Localizer["Statement_OpenButton"]
+                </MudButton>
+            }
             <MudButton Variant="Variant.Text" StartIcon="@Icons.Material.Filled.ArrowBack"
                        OnClick="@(() => Navigation.NavigateTo("customers"))">
                 @Localizer["Common_Back"]
@@ -59,11 +67,11 @@
             <ChildContent>
                 @* ModelChanged is what re-renders this page, so the save button follows what is typed. *@
                 <PartnerFormFields Model="_model" ModelChanged="OnModelChanged"
-                                   AllowCodeEdit="IsNew" RequireCode="false" RequireTaxId="false" />
+                                   RequireTaxId="false" />
             </ChildContent>
         </EditorCard>
 
-        <FormActions Busy="_saving" Disabled="@(!_model.IsValid(requireCode: false, requireTaxId: false) || !Company.HasCompany)"
+        <FormActions Busy="_saving" Disabled="@(!_model.IsValid(requireTaxId: false) || !Company.HasCompany)"
                      Hint="@(Company.HasCompany ? null : Localizer["CustomerEditor_NoCompanyWarning"].Value)"
                      OnSubmit="SaveAsync"
                      OnCancel="@(() => Navigation.NavigateTo("customers"))" />
@@ -145,8 +153,8 @@
 
         try
         {
-            // Code and tax id are optional in this form — fill in a generated code and the
-            // final-consumer tax id before sending, since the API still requires both.
+            // The tax id is optional in this form — fill in the final-consumer id before sending,
+            // since the API still requires one. The code is numbered by the API.
             _model.ApplyDefaults();
 
             var error = IsNew

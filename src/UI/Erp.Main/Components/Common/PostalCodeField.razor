@@ -1,0 +1,65 @@
+@using MudBlazor
+@using Erp.Common
+@using Erp.Main.Models.Core
+@using Erp.Main.Resources
+@using Erp.Main.Services
+@using Microsoft.Extensions.Localization
+@inject IStringLocalizer<MainResources> Localizer
+@inject LookupApiClient Lookups
+
+@*
+    A postal code that follows the country. For Portugal the box only takes digits and writes the
+    dash itself — XXXX-XXX, the shape the SAF-T and the API require; any other country is free text.
+*@
+@if (PostalCodes.IsPortugal(Country))
+{
+    <MudTextField T="string" Value="@Value" ValueChanged="OnChangedAsync" Immediate="true"
+                  Label="@Label" Variant="Variant.Outlined" Margin="Margin.Dense"
+                  Mask="@_portugueseMask" Placeholder="@PostalCodes.PortugalMask.Replace('0', 'X')"
+                  Error="@(!PostalCodes.IsValid(Value, Country))"
+                  ErrorText="@Localizer["PostalCode_PortugalFormatError"]" />
+}
+else
+{
+    <MudTextField T="string" Value="@Value" ValueChanged="OnChangedAsync"
+                  Label="@Label" Variant="Variant.Outlined" Margin="Margin.Dense" />
+}
+
+@code {
+    private readonly PatternMask _portugueseMask = new(PostalCodes.PortugalMask);
+    private string? _lastLookedUp;
+
+    [Parameter] public string? Value { get; set; }
+
+    [Parameter] public EventCallback<string?> ValueChanged { get; set; }
+
+    /// <summary>Two-letter country code; empty is taken as Portugal.</summary>
+    [Parameter] public string? Country { get; set; }
+
+    [Parameter] public string? Label { get; set; }
+
+    /// <summary>
+    /// Raised once a complete "0000-000" code resolves to an address via geoapi.pt, so the parent
+    /// can fill in locality/city. Never raised for a code with no match, or for a non-PT country.
+    /// </summary>
+    [Parameter] public EventCallback<PostalCodeLookupResult> LookupResolved { get; set; }
+
+    private async Task OnChangedAsync(string? value)
+    {
+        await ValueChanged.InvokeAsync(value);
+
+        if (!PostalCodes.IsPortugal(Country) || !LookupResolved.HasDelegate)
+            return;
+
+        // Only a complete, well-formed code is worth a network call, and only once per value —
+        // Immediate=true fires on every keystroke, so this is what keeps it from spamming the API.
+        if (string.IsNullOrWhiteSpace(value) || value == _lastLookedUp || !PostalCodes.IsValid(value, Country))
+            return;
+
+        _lastLookedUp = value;
+
+        var result = await Lookups.GetPostalCodeAsync(value);
+        if (result is not null)
+            await LookupResolved.InvokeAsync(result);
+    }
+}

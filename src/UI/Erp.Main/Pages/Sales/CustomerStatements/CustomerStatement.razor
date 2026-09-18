@@ -1,0 +1,33 @@
+@page "/customer-statements"
+@attribute [Authorize]
+@using Microsoft.AspNetCore.Authorization
+@using Erp.Main.Services
+@using Erp.Main.Resources
+@using Microsoft.Extensions.Localization
+@inject SalesApiClient SalesApi
+@inject CatalogApiClient Catalog
+@inject IStringLocalizer<MainResources> L
+
+<PageTitle>@L["CustomerStatement_Title"]</PageTitle>
+
+<AccountStatementPage Title="@L["CustomerStatement_Title"]"
+                      PartyLabel="@L["CustomerStatement_CustomerLabel"]"
+                      BalanceMeaning="@L["CustomerStatement_BalanceMeaning"]"
+                      Route="customer-statements"
+                      PartyParameter="customerId"
+                      PartyId="CustomerId"
+                      StartDate="StartDate"
+                      EndDate="EndDate"
+                      LoadParties="@(companyId => Catalog.GetCustomersAsync(companyId))"
+                      LoadStatement="@((companyId, customerId, start, end) => SalesApi.GetCustomerStatementAsync(companyId, customerId, start, end))" />
+
+@code {
+    [SupplyParameterFromQuery(Name = "customerId")]
+    public Guid? CustomerId { get; set; }
+
+    [SupplyParameterFromQuery(Name = "startDate")]
+    public DateOnly? StartDate { get; set; }
+
+    [SupplyParameterFromQuery(Name = "endDate")]
+    public DateOnly? EndDate { get; set; }
+}

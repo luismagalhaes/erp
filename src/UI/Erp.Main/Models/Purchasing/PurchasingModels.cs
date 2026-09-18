@@ -37,7 +37,8 @@ public sealed record PurchaseOrderLine(
     decimal TaxPercentage,
     decimal TaxAmount,
     decimal ReceivedQuantity,
-    decimal PendingQuantity);
+    decimal PendingQuantity,
+    decimal DiscountPercentage = 0m);
 
 public sealed record PurchaseOrder(
     Guid Id,
@@ -95,7 +96,8 @@ public sealed record PurchaseOrderLineRequest(
     string UnitOfMeasure = "UN",
     string TaxCountryRegion = "PT",
     string TaxCode = "NOR",
-    decimal TaxPercentage = 23m);
+    decimal TaxPercentage = 23m,
+    decimal DiscountPercentage = 0m);
 
 public sealed record ClosePurchaseOrderRequest(string Reason);
 
@@ -115,7 +117,8 @@ public sealed record PendingOrderLine(
     decimal Quantity,
     decimal ReceivedQuantity,
     decimal PendingQuantity,
-    decimal UnitPrice);
+    decimal UnitPrice,
+    decimal DiscountPercentage = 0m);
 
 // --- Goods receipts ---
 
@@ -140,7 +143,9 @@ public sealed record GoodsReceiptLine(
     decimal Quantity,
     string UnitOfMeasure,
     decimal UnitCost,
-    decimal LineAmount);
+    decimal LineAmount,
+    decimal DiscountPercentage = 0m,
+    decimal DiscountAmount = 0m);
 
 public sealed record GoodsReceipt(
     Guid Id,
@@ -170,7 +175,8 @@ public sealed record GoodsReceiptLineRequest(
     decimal Quantity,
     decimal UnitCost,
     string UnitOfMeasure = "UN",
-    Guid? OrderLineId = null);
+    Guid? OrderLineId = null,
+    decimal DiscountPercentage = 0m);
 
 public sealed record CreateGoodsReceiptRequest(
     Guid CompanyId,
@@ -220,7 +226,9 @@ public sealed record PurchaseInvoiceLine(
     decimal TaxPercentage,
     decimal TaxAmount,
     string DeductionNature,
-    bool MovesStock);
+    bool MovesStock,
+    decimal DiscountPercentage = 0m,
+    decimal DiscountAmount = 0m);
 
 public sealed record PurchaseInvoiceTaxSummary(
     string TaxCountryRegion,
@@ -271,7 +279,8 @@ public sealed record PurchaseInvoiceLineRequest(
     decimal TaxPercentage = 23m,
     string DeductionNature = "Inventory",
     Guid? ReceiptLineId = null,
-    Guid? ReturnLineId = null);
+    Guid? ReturnLineId = null,
+    decimal DiscountPercentage = 0m);
 
 public sealed record RecordPurchaseInvoiceRequest(
     Guid CompanyId,
@@ -305,7 +314,8 @@ public sealed record UninvoicedReceiptLine(
     decimal ReceivedQuantity,
     decimal InvoicedQuantity,
     decimal PendingQuantity,
-    decimal UnitCost);
+    decimal UnitCost,
+    decimal DiscountPercentage = 0m);
 
 // --- Returns to supplier ---
 
@@ -515,6 +525,12 @@ public static class PurchaseDocumentTypes
     /// the supplier's paper.
     /// </summary>
     public static bool IsCredit(string code) => code == "NC";
+
+    /// <summary>
+    /// The documents that leave us owing money. A fatura-recibo was paid when issued, and a credit
+    /// note lowers the debt, so neither is ever paid.
+    /// </summary>
+    public static bool IsSettledByPayment(string code) => code is "FT" or "FS" or "ND";
 
     public static decimal Signed(string code, decimal amount) => IsCredit(code) ? -amount : amount;
 }

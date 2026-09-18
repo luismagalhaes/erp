@@ -1,4 +1,7 @@
+using Erp.Common;
+using Erp.Api.Security;
 using Erp.Api.Services;
+using Erp.Core.Domain;
 using Erp.Core.Infrastructure.Application;
 using Erp.Core.Infrastructure.Contracts;
 using Microsoft.AspNetCore.Authorization;
@@ -12,7 +15,8 @@ namespace Erp.Api.Controllers.Core;
 [Route("api/product-families")]
 [Authorize(Policy = Policies.Read)]
 [Produces("application/json")]
-public sealed class ProductFamiliesController(IProductFamilyService familyService, ILogger<ProductFamiliesController> logger) : ControllerBase
+[ScopedEntity(typeof(ProductFamily))]
+public sealed class ProductFamiliesController(IProductFamilyService familyService, MasterDataCodes masterDataCodes, ILogger<ProductFamiliesController> logger) : ControllerBase
 {
     [HttpGet]
     [ProducesResponseType<IReadOnlyList<ProductFamilyDto>>(StatusCodes.Status200OK)]
@@ -64,7 +68,17 @@ public sealed class ProductFamiliesController(IProductFamilyService familyServic
     {
         try
         {
-            var created = await familyService.CreateAsync(request, cancellationToken);
+            if (request is null)
+                return BadRequest(new { error = "A request body is required." });
+
+            // A blank code is numbered 1, 2, 3...; a code that comes in, from an import, is kept.
+            var created = await masterDataCodes.CreateAsync(
+                request.CompanyId,
+                request.Code,
+                Constants.CodeCounters.ProductFamilies,
+                (code, ct) => familyService.CodeExistsAsync(request.CompanyId, code, ct),
+                code => familyService.CreateAsync(request with { Code = code }, cancellationToken),
+                cancellationToken);
             return CreatedAtAction(nameof(GetById), new { id = created.Id }, created);
         }
         catch (ArgumentException ex)

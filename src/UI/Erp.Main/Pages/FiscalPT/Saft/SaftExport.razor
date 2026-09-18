@@ -37,13 +37,13 @@
     }
     else
     {
-        <MudPaper Elevation="1" Class="pa-4">
+        <MudPaper Elevation="0" Class="pa-4 erp-card erp-form">
             <MudText Typo="Typo.h6" Class="mb-3">@L["SaftExport_PeriodTitle"]</MudText>
 
             <MudGrid>
                 <MudItem xs="12" md="3">
                     <MudSelect T="SaftPeriodKind" Value="_periodKind" ValueChanged="OnPeriodKindChanged"
-                               Label="@L["SaftExport_PeriodTypeLabel"]" Variant="Variant.Outlined">
+                               Label="@L["SaftExport_PeriodTypeLabel"]" Variant="Variant.Outlined" Margin="Margin.Dense">
                         <MudSelectItem T="SaftPeriodKind" Value="SaftPeriodKind.Month">@L["SaftExport_MonthOption"]</MudSelectItem>
                         <MudSelectItem T="SaftPeriodKind" Value="SaftPeriodKind.Quarter">@L["SaftExport_QuarterOption"]</MudSelectItem>
                         <MudSelectItem T="SaftPeriodKind" Value="SaftPeriodKind.Year">@L["SaftExport_YearOption"]</MudSelectItem>
@@ -53,7 +53,7 @@
 
                 <MudItem xs="12" md="2">
                     <MudNumericField T="int" Value="_year" ValueChanged="OnYearChanged"
-                                     Label="@L["SaftExport_YearLabel"]" Variant="Variant.Outlined" Min="2000" Max="2100"
+                                     Label="@L["SaftExport_YearLabel"]" Variant="Variant.Outlined" Margin="Margin.Dense" Min="2000" Max="2100"
                                      Disabled="@(_periodKind == SaftPeriodKind.Custom)" />
                 </MudItem>
 
@@ -61,7 +61,7 @@
                 {
                     <MudItem xs="12" md="3">
                         <MudSelect T="int" Value="_month" ValueChanged="OnMonthChanged"
-                                   Label="@L["SaftExport_MonthLabel"]" Variant="Variant.Outlined">
+                                   Label="@L["SaftExport_MonthLabel"]" Variant="Variant.Outlined" Margin="Margin.Dense">
                             @for (var month = 1; month <= 12; month++)
                             {
                                 var value = month;
@@ -74,7 +74,7 @@
                 {
                     <MudItem xs="12" md="3">
                         <MudSelect T="int" Value="_quarter" ValueChanged="OnQuarterChanged"
-                                   Label="@L["SaftExport_QuarterLabel"]" Variant="Variant.Outlined">
+                                   Label="@L["SaftExport_QuarterLabel"]" Variant="Variant.Outlined" Margin="Margin.Dense">
                             @for (var quarter = 1; quarter <= 4; quarter++)
                             {
                                 var value = quarter;
@@ -87,11 +87,11 @@
                 {
                     <MudItem xs="12" md="3">
                         <MudDatePicker Date="_startDate" DateChanged="OnStartDateChanged" Label="@L["SaftExport_StartDateLabel"]"
-                                       Variant="Variant.Outlined" DateFormat="yyyy-MM-dd" />
+                                       Variant="Variant.Outlined" Margin="Margin.Dense" DateFormat="yyyy-MM-dd" />
                     </MudItem>
                     <MudItem xs="12" md="3">
                         <MudDatePicker Date="_endDate" DateChanged="OnEndDateChanged" Label="@L["SaftExport_EndDateLabel"]"
-                                       Variant="Variant.Outlined" DateFormat="yyyy-MM-dd" />
+                                       Variant="Variant.Outlined" Margin="Margin.Dense" DateFormat="yyyy-MM-dd" />
                     </MudItem>
                 }
 
@@ -103,7 +103,7 @@
             </MudGrid>
         </MudPaper>
 
-        <MudPaper Elevation="1" Class="pa-4">
+        <MudPaper Elevation="0" Class="pa-4 erp-card erp-form">
             <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center" Class="mb-3">
                 <MudText Typo="Typo.h6">@L["SaftExport_ContentTitle"]</MudText>
                 @if (_loadingSummary)
@@ -174,7 +174,7 @@
             @L["SaftExport_VoidedDocumentsNotice"]
         </MudAlert>
 
-        <MudPaper Elevation="1" Class="pa-4">
+        <MudPaper Elevation="0" Class="pa-4 erp-card erp-form">
             <MudStack Spacing="0" Class="mb-3">
                 <MudText Typo="Typo.h6">@L["SaftExport_SelfBillingTitle"]</MudText>
                 <MudText Typo="Typo.body2" Color="Color.Secondary">
@@ -185,7 +185,7 @@
             <MudGrid>
                 <MudItem xs="12" md="6">
                     <MudSelect T="Guid?" @bind-Value="_selfBillingSupplierId" @bind-Value:after="StateHasChanged"
-                               Label="@L["SaftExport_SelfBilledSupplierLabel"]" Variant="Variant.Outlined">
+                               Label="@L["SaftExport_SelfBilledSupplierLabel"]" Variant="Variant.Outlined" Margin="Margin.Dense">
                         @foreach (var supplier in _suppliers)
                         {
                             <MudSelectItem T="Guid?" Value="@supplier.Id">

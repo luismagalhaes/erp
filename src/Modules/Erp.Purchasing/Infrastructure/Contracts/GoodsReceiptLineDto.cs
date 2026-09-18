@@ -10,4 +10,6 @@ public sealed record GoodsReceiptLineDto(
     decimal Quantity,
     string UnitOfMeasure,
     decimal UnitCost,
+    decimal DiscountPercentage,
+    decimal DiscountAmount,
     decimal LineAmount);

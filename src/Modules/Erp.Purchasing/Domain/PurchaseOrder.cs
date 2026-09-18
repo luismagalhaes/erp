@@ -125,9 +125,17 @@ public sealed class PurchaseOrder
             if (line.UnitPrice < 0)
                 throw new ArgumentException($"Line {lineNumber} has a negative price.", nameof(lines));
 
+            if (line.DiscountPercentage is < 0 or > 100)
+                throw new ArgumentException($"Line {lineNumber} has a discount outside 0 to 100%.", nameof(lines));
+
             line.OrderId = Id;
             line.LineNumber = lineNumber++;
-            line.LineAmount = FiscalRounding.Amount(line.Quantity * line.UnitPrice);
+
+            // The discount is worked out on the rounded gross amount, so gross minus discount is
+            // exactly the taxable amount — the same rule the sales side uses.
+            var grossAmount = FiscalRounding.Amount(line.Quantity * line.UnitPrice);
+            line.DiscountAmount = FiscalRounding.Amount(grossAmount * line.DiscountPercentage / 100m);
+            line.LineAmount = grossAmount - line.DiscountAmount;
             line.TaxAmount = FiscalRounding.Amount(line.LineAmount * line.TaxPercentage / 100m);
 
             Lines.Add(line);

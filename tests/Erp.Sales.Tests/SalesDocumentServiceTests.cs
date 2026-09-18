@@ -228,7 +228,57 @@ public class SalesDocumentServiceTests
                 SalesTestContext.Line(taxCode: "ISE", taxPercentage: 0m)),
             "user-1");
 
-        await act.Should().ThrowAsync<ArgumentException>().WithMessage("*exemption reason*");
+        await act.Should().ThrowAsync<ArgumentException>().WithMessage("*exemption code*");
+    }
+
+    [Fact]
+    public async Task IssueAsync_refuses_an_exemption_code_the_tax_authority_does_not_know()
+    {
+        var series = _context.GivenCommunicatedSeries(_companyId);
+
+        var act = () => _context.CreateService().IssueAsync(
+            SalesTestContext.InvoiceRequest(
+                _companyId,
+                series.Id,
+                SalesTestContext.Line(taxCode: "ISE", taxPercentage: 0m, exemptionCode: "M03")),
+            "user-1");
+
+        await act.Should().ThrowAsync<ArgumentException>().WithMessage("*unknown VAT exemption code 'M03'*");
+    }
+
+    /// <summary>The code is what is chosen; the legal basis SAF-T wants comes from the AT's table.</summary>
+    [Fact]
+    public async Task IssueAsync_writes_the_legal_basis_of_the_exemption_code()
+    {
+        var series = _context.GivenCommunicatedSeries(_companyId);
+
+        await _context.CreateService().IssueAsync(
+            SalesTestContext.InvoiceRequest(
+                _companyId,
+                series.Id,
+                SalesTestContext.Line(taxCode: "ISE", taxPercentage: 0m, exemptionCode: "m07")),
+            "user-1");
+
+        var line = _context.Persisted.Single().Lines.Single();
+        line.TaxExemptionCode.Should().Be("M07");
+        line.TaxExemptionReason.Should().Be("Artigo 9.º do CIVA");
+    }
+
+    [Fact]
+    public async Task IssueAsync_drops_an_exemption_sent_on_a_taxed_line()
+    {
+        var series = _context.GivenCommunicatedSeries(_companyId);
+
+        await _context.CreateService().IssueAsync(
+            SalesTestContext.InvoiceRequest(
+                _companyId,
+                series.Id,
+                SalesTestContext.Line(exemptionCode: "M07", exemptionReason: "Artigo 9.º do CIVA")),
+            "user-1");
+
+        var line = _context.Persisted.Single().Lines.Single();
+        line.TaxExemptionCode.Should().BeNull();
+        line.TaxExemptionReason.Should().BeNull();
     }
 
     [Fact]

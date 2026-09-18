@@ -1,6 +1,7 @@
 using Erp.Api.Services;
 using Erp.Core.Infrastructure.Application;
 using Erp.Core.Infrastructure.Contracts;
+using Erp.FiscalPT.Documents;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.OData.Query;
@@ -32,6 +33,15 @@ public sealed class VatRatesController(IVatRateService vatRateService) : Control
     [ProducesResponseType<ODataCollection<VatRateDto>>(StatusCodes.Status200OK)]
     public ActionResult<ODataCollection<VatRateDto>> Query(ODataQueryOptions<VatRateDto> options) =>
         Ok(ODataQueryExecutor.Execute(vatRateService.Query(), options));
+
+    /// <summary>
+    /// The tax authority's table of VAT exemption reasons, which an exempt line has to cite. Served
+    /// from the fiscal library, where it is kept in step with the AT.
+    /// </summary>
+    [HttpGet("exemption-reasons")]
+    [ProducesResponseType<IReadOnlyList<TaxExemptionReason>>(StatusCodes.Status200OK)]
+    public ActionResult<IReadOnlyList<TaxExemptionReason>> GetExemptionReasons() =>
+        Ok(TaxExemptionReasons.All);
 
     [HttpPut("{id:guid}")]
     [Authorize(Policy = Policies.Admin)]

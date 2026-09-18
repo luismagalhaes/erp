@@ -4,6 +4,9 @@
 @using Microsoft.AspNetCore.Authorization
 @using Microsoft.AspNetCore.Components.Web
 @using MudBlazor
+@using Erp.FiscalPT.Documents
+@using Erp.Main.Components.Common
+@using Erp.Main.Components.Sales
 @using Erp.Main.Models
 @using Erp.Main.Services
 @using Microsoft.Extensions.Localization
@@ -11,7 +14,9 @@
 @inject SalesApiClient SalesApi
 @inject SeriesApiClient SeriesApi
 @inject CatalogApiClient Catalog
+@inject StockApiClient StockApi
 @inject CompanyState Company
+@inject WarehouseState WarehouseState
 @inject NavigationManager Navigation
 @inject ISnackbar Snackbar
 @inject IStringLocalizer<MainResources> L
@@ -51,11 +56,11 @@
     }
     else
     {
-        <MudPaper Elevation="1" Class="pa-4">
+        <MudPaper Elevation="0" Class="pa-4 erp-card erp-form">
             <MudText Typo="Typo.h6" Class="mb-3">@L["NewStockMovement_DocumentTitle"]</MudText>
             <MudGrid>
                 <MudItem xs="12" md="5">
-                    <MudSelect @bind-Value="_seriesId" Label="@L["NewStockMovement_SeriesLabel"]" Variant="Variant.Outlined" Required="true">
+                    <MudSelect @bind-Value="_seriesId" Label="@L["NewStockMovement_SeriesLabel"]" Variant="Variant.Outlined" Margin="Margin.Dense" Required="true">
                         @foreach (var series in _series)
                         {
                             <MudSelectItem T="Guid" Value="@series.Id">
@@ -67,21 +72,31 @@
                 </MudItem>
                 <MudItem xs="12" md="3">
                     <MudDatePicker @bind-Date="_movementDate" Label="@L["NewStockMovement_DocumentDateLabel"]"
-                                   Variant="Variant.Outlined" DateFormat="yyyy-MM-dd" />
+                                   Variant="Variant.Outlined" Margin="Margin.Dense" DateFormat="yyyy-MM-dd" />
                 </MudItem>
-                <MudItem xs="12" md="4">
-                    <MudTextField @bind-Value="_vehiclePlate" Label="@L["NewStockMovement_VehiclePlateLabel"]" Variant="Variant.Outlined"
+                <MudItem xs="12" md="2">
+                    <MudTextField @bind-Value="_vehiclePlate" Label="@L["NewStockMovement_VehiclePlateLabel"]" Variant="Variant.Outlined" Margin="Margin.Dense"
                                   HelperText="@L["NewStockMovement_VehiclePlateHelp"]" />
+                </MudItem>
+                @* The goods leave from a warehouse, and the selected one is the company's default. *@
+                <MudItem xs="12" md="2">
+                    <MudSelect T="Guid?" Value="_warehouseId" ValueChanged="OnWarehouseChanged"
+                               Label="@L["NewStockMovement_WarehouseLabel"]" Variant="Variant.Outlined" Margin="Margin.Dense">
+                        @foreach (var warehouse in _warehouses)
+                        {
+                            <MudSelectItem T="Guid?" Value="@warehouse.Id">@warehouse.Code — @warehouse.Name</MudSelectItem>
+                        }
+                    </MudSelect>
                 </MudItem>
             </MudGrid>
         </MudPaper>
 
-        <MudPaper Elevation="1" Class="pa-4">
+        <MudPaper Elevation="0" Class="pa-4 erp-card erp-form">
             <MudText Typo="Typo.h6" Class="mb-3">@L["NewStockMovement_RecipientTitle"]</MudText>
             <MudGrid>
                 <MudItem xs="12" md="4">
                     <MudSelect T="Guid?" Value="_partnerId" ValueChanged="OnPartnerChanged"
-                               Label="@(_partyIsSupplier ? L["NewStockMovement_SupplierLabel"] : L["NewStockMovement_CustomerLabel"])" Variant="Variant.Outlined"
+                               Label="@(_partyIsSupplier ? L["NewStockMovement_SupplierLabel"] : L["NewStockMovement_CustomerLabel"])" Variant="Variant.Outlined" Margin="Margin.Dense"
                                Clearable="true" Placeholder="@L["NewStockMovement_FreePlaceholder"]">
                         @foreach (var partner in _partyIsSupplier ? _suppliers : _customers)
                         {
@@ -90,11 +105,11 @@
                     </MudSelect>
                 </MudItem>
                 <MudItem xs="12" md="3">
-                    <MudTextField @bind-Value="_partyTaxId" Label="@L["NewStockMovement_TaxIdLabel"]" Variant="Variant.Outlined"
+                    <MudTextField @bind-Value="_partyTaxId" Label="@L["NewStockMovement_TaxIdLabel"]" Variant="Variant.Outlined" Margin="Margin.Dense"
                                   HelperText="@L["NewStockMovement_TaxIdHelp"]" />
                 </MudItem>
                 <MudItem xs="12" md="3">
-                    <MudTextField @bind-Value="_partyName" Label="@L["NewStockMovement_NameLabel"]" Variant="Variant.Outlined" Required="true" />
+                    <MudTextField @bind-Value="_partyName" Label="@L["NewStockMovement_NameLabel"]" Variant="Variant.Outlined" Margin="Margin.Dense" Required="true" />
                 </MudItem>
                 <MudItem xs="12" md="2" Class="d-flex align-center">
                     <MudSwitch T="bool" Value="_partyIsSupplier" ValueChanged="OnPartyKindChanged"
@@ -103,51 +118,52 @@
             </MudGrid>
         </MudPaper>
 
-        <MudPaper Elevation="1" Class="pa-4">
+        <MudPaper Elevation="0" Class="pa-4 erp-card erp-form">
             <MudText Typo="Typo.h6" Class="mb-3">@L["NewStockMovement_TransportTitle"]</MudText>
             <MudGrid>
-                <MudItem xs="12" md="6">
-                    <MudText Typo="Typo.subtitle2" Color="Color.Secondary" Class="mb-2">@L["NewStockMovement_LoadLocationLabel"]</MudText>
-                    <MudTextField @bind-Value="_shipFromAddress" Label="@L["NewStockMovement_AddressLabel"]" Variant="Variant.Outlined"
-                                  Required="true" Class="mb-3" />
-                    <MudGrid>
-                        <MudItem xs="6">
-                            <MudTextField @bind-Value="_shipFromPostalCode" Label="@L["NewStockMovement_PostalCodeLabel"]" Variant="Variant.Outlined" />
-                        </MudItem>
-                        <MudItem xs="6">
-                            <MudTextField @bind-Value="_shipFromCity" Label="@L["NewStockMovement_CityLabel"]" Variant="Variant.Outlined" />
-                        </MudItem>
-                    </MudGrid>
+                @* One grid for both points, so address, postal code and city line up across them. *@
+                <MudItem xs="12">
+                    <MudText Typo="Typo.subtitle2" Color="Color.Secondary">@L["NewStockMovement_LoadLocationLabel"]</MudText>
+                </MudItem>
+                <MudItem xs="12" sm="6" md="6">
+                    <MudTextField @bind-Value="_shipFromAddress" Label="@L["NewStockMovement_AddressLabel"]" Variant="Variant.Outlined" Margin="Margin.Dense"
+                                  Required="true" />
+                </MudItem>
+                <MudItem xs="6" sm="3" md="3">
+                    <PostalCodeField @bind-Value="_shipFromPostalCode" Label="@L["NewStockMovement_PostalCodeLabel"]" />
+                </MudItem>
+                <MudItem xs="6" sm="3" md="3">
+                    <MudTextField @bind-Value="_shipFromCity" Label="@L["NewStockMovement_CityLabel"]" Variant="Variant.Outlined" Margin="Margin.Dense" />
                 </MudItem>
 
-                <MudItem xs="12" md="6">
-                    <MudText Typo="Typo.subtitle2" Color="Color.Secondary" Class="mb-2">@L["NewStockMovement_UnloadLocationLabel"]</MudText>
-                    <MudTextField @bind-Value="_shipToAddress" Label="@L["NewStockMovement_AddressLabel"]" Variant="Variant.Outlined"
-                                  Required="true" Class="mb-3" />
-                    <MudGrid>
-                        <MudItem xs="6">
-                            <MudTextField @bind-Value="_shipToPostalCode" Label="@L["NewStockMovement_PostalCodeLabel"]" Variant="Variant.Outlined" />
-                        </MudItem>
-                        <MudItem xs="6">
-                            <MudTextField @bind-Value="_shipToCity" Label="@L["NewStockMovement_CityLabel"]" Variant="Variant.Outlined" />
-                        </MudItem>
-                    </MudGrid>
+                <MudItem xs="12">
+                    <MudText Typo="Typo.subtitle2" Color="Color.Secondary">@L["NewStockMovement_UnloadLocationLabel"]</MudText>
+                </MudItem>
+                <MudItem xs="12" sm="6" md="6">
+                    <MudTextField @bind-Value="_shipToAddress" Label="@L["NewStockMovement_AddressLabel"]" Variant="Variant.Outlined" Margin="Margin.Dense"
+                                  Required="true" />
+                </MudItem>
+                <MudItem xs="6" sm="3" md="3">
+                    <PostalCodeField @bind-Value="_shipToPostalCode" Label="@L["NewStockMovement_PostalCodeLabel"]" />
+                </MudItem>
+                <MudItem xs="6" sm="3" md="3">
+                    <MudTextField @bind-Value="_shipToCity" Label="@L["NewStockMovement_CityLabel"]" Variant="Variant.Outlined" Margin="Margin.Dense" />
                 </MudItem>
 
                 <MudItem xs="12" md="4">
                     <MudDatePicker @bind-Date="_startDate" Label="@L["NewStockMovement_TransportStartDateLabel"]"
-                                   Variant="Variant.Outlined" DateFormat="yyyy-MM-dd" />
+                                   Variant="Variant.Outlined" Margin="Margin.Dense" DateFormat="yyyy-MM-dd" />
                 </MudItem>
                 <MudItem xs="12" md="2">
-                    <MudTimePicker @bind-Time="_startTime" Label="@L["NewStockMovement_TimeLabel"]" Variant="Variant.Outlined" />
+                    <MudTimePicker @bind-Time="_startTime" Label="@L["NewStockMovement_TimeLabel"]" Variant="Variant.Outlined" Margin="Margin.Dense" />
                 </MudItem>
                 <MudItem xs="12" md="6">
-                    <MudTextField @bind-Value="_comments" Label="@L["NewStockMovement_NotesLabel"]" Variant="Variant.Outlined" />
+                    <MudTextField @bind-Value="_comments" Label="@L["NewStockMovement_NotesLabel"]" Variant="Variant.Outlined" Margin="Margin.Dense" />
                 </MudItem>
             </MudGrid>
         </MudPaper>
 
-        <MudPaper Elevation="1" Class="pa-4">
+        <MudPaper Elevation="0" Class="pa-4 erp-card erp-form">
             <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center" Class="mb-3">
                 <MudText Typo="Typo.h6">@L["NewStockMovement_GoodsTitle"]</MudText>
                 <MudButton Variant="Variant.Outlined" Color="Color.Primary" Size="Size.Small"
@@ -161,7 +177,8 @@
                     <MudTh Style="width: 200px;">@L["NewStockMovement_ProductColumn"]</MudTh>
                     <MudTh>@L["NewStockMovement_DescriptionColumn"]</MudTh>
                     <MudTh Style="width: 110px;">@L["NewStockMovement_QuantityColumn"]</MudTh>
-                    <MudTh Style="width: 130px;">@L["NewStockMovement_UnitPriceColumn"]</MudTh>
+                    <MudTh Style="width: 110px;">@L["NewStockMovement_UnitPriceColumn"]</MudTh>
+                    <MudTh Style="width: 80px;">@L["NewInvoice_DiscountColumn"]</MudTh>
                     <MudTh Style="width: 150px;">@L["NewStockMovement_TaxColumn"]</MudTh>
                     <MudTh Style="width: 110px; text-align: right;">@L["NewStockMovement_TotalColumn"]</MudTh>
                     <MudTh Style="width: 70px; text-align: right;">@L["NewStockMovement_ActionsColumn"]</MudTh>
@@ -170,8 +187,10 @@
                     <MudTd DataLabel="@L["NewStockMovement_ProductColumn"]">
                         @if (_products.Count > 0)
                         {
+                            @* Closed, the box shows only the code; the list still spells the article out. *@
                             <MudSelect T="Guid?" Value="context.ProductId"
                                        ValueChanged="@(productId => OnProductChanged(context, productId))"
+                                       ToStringFunc="@(id => ProductCode(id))"
                                        Margin="Margin.Dense" Clearable="true" Placeholder="@L["NewStockMovement_FreePlaceholder"]">
                                 @foreach (var product in _products)
                                 {
@@ -190,14 +209,20 @@
                         <MudTextField @bind-Value="context.ProductDescription" Margin="Margin.Dense" />
                     </MudTd>
                     <MudTd DataLabel="@L["NewStockMovement_QuantityColumn"]">
-                        <MudNumericField @bind-Value="context.Quantity" Margin="Margin.Dense" Min="0" />
+                        <MudNumericField T="decimal" Value="context.Quantity" ValueChanged="@(quantity => OnQuantityChanged(context, quantity))"
+                                         Margin="Margin.Dense" Min="0" />
                     </MudTd>
                     <MudTd DataLabel="@L["NewStockMovement_UnitPriceColumn"]">
                         <MudNumericField @bind-Value="context.UnitPrice" Margin="Margin.Dense" Min="0" Format="N2" />
                     </MudTd>
+                    <MudTd DataLabel="@L["NewInvoice_DiscountColumn"]">
+                        <MudNumericField @bind-Value="context.DiscountPercentage" Immediate="true" Margin="Margin.Dense" Min="0" Max="100"
+                                         Format="0.##" HideSpinButtons="true" Adornment="Adornment.End" AdornmentText="%" />
+                    </MudTd>
                     <MudTd DataLabel="@L["NewStockMovement_TaxColumn"]">
                         <MudSelect T="string" Value="context.TaxCode"
                                    ValueChanged="@(code => OnTaxCodeChanged(context, code))"
+                                   ToStringFunc="@(code => TaxRateLabel(code))"
                                    Margin="Margin.Dense">
                             @foreach (var rate in _taxRates)
                             {
@@ -209,7 +234,7 @@
                     <MudTd DataLabel="@L["NewStockMovement_ActionsColumn"]" Style="text-align: right;">
                         <MudIconButton Icon="@Icons.Material.Filled.Delete" Size="Size.Small" Color="Color.Error"
                                        title="@L["NewStockMovement_RemoveLineTooltip"]"
-                                       Disabled="@(_lines.Count == 1)"
+                                       Disabled="@(_lines.Count == 1 || context.IsEcoFee)"
                                        OnClick="@(() => RemoveLine(context))" />
                     </MudTd>
                 </RowTemplate>
@@ -217,30 +242,33 @@
 
             @if (_lines.Any(line => line.TaxCode == ExemptCode))
             {
-                <MudTextField @bind-Value="_exemptionReason" Class="mt-4"
-                              Label="@L["NewStockMovement_ExemptionReasonLabel"]" Variant="Variant.Outlined"
-                              HelperText="@L["NewStockMovement_ExemptionReasonHelp"]" />
+                <MudSelect T="string" @bind-Value="_exemptionCode" @bind-Value:after="StateHasChanged" Class="mt-4"
+                           Label="@L["NewInvoice_ExemptionCodePlaceholder"]" Variant="Variant.Outlined" Margin="Margin.Dense"
+                           Required="true" Error="@string.IsNullOrWhiteSpace(_exemptionCode)">
+                    @foreach (var reason in TaxExemptionReasons.All)
+                    {
+                        <MudSelectItem T="string" Value="@reason.Code">@reason.Code — @reason.Description</MudSelectItem>
+                    }
+                </MudSelect>
             }
         </MudPaper>
 
-        <MudPaper Elevation="1" Class="pa-4">
-            <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center">
-                <MudStack Row="true" Spacing="6">
-                    <MudStack Spacing="0">
-                        <MudText Typo="Typo.caption" Color="Color.Secondary">@L["NewStockMovement_TotalQuantityLabel"]</MudText>
-                        <MudText Typo="Typo.h6">@TotalQuantity.ToString("N3")</MudText>
-                    </MudStack>
-                    <MudStack Spacing="0">
-                        <MudText Typo="Typo.caption" Color="Color.Secondary">@L["NewStockMovement_NetTotalLabel"]</MudText>
-                        <MudText Typo="Typo.h6">@NetTotal.ToString("N2")</MudText>
-                    </MudStack>
-                    <MudStack Spacing="0">
-                        <MudText Typo="Typo.caption" Color="Color.Secondary">@L["NewStockMovement_TotalLabel"]</MudText>
-                        <MudText Typo="Typo.h5" Color="Color.Primary">@GrossTotal.ToString("N2")</MudText>
-                    </MudStack>
-                </MudStack>
+        <EditorCard Title="@L["NewInvoice_SummarySectionTitle"]" Icon="@Icons.Material.Filled.Calculate"
+                    Description="@string.Format(L["NewStockMovement_TotalQuantityDescription"], TotalQuantity.ToString("N3"))">
+            <DocumentTotalsSummary GrossLinesTotal="GrossLinesTotal"
+                                   DiscountTotal="DiscountTotal"
+                                   NetTotal="NetTotal"
+                                   TaxTotal="TaxTotal"
+                                   GrossTotal="GrossTotal"
+                                   Taxes="TaxBreakdown" />
+        </EditorCard>
 
-                <MudButton Variant="Variant.Filled" Color="Color.Primary" Size="Size.Large"
+        <MudPaper Elevation="0" Class="pa-3 erp-form-actions">
+            <MudStack Row="true" Justify="Justify.FlexEnd" Spacing="2">
+                <MudButton Variant="Variant.Text" OnClick="@(() => Navigation.NavigateTo("stock-movements"))">
+                    @L["Common_CancelButton"]
+                </MudButton>
+                <MudButton Variant="Variant.Filled" Color="Color.Primary"
                            StartIcon="@Icons.Material.Filled.LocalShipping"
                            Disabled="@(_issuing || !CanIssue)"
                            OnClick="IssueAsync">
@@ -264,7 +292,7 @@
     private TimeSpan? _startTime = DateTime.Now.TimeOfDay;
     private string _vehiclePlate = string.Empty;
     private string _comments = string.Empty;
-    private string _exemptionReason = string.Empty;
+    private string? _exemptionCode;
 
     private Guid? _partnerId;
     private string _partyTaxId = string.Empty;
@@ -281,18 +309,48 @@
     private List<SalesSeries> _series = [];
     private List<ProductListItem> _products = [];
     private List<Partner> _customers = [];
+    private List<Warehouse> _warehouses = [];
+    private Guid? _warehouseId;
     private List<Partner> _suppliers = [];
     private List<VatRate> _taxRates = [];
+    private List<EcoFeeType> _ecoFeeTypes = [];
     private readonly List<LineEditor> _lines = [new()];
 
     private decimal TotalQuantity => _lines.Sum(line => line.Quantity);
 
+    private decimal GrossLinesTotal => _lines.Sum(GrossAmount);
+
+    private decimal DiscountTotal => _lines.Sum(DiscountAmount);
+
     private decimal NetTotal => _lines.Sum(LineTotal);
 
-    private decimal TaxTotal => _lines.Sum(line =>
-        Math.Round(LineTotal(line) * line.TaxPercentage / 100m, 2, MidpointRounding.AwayFromZero));
+    private decimal TaxTotal => _lines.Sum(TaxAmount);
 
     private decimal GrossTotal => NetTotal + TaxTotal;
+
+    /// <summary>The VAT grouped by rate, the way the document itself will group it.</summary>
+    private IReadOnlyList<DocumentTotalsSummary.TaxLine> TaxBreakdown =>
+    [
+        .. _lines
+            .GroupBy(line => (line.TaxCode, line.TaxPercentage))
+            .OrderByDescending(group => group.Key.TaxPercentage)
+            .Select(group => new DocumentTotalsSummary.TaxLine(
+                _taxRates.FirstOrDefault(rate => rate.Code == group.Key.TaxCode)?.Label ?? group.Key.TaxCode,
+                group.Key.TaxPercentage,
+                group.Sum(LineTotal),
+                group.Sum(TaxAmount)))
+    ];
+
+    /// <summary>What the closed product box shows: the code alone keeps the line readable.</summary>
+    private string ProductCode(Guid? productId) =>
+        _products.FirstOrDefault(product => product.Id == productId)?.ProductCode ?? string.Empty;
+
+    /// <summary>And the tax box shows the rate, not the name of the rate.</summary>
+    private string TaxRateLabel(string? taxCode)
+    {
+        var rate = _taxRates.FirstOrDefault(rate => rate.Code == taxCode);
+        return rate is null ? taxCode ?? string.Empty : $"{rate.Percentage:0.##}%";
+    }
 
     private bool CanIssue =>
         _seriesId != Guid.Empty
@@ -302,11 +360,12 @@
         && !string.IsNullOrWhiteSpace(_shipFromAddress)
         && !string.IsNullOrWhiteSpace(_shipToAddress)
         && _lines.All(line => line.Quantity > 0 && !string.IsNullOrWhiteSpace(line.ProductDescription))
-        && (!_lines.Any(line => line.TaxCode == ExemptCode) || !string.IsNullOrWhiteSpace(_exemptionReason));
+        && (!_lines.Any(line => line.TaxCode == ExemptCode) || !string.IsNullOrWhiteSpace(_exemptionCode));
 
     protected override async Task OnInitializedAsync()
     {
         Company.Changed += OnCompanyChanged;
+        WarehouseState.Changed += OnWarehouseStateChanged;
         await Company.EnsureLoadedAsync();
         await LoadAsync();
     }
@@ -345,6 +404,15 @@
             // Mainland rates — this document has no fiscal-region selector of its own.
             var (rates, _) = await Catalog.GetVatRatesAsync();
             _taxRates = [.. rates.Where(x => x.FiscalRegion == "PT" && x.IsActive)];
+
+            var (ecoFeeTypes, _) = await Catalog.GetEcoFeeTypesAsync(Company.SelectedCompanyId);
+            _ecoFeeTypes = [.. ecoFeeTypes.Where(x => x.IsActive)];
+
+            // The goods leave from a warehouse: the globally selected one, with its address as the
+            // loading point, which is what a delivery note usually says.
+            await WarehouseState.EnsureLoadedAsync();
+            _warehouses = [.. WarehouseState.Warehouses];
+            OnWarehouseChanged(WarehouseState.HasWarehouse ? WarehouseState.SelectedWarehouseId : null);
         }
         catch (Exception ex)
         {
@@ -388,12 +456,17 @@
 
     private void RemoveLine(LineEditor line)
     {
-        if (_lines.Count > 1)
-            _lines.Remove(line);
+        if (_lines.Count <= 1 || line.IsEcoFee)
+            return;
+
+        RemoveEcoFeeCompanion(line);
+        _lines.Remove(line);
     }
 
     private void OnProductChanged(LineEditor line, Guid? productId)
     {
+        RemoveEcoFeeCompanion(line);
+
         line.ProductId = productId;
 
         var product = _products.FirstOrDefault(x => x.Id == productId);
@@ -405,7 +478,51 @@
         line.UnitPrice = product.UnitPrice;
         line.TaxCode = product.DefaultTaxCode;
         line.TaxPercentage = product.DefaultTaxPercentage;
+
+        AddEcoFeeCompanionIfAny(line, product);
     }
+
+    private void OnQuantityChanged(LineEditor line, decimal quantity)
+    {
+        line.Quantity = quantity;
+
+        // The eco-fee always charges for as many units (or kilograms) as its article moved.
+        var companion = _lines.FirstOrDefault(x => x.EcoFeeForLine == line);
+        if (companion is not null)
+            companion.Quantity = quantity;
+    }
+
+    /// <summary>
+    /// Batteries, lubricating oils and similar: an article carrying an eco-fee gets it added right
+    /// after it, on its own line, as the law requires — never folded into the article's own price.
+    /// </summary>
+    private void AddEcoFeeCompanionIfAny(LineEditor line, ProductListItem product)
+    {
+        if (product.EcoFeeTypeId is not { } ecoFeeTypeId)
+            return;
+
+        if (_ecoFeeTypes.FirstOrDefault(x => x.Id == ecoFeeTypeId) is not { } ecoFeeType)
+            return;
+
+        var isPerKg = ecoFeeType.CalculationBasis == EcoFeeCalculationBases.PerKg;
+
+        var companion = new LineEditor
+        {
+            ProductCode = ecoFeeType.FeeProductCode,
+            ProductDescription = ecoFeeType.Description,
+            Quantity = line.Quantity,
+            UnitPrice = isPerKg ? ecoFeeType.Rate * (product.EcoFeeWeightKg ?? 0m) : ecoFeeType.Rate,
+            TaxCode = TaxCodes.Normal,
+            TaxPercentage = _taxRates.FirstOrDefault(x => x.Code == TaxCodes.Normal)?.Percentage ?? 23m,
+            IsEcoFee = true,
+            EcoFeeForLine = line
+        };
+
+        _lines.Insert(_lines.IndexOf(line) + 1, companion);
+    }
+
+    private void RemoveEcoFeeCompanion(LineEditor line) =>
+        _lines.RemoveAll(x => x.EcoFeeForLine == line);
 
     private void OnTaxCodeChanged(LineEditor line, string taxCode)
     {
@@ -413,8 +530,16 @@
         line.TaxPercentage = _taxRates.First(rate => rate.Code == taxCode).Percentage;
     }
 
-    private static decimal LineTotal(LineEditor line) =>
-        Math.Round(line.Quantity * line.UnitPrice, 2, MidpointRounding.AwayFromZero);
+    // Same arithmetic as the API: the discount comes off the rounded gross amount.
+    private static decimal GrossAmount(LineEditor line) => Round(line.Quantity * line.UnitPrice);
+
+    private static decimal DiscountAmount(LineEditor line) => Round(GrossAmount(line) * line.DiscountPercentage / 100m);
+
+    private static decimal LineTotal(LineEditor line) => GrossAmount(line) - DiscountAmount(line);
+
+    private static decimal TaxAmount(LineEditor line) => Round(LineTotal(line) * line.TaxPercentage / 100m);
+
+    private static decimal Round(decimal value) => Math.Round(value, 2, MidpointRounding.AwayFromZero);
 
     private async Task IssueAsync()
     {
@@ -436,7 +561,8 @@
                 new MovementLocationRequest(
                     _shipFromAddress.Trim(),
                     Normalize(_shipFromCity),
-                    Normalize(_shipFromPostalCode)),
+                    Normalize(_shipFromPostalCode),
+                    WarehouseId: _warehouseId?.ToString()),
                 new MovementLocationRequest(
                     _shipToAddress.Trim(),
                     Normalize(_shipToCity),
@@ -449,9 +575,13 @@
                     line.UnitPrice,
                     line.TaxCode,
                     line.TaxPercentage,
-                    TaxExemptionReason: line.TaxCode == ExemptCode ? _exemptionReason : null))],
+                    DiscountPercentage: line.DiscountPercentage,
+                    TaxExemptionCode: line.TaxCode == ExemptCode ? _exemptionCode : null,
+                    IsEcoFee: line.IsEcoFee,
+                    EcoFeeForLineNumber: line.EcoFeeForLine is { } parent ? _lines.IndexOf(parent) + 1 : null))],
                 VehiclePlate: Normalize(_vehiclePlate),
-                Comments: Normalize(_comments));
+                Comments: Normalize(_comments),
+                WarehouseId: _warehouseId);
 
             var (movement, error) = await SalesApi.IssueStockMovementAsync(request);
 
@@ -474,6 +604,27 @@
         }
     }
 
+    /// <summary>
+    /// Choosing the warehouse fills the loading point with its address, which is what the document
+    /// says unless the goods leave from somewhere else.
+    /// </summary>
+    private void OnWarehouseChanged(Guid? warehouseId)
+    {
+        _warehouseId = warehouseId;
+
+        if (_warehouses.FirstOrDefault(warehouse => warehouse.Id == warehouseId) is not { } warehouse)
+            return;
+
+        if (string.IsNullOrWhiteSpace(_shipFromAddress))
+            _shipFromAddress = warehouse.Address ?? warehouse.Name;
+
+        if (string.IsNullOrWhiteSpace(_shipFromCity))
+            _shipFromCity = warehouse.City ?? string.Empty;
+
+        if (string.IsNullOrWhiteSpace(_shipFromPostalCode))
+            _shipFromPostalCode = warehouse.PostalCode ?? string.Empty;
+    }
+
     private static string? Normalize(string value) =>
         string.IsNullOrWhiteSpace(value) ? null : value.Trim();
 
@@ -485,9 +636,23 @@
         public string ProductDescription { get; set; } = string.Empty;
         public decimal Quantity { get; set; } = 1;
         public decimal UnitPrice { get; set; }
+        public decimal DiscountPercentage { get; set; }
         public string TaxCode { get; set; } = "NOR";
         public decimal TaxPercentage { get; set; } = 23m;
+
+        /// <summary>True for an eco-fee ("Ecovalor") line generated alongside an article, not an article itself.</summary>
+        public bool IsEcoFee { get; set; }
+
+        /// <summary>The article line this eco-fee was generated for, when <see cref="IsEcoFee"/> is true.</summary>
+        public LineEditor? EcoFeeForLine { get; set; }
     }
 
-    public void Dispose() => Company.Changed -= OnCompanyChanged;
+    public void Dispose()
+    {
+        Company.Changed -= OnCompanyChanged;
+        WarehouseState.Changed -= OnWarehouseStateChanged;
+    }
+
+    private void OnWarehouseStateChanged() => InvokeAsync(() =>
+        OnWarehouseChanged(WarehouseState.HasWarehouse ? WarehouseState.SelectedWarehouseId : null));
 }

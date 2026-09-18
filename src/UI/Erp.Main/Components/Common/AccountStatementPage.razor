@@ -1,0 +1,292 @@
+@implements IDisposable
+@using MudBlazor
+@using Erp.Main.Services
+@using Erp.Main.Resources
+@using Microsoft.Extensions.Localization
+@inject CompanyState Company
+@inject NavigationManager Navigation
+@inject IStringLocalizer<MainResources> L
+
+@*
+    The body of both current account statements. Customers and suppliers differ in where the data
+    comes from and in which way the balance leans; the screen is the same, so it is written once.
+*@
+
+<MudStack Spacing="4">
+    <PageHeader Title="@Title">
+        <Actions>
+            <MudButton Variant="Variant.Outlined" Color="Color.Primary"
+                       StartIcon="@Icons.Material.Filled.Print"
+                       Disabled="@(_statement is null)"
+                       OnClick="@(() => Navigation.NavigateTo(StatementRoutes.WithQuery($"{Route}/print", PartyParameter, _partyId!.Value, StartDate, EndDate)))">
+                @L["Common_Print"]
+            </MudButton>
+        </Actions>
+    </PageHeader>
+
+    @if (!string.IsNullOrWhiteSpace(_error))
+    {
+        <MudAlert Severity="Severity.Error" Dense="true">@_error</MudAlert>
+    }
+
+    <MudPaper Elevation="0" Class="pa-4 erp-card erp-form">
+        <MudGrid>
+            <MudItem xs="12" md="6">
+                <MudAutocomplete T="Partner" Value="_party" ValueChanged="OnPartyChanged"
+                                 SearchFunc="SearchAsync" ToStringFunc="@(party => party is null ? string.Empty : $"{party.Name} ({party.TaxId})")"
+                                 Label="@PartyLabel" Variant="Variant.Outlined" Margin="Margin.Dense" Clearable="true"
+                                 ResetValueOnEmptyText="true" MaxItems="50" />
+            </MudItem>
+            <MudItem xs="6" md="3">
+                <MudDatePicker Date="ToDateTime(StartDate)" DateChanged="OnStartChanged" Clearable="true"
+                               Label="@L["Statement_StartDateLabel"]" HelperText="@L["Statement_StartDateHelp"]"
+                               Variant="Variant.Outlined" Margin="Margin.Dense" DateFormat="yyyy-MM-dd" />
+            </MudItem>
+            <MudItem xs="6" md="3">
+                <MudDatePicker Date="ToDateTime(EndDate)" DateChanged="OnEndChanged" Clearable="true"
+                               Label="@L["Statement_EndDateLabel"]"
+                               Variant="Variant.Outlined" Margin="Margin.Dense" DateFormat="yyyy-MM-dd" />
+            </MudItem>
+        </MudGrid>
+    </MudPaper>
+
+    @if (_loading)
+    {
+        <MudProgressLinear Indeterminate="true" Color="Color.Primary" />
+    }
+    else if (_statement is null)
+    {
+        <MudAlert Severity="Severity.Info">@L["Statement_ChoosePartyInfo"]</MudAlert>
+    }
+    else
+    {
+        <MudGrid>
+            <MudItem xs="6" md="3">
+                <MudPaper Elevation="0" Class="pa-4 erp-card erp-form">
+                    <MudText Typo="Typo.caption" Color="Color.Secondary">@L["Statement_OpeningBalanceLabel"]</MudText>
+                    <MudText Typo="Typo.h6">@_statement.OpeningBalance.ToString("N2")</MudText>
+                </MudPaper>
+            </MudItem>
+            <MudItem xs="6" md="3">
+                <MudPaper Elevation="0" Class="pa-4 erp-card erp-form">
+                    <MudText Typo="Typo.caption" Color="Color.Secondary">@L["Statement_TotalDebitLabel"]</MudText>
+                    <MudText Typo="Typo.h6">@_statement.TotalDebit.ToString("N2")</MudText>
+                </MudPaper>
+            </MudItem>
+            <MudItem xs="6" md="3">
+                <MudPaper Elevation="0" Class="pa-4 erp-card erp-form">
+                    <MudText Typo="Typo.caption" Color="Color.Secondary">@L["Statement_TotalCreditLabel"]</MudText>
+                    <MudText Typo="Typo.h6">@_statement.TotalCredit.ToString("N2")</MudText>
+                </MudPaper>
+            </MudItem>
+            <MudItem xs="6" md="3">
+                <MudPaper Elevation="0" Class="pa-4 erp-card erp-form">
+                    <MudText Typo="Typo.caption" Color="Color.Secondary">@L["Statement_ClosingBalanceLabel"]</MudText>
+                    <MudText Typo="Typo.h5" Color="@BalanceColor(_statement.ClosingBalance)">@_statement.ClosingBalance.ToString("N2")</MudText>
+                    <MudText Typo="Typo.caption" Color="Color.Secondary">@BalanceMeaning</MudText>
+                </MudPaper>
+            </MudItem>
+        </MudGrid>
+
+        <MudPaper Elevation="0" Class="pa-2 erp-card erp-form">
+            <MudTable Items="_statement.Entries" Dense="true" Hover="true" Striped="true" Breakpoint="Breakpoint.Sm">
+                <HeaderContent>
+                    <MudTh>@L["Statement_DateColumn"]</MudTh>
+                    <MudTh>@L["Statement_TypeColumn"]</MudTh>
+                    <MudTh>@L["Statement_DocumentColumn"]</MudTh>
+                    <MudTh>@L["Statement_DueDateColumn"]</MudTh>
+                    <MudTh>@L["Statement_DescriptionColumn"]</MudTh>
+                    <MudTh Style="text-align: right;">@L["Statement_DebitColumn"]</MudTh>
+                    <MudTh Style="text-align: right;">@L["Statement_CreditColumn"]</MudTh>
+                    <MudTh Style="text-align: right;">@L["Statement_BalanceColumn"]</MudTh>
+                    <MudTh Style="width: 60px; text-align: right;">@L["Common_ActionsColumn"]</MudTh>
+                </HeaderContent>
+                <RowTemplate>
+                    <MudTd DataLabel="@L["Statement_DateColumn"]">@context.Date.ToString("yyyy-MM-dd")</MudTd>
+                    <MudTd DataLabel="@L["Statement_TypeColumn"]">@DescribeType(context)</MudTd>
+                    <MudTd DataLabel="@L["Statement_DocumentColumn"]">
+                        <MudText Typo="Typo.body2" Class="erp-mono">@context.DocumentNumber</MudText>
+                    </MudTd>
+                    <MudTd DataLabel="@L["Statement_DueDateColumn"]">@(context.DueDate?.ToString("yyyy-MM-dd") ?? "—")</MudTd>
+                    <MudTd DataLabel="@L["Statement_DescriptionColumn"]">@context.Description</MudTd>
+                    <MudTd DataLabel="@L["Statement_DebitColumn"]" Style="text-align: right;">@Amount(context.Debit)</MudTd>
+                    <MudTd DataLabel="@L["Statement_CreditColumn"]" Style="text-align: right;">@Amount(context.Credit)</MudTd>
+                    <MudTd DataLabel="@L["Statement_BalanceColumn"]" Style="text-align: right;">
+                        <strong>@context.Balance.ToString("N2")</strong>
+                    </MudTd>
+                    <MudTd DataLabel="@L["Common_ActionsColumn"]" Style="text-align: right;">
+                        @if (StatementRoutes.ForSource(context.Source, context.SourceId) is { } route)
+                        {
+                            <MudIconButton Icon="@Icons.Material.Filled.Visibility" Size="Size.Small"
+                                           title="@L["Statement_OpenDocumentTitle"]"
+                                           OnClick="@(() => Navigation.NavigateTo(route))" />
+                        }
+                    </MudTd>
+                </RowTemplate>
+                <NoRecordsContent>
+                    <MudText Typo="Typo.body2" Color="Color.Secondary">@L["Statement_NoMovements"]</MudText>
+                </NoRecordsContent>
+            </MudTable>
+        </MudPaper>
+    }
+</MudStack>
+
+@code {
+    [Parameter, EditorRequired] public string Title { get; set; } = string.Empty;
+
+    [Parameter, EditorRequired] public string PartyLabel { get; set; } = string.Empty;
+
+    /// <summary>What a positive balance means for this kind of account.</summary>
+    [Parameter, EditorRequired] public string BalanceMeaning { get; set; } = string.Empty;
+
+    /// <summary>The page's own route, e.g. "customer-statements", which the query string is kept on.</summary>
+    [Parameter, EditorRequired] public string Route { get; set; } = string.Empty;
+
+    /// <summary>The query string name of the party, e.g. "customerId".</summary>
+    [Parameter, EditorRequired] public string PartyParameter { get; set; } = string.Empty;
+
+    [Parameter, EditorRequired]
+    public Func<Guid, Task<(IReadOnlyList<Partner> Items, string? Error)>> LoadParties { get; set; } = null!;
+
+    [Parameter, EditorRequired]
+    public Func<Guid, Guid, DateOnly?, DateOnly?, Task<(AccountStatement? Statement, string? Error)>> LoadStatement { get; set; } = null!;
+
+    [Parameter] public Guid? PartyId { get; set; }
+
+    [Parameter] public DateOnly? StartDate { get; set; }
+
+    [Parameter] public DateOnly? EndDate { get; set; }
+
+    private bool _loading;
+    private string? _error;
+    private List<Partner> _parties = [];
+    private Partner? _party;
+    private Guid? _partyId;
+    private AccountStatement? _statement;
+
+    protected override async Task OnInitializedAsync()
+    {
+        Company.Changed += OnCompanyChanged;
+        await Company.EnsureLoadedAsync();
+
+        // Opening the page with no period at all shows the current year, which is what is asked
+        // for most; a link that names a period keeps it.
+        if (PartyId is null && StartDate is null && EndDate is null)
+            StartDate = new DateOnly(DateTime.Today.Year, 1, 1);
+
+        _partyId = PartyId;
+        await LoadPartiesAsync();
+    }
+
+    private async void OnCompanyChanged() => await InvokeAsync(async () =>
+    {
+        _party = null;
+        _partyId = null;
+        _statement = null;
+        await LoadPartiesAsync();
+        StateHasChanged();
+    });
+
+    private async Task LoadPartiesAsync()
+    {
+        _error = Company.LoadError;
+
+        if (!Company.HasCompany)
+        {
+            _parties = [];
+            return;
+        }
+
+        var (parties, error) = await LoadParties(Company.SelectedCompanyId);
+        _parties = [.. parties.OrderBy(party => party.Name)];
+        _error ??= error;
+
+        _party = _parties.FirstOrDefault(party => party.Id == _partyId);
+        await LoadStatementAsync();
+    }
+
+    private Task<IEnumerable<Partner>> SearchAsync(string? text, CancellationToken cancellationToken)
+    {
+        IEnumerable<Partner> matches = string.IsNullOrWhiteSpace(text)
+            ? _parties
+            : _parties.Where(party =>
+                party.Name.Contains(text, StringComparison.OrdinalIgnoreCase)
+                || party.TaxId.Contains(text, StringComparison.OrdinalIgnoreCase)
+                || party.Code.Contains(text, StringComparison.OrdinalIgnoreCase));
+
+        return Task.FromResult(matches);
+    }
+
+    private async Task OnPartyChanged(Partner? party)
+    {
+        _party = party;
+        _partyId = party?.Id;
+        await RefreshAsync();
+    }
+
+    private async Task OnStartChanged(DateTime? date)
+    {
+        StartDate = date is null ? null : DateOnly.FromDateTime(date.Value);
+        await RefreshAsync();
+    }
+
+    private async Task OnEndChanged(DateTime? date)
+    {
+        EndDate = date is null ? null : DateOnly.FromDateTime(date.Value);
+        await RefreshAsync();
+    }
+
+    /// <summary>Keeps the address in step with the filters, so the statement can be bookmarked and shared.</summary>
+    private async Task RefreshAsync()
+    {
+        if (_partyId is { } partyId)
+            Navigation.NavigateTo(StatementRoutes.WithQuery(Route, PartyParameter, partyId, StartDate, EndDate), replace: true);
+
+        await LoadStatementAsync();
+    }
+
+    private async Task LoadStatementAsync()
+    {
+        if (_partyId is not { } partyId || !Company.HasCompany)
+        {
+            _statement = null;
+            return;
+        }
+
+        _loading = true;
+        _error = null;
+
+        try
+        {
+            var (statement, error) = await LoadStatement(Company.SelectedCompanyId, partyId, StartDate, EndDate);
+            _statement = statement;
+            _error = error;
+        }
+        catch (Exception ex)
+        {
+            _statement = null;
+            _error = string.Format(L["Statement_LoadError"], ex.Message);
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private string DescribeType(AccountStatementEntry entry) => entry.Source switch
+    {
+        Erp.Common.Constants.StatementSources.Receipt => $"{entry.DocumentType} · {L["Statement_ReceiptType"]}",
+        Erp.Common.Constants.StatementSources.SupplierPayment => L["Statement_PaymentType"],
+        Erp.Common.Constants.StatementSources.SelfBilledInvoice => $"{entry.DocumentType} · {L["NewSupplierPayment_SelfBilledChip"]}",
+        _ => entry.DocumentType
+    };
+
+    private static string Amount(decimal value) => value == 0 ? string.Empty : value.ToString("N2");
+
+    private static Color BalanceColor(decimal balance) =>
+        balance > 0 ? Color.Warning : balance < 0 ? Color.Info : Color.Success;
+
+    private static DateTime? ToDateTime(DateOnly? date) => date?.ToDateTime(TimeOnly.MinValue);
+
+    public void Dispose() => Company.Changed -= OnCompanyChanged;
+}

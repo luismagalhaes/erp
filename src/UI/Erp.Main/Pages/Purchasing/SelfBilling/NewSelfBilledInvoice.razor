@@ -4,6 +4,7 @@
 @using Microsoft.AspNetCore.Authorization
 @using Microsoft.AspNetCore.Components.Web
 @using MudBlazor
+@using Erp.FiscalPT.Documents
 @using Erp.Main.Models
 @using Erp.Main.Services
 @using Erp.Main.Resources
@@ -236,9 +237,14 @@
                 {
                     <MudGrid Class="mt-3">
                         <MudItem xs="12" md="6">
-                            <MudTextField @bind-Value="_exemptionReason" @bind-Value:after="StateHasChanged"
-                                          Label="@L["NewSelfBilledInvoice_ExemptionReasonLabel"]" Variant="Variant.Outlined" Required="true"
-                                          HelperText="@L["NewSelfBilledInvoice_ExemptionReasonHelp"]" />
+                            <MudSelect T="string" @bind-Value="_exemptionCode" @bind-Value:after="StateHasChanged"
+                                       Label="@L["NewInvoice_ExemptionCodePlaceholder"]" Variant="Variant.Outlined" Margin="Margin.Dense"
+                                       Required="true" Error="@string.IsNullOrWhiteSpace(_exemptionCode)">
+                                @foreach (var reason in TaxExemptionReasons.All)
+                                {
+                                    <MudSelectItem T="string" Value="@reason.Code">@reason.Code — @reason.Description</MudSelectItem>
+                                }
+                            </MudSelect>
                         </MudItem>
                     </MudGrid>
                 }
@@ -285,7 +291,7 @@
     private Guid? _seriesId;
     private DateTime? _issueDate = DateTime.Today;
     private string _agreementReference = string.Empty;
-    private string _exemptionReason = string.Empty;
+    private string? _exemptionCode;
 
     private List<Partner> _suppliers = [];
     private List<ProductListItem> _products = [];
@@ -316,7 +322,7 @@
         _supplierId is not null
         && _seriesId is not null
         && (_chosen.Any(line => line.Quantity > 0) || ValidLines.Any())
-        && (!NeedsExemptionReason || !string.IsNullOrWhiteSpace(_exemptionReason));
+        && (!NeedsExemptionReason || !string.IsNullOrWhiteSpace(_exemptionCode));
 
     protected override async Task OnInitializedAsync()
     {
@@ -495,7 +501,7 @@
                     line.TaxCode,
                     "PT",
                     line.UnitOfMeasure,
-                    TaxExemptionReason: line.TaxCode == "ISE" ? _exemptionReason.Trim() : null)))
+                    TaxExemptionCode: line.TaxCode == "ISE" ? _exemptionCode : null)))
                 .ToList();
 
             var (invoice, error) = await Purchasing.IssueSelfBilledInvoiceAsync(

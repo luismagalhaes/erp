@@ -4,6 +4,7 @@
 @using Microsoft.AspNetCore.Authorization
 @using Microsoft.AspNetCore.Components.Web
 @using MudBlazor
+@using Erp.Main.Components.Common
 @using Erp.Main.Models
 @using Erp.Main.Models.Core
 @using Erp.Main.Services
@@ -15,17 +16,17 @@
 @inject ISnackbar Snackbar
 @inject IStringLocalizer<MainResources> Localizer
 
-<PageTitle>@(IsNew ? Localizer["SubfamilyEditor_NewTitle"] : Localizer["SubfamilyEditor_EditTitle"])</PageTitle>
+<PageTitle>@Title</PageTitle>
 
-<MudStack Spacing="4">
-    <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center">
-        <MudText Typo="Typo.h4">@(IsNew ? Localizer["SubfamilyEditor_NewTitle"] : Localizer["SubfamilyEditor_EditTitle"])</MudText>
-
-        <MudButton Variant="Variant.Text" StartIcon="@Icons.Material.Filled.ArrowBack"
-                   OnClick="@(() => Navigation.NavigateTo("product-subfamilies"))">
-            @Localizer["Common_Back"]
-        </MudButton>
-    </MudStack>
+<MudStack Spacing="3">
+    <PageHeader Title="@Title" Breadcrumbs="Breadcrumbs">
+        <Actions>
+            <MudButton Variant="Variant.Text" StartIcon="@Icons.Material.Filled.ArrowBack"
+                       OnClick="@(() => Navigation.NavigateTo("product-subfamilies"))">
+                @Localizer["Common_Back"]
+            </MudButton>
+        </Actions>
+    </PageHeader>
 
     @if (!string.IsNullOrWhiteSpace(_error))
     {
@@ -45,46 +46,53 @@
     }
     else
     {
-        <MudPaper Elevation="1" Class="pa-4">
-            <MudGrid Spacing="3">
-                <MudItem xs="12" sm="6" md="3">
-                    <MudSelect @bind-Value="_familyId" Label="@Localizer["SubfamilyEditor_FamilyLabel"]" Variant="Variant.Outlined" Margin="Margin.Dense" Required="true">
-                        @foreach (var family in _families)
-                        {
-                            <MudSelectItem T="Guid" Value="@family.Id">@family.Name</MudSelectItem>
-                        }
-                    </MudSelect>
-                </MudItem>
-                <MudItem xs="12" sm="3" md="3">
-                    <MudTextField @bind-Value="_code" Label="@Localizer["SubfamilyEditor_CodeLabel"]" Variant="Variant.Outlined" Margin="Margin.Dense"
-                                  Disabled="@(!IsNew)"
-                                  HelperText="@(!IsNew ? Localizer["SubfamilyEditor_CodeHelperText"].Value : Localizer["Common_CodeOptionalHelperText"].Value)" />
-                </MudItem>
-                <MudItem xs="12" sm="3" md="6">
-                    <MudTextField @bind-Value="_name" Label="@Localizer["SubfamilyEditor_NameLabel"]" Variant="Variant.Outlined" Margin="Margin.Dense" Required="true" />
-                </MudItem>
-
+        <EditorCard Title="@Title" Icon="@Icons.Material.Filled.Segment">
+            <HeaderActions>
                 @if (!IsNew)
                 {
-                    <MudItem xs="12">
-                        <MudSwitch @bind-Value="_isActive" Color="Color.Primary" Label="@Localizer["SubfamilyEditor_ActiveLabel"]" />
-                    </MudItem>
+                    <MudSwitch @bind-Value="_isActive" Color="Color.Primary" Size="Size.Small" Label="@Localizer["SubfamilyEditor_ActiveLabel"]" />
                 }
-            </MudGrid>
+            </HeaderActions>
+            <ChildContent>
+                @* Name first, then the code: the code is numbered by the API and never typed here. *@
+                <MudGrid Spacing="3">
+                    <MudItem xs="12" sm="9">
+                        <MudTextField @bind-Value="_name" Immediate="true" Label="@Localizer["SubfamilyEditor_NameLabel"]"
+                                      Variant="Variant.Outlined" Margin="Margin.Dense" Required="true" />
+                    </MudItem>
+                    <MudItem xs="12" sm="3">
+                        <MudTextField Value="_code" ReadOnly="true" Disabled="true" Label="@Localizer["SubfamilyEditor_CodeLabel"]"
+                                      Variant="Variant.Outlined" Margin="Margin.Dense"
+                                      Placeholder="@Localizer["PartnerForm_CodeAutomaticPlaceholder"]" />
+                    </MudItem>
+                    <MudItem xs="12" sm="9">
+                        <MudSelect @bind-Value="_familyId" Label="@Localizer["SubfamilyEditor_FamilyLabel"]"
+                                   Variant="Variant.Outlined" Margin="Margin.Dense" Required="true">
+                            @foreach (var family in _families)
+                            {
+                                <MudSelectItem T="Guid" Value="@family.Id">@family.Name</MudSelectItem>
+                            }
+                        </MudSelect>
+                    </MudItem>
+                </MudGrid>
+            </ChildContent>
+        </EditorCard>
 
-            <MudStack Row="true" Justify="Justify.FlexEnd" Class="mt-4">
-                <MudButton Variant="Variant.Filled" Color="Color.Primary"
-                           StartIcon="@Icons.Material.Filled.Save"
-                           Disabled="@(_saving || !CanSave)"
-                           OnClick="SaveAsync">
-                    @Localizer["Common_SaveButton"]
-                </MudButton>
-            </MudStack>
-        </MudPaper>
+        <FormActions Busy="_saving" Disabled="@(!CanSave)"
+                     OnSubmit="SaveAsync"
+                     OnCancel="@(() => Navigation.NavigateTo("product-subfamilies"))" />
     }
 </MudStack>
 
 @code {
+    private string Title => IsNew ? Localizer["SubfamilyEditor_NewTitle"] : Localizer["SubfamilyEditor_EditTitle"];
+
+    private List<BreadcrumbItem> Breadcrumbs =>
+    [
+        new(Localizer["Subfamilies_PageTitle"].Value, href: "product-subfamilies"),
+        new(Title, href: null, disabled: true)
+    ];
+
     [Parameter]
     public Guid? Id { get; set; }
 
@@ -166,12 +174,10 @@
 
         try
         {
-            if (IsNew && string.IsNullOrWhiteSpace(_code))
-                _code = CodeGenerator.Generate();
-
+            // A blank code asks the API for the next number.
             var error = IsNew
                 ? await Catalog.CreateSubfamilyAsync(new CreateProductSubfamilyRequest(
-                    Company.SelectedCompanyId, _familyId, _code.Trim(), _name.Trim()))
+                    Company.SelectedCompanyId, _familyId, string.Empty, _name.Trim()))
                 : await Catalog.UpdateSubfamilyAsync(Id!.Value, new UpdateProductSubfamilyRequest(
                     _familyId, _name.Trim(), _isActive));
 

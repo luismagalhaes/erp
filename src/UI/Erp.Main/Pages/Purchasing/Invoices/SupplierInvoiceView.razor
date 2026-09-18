@@ -27,10 +27,21 @@
             }
         </MudStack>
 
-        <MudButton Variant="Variant.Text" StartIcon="@Icons.Material.Filled.ArrowBack"
-                   OnClick="@(() => Navigation.NavigateTo("supplier-invoices"))">
-            @L["SupplierInvoiceView_BackButton"]
-        </MudButton>
+        <MudStack Row="true" Spacing="2">
+            @if (_invoice is not null && !_invoice.IsVoided
+                  && (PurchaseDocumentTypes.IsSettledByPayment(_invoice.DocumentType) || PurchaseDocumentTypes.IsCredit(_invoice.DocumentType)))
+            {
+                <MudButton Variant="Variant.Outlined" Color="Color.Primary"
+                           StartIcon="@Icons.Material.Filled.Payments"
+                           OnClick="@(() => Navigation.NavigateTo($"supplier-payments/new?supplierId={_invoice.SupplierId}"))">
+                    @L["SupplierInvoiceView_PayButton"]
+                </MudButton>
+            }
+            <MudButton Variant="Variant.Text" StartIcon="@Icons.Material.Filled.ArrowBack"
+                       OnClick="@(() => Navigation.NavigateTo("supplier-invoices"))">
+                @L["SupplierInvoiceView_BackButton"]
+            </MudButton>
+        </MudStack>
     </MudStack>
 
     @if (!string.IsNullOrWhiteSpace(_error))

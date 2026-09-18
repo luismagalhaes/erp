@@ -92,6 +92,7 @@ public sealed class SalesDocumentService(
                 DocumentType = x.DocumentType,
                 Atcud = x.Atcud,
                 DocumentDate = x.DocumentDate,
+                DueDate = x.DueDate,
                 CustomerName = x.CustomerName,
                 CustomerTaxId = x.CustomerTaxId,
                 NetTotal = x.NetTotal,
@@ -166,6 +167,9 @@ public sealed class SalesDocumentService(
 
         await EnsureCreditFitsAsync(series.DocumentType, rectified, grossTotal, cancellationToken);
 
+        var payments = BuildPayments(series.DocumentType, request.Payments, grossTotal);
+        var dueDate = ResolveDueDate(series.DocumentType, request.DocumentDate, request.DueDate);
+
         var rectifies = rectified is null
             ? null
             : new RectifiedDocument(rectified.Id, rectified.DocumentNumber, request.RectificationReason!.Trim());
@@ -200,7 +204,9 @@ public sealed class SalesDocumentService(
             previousHash,
             signature.HashControl,
             userId,
-            rectifies);
+            rectifies,
+            dueDate,
+            payments);
 
         document.AttachQrCodePayload(BuildQrCodePayload(document, signature.Hash));
 
@@ -275,7 +281,9 @@ public sealed class SalesDocumentService(
             document.DocumentType,
             document.DocumentNumber,
             document.Id,
-            [.. document.Lines.Select(line => new DocumentStockLine(
+            // An eco-fee line carries no real stock — it is a monetary charge, not an article — so it
+            // is left out here even though it is an ordinary line everywhere else on the document.
+            [.. document.Lines.Where(line => !line.IsEcoFee).Select(line => new DocumentStockLine(
                 line.Id,
                 line.ProductCode,
                 line.ProductDescription,
@@ -452,11 +460,12 @@ public sealed class SalesDocumentService(
             if (!TaxCodes.All.Contains(line.TaxCode, StringComparer.Ordinal))
                 throw new ArgumentException($"Line {lineNumber} has an unknown tax code '{line.TaxCode}'.", nameof(requestLines));
 
-            if (string.Equals(line.TaxCode, TaxCodes.Exempt, StringComparison.Ordinal)
-                && string.IsNullOrWhiteSpace(line.TaxExemptionReason))
-            {
-                throw new ArgumentException($"Line {lineNumber} is exempt and requires an exemption reason.", nameof(requestLines));
-            }
+            // An exempt line cites the tax authority's table; any other line carries no exemption.
+            var (exemptionCode, exemptionReason, exemptionError) =
+                TaxExemptionReasons.Resolve(line.TaxCode, line.TaxExemptionCode, line.TaxExemptionReason);
+
+            if (exemptionError is not null)
+                throw new ArgumentException($"Line {lineNumber} {exemptionError}", nameof(requestLines));
 
             MovementOrigin? origin = null;
 
@@ -472,7 +481,27 @@ public sealed class SalesDocumentService(
                 }
             }
 
-            var lineAmount = FiscalRounding.Amount(line.Quantity * line.UnitPrice);
+            if (line.DiscountPercentage is < 0 or > 100)
+                throw new ArgumentException($"Line {lineNumber} has a discount outside 0 to 100%.", nameof(requestLines));
+
+            // An eco-fee line references the line it was generated for by position, since neither
+            // side has a database id yet at request time.
+            Guid? ecoFeeForLineId = null;
+
+            if (line.IsEcoFee)
+            {
+                if (line.EcoFeeForLineNumber is not { } parentLineNumber)
+                    throw new ArgumentException($"Line {lineNumber} is an eco-fee, so it must say which line it belongs to.", nameof(requestLines));
+
+                ecoFeeForLineId = lines.Find(x => x.LineNumber == parentLineNumber)?.Id
+                    ?? throw new ArgumentException($"Line {lineNumber} references line {parentLineNumber}, which was not found before it.", nameof(requestLines));
+            }
+
+            // The discount is worked out on the rounded gross amount, so gross minus discount is
+            // exactly the taxable amount the printed document shows.
+            var grossAmount = FiscalRounding.Amount(line.Quantity * line.UnitPrice);
+            var discountAmount = FiscalRounding.Amount(grossAmount * line.DiscountPercentage / 100m);
+            var lineAmount = grossAmount - discountAmount;
             var taxAmount = FiscalRounding.Amount(lineAmount * line.TaxPercentage / 100m);
 
             lines.Add(new SalesDocumentLine
@@ -483,16 +512,20 @@ public sealed class SalesDocumentService(
                 Quantity = line.Quantity,
                 UnitOfMeasure = line.UnitOfMeasure,
                 UnitPrice = line.UnitPrice,
+                DiscountPercentage = line.DiscountPercentage,
+                DiscountAmount = discountAmount,
                 LineAmount = lineAmount,
                 TaxCountryRegion = line.TaxCountryRegion,
                 TaxCode = line.TaxCode,
                 TaxPercentage = line.TaxPercentage,
                 TaxAmount = taxAmount,
-                TaxExemptionCode = line.TaxExemptionCode,
-                TaxExemptionReason = line.TaxExemptionReason,
+                TaxExemptionCode = exemptionCode,
+                TaxExemptionReason = exemptionReason,
                 OriginatingLineId = line.OriginatingLineId,
                 OriginatingNumber = origin?.DocumentNumber,
-                OriginatingDate = origin?.MovementDate
+                OriginatingDate = origin?.MovementDate,
+                IsEcoFee = line.IsEcoFee,
+                EcoFeeForLineId = ecoFeeForLineId
             });
 
             lineNumber++;
@@ -538,13 +571,98 @@ public sealed class SalesDocumentService(
         return QrCodePayloadBuilder.Build(fields);
     }
 
+    /// <summary>
+    /// A fatura-recibo is paid when it is issued, so it has to say how, down to the cent. No other
+    /// document records money here: an invoice is paid later, by a receipt.
+    /// </summary>
+    private static List<SalesDocumentPayment> BuildPayments(
+        string documentType,
+        IReadOnlyList<CreatePaymentMethodRequest>? requested,
+        decimal grossTotal)
+    {
+        var isInvoiceReceipt = string.Equals(documentType, SalesDocumentTypes.InvoiceReceipt, StringComparison.Ordinal);
+
+        if (!isInvoiceReceipt)
+        {
+            if (requested is { Count: > 0 })
+                throw new ArgumentException($"A '{documentType}' is not paid when issued, so it takes no payment methods.", nameof(requested));
+
+            return [];
+        }
+
+        if (requested is null || requested.Count == 0)
+            throw new ArgumentException("A fatura-recibo is paid when issued and must say how the money was received.", nameof(requested));
+
+        var payments = new List<SalesDocumentPayment>(requested.Count);
+
+        foreach (var method in requested)
+        {
+            if (!PaymentMechanisms.IsSupported(method.Mechanism))
+                throw new ArgumentException($"Unknown payment mechanism '{method.Mechanism}'.", nameof(requested));
+
+            if (method.Amount <= 0)
+                throw new ArgumentException("A payment method must carry a positive amount.", nameof(requested));
+
+            payments.Add(new SalesDocumentPayment
+            {
+                Mechanism = method.Mechanism,
+                Amount = FiscalRounding.Amount(method.Amount),
+                PaymentDate = method.PaymentDate
+            });
+        }
+
+        var paid = FiscalRounding.Amount(payments.Sum(payment => payment.Amount));
+
+        if (paid != grossTotal)
+        {
+            throw new ArgumentException(
+                $"The payment methods add up to {paid:0.00} but the fatura-recibo totals {grossTotal:0.00}.",
+                nameof(requested));
+        }
+
+        return payments;
+    }
+
+    /// <summary>
+    /// A due date may not come before the document. A fatura-recibo was paid on the day, so that is
+    /// its due date whatever was sent; a document with none given is due on its own date.
+    /// </summary>
+    private static DateOnly ResolveDueDate(string documentType, DateOnly documentDate, DateOnly? dueDate)
+    {
+        if (string.Equals(documentType, SalesDocumentTypes.InvoiceReceipt, StringComparison.Ordinal))
+            return documentDate;
+
+        if (dueDate is { } due && due < documentDate)
+            throw new ArgumentException("The due date cannot be before the document date.", nameof(dueDate));
+
+        return dueDate ?? documentDate;
+    }
+
     private static CustomerSnapshot ToSnapshot(CustomerRequest customer)
     {
-        if (string.IsNullOrWhiteSpace(customer.TaxId))
-            return CustomerSnapshot.FinalConsumer() with { Name = customer.Name, Address = customer.Address };
+        var postalCode = Normalize(customer.PostalCode);
+        var city = Normalize(customer.City);
 
-        return new CustomerSnapshot(customer.TaxId.Trim(), customer.Name, customer.Address, customer.Country);
+        if (!PostalCodes.IsValid(postalCode, customer.Country))
+            throw new ArgumentException($"Postal code '{postalCode}' is not in the Portuguese format XXXX-XXX.", nameof(customer));
+
+        if (string.IsNullOrWhiteSpace(customer.TaxId))
+        {
+            return CustomerSnapshot.FinalConsumer() with
+            {
+                Name = customer.Name,
+                Address = customer.Address,
+                PostalCode = postalCode,
+                City = city
+            };
+        }
+
+        return new CustomerSnapshot(
+            customer.TaxId.Trim(), customer.Name, customer.Address, customer.Country, postalCode, city);
     }
+
+    private static string? Normalize(string? value) =>
+        string.IsNullOrWhiteSpace(value) ? null : value.Trim();
 
     private static DateTime TruncateToSeconds(DateTime value) =>
         new(value.Year, value.Month, value.Day, value.Hour, value.Minute, value.Second, DateTimeKind.Utc);
@@ -581,7 +699,13 @@ public sealed class SalesDocumentService(
                     x.TaxExemptionCode,
                     x.TaxExemptionReason,
                     x.OriginatingNumber,
-                    x.OriginatingDate))
+                    x.OriginatingDate,
+                    x.DiscountPercentage,
+                    x.DiscountAmount,
+                    x.IsEcoFee,
+                    x.EcoFeeForLineId is { } forLineId
+                        ? document.Lines.FirstOrDefault(l => l.Id == forLineId)?.LineNumber
+                        : null))
                 .ToList(),
             document.TaxSummaries
                 .Select(x => new InvoiceTaxDto(
@@ -593,5 +717,11 @@ public sealed class SalesDocumentService(
                 .ToList(),
             document.RectifiedDocumentNumber,
             document.RectificationReason,
-            creditedAmount);
+            creditedAmount,
+            document.DueDate,
+            document.CustomerPostalCode,
+            document.CustomerCity,
+            document.GrossLinesTotal,
+            document.DiscountTotal,
+            [.. document.Payments.Select(x => new InvoicePaymentDto(x.Mechanism, x.Amount, x.PaymentDate))]);
 }

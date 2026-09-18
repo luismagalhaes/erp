@@ -47,4 +47,10 @@ public sealed class SaftInvoiceLine
 
     /// <summary>Code from the tax authority's exemption table, e.g. M07.</summary>
     public string? TaxExemptionCode { get; init; }
+
+    /// <summary>
+    /// The line discount, written as SettlementAmount. Informative only: <see cref="UnitPrice"/> and
+    /// <see cref="Amount"/> already come net of it. Left out of the file when zero.
+    /// </summary>
+    public decimal SettlementAmount { get; init; }
 }

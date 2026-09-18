@@ -150,7 +150,8 @@ internal sealed class SalesTestContext
         decimal unitPrice = 100m,
         string taxCode = "NOR",
         decimal taxPercentage = 23m,
-        string? exemptionReason = null)
+        string? exemptionReason = null,
+        string? exemptionCode = null)
     {
         return new CreateInvoiceLineRequest(
             "ART001",
@@ -159,6 +160,7 @@ internal sealed class SalesTestContext
             unitPrice,
             taxCode,
             taxPercentage,
+            TaxExemptionCode: exemptionCode,
             TaxExemptionReason: exemptionReason);
     }
 }

@@ -1,0 +1,33 @@
+@page "/supplier-statements/print"
+@attribute [Authorize]
+@layout PrintLayout
+@using Microsoft.AspNetCore.Authorization
+@using Erp.Main.Components.Printing
+@using Erp.Main.Layout
+@using Erp.Main.Services
+@using Erp.Main.Resources
+@using Microsoft.Extensions.Localization
+@inject PurchasingApiClient Purchasing
+@inject IStringLocalizer<MainResources> L
+
+<PageTitle>@L["SupplierStatement_Title"]</PageTitle>
+
+<PrintAccountStatement Designation="@L["SupplierStatement_Designation"]"
+                       PartyLabel="@L["SupplierStatement_SupplierLabel"]"
+                       BalanceMeaning="@L["SupplierStatement_BalanceMeaning"]"
+                       BackUrl="@(SupplierId is { } id ? StatementRoutes.WithQuery("supplier-statements", "supplierId", id, StartDate, EndDate) : "supplier-statements")"
+                       PartyId="SupplierId"
+                       StartDate="StartDate"
+                       EndDate="EndDate"
+                       LoadStatement="@((companyId, supplierId, start, end) => Purchasing.GetSupplierStatementAsync(companyId, supplierId, start, end))" />
+
+@code {
+    [SupplyParameterFromQuery(Name = "supplierId")]
+    public Guid? SupplierId { get; set; }
+
+    [SupplyParameterFromQuery(Name = "startDate")]
+    public DateOnly? StartDate { get; set; }
+
+    [SupplyParameterFromQuery(Name = "endDate")]
+    public DateOnly? EndDate { get; set; }
+}

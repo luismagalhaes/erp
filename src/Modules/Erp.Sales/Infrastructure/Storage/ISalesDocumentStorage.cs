@@ -8,6 +8,16 @@ public interface ISalesDocumentStorage
     Task<IReadOnlyList<SalesDocument>> GetAllAsync(Guid companyId, CancellationToken cancellationToken = default);
 
     /// <summary>
+    /// One customer's documents up to a date, with their status changes and without lines — what a
+    /// current account statement reads.
+    /// </summary>
+    Task<IReadOnlyList<SalesDocument>> GetForCustomerAsync(
+        Guid companyId,
+        string customerTaxId,
+        DateOnly? endDate = null,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
     /// The listing projection of a company's documents, left as a query so the database applies
     /// the grid's filtering, sorting and paging.
     /// </summary>

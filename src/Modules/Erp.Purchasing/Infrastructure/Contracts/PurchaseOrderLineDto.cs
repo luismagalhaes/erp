@@ -9,6 +9,8 @@ public sealed record PurchaseOrderLineDto(
     decimal Quantity,
     string UnitOfMeasure,
     decimal UnitPrice,
+    decimal DiscountPercentage,
+    decimal DiscountAmount,
     decimal LineAmount,
     string TaxCountryRegion,
     string TaxCode,

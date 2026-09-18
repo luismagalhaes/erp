@@ -46,6 +46,9 @@ public static class Modules
         // The series registry comes before the modules that take numbers from it.
         services.AddSeries();
 
+        // Sequential codes for the master data, composed from the catalogue and the counters.
+        services.AddScoped<MasterDataCodes>();
+
         // What every module that issues fiscal documents shares: the signing key, the signer, and
         // the SAF-T exporter, which collects from whichever modules register an ISaftDocumentSource.
         services.AddFiscalPT(configuration, allowDevelopmentKeyGeneration);

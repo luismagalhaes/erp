@@ -12,6 +12,7 @@
 @inject CatalogApiClient Catalog
 @inject StockApiClient StockApi
 @inject CompanyState Company
+@inject WarehouseState WarehouseState
 @inject NavigationManager Navigation
 @inject ISnackbar Snackbar
 @inject IStringLocalizer<MainResources> L
@@ -134,6 +135,7 @@
                             <MudTh Style="text-align: right;">@L["NewSupplierInvoice_PendingColumn"]</MudTh>
                             <MudTh Style="width: 140px;">@L["NewSupplierInvoice_ToInvoiceColumn"]</MudTh>
                             <MudTh Style="width: 140px;">@L["NewSupplierInvoice_UnitPriceColumn"]</MudTh>
+                            <MudTh Style="width: 110px;">@L["NewSupplierInvoice_DiscountColumn"]</MudTh>
                         </HeaderContent>
                         <RowTemplate>
                             <MudTd>
@@ -176,6 +178,13 @@
                                 {
                                     <MudNumericField @bind-Value="chosen.UnitPrice" @bind-Value:after="StateHasChanged"
                                                      Margin="Margin.Dense" Min="0" Format="N2" />
+                                }
+                            </MudTd>
+                            <MudTd DataLabel="@L["NewSupplierInvoice_DiscountColumn"]">
+                                @if (Chosen(context) is { } chosenDiscount)
+                                {
+                                    <MudNumericField @bind-Value="chosenDiscount.DiscountPercentage" @bind-Value:after="StateHasChanged"
+                                                     Margin="Margin.Dense" Min="0" Max="100" Format="N2" Adornment="Adornment.End" AdornmentText="%" />
                                 }
                             </MudTd>
                         </RowTemplate>
@@ -362,12 +371,12 @@
         !IsCredit && ValidLines.Any(line => line.DeductionNature == "Inventory");
 
     private decimal NetTotal =>
-        _chosen.Where(line => line.Quantity > 0).Sum(line => Round(line.Quantity * line.UnitPrice))
+        _chosen.Where(line => line.Quantity > 0).Sum(line => Round(Round(line.Quantity * line.UnitPrice) * (1 - line.DiscountPercentage / 100m)))
         + ValidLines.Sum(line => Round(line.Quantity * line.UnitPrice));
 
     private decimal TaxTotal =>
         _chosen.Where(line => line.Quantity > 0)
-            .Sum(line => Round(Round(line.Quantity * line.UnitPrice) * line.TaxPercentage / 100m))
+            .Sum(line => Round(Round(Round(line.Quantity * line.UnitPrice) * (1 - line.DiscountPercentage / 100m)) * line.TaxPercentage / 100m))
         + ValidLines.Sum(line => Round(Round(line.Quantity * line.UnitPrice) * line.TaxPercentage / 100m));
 
     private decimal GrossTotal => NetTotal + TaxTotal;
@@ -381,6 +390,7 @@
     protected override async Task OnInitializedAsync()
     {
         Company.Changed += OnCompanyChanged;
+        WarehouseState.Changed += OnWarehouseStateChanged;
         await Company.EnsureLoadedAsync();
         await LoadAsync();
     }
@@ -392,6 +402,12 @@
         _lines.Clear();
         _uninvoiced = [];
         await LoadAsync();
+    });
+
+    private void OnWarehouseStateChanged() => InvokeAsync(() =>
+    {
+        _warehouseId = WarehouseState.HasWarehouse ? WarehouseState.SelectedWarehouseId : null;
+        StateHasChanged();
     });
 
     private async Task LoadAsync()
@@ -408,8 +424,8 @@
             var (suppliers, suppliersError) = await Catalog.GetSuppliersAsync(Company.SelectedCompanyId);
             _suppliers = [.. suppliers.Where(supplier => supplier.IsActive)];
 
-            var (warehouses, warehousesError) = await StockApi.GetWarehousesAsync(Company.SelectedCompanyId);
-            _warehouses = [.. warehouses.Where(warehouse => warehouse.IsActive)];
+            await WarehouseState.EnsureLoadedAsync();
+            _warehouses = [.. WarehouseState.Warehouses];
 
             var (products, productsError) = await Catalog.GetProductsAsync(Company.SelectedCompanyId);
             _products = [.. products.Where(product => product.IsActive)];
@@ -418,10 +434,9 @@
             var (rates, _) = await Catalog.GetVatRatesAsync();
             _taxRates = [.. rates.Where(x => x.FiscalRegion == "PT" && x.IsActive)];
 
-            _error = suppliersError ?? warehousesError ?? productsError;
+            _error = suppliersError ?? WarehouseState.LoadError ?? productsError;
 
-            _warehouseId ??= _warehouses.FirstOrDefault(warehouse => warehouse.IsDefault)?.Id
-                             ?? _warehouses.FirstOrDefault()?.Id;
+            _warehouseId = WarehouseState.HasWarehouse ? WarehouseState.SelectedWarehouseId : null;
         }
         catch (Exception ex)
         {
@@ -495,7 +510,8 @@
                 ProductDescription = line.ProductDescription,
                 UnitOfMeasure = line.UnitOfMeasure,
                 Quantity = line.PendingQuantity,
-                UnitPrice = line.UnitCost
+                UnitPrice = line.UnitCost,
+                DiscountPercentage = line.DiscountPercentage
             });
         }
         else if (!chosen && existing is not null)
@@ -555,7 +571,8 @@
                     line.TaxCode,
                     line.TaxPercentage,
                     "Inventory",
-                    line.ReceiptLineId))
+                    line.ReceiptLineId,
+                    DiscountPercentage: line.DiscountPercentage))
                 .Concat(ValidLines.Select(line => new PurchaseInvoiceLineRequest(
                     line.ProductCode.Trim(),
                     string.IsNullOrWhiteSpace(line.ProductDescription)
@@ -614,6 +631,7 @@
         public decimal UnitPrice { get; set; }
         public string TaxCode { get; set; } = "NOR";
         public decimal TaxPercentage { get; set; } = 23m;
+        public decimal DiscountPercentage { get; set; }
     }
 
     private sealed class FreeLine
@@ -629,5 +647,9 @@
         public string DeductionNature { get; set; } = "Inventory";
     }
 
-    public void Dispose() => Company.Changed -= OnCompanyChanged;
+    public void Dispose()
+    {
+        Company.Changed -= OnCompanyChanged;
+        WarehouseState.Changed -= OnWarehouseStateChanged;
+    }
 }

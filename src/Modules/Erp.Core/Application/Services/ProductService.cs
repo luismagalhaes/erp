@@ -10,7 +10,8 @@ public sealed class ProductService(
     IProductStorage storage,
     IProductFamilyStorage familyStorage,
     IProductSubfamilyStorage subfamilyStorage,
-    IBrandStorage brandStorage) : IProductService
+    IBrandStorage brandStorage,
+    IEcoFeeTypeStorage ecoFeeTypeStorage) : IProductService
 {
     private static readonly string[] ProductTypes = ["P", "S", "O", "I"];
 
@@ -53,6 +54,7 @@ public sealed class ProductService(
             request.UnitPrice);
 
         await ValidateClassificationAsync(request.FamilyId, request.SubfamilyId, request.BrandId, cancellationToken);
+        await ValidateEcoFeeTypeAsync(request.EcoFeeTypeId, cancellationToken);
 
         var productCode = request.ProductCode.Trim();
 
@@ -72,10 +74,13 @@ public sealed class ProductService(
             DefaultTaxCountryRegion = request.DefaultTaxCountryRegion,
             DefaultTaxCode = request.DefaultTaxCode,
             DefaultTaxPercentage = request.DefaultTaxPercentage,
+            DefaultTaxExemptionCode = ResolveExemptionCode(request.DefaultTaxCode, request.DefaultTaxExemptionCode),
             Barcode = Normalize(request.Barcode),
             FamilyId = request.FamilyId,
             SubfamilyId = request.SubfamilyId,
-            BrandId = request.BrandId
+            BrandId = request.BrandId,
+            EcoFeeTypeId = request.EcoFeeTypeId,
+            EcoFeeWeightKg = request.EcoFeeWeightKg
         };
 
         await storage.AddAsync(product, cancellationToken);
@@ -97,6 +102,7 @@ public sealed class ProductService(
             request.UnitPrice);
 
         await ValidateClassificationAsync(request.FamilyId, request.SubfamilyId, request.BrandId, cancellationToken);
+        await ValidateEcoFeeTypeAsync(request.EcoFeeTypeId, cancellationToken);
 
         var product = await storage.GetByIdAsync(id, cancellationToken);
         if (product is null)
@@ -111,16 +117,35 @@ public sealed class ProductService(
         product.DefaultTaxCountryRegion = request.DefaultTaxCountryRegion;
         product.DefaultTaxCode = request.DefaultTaxCode;
         product.DefaultTaxPercentage = request.DefaultTaxPercentage;
+        product.DefaultTaxExemptionCode = ResolveExemptionCode(request.DefaultTaxCode, request.DefaultTaxExemptionCode);
         product.Barcode = Normalize(request.Barcode);
         product.FamilyId = request.FamilyId;
         product.SubfamilyId = request.SubfamilyId;
         product.BrandId = request.BrandId;
+        product.EcoFeeTypeId = request.EcoFeeTypeId;
+        product.EcoFeeWeightKg = request.EcoFeeWeightKg;
         product.IsActive = request.IsActive;
         product.UpdatedAtUtc = DateTime.UtcNow;
 
         await storage.SaveChangesAsync(cancellationToken);
 
         return Map(await storage.GetByIdAsync(id, cancellationToken) ?? product);
+    }
+
+    /// <summary>
+    /// The exemption reason an article carries. Only a zero-rated article has one, and it has to be
+    /// a code from the tax authority's table — the same rule the documents apply to their lines.
+    /// </summary>
+    private static string? ResolveExemptionCode(string taxCode, string? exemptionCode)
+    {
+        if (!string.Equals(taxCode, FiscalPT.Documents.TaxCodes.Exempt, StringComparison.Ordinal))
+            return null;
+
+        if (string.IsNullOrWhiteSpace(exemptionCode))
+            return null;
+
+        return FiscalPT.Documents.TaxExemptionReasons.Find(exemptionCode)?.Code
+               ?? throw new ArgumentException($"Unknown VAT exemption code '{exemptionCode}'.", nameof(exemptionCode));
     }
 
     private static void Validate(
@@ -178,6 +203,16 @@ public sealed class ProductService(
             throw new ArgumentException("The subfamily does not belong to the chosen family.", nameof(subfamilyId));
     }
 
+    /// <summary>An eco-fee is optional, but when one is chosen it has to exist for this company.</summary>
+    private async Task ValidateEcoFeeTypeAsync(Guid? ecoFeeTypeId, CancellationToken cancellationToken)
+    {
+        if (ecoFeeTypeId is not { } id)
+            return;
+
+        if (await ecoFeeTypeStorage.GetByIdAsync(id, cancellationToken) is null)
+            throw new ArgumentException("The eco-fee was not found.", nameof(ecoFeeTypeId));
+    }
+
     private static string? Normalize(string? value) =>
         string.IsNullOrWhiteSpace(value) ? null : value.Trim();
 
@@ -199,5 +234,9 @@ public sealed class ProductService(
             product.Brand?.Name,
             product.IsActive,
             product.UnitCost,
-            product.InventoryCategory);
+            product.InventoryCategory,
+            product.DefaultTaxExemptionCode,
+            product.EcoFeeTypeId,
+            product.EcoFeeType?.Code,
+            product.EcoFeeWeightKg);
 }

@@ -139,6 +139,7 @@ public sealed class ProductStorage(AppDbContext dbContext) : IProductStorage
             .Include(x => x.Family)
             .Include(x => x.Subfamily)
             .Include(x => x.Brand)
+            .Include(x => x.EcoFeeType)
             .Where(x => x.CompanyId == companyId)
             .OrderBy(x => x.ProductCode)
             .ToListAsync(cancellationToken);
@@ -169,7 +170,10 @@ public sealed class ProductStorage(AppDbContext dbContext) : IProductStorage
                 BrandName = x.Brand!.Name,
                 IsActive = x.IsActive,
                 UnitCost = x.UnitCost,
-                InventoryCategory = x.InventoryCategory
+                InventoryCategory = x.InventoryCategory,
+                EcoFeeTypeId = x.EcoFeeTypeId,
+                EcoFeeTypeCode = x.EcoFeeType!.Code,
+                EcoFeeWeightKg = x.EcoFeeWeightKg
             });
 
     public Task<Product?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default) =>
@@ -177,6 +181,7 @@ public sealed class ProductStorage(AppDbContext dbContext) : IProductStorage
             .Include(x => x.Family)
             .Include(x => x.Subfamily)
             .Include(x => x.Brand)
+            .Include(x => x.EcoFeeType)
             .FirstOrDefaultAsync(x => x.Id == id, cancellationToken);
 
     public Task<bool> CodeExistsAsync(Guid companyId, string productCode, CancellationToken cancellationToken = default) =>
@@ -272,6 +277,50 @@ public sealed class SupplierStorage(AppDbContext dbContext) : ISupplierStorage
 
     public async Task AddAsync(Supplier supplier, CancellationToken cancellationToken = default) =>
         await dbContext.Set<Supplier>().AddAsync(supplier, cancellationToken);
+
+    public Task SaveChangesAsync(CancellationToken cancellationToken = default) =>
+        dbContext.SaveChangesAsync(cancellationToken);
+}
+
+public sealed class EcoFeeTypeStorage(AppDbContext dbContext) : IEcoFeeTypeStorage
+{
+    public async Task<IReadOnlyList<EcoFeeType>> GetAllAsync(Guid companyId, CancellationToken cancellationToken = default) =>
+        await dbContext.Set<EcoFeeType>()
+            .AsNoTracking()
+            .Include(x => x.FeeProduct)
+            .Where(x => x.CompanyId == companyId)
+            .OrderBy(x => x.Description)
+            .ToListAsync(cancellationToken);
+
+    public IQueryable<EcoFeeTypeDto> Query(Guid companyId) =>
+        dbContext.Set<EcoFeeType>()
+            .AsNoTracking()
+            .Where(x => x.CompanyId == companyId)
+            // Member initialization, not a constructor call: EF Core only keeps the mapping between
+            // the DTO members and the columns this way, which is what lets the OData $filter and
+            // $orderby applied afterwards be translated to SQL.
+            .Select(x => new EcoFeeTypeDto
+            {
+                Id = x.Id,
+                Code = x.Code,
+                Description = x.Description,
+                CalculationBasis = x.CalculationBasis.ToString(),
+                Rate = x.Rate,
+                ManagingEntityName = x.ManagingEntityName,
+                IsActive = x.IsActive,
+                FeeProductCode = x.FeeProduct!.ProductCode
+            });
+
+    public Task<EcoFeeType?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default) =>
+        dbContext.Set<EcoFeeType>()
+            .Include(x => x.FeeProduct)
+            .FirstOrDefaultAsync(x => x.Id == id, cancellationToken);
+
+    public Task<bool> CodeExistsAsync(Guid companyId, string code, CancellationToken cancellationToken = default) =>
+        dbContext.Set<EcoFeeType>().AnyAsync(x => x.CompanyId == companyId && x.Code == code, cancellationToken);
+
+    public async Task AddAsync(EcoFeeType ecoFeeType, CancellationToken cancellationToken = default) =>
+        await dbContext.Set<EcoFeeType>().AddAsync(ecoFeeType, cancellationToken);
 
     public Task SaveChangesAsync(CancellationToken cancellationToken = default) =>
         dbContext.SaveChangesAsync(cancellationToken);

@@ -65,7 +65,8 @@ public sealed class PurchaseOrderService(
                         line.Quantity,
                         line.ReceivedQuantity,
                         line.PendingQuantity,
-                        line.UnitPrice)))
+                        line.UnitPrice,
+                        line.DiscountPercentage)))
                 .OrderBy(line => line.ExpectedDate ?? DateOnly.MaxValue)
                 .ThenBy(line => line.OrderNumber, StringComparer.Ordinal)
         ];
@@ -196,6 +197,7 @@ public sealed class PurchaseOrderService(
         Quantity = request.Quantity,
         UnitOfMeasure = request.UnitOfMeasure,
         UnitPrice = request.UnitPrice,
+        DiscountPercentage = request.DiscountPercentage,
         TaxCountryRegion = request.TaxCountryRegion,
         TaxCode = request.TaxCode,
         TaxPercentage = request.TaxPercentage
@@ -259,6 +261,8 @@ public sealed class PurchaseOrderService(
                     line.Quantity,
                     line.UnitOfMeasure,
                     line.UnitPrice,
+                    line.DiscountPercentage,
+                    line.DiscountAmount,
                     line.LineAmount,
                     line.TaxCountryRegion,
                     line.TaxCode,

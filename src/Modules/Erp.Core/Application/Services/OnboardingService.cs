@@ -46,38 +46,47 @@ public sealed class OnboardingService(
         // the sign-up page be skipped entirely.
         await using var transaction = await unitOfWork.BeginTransactionAsync(cancellationToken);
 
-        var company = await companyAdminService.CreateAsync(
-            new CreateCompanyRequest(
-                request.Name,
-                request.TaxId,
-                request.LegalName,
-                request.Email,
-                request.Phone,
-                request.Address,
-                request.City,
-                request.PostalCode,
-                request.Country),
-            cancellationToken);
+        CompanyDetailDto? company = null;
 
-        await subscriptionService.AssignAsync(
-            company.Id,
-            new AssignSubscriptionRequest(request.PlanId),
-            cancellationToken);
-
-        await userCompanyStorage.AddAsync(new UserCompany
+        // The tenant write guard would otherwise refuse every row below: the caller does not belong
+        // to this company yet, because the membership that would prove it is itself one of the rows
+        // being written here. See RunUnrestrictedAsync's own doc comment for why this is the one
+        // legitimate case for it, rather than a reason to widen what the guard allows for everyone.
+        await unitOfWork.RunUnrestrictedAsync(async () =>
         {
-            Id = Guid.NewGuid(),
-            UserId = userId,
-            CompanyId = company.Id,
-            Role = OwnerRole,
-            IsActive = true,
-            CreatedAtUtc = DateTime.UtcNow
-        }, cancellationToken);
+            company = await companyAdminService.CreateAsync(
+                new CreateCompanyRequest(
+                    request.Name,
+                    request.TaxId,
+                    request.LegalName,
+                    request.Email,
+                    request.Phone,
+                    request.Address,
+                    request.City,
+                    request.PostalCode,
+                    request.Country),
+                cancellationToken);
 
-        await userCompanyStorage.SaveChangesAsync(cancellationToken);
+            await subscriptionService.AssignAsync(
+                company.Id,
+                new AssignSubscriptionRequest(request.PlanId),
+                cancellationToken);
+
+            await userCompanyStorage.AddAsync(new UserCompany
+            {
+                Id = Guid.NewGuid(),
+                UserId = userId,
+                CompanyId = company.Id,
+                Role = OwnerRole,
+                IsActive = true,
+                CreatedAtUtc = DateTime.UtcNow
+            }, cancellationToken);
+
+            await userCompanyStorage.SaveChangesAsync(cancellationToken);
+        });
 
         await transaction.CommitAsync(cancellationToken);
 
-        return company;
+        return company!;
     }
 }

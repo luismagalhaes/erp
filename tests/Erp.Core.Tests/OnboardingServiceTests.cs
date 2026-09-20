@@ -25,6 +25,10 @@ public class OnboardingServiceTests
     public OnboardingServiceTests()
     {
         _unitOfWork.BeginTransactionAsync(Arg.Any<CancellationToken>()).Returns(Substitute.For<ITransaction>());
+
+        // A bare Substitute.For<IUnitOfWork>() never calls the action it was given — it would just
+        // report an empty, completed Task, silently skipping the entire body under test.
+        _unitOfWork.RunUnrestrictedAsync(Arg.Any<Func<Task>>()).Returns(call => call.Arg<Func<Task>>()());
     }
 
     private OnboardingService CreateService() => new(_companies, _subscriptions, _memberships, _unitOfWork);

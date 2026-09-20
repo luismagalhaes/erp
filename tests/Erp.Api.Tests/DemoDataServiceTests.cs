@@ -1,4 +1,5 @@
 using Erp.Api.Services;
+using Erp.Common;
 using Erp.Core.Infrastructure.Application;
 using Erp.Core.Infrastructure.Contracts;
 using Erp.SeriesRegistry.Infrastructure.Application;
@@ -22,20 +23,33 @@ public class DemoDataServiceTests
     private readonly IProductSubfamilyService _subfamilies = Substitute.For<IProductSubfamilyService>();
     private readonly IBrandService _brands = Substitute.For<IBrandService>();
     private readonly IProductService _products = Substitute.For<IProductService>();
+    private readonly IEcoFeeTypeService _ecoFeeTypes = Substitute.For<IEcoFeeTypeService>();
     private readonly ISeriesService _series = Substitute.For<ISeriesService>();
 
     private readonly Guid _companyId = Guid.NewGuid();
+    private readonly Guid _batteryEcoFeeTypeId = Guid.NewGuid();
 
     public DemoDataServiceTests()
     {
         _families.CodeExistsAsync(_companyId, Arg.Any<string>(), Arg.Any<CancellationToken>()).Returns(false);
 
+        // Every company already has its two default Ecovalor types by the time demo data runs —
+        // seeded when the company itself was created, same as the series.
+        _ecoFeeTypes.GetAllAsync(_companyId, Arg.Any<CancellationToken>()).Returns(
+        [
+            new EcoFeeTypeDto(_batteryEcoFeeTypeId, Constants.DefaultEcoFeeTypes.All[0].Code, "Ecovalor - Pilhas e baterias", "PerUnit", 0.03m, "Ecopilhas / Amb3E", true, "DEMO-ECOFEE-BAT"),
+            new EcoFeeTypeDto(Guid.NewGuid(), Constants.DefaultEcoFeeTypes.All[1].Code, "Ecovalor - Óleos lubrificantes", "PerKg", 0.10m, "SOGILUB", true, "DEMO-ECOFEE-OLEO")
+        ]);
+
         _families.CreateAsync(Arg.Any<CreateProductFamilyRequest>(), Arg.Any<CancellationToken>())
             .Returns(call => new ProductFamilyDto(Guid.NewGuid(), call.Arg<CreateProductFamilyRequest>().Code, "Família", true, 0));
 
         _subfamilies.CreateAsync(Arg.Any<CreateProductSubfamilyRequest>(), Arg.Any<CancellationToken>())
-            .Returns(call => new ProductSubfamilyDto(
-                Guid.NewGuid(), call.Arg<CreateProductSubfamilyRequest>().FamilyId, "Família", call.Arg<CreateProductSubfamilyRequest>().Code, "Subfamília", true));
+            .Returns(call =>
+            {
+                var request = call.Arg<CreateProductSubfamilyRequest>();
+                return new ProductSubfamilyDto(Guid.NewGuid(), request.FamilyId, "Família", request.Code, request.Name, true);
+            });
 
         _brands.CreateAsync(Arg.Any<CreateBrandRequest>(), Arg.Any<CancellationToken>())
             .Returns(call => new BrandDto(Guid.NewGuid(), call.Arg<CreateBrandRequest>().Code, call.Arg<CreateBrandRequest>().Name, true));
@@ -48,7 +62,7 @@ public class DemoDataServiceTests
     }
 
     private DemoDataService CreateService() =>
-        new(_families, _subfamilies, _brands, _products, _series, NullLogger<DemoDataService>.Instance);
+        new(_families, _subfamilies, _brands, _products, _ecoFeeTypes, _series, NullLogger<DemoDataService>.Instance);
 
     /// <summary>The actual bug: series that already existed before "Aplicar Demo" ran must still get communicated.</summary>
     [Fact]
@@ -70,6 +84,23 @@ public class DemoDataServiceTests
         result.SeriesCommunicated.Should().Be(1);
         await _series.Received(1).CommunicateManuallyAsync(existingUncommunicated.Id, "XXXX", Arg.Any<CancellationToken>());
         await _series.DidNotReceive().CommunicateManuallyAsync(alreadyCommunicated.Id, Arg.Any<string>(), Arg.Any<CancellationToken>());
+    }
+
+    /// <summary>
+    /// A battery is only a real, working battery line if it carries the eco-fee the law requires —
+    /// the demo catalogue has to set this up the same way a real product editor would.
+    /// </summary>
+    [Fact]
+    public async Task ApplyAsync_links_battery_products_to_the_companys_battery_ecovalor()
+    {
+        var createdRequests = new List<CreateProductRequest>();
+        _products.When(x => x.CreateAsync(Arg.Any<CreateProductRequest>(), Arg.Any<CancellationToken>()))
+            .Do(call => createdRequests.Add(call.Arg<CreateProductRequest>()));
+
+        await CreateService().ApplyAsync(_companyId, "user-1");
+
+        createdRequests.Should().Contain(x => x.EcoFeeTypeId == _batteryEcoFeeTypeId, "some of the demo products are batteries");
+        createdRequests.Should().Contain(x => x.EcoFeeTypeId == null, "not every demo product is a battery");
     }
 
     [Fact]

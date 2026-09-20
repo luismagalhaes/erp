@@ -23,6 +23,28 @@ public sealed class AppDbContext(
     IEnumerable<IModuleModelConfiguration> modules,
     ICurrentUserContext currentUser) : DbContext(options), ITenantExistenceChecker
 {
+    /// <summary>
+    /// A count, not a bool: <see cref="RunUnrestricted"/> calls can legitimately nest (a service
+    /// calling another service that also opens its own unrestricted scope), and the outer one must
+    /// still be in effect when the inner one exits.
+    /// </summary>
+    private int _unrestrictedScopeDepth;
+
+    /// <summary>See <see cref="IUnitOfWork.RunUnrestrictedAsync"/> — this is what it actually toggles.</summary>
+    public async Task RunUnrestricted(Func<Task> action)
+    {
+        _unrestrictedScopeDepth++;
+
+        try
+        {
+            await action();
+        }
+        finally
+        {
+            _unrestrictedScopeDepth--;
+        }
+    }
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
@@ -110,9 +132,14 @@ public sealed class AppDbContext(
     /// request the API already checked — so this rarely has anything to do. It exists for the case
     /// that matters: code that builds an entity for another company without going through either.
     /// </summary>
+    /// <remarks>
+    /// <see cref="RunUnrestricted"/> only ever loosens this — never the read-side filter above it.
+    /// The one caller that needs it (self-service sign-up) is creating the company it is about to
+    /// write rows for; it has nothing to hide from itself by reading further than its own new row.
+    /// </remarks>
     private void EnsureNoForeignCompanyWrites()
     {
-        if (IsUnrestrictedContext)
+        if (IsUnrestrictedContext || _unrestrictedScopeDepth > 0)
             return;
 
         foreach (var entry in ChangeTracker.Entries())

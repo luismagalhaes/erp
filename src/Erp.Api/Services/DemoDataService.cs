@@ -1,3 +1,4 @@
+using Erp.Common;
 using Erp.Core.Infrastructure.Application;
 using Erp.Core.Infrastructure.Contracts;
 using Erp.SeriesRegistry.Infrastructure.Application;
@@ -31,11 +32,15 @@ public sealed class DemoDataService(
     IProductSubfamilyService subfamilyService,
     IBrandService brandService,
     IProductService productService,
+    IEcoFeeTypeService ecoFeeTypeService,
     ISeriesService seriesService,
     ILogger<DemoDataService> logger)
 {
     private const string CodePrefix = "DEMO-";
     private const string FakeValidationCode = "XXXX";
+
+    /// <summary>The subfamily whose products get linked to the company's own battery Ecovalor.</summary>
+    private const string BatterySubfamilyName = "Baterias";
 
     /// <summary>
     /// One family, and the base part name for each of its two subfamilies — car-parts categories a
@@ -145,6 +150,13 @@ public sealed class DemoDataService(
         List<BrandDto> brands,
         CancellationToken cancellationToken)
     {
+        // Every new company already has its two default Ecovalor types (see CompanyAdminService),
+        // battery included — this just finds the one a battery product has to point to, the same
+        // way a real battery would be set up in the product editor.
+        var ecoFeeTypes = await ecoFeeTypeService.GetAllAsync(companyId, cancellationToken);
+        var batteryEcoFeeTypeId = ecoFeeTypes
+            .FirstOrDefault(x => x.Code == Constants.DefaultEcoFeeTypes.All[0].Code)?.Id;
+
         // Flattened so product #n picks its family/subfamily/part name by simple modulo, cycling
         // through every subfamily before repeating one.
         var slots = new List<(ProductFamilyDto Family, ProductSubfamilyDto Subfamily, string PartName, decimal BasePrice)>();
@@ -171,6 +183,8 @@ public sealed class DemoDataService(
             var unitPrice = Math.Round(slot.BasePrice * (1 + (i % 7) * 0.05m), 2);
             var unitCost = Math.Round(unitPrice * 0.65m, 2);
 
+            var isBattery = slot.Subfamily.Name == BatterySubfamilyName;
+
             await productService.CreateAsync(
                 new CreateProductRequest(
                     CompanyId: companyId,
@@ -180,7 +194,8 @@ public sealed class DemoDataService(
                     UnitCost: unitCost,
                     FamilyId: slot.Family.Id,
                     SubfamilyId: slot.Subfamily.Id,
-                    BrandId: brand.Id),
+                    BrandId: brand.Id,
+                    EcoFeeTypeId: isBattery ? batteryEcoFeeTypeId : null),
                 cancellationToken);
         }
 

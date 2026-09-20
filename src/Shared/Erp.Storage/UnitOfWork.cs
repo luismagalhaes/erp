@@ -23,6 +23,8 @@ public sealed class UnitOfWork(AppDbContext dbContext) : IUnitOfWork
     public Task SaveChangesAsync(CancellationToken cancellationToken = default) =>
         dbContext.SaveChangesAsync(cancellationToken);
 
+    public Task RunUnrestrictedAsync(Func<Task> action) => dbContext.RunUnrestricted(action);
+
     private sealed class OwnedTransaction(IDbContextTransaction transaction) : ITransaction
     {
         public Task CommitAsync(CancellationToken cancellationToken = default) =>

@@ -8,6 +8,7 @@
 @inject UserManager<ApplicationUser> UserManager
 @inject IEmailService EmailService
 @inject NavigationManager Navigation
+@inject IConfiguration Configuration
 @inject IStringLocalizer<IdentityResources> Localizer
 
 <PageTitle>@Localizer["Account_SignUp_PageTitle"]</PageTitle>
@@ -105,9 +106,10 @@
         var token = await UserManager.GenerateEmailConfirmationTokenAsync(user);
         var encodedToken = WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes(token));
 
-        var confirmLink = Navigation.GetUriWithQueryParameters(
+        var confirmLink = EmailLinkBuilder.Build(
+            Configuration,
             "/Account/ConfirmEmail",
-            new Dictionary<string, object?>
+            new Dictionary<string, string?>
             {
                 ["email"] = user.Email,
                 ["token"] = encodedToken,

@@ -18,4 +18,14 @@ public interface IUnitOfWork
     Task<ITransaction> BeginTransactionAsync(CancellationToken cancellationToken = default);
 
     Task SaveChangesAsync(CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Runs <paramref name="action"/> with the per-company write guard turned off, for the one
+    /// legitimate case that needs it: a caller creating a company for themselves has nothing they
+    /// already belong to yet — the membership that would satisfy the guard is itself one of the
+    /// rows being written — so the guard has to be told this write is expected, not bypassed by
+    /// widening what it protects for anyone else. Scoped to the call, not the rest of the request:
+    /// nothing written after <paramref name="action"/> returns gets any latitude from this.
+    /// </summary>
+    Task RunUnrestrictedAsync(Func<Task> action);
 }

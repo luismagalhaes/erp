@@ -1,0 +1,90 @@
+@page "/Account/ResendConfirmation"
+@layout Layout.AuthLayout
+@using Microsoft.AspNetCore.Components.Web
+@using Microsoft.Extensions.Localization
+@using Erp.Identity.Resources
+@using Erp.Identity.Services
+@attribute [AllowAnonymous]
+@inject UserManager<ApplicationUser> UserManager
+@inject IEmailService EmailService
+@inject NavigationManager Navigation
+@inject IStringLocalizer<IdentityResources> Localizer
+
+<PageTitle>@Localizer["Account_ResendConfirmation_PageTitle"]</PageTitle>
+
+<div class="auth-wrapper">
+    <div class="auth-card mud-elevation-3">
+        <div class="auth-logo">ERP</div>
+        <h2>@Localizer["Account_ResendConfirmation_Heading"]</h2>
+
+        <EditForm Model="Input" OnValidSubmit="HandleSubmitAsync" FormName="resend-confirmation-form">
+            <DataAnnotationsValidator />
+            <div class="auth-field">
+                <label>@Localizer["Account_ResendConfirmation_EmailLabel"]</label>
+                <InputText @bind-Value="Input.Email" type="email" autocomplete="username" />
+            </div>
+            <button type="submit" class="auth-button">@Localizer["Account_ResendConfirmation_SubmitButton"]</button>
+        </EditForm>
+
+        <div class="auth-links mt-16">
+            <a class="auth-link" href="@SignInLink">@Localizer["Account_ForgotPassword_BackToSignInLink"]</a>
+        </div>
+    </div>
+</div>
+
+@code {
+    private InputModel Input { get; set; } = new();
+
+    [SupplyParameterFromQuery]
+    public string? Email { get; set; }
+
+    [SupplyParameterFromQuery]
+    public string? ReturnUrl { get; set; }
+
+    private string SignInLink => Navigation.GetUriWithQueryParameters(
+        "/Account/SignIn", new Dictionary<string, object?> { ["returnUrl"] = ReturnUrl });
+
+    protected override void OnInitialized()
+    {
+        if (!string.IsNullOrWhiteSpace(Email))
+            Input.Email = Email;
+    }
+
+    /// <summary>
+    /// Same shape as ForgotPassword: whether the account exists, or is already confirmed, is never
+    /// revealed — the page always ends the same way.
+    /// </summary>
+    private async Task HandleSubmitAsync()
+    {
+        var email = (Input.Email ?? string.Empty).Trim();
+
+        var user = await UserManager.FindByEmailAsync(email);
+        if (user is not null && !user.EmailConfirmed)
+        {
+            var token = await UserManager.GenerateEmailConfirmationTokenAsync(user);
+            var encodedToken = WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes(token));
+
+            var confirmLink = Navigation.GetUriWithQueryParameters(
+                "/Account/ConfirmEmail",
+                new Dictionary<string, object?>
+                {
+                    ["email"] = email,
+                    ["token"] = encodedToken,
+                    ["returnUrl"] = ReturnUrl
+                });
+
+            var html = $"<p>{Localizer["Account_SignUp_EmailGreeting", user.FullName]}</p><p>{Localizer["Account_SignUp_EmailBody"]} <a href=\"{confirmLink}\">link</a></p>";
+            await EmailService.SendAsync(email, Localizer["Account_SignUp_EmailSubject"], html);
+        }
+
+        var confirmationPage = Navigation.GetUriWithQueryParameters(
+            "/Account/SignUpConfirmation", new Dictionary<string, object?> { ["returnUrl"] = ReturnUrl });
+        Navigation.NavigateTo(confirmationPage, forceLoad: true);
+    }
+
+    private sealed class InputModel
+    {
+        [Required, EmailAddress]
+        public string? Email { get; set; }
+    }
+}

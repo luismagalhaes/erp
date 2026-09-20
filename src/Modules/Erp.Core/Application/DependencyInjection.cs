@@ -31,6 +31,11 @@ public static class DependencyInjection
         services.AddScoped<IVatRateService, VatRateService>();
         services.AddScoped<IEcoFeeTypeService, EcoFeeTypeService>();
 
+        // Subscriptions, and the sign-up path that puts a brand new user on one.
+        services.AddScoped<ISubscriptionPlanService, SubscriptionPlanService>();
+        services.AddScoped<ICompanySubscriptionService, CompanySubscriptionService>();
+        services.AddScoped<IOnboardingService, OnboardingService>();
+
         return services;
     }
 }

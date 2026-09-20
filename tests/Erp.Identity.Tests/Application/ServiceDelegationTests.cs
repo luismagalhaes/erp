@@ -223,7 +223,7 @@ public class ServiceDelegationTests
     public async Task UserService_delegates_the_user_lookup_to_the_storage()
     {
         var storage = Substitute.For<IUserStorage>();
-        var edit = new UserEditItem("id", "ana@erp.local", "Ana", true, [], "pt-PT");
+        var edit = new UserEditItem("id", "ana@erp.local", "Ana", true, true, [], "pt-PT");
         storage.GetUserAsync("id", Token).Returns(edit);
 
         (await new UserService(storage).GetUserAsync("id", Token)).Should().BeSameAs(edit);

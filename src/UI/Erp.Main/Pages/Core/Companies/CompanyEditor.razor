@@ -31,10 +31,23 @@
             </MudText>
         </MudStack>
 
-        <MudButton Variant="Variant.Text" StartIcon="@Icons.Material.Filled.ArrowBack"
-                   OnClick="@(() => Navigation.NavigateTo("companies"))">
-            @Localizer["Common_Back"]
-        </MudButton>
+        <MudStack Row="true" Spacing="2">
+            @if (!IsNew)
+            {
+                <AuthorizeView Roles="@Constants.Roles.SuperAdmin">
+                    <MudButton Variant="Variant.Outlined" Color="Color.Secondary"
+                               StartIcon="@Icons.Material.Filled.AutoAwesome"
+                               Disabled="@_applyingDemoData"
+                               OnClick="ApplyDemoDataAsync">
+                        @Localizer["CompanyEditor_ApplyDemoDataButton"]
+                    </MudButton>
+                </AuthorizeView>
+            }
+            <MudButton Variant="Variant.Text" StartIcon="@Icons.Material.Filled.ArrowBack"
+                       OnClick="@(() => Navigation.NavigateTo("companies"))">
+                @Localizer["Common_Back"]
+            </MudButton>
+        </MudStack>
     </MudStack>
 
     @if (!string.IsNullOrWhiteSpace(_error))
@@ -430,6 +443,38 @@
     private CompanyAtCredentialStatus? _atStatus;
     private string _atSubUserId = string.Empty;
     private string _atPassword = string.Empty;
+
+    private bool _applyingDemoData;
+
+    private async Task ApplyDemoDataAsync()
+    {
+        _applyingDemoData = true;
+
+        try
+        {
+            var (result, error) = await CoreApi.ApplyDemoDataAsync(Id!.Value);
+
+            if (error is not null)
+            {
+                Snackbar.Add(error, Severity.Error);
+                return;
+            }
+
+            Snackbar.Add(
+                result is { Applied: true }
+                    ? string.Format(Localizer["CompanyEditor_DemoDataApplied"], result.Products, result.SeriesCommunicated)
+                    : Localizer["CompanyEditor_DemoDataAlreadyApplied"].Value,
+                Severity.Success);
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add(string.Format(Localizer["CompanyEditor_DemoDataError"], ex.Message), Severity.Error);
+        }
+        finally
+        {
+            _applyingDemoData = false;
+        }
+    }
 
     private bool _warehouseOpen;
     private Guid? _warehouseId;

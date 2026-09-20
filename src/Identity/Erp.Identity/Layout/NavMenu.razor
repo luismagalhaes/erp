@@ -10,6 +10,11 @@
 
     @if (_isSuperAdmin)
     {
+        <MudNavLink Href="/Backoffice/SessionLogs" Icon="@Icons.Material.Filled.History">@Localizer["NavMenu_SessionLogs"]</MudNavLink>
+    }
+
+    @if (_isSuperAdmin)
+    {
         <MudNavGroup Title="@Localizer["NavMenu_Backoffice"]"
                      Icon="@Icons.Material.Filled.AdminPanelSettings"
                      @bind-Expanded="_backofficeExpanded">

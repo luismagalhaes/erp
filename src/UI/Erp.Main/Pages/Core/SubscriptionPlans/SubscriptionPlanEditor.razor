@@ -1,0 +1,202 @@
+@page "/subscription-plans/new"
+@page "/subscription-plans/{Id:guid}"
+@attribute [Authorize(Roles = Constants.Roles.SuperAdmin)]
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.Extensions.Localization
+@using MudBlazor
+@using Erp.Common
+@using Erp.Main.Components.Common
+@using Erp.Main.Models.Core
+@using Erp.Main.Resources
+@using Erp.Main.Services
+@inject CoreApiClient CoreApi
+@inject NavigationManager Navigation
+@inject ISnackbar Snackbar
+@inject IStringLocalizer<MainResources> Localizer
+
+<PageTitle>@Title</PageTitle>
+
+<MudStack Spacing="3">
+    <PageHeader Title="@Title" Breadcrumbs="Breadcrumbs">
+        <Actions>
+            <MudButton Variant="Variant.Text" StartIcon="@Icons.Material.Filled.ArrowBack"
+                       OnClick="@(() => Navigation.NavigateTo("subscription-plans"))">
+                @Localizer["Common_Back"]
+            </MudButton>
+        </Actions>
+    </PageHeader>
+
+    @if (!string.IsNullOrWhiteSpace(_error))
+    {
+        <MudAlert Severity="Severity.Error" Dense="true">@_error</MudAlert>
+    }
+
+    @if (_loading)
+    {
+        <MudProgressLinear Indeterminate="true" Color="Color.Primary" />
+    }
+    else
+    {
+        <EditorCard Title="@Title" Icon="@Icons.Material.Filled.LocalOffer"
+                    Description="@Localizer["SubscriptionPlanEditor_Description"]">
+            <ChildContent>
+                <MudGrid Spacing="3">
+                    <MudItem xs="12" sm="6" md="4">
+                        <MudTextField @bind-Value="_name" Label="@Localizer["SubscriptionPlanEditor_NameLabel"]"
+                                      Variant="Variant.Outlined" Margin="Margin.Dense" Required="true" />
+                    </MudItem>
+                    <MudItem xs="12" sm="6" md="8">
+                        <MudTextField @bind-Value="_description" Label="@Localizer["SubscriptionPlanEditor_DescriptionLabel"]"
+                                      Variant="Variant.Outlined" Margin="Margin.Dense" />
+                    </MudItem>
+
+                    <MudItem xs="12" sm="6" md="3">
+                        <MudNumericField @bind-Value="_price" Label="@Localizer["SubscriptionPlanEditor_PriceLabel"]"
+                                         Variant="Variant.Outlined" Margin="Margin.Dense" Min="0" Format="N2"
+                                         Adornment="Adornment.End" AdornmentText="€" />
+                    </MudItem>
+                    <MudItem xs="12" sm="6" md="3">
+                        <MudSelect @bind-Value="_billingPeriod" @bind-Value:after="OnBillingPeriodChanged"
+                                   Label="@Localizer["SubscriptionPlanEditor_BillingPeriodLabel"]"
+                                   Variant="Variant.Outlined" Margin="Margin.Dense">
+                            @foreach (var period in BillingPeriods.All)
+                            {
+                                <MudSelectItem T="string" Value="@period">@Localizer[$"BillingPeriod_{period}"]</MudSelectItem>
+                            }
+                        </MudSelect>
+                    </MudItem>
+                    <MudItem xs="12" sm="6" md="3">
+                        <MudNumericField @bind-Value="_trialDays" Label="@Localizer["SubscriptionPlanEditor_TrialDaysLabel"]"
+                                         Variant="Variant.Outlined" Margin="Margin.Dense" Min="0"
+                                         Disabled="@(_billingPeriod != BillingPeriods.Trial)"
+                                         HelperText="@Localizer["SubscriptionPlanEditor_TrialDaysHelperText"]" />
+                    </MudItem>
+
+                    @if (!IsNew)
+                    {
+                        <MudItem xs="12" sm="6" md="3" Class="d-flex align-center">
+                            <MudSwitch @bind-Value="_isActive" Color="Color.Primary"
+                                       Label="@Localizer["SubscriptionPlanEditor_ActiveLabel"]" />
+                        </MudItem>
+                    }
+                </MudGrid>
+            </ChildContent>
+        </EditorCard>
+
+        <FormActions Busy="_saving" Disabled="@(!CanSave)" OnSubmit="SaveAsync"
+                     OnCancel="@(() => Navigation.NavigateTo("subscription-plans"))" />
+    }
+</MudStack>
+
+@code {
+    [Parameter]
+    public Guid? Id { get; set; }
+
+    private bool IsNew => Id is null;
+
+    private string Title =>
+        IsNew ? Localizer["SubscriptionPlanEditor_NewTitle"] : Localizer["SubscriptionPlanEditor_EditTitle"];
+
+    private List<BreadcrumbItem> Breadcrumbs =>
+    [
+        new(Localizer["SubscriptionPlans_PageTitle"].Value, href: "subscription-plans"),
+        new(Title, href: null, disabled: true)
+    ];
+
+    private bool _loading = true;
+    private bool _saving;
+    private string? _error;
+
+    private string _name = string.Empty;
+    private string _description = string.Empty;
+    private decimal _price;
+    private string _billingPeriod = BillingPeriods.Monthly;
+    private int _trialDays;
+    private bool _isActive = true;
+
+    private bool CanSave =>
+        !string.IsNullOrWhiteSpace(_name)
+        && _price >= 0
+        && (_billingPeriod != BillingPeriods.Trial || _trialDays > 0);
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (IsNew)
+        {
+            _loading = false;
+            return;
+        }
+
+        try
+        {
+            var plan = await CoreApi.GetSubscriptionPlanAsync(Id!.Value);
+
+            if (plan is null)
+            {
+                _error = Localizer["SubscriptionPlanEditor_NotFound"];
+                return;
+            }
+
+            _name = plan.Name;
+            _description = plan.Description;
+            _price = plan.Price;
+            _billingPeriod = plan.BillingPeriod;
+            _trialDays = plan.TrialDays;
+            _isActive = plan.IsActive;
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    /// <summary>Only a trial runs for a number of days, so switching away clears what was typed.</summary>
+    private void OnBillingPeriodChanged()
+    {
+        if (_billingPeriod != BillingPeriods.Trial)
+            _trialDays = 0;
+    }
+
+    private async Task SaveAsync()
+    {
+        _saving = true;
+        _error = null;
+
+        try
+        {
+            if (IsNew)
+            {
+                var (created, createError) = await CoreApi.CreateSubscriptionPlanAsync(
+                    new CreateSubscriptionPlanRequest(_name, _description, _price, _billingPeriod, _trialDays));
+
+                if (created is null)
+                {
+                    _error = createError;
+                    return;
+                }
+
+                Snackbar.Add(Localizer["SubscriptionPlanEditor_Created"].Value, Severity.Success);
+            }
+            else
+            {
+                var (updated, updateError) = await CoreApi.UpdateSubscriptionPlanAsync(
+                    Id!.Value,
+                    new UpdateSubscriptionPlanRequest(_name, _description, _price, _billingPeriod, _trialDays, _isActive));
+
+                if (updated is null)
+                {
+                    _error = updateError;
+                    return;
+                }
+
+                Snackbar.Add(Localizer["SubscriptionPlanEditor_Updated"].Value, Severity.Success);
+            }
+
+            Navigation.NavigateTo("subscription-plans");
+        }
+        finally
+        {
+            _saving = false;
+        }
+    }
+}

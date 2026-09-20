@@ -4,7 +4,9 @@
 @using Microsoft.AspNetCore.Components.Web
 @using Microsoft.Extensions.Localization
 @using Erp.Identity.Resources
+@using Erp.Identity.Services
 @attribute [AllowAnonymous]
+@inject NavigationManager Navigation
 @inject IStringLocalizer<IdentityResources> Localizer
 
 <PageTitle>@Localizer["Account_SignIn_PageTitle"]</PageTitle>
@@ -24,9 +26,16 @@
             <div class="hint">@SuccessMessage</div>
         }
 
+        @if (ShowResendLink)
+        {
+            <div class="auth-links">
+                <a class="auth-link" href="@ResendConfirmationLink">@Localizer["Account_SignIn_ResendConfirmationLink"]</a>
+            </div>
+        }
+
         <form method="post" action="/authentication/login">
             <AntiforgeryToken />
-            <input type="hidden" name="returnUrl" value="@SanitizeReturnUrl(ReturnUrl)" />
+            <input type="hidden" name="returnUrl" value="@ReturnUrlHelper.Sanitize(ReturnUrl)" />
             <div class="auth-field">
                 <label>@Localizer["Account_SignIn_EmailLabel"]</label>
                 <input type="email" name="email" autocomplete="username" value="@Input.Email" />
@@ -40,7 +49,7 @@
 
         <div class="auth-links mt-16">
             <a class="auth-link" href="/Account/ForgotPassword">@Localizer["Account_SignIn_ForgotPasswordLink"]</a>
-            <a class="auth-link" href="/Account/SignUp">@Localizer["Account_SignIn_SignUpLink"]</a>
+            <a class="auth-link" href="@SignUpLink">@Localizer["Account_SignIn_SignUpLink"]</a>
         </div>
     </div>
 </div>
@@ -59,50 +68,56 @@
     [SupplyParameterFromQuery(Name = "reset")]
     public string? Reset { get; set; }
 
+    [SupplyParameterFromQuery(Name = "confirmed")]
+    public string? Confirmed { get; set; }
+
     [SupplyParameterFromQuery(Name = "error")]
     public string? Error { get; set; }
+
+    /// <summary>Only set for the "unconfirmed" error, so the resend link knows who to resend for.</summary>
+    [SupplyParameterFromQuery]
+    public string? Email { get; set; }
+
+    private bool ShowResendLink => string.Equals(Error, "unconfirmed", StringComparison.OrdinalIgnoreCase);
+
+    private string SignUpLink => Navigation.GetUriWithQueryParameters(
+        "/Account/SignUp", new Dictionary<string, object?> { ["returnUrl"] = ReturnUrl });
+
+    private string ResendConfirmationLink => Navigation.GetUriWithQueryParameters(
+        "/Account/ResendConfirmation",
+        new Dictionary<string, object?> { ["email"] = Email, ["returnUrl"] = ReturnUrl });
 
     protected override void OnParametersSet()
     {
         ErrorMessage = null;
         SuccessMessage = null;
 
-        if (string.Equals(Registered, "1", StringComparison.Ordinal) || string.Equals(Reset, "1", StringComparison.Ordinal))
+        if (!string.IsNullOrWhiteSpace(Email))
+            Input.Email = Email;
+
+        if (string.Equals(Registered, "1", StringComparison.Ordinal)
+            || string.Equals(Reset, "1", StringComparison.Ordinal)
+            || string.Equals(Confirmed, "1", StringComparison.Ordinal))
         {
             SuccessMessage = string.Equals(Registered, "1", StringComparison.Ordinal)
                 ? Localizer["Account_SignIn_SuccessRegistered"]
-                : Localizer["Account_SignIn_SuccessPasswordReset"];
+                : string.Equals(Confirmed, "1", StringComparison.Ordinal)
+                    ? Localizer["Account_SignIn_SuccessEmailConfirmed"]
+                    : Localizer["Account_SignIn_SuccessPasswordReset"];
         }
 
         if (string.Equals(Error, "locked", StringComparison.OrdinalIgnoreCase))
         {
             ErrorMessage = Localizer["Account_SignIn_ErrorAccountLocked"];
         }
+        else if (ShowResendLink)
+        {
+            ErrorMessage = Localizer["Account_SignIn_ErrorEmailNotConfirmed"];
+        }
         else if (!string.IsNullOrWhiteSpace(Error))
         {
             ErrorMessage = Localizer["Account_SignIn_ErrorInvalidCredentials"];
         }
-    }
-
-    private string SanitizeReturnUrl(string? returnUrl)
-    {
-        if (string.IsNullOrWhiteSpace(returnUrl))
-        {
-            return "/";
-        }
-
-        if (Uri.TryCreate(returnUrl, UriKind.Relative, out var relative) && returnUrl.StartsWith('/'))
-        {
-            return relative.ToString();
-        }
-
-        if (Uri.TryCreate(returnUrl, UriKind.Absolute, out var absolute) &&
-            (absolute.Scheme == Uri.UriSchemeHttp || absolute.Scheme == Uri.UriSchemeHttps))
-        {
-            return absolute.ToString();
-        }
-
-        return "/";
     }
 
     private sealed class InputModel

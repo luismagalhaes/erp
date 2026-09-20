@@ -5,6 +5,7 @@ public sealed record UserListItem(
     string Email,
     string FullName,
     bool IsActive,
+    bool EmailConfirmed,
     DateTime CreatedAt,
     IReadOnlyList<string> Roles,
     string PreferredLanguage);

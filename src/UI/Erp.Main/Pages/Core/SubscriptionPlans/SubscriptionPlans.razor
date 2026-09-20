@@ -1,0 +1,78 @@
+@page "/subscription-plans"
+@attribute [Authorize(Roles = Constants.Roles.SuperAdmin)]
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.Extensions.Localization
+@using MudBlazor
+@using Erp.Common
+@using Erp.Main.Components.Common
+@using Erp.Main.Models.Core
+@using Erp.Main.Resources
+@using Erp.Main.Services
+@inject NavigationManager Navigation
+@inject IStringLocalizer<MainResources> Localizer
+@inject CoreApiClient CoreApi
+
+<PageTitle>@Localizer["SubscriptionPlans_PageTitle"]</PageTitle>
+
+<MudStack Spacing="4">
+    <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center">
+        <PageHeader Title="@Localizer["SubscriptionPlans_PageTitle"]"
+                    Description="@Localizer["SubscriptionPlanEditor_Description"]" />
+
+        <MudButton Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Filled.Add"
+                   OnClick="@(() => Navigation.NavigateTo("subscription-plans/new"))">
+            @Localizer["SubscriptionPlans_NewPlan"]
+        </MudButton>
+    </MudStack>
+
+    @* The packages are the same for every tenant, so this listing is not scoped to a company. *@
+    <DataGrid T="SubscriptionPlan" CompanyScoped="false"
+              LoadAsync="@((_, query, ct) => CoreApi.QuerySubscriptionPlansAsync(query, ct))"
+              SearchFields="SearchFields" DefaultOrderBy="Price"
+              SearchPlaceholder="@Localizer["SubscriptionPlans_SearchPlaceholder"]"
+              EmptyIcon="@Icons.Material.Filled.LocalOffer"
+              EmptyTitle="@Localizer["SubscriptionPlans_EmptyTitle"]"
+              EmptyDescription="@Localizer["SubscriptionPlans_EmptyDescription"]"
+              ItemsLabel="@Localizer["SubscriptionPlans_ItemsLabel"]"
+              LoadErrorMessage="@Localizer["SubscriptionPlans_LoadErrorMessage"]">
+        <Columns>
+            <PropertyColumn Property="x => x.Name" Title="@Localizer["Common_NameColumn"]" />
+            <PropertyColumn Property="x => x.Description" Title="@Localizer["SubscriptionPlanEditor_DescriptionLabel"]" />
+            <PropertyColumn Property="x => x.Price" Title="@Localizer["SubscriptionPlans_PriceColumn"]"
+                            CellClass="erp-numeric" HeaderClass="erp-numeric">
+                <CellTemplate>@context.Item.Price.ToString("N2") €</CellTemplate>
+            </PropertyColumn>
+            <PropertyColumn Property="x => x.BillingPeriod" Title="@Localizer["SubscriptionPlans_BillingPeriodColumn"]">
+                <CellTemplate>@Localizer[$"BillingPeriod_{context.Item.BillingPeriod}"]</CellTemplate>
+            </PropertyColumn>
+            <PropertyColumn Property="x => x.TrialDays" Title="@Localizer["SubscriptionPlans_TrialDaysColumn"]"
+                            CellClass="erp-numeric" HeaderClass="erp-numeric">
+                <CellTemplate>@(context.Item.TrialDays > 0 ? context.Item.TrialDays.ToString() : "—")</CellTemplate>
+            </PropertyColumn>
+            <PropertyColumn Property="x => x.IsActive" Title="@Localizer["Common_StatusColumn"]">
+                <CellTemplate>
+                    <MudChip T="string" Size="Size.Small" Variant="Variant.Text"
+                             Color="@(context.Item.IsActive ? Color.Success : Color.Default)">
+                        @(context.Item.IsActive ? Localizer["Common_Active"] : Localizer["Common_Inactive"])
+                    </MudChip>
+                </CellTemplate>
+            </PropertyColumn>
+            <TemplateColumn Title="" Sortable="false" Filterable="false" Hideable="false"
+                            StickyRight="true"
+                            CellClass="erp-numeric" HeaderClass="erp-numeric">
+                <CellTemplate>
+                    <MudIconButton Icon="@Icons.Material.Filled.Edit" Size="Size.Small"
+                                   OnClick="@(() => Navigation.NavigateTo($"subscription-plans/{context.Item.Id}"))" />
+                </CellTemplate>
+            </TemplateColumn>
+        </Columns>
+    </DataGrid>
+</MudStack>
+
+@code {
+    /// <summary>
+    /// Maps the toolbar search to the DTO members the API exposes, so a renamed column never
+    /// produces an invalid $filter.
+    /// </summary>
+    private static readonly string[] SearchFields = ["Name", "Description"];
+}

@@ -30,6 +30,14 @@
                     </MudChip>
                 </CellTemplate>
             </PropertyColumn>
+            <PropertyColumn Property="x => x.EmailConfirmed" Title="@Localizer["Backoffice_Users_EmailConfirmedColumn"]">
+                <CellTemplate>
+                    <MudChip T="string" Size="Size.Small" Variant="Variant.Text"
+                             Color="@(context.Item.EmailConfirmed ? Color.Success : Color.Warning)">
+                        @(context.Item.EmailConfirmed ? Localizer["Backoffice_Users_Yes"] : Localizer["Backoffice_Users_No"])
+                    </MudChip>
+                </CellTemplate>
+            </PropertyColumn>
             <PropertyColumn Property="x => x.CreatedAt" Title="@Localizer["Backoffice_Users_CreatedAtColumn"]">
                 <CellTemplate>
                     @context.Item.CreatedAt.ToLocalTime().ToString("yyyy-MM-dd HH:mm")

@@ -28,6 +28,8 @@ public static class DependencyInjection
         services.AddScoped<IWarehouseStorage, WarehouseStorage>();
         services.AddScoped<IVatRateStorage, VatRateStorage>();
         services.AddScoped<IEcoFeeTypeStorage, EcoFeeTypeStorage>();
+        services.AddScoped<ISubscriptionPlanStorage, SubscriptionPlanStorage>();
+        services.AddScoped<ICompanySubscriptionStorage, CompanySubscriptionStorage>();
 
         return services;
     }

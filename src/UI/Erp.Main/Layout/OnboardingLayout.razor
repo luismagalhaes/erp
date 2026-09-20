@@ -1,0 +1,49 @@
+@inherits LayoutComponentBase
+@using MudBlazor
+@using Microsoft.AspNetCore.Components.Authorization
+@using Microsoft.Extensions.Localization
+@using Erp.Main.Resources
+@using Erp.Main.Theme
+@inject NavigationManager Navigation
+@inject IStringLocalizer<MainResources> Localizer
+
+@*
+    Sign-up has no side menu on purpose: there is nothing to navigate to yet. A user gets here with
+    an account but no company, so every page of the app would only be able to tell them the same
+    thing. Everything else — theme, popovers, snackbars — still has to be here, since MainLayout is
+    not in the tree to provide it.
+*@
+<MudThemeProvider Theme="AppTheme.Default" @bind-IsDarkMode="_isDarkMode" />
+<MudPopoverProvider />
+<MudDialogProvider />
+<MudSnackbarProvider />
+
+<MudLayout>
+    <MudAppBar Elevation="0" Color="Color.Default" Class="erp-appbar">
+        <MudText Typo="Typo.h6" Class="erp-brand">SmartInvoice</MudText>
+
+        <MudSpacer />
+
+        <AuthorizeView>
+            <Authorized>
+                <MudText Typo="Typo.body2" Class="mr-3 mud-text-secondary">@context.User.Identity?.Name</MudText>
+                <MudButton Variant="Variant.Text" StartIcon="@Icons.Material.Filled.Logout" OnClick="Logout">
+                    @Localizer["Onboarding_LogoutButton"]
+                </MudButton>
+            </Authorized>
+        </AuthorizeView>
+    </MudAppBar>
+
+    <MudMainContent Class="erp-main">
+        <MudContainer MaxWidth="MaxWidth.Large" Class="my-4 pt-4">
+            @Body
+        </MudContainer>
+    </MudMainContent>
+</MudLayout>
+
+@code {
+    private bool _isDarkMode;
+
+    private void Logout() =>
+        Navigation.NavigateTo("authentication/logout?returnUrl=%2F", forceLoad: true);
+}

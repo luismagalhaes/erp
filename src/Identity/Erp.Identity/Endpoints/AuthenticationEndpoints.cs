@@ -1,6 +1,8 @@
 using Duende.IdentityServer;
 using Duende.IdentityServer.Services;
 using Erp.Identity.Data;
+using Erp.Identity.Infrastructure.Application;
+using Erp.Identity.Services;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Identity;
 
@@ -20,7 +22,7 @@ public static class AuthenticationEndpoints
             logger.LogInformation(
                 "{Class}.{Method} called with logoutId={LogoutId}", nameof(AuthenticationEndpoints), "Logout", logoutId);
 
-            var target = SanitizeReturnUrl(returnUrl);
+            var target = ReturnUrlHelper.Sanitize(returnUrl);
 
             await signInManager.SignOutAsync();
             await httpContext.SignOutAsync(IdentityConstants.ApplicationScheme);
@@ -40,16 +42,18 @@ public static class AuthenticationEndpoints
             httpContext.Response.Redirect(target);
         }).RequireAuthorization();
 
-        app.MapPost("/authentication/login", async (SignInManager<ApplicationUser> signInManager, IIdentityServerInteractionService interaction, HttpContext httpContext) =>
+        app.MapPost("/authentication/login", async (SignInManager<ApplicationUser> signInManager, IIdentityServerInteractionService interaction, ILoginAuditService loginAudit, HttpContext httpContext) =>
         {
             // Email and password never reach the log — only the outcome and, on success, the
-            // signed-in user's id.
+            // signed-in user's id. The persisted LoginAudit row is the one place the attempted
+            // email is kept, for the backoffice's own Session Logs page — never the password.
             logger.LogInformation("{Class}.{Method} called", nameof(AuthenticationEndpoints), "Login");
 
             var form = await httpContext.Request.ReadFormAsync();
             var email = (form["email"].ToString() ?? string.Empty).Trim();
             var password = form["password"].ToString() ?? string.Empty;
-            var returnUrl = SanitizeReturnUrl(form["returnUrl"].ToString());
+            var returnUrl = ReturnUrlHelper.Sanitize(form["returnUrl"].ToString());
+            var remoteIp = httpContext.Connection.RemoteIpAddress?.ToString();
 
             if (string.IsNullOrWhiteSpace(email) || string.IsNullOrWhiteSpace(password))
             {
@@ -62,7 +66,10 @@ public static class AuthenticationEndpoints
             {
                 var user = await signInManager.UserManager.FindByEmailAsync(email);
                 logger.LogInformation(
-                    "{Class}.{Method} succeeded for userId={UserId}", nameof(AuthenticationEndpoints), "Login", user?.Id);
+                    "{Class}.{Method} succeeded for userId={UserId}, remoteIp={RemoteIp}",
+                    nameof(AuthenticationEndpoints), "Login", user?.Id, remoteIp);
+
+                await loginAudit.RecordAsync(user?.Id, email, succeeded: true, failureReason: null, remoteIp);
 
                 if (interaction.IsValidReturnUrl(returnUrl))
                 {
@@ -70,17 +77,27 @@ public static class AuthenticationEndpoints
                 }
                 else
                 {
-                    httpContext.Response.Redirect(SanitizeReturnUrl(returnUrl));
+                    httpContext.Response.Redirect(ReturnUrlHelper.Sanitize(returnUrl));
                 }
 
                 return;
             }
 
             logger.LogWarning(
-                "{Class}.{Method} failed, lockedOut={LockedOut}", nameof(AuthenticationEndpoints), "Login", result.IsLockedOut);
+                "{Class}.{Method} failed, lockedOut={LockedOut}, notAllowed={NotAllowed}, remoteIp={RemoteIp}",
+                nameof(AuthenticationEndpoints), "Login", result.IsLockedOut, result.IsNotAllowed, remoteIp);
 
-            var errorType = result.IsLockedOut ? "locked" : "1";
-            httpContext.Response.Redirect($"/Account/SignIn?error={errorType}&returnUrl={Uri.EscapeDataString(returnUrl)}");
+            // NotAllowed is what SignInManager returns when SignIn.RequireConfirmedAccount is on
+            // and the account's email is still unconfirmed — the one other reason this can fail,
+            // since nothing else in this app's options makes an account "not allowed" to sign in.
+            var errorType = result.IsLockedOut ? "locked" : result.IsNotAllowed ? "unconfirmed" : "1";
+            var failureReason = result.IsLockedOut ? "LockedOut" : result.IsNotAllowed ? "EmailNotConfirmed" : "InvalidCredentials";
+
+            var failedUser = await signInManager.UserManager.FindByEmailAsync(email);
+            await loginAudit.RecordAsync(failedUser?.Id, email, succeeded: false, failureReason, remoteIp);
+
+            var emailParameter = errorType == "unconfirmed" ? $"&email={Uri.EscapeDataString(email)}" : string.Empty;
+            httpContext.Response.Redirect($"/Account/SignIn?error={errorType}&returnUrl={Uri.EscapeDataString(returnUrl)}{emailParameter}");
         }).AllowAnonymous();
 
         // A Blazor Server component can never write the auth cookie itself — the circuit is a
@@ -96,17 +113,7 @@ public static class AuthenticationEndpoints
             if (user is not null)
                 await signInManager.RefreshSignInAsync(user);
 
-            httpContext.Response.Redirect(SanitizeReturnUrl(returnUrl));
+            httpContext.Response.Redirect(ReturnUrlHelper.Sanitize(returnUrl));
         }).RequireAuthorization();
-    }
-
-    private static string SanitizeReturnUrl(string? returnUrl)
-    {
-        if (string.IsNullOrWhiteSpace(returnUrl))
-        {
-            return "/";
-        }
-
-        return returnUrl;
     }
 }

@@ -176,6 +176,34 @@ public sealed class CoreModelConfiguration : IModuleModelConfiguration
             entity.Property(x => x.Percentage).HasPrecision(5, 2);
             entity.HasIndex(x => new { x.FiscalRegion, x.Code }).IsUnique();
         });
+
+        modelBuilder.Entity<SubscriptionPlan>(entity =>
+        {
+            entity.HasKey(x => x.Id);
+            entity.Property(x => x.Name).HasMaxLength(100).IsRequired();
+            entity.Property(x => x.Description).HasMaxLength(500).IsRequired();
+            entity.Property(x => x.Price).HasPrecision(10, 2);
+            entity.Property(x => x.BillingPeriod).HasMaxLength(20).IsRequired();
+        });
+
+        modelBuilder.Entity<CompanySubscription>(entity =>
+        {
+            entity.HasKey(x => x.Id);
+            entity.HasIndex(x => x.CompanyId).IsUnique();
+
+            entity.HasOne(x => x.Company)
+                .WithMany()
+                .HasForeignKey(x => x.CompanyId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(x => x.Plan)
+                .WithMany()
+                .HasForeignKey(x => x.PlanId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            // Computed, not a column — nothing to map.
+            entity.Ignore(x => x.IsExpired);
+        });
     }
 
     /// <summary>Customers and suppliers share the same columns, so they share the same mapping.</summary>

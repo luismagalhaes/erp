@@ -1,0 +1,435 @@
+@page "/company-settings"
+@attribute [Authorize]
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.Extensions.Localization
+@using MudBlazor
+@using Erp.Common
+@using Erp.Main.Models.Core
+@using Erp.Main.Resources
+@using Erp.Main.Services
+@inject CoreApiClient CoreApi
+@inject IdentityApiClient IdentityApi
+@inject StockApiClient StockApi
+@inject CompanyState Company
+@inject ISnackbar Snackbar
+@inject IStringLocalizer<MainResources> Localizer
+@implements IDisposable
+
+<PageTitle>@Localizer["CompanySettings_PageTitle"]</PageTitle>
+
+<MudStack Spacing="4">
+    <MudText Typo="Typo.h4">@Localizer["CompanySettings_PageTitle"]</MudText>
+
+    @if (!Company.HasCompany)
+    {
+        <MudAlert Severity="Severity.Info" Dense="true">@Localizer["CompanySettings_NoCompanySelected"]</MudAlert>
+    }
+    else
+    {
+        @if (!string.IsNullOrWhiteSpace(_error))
+        {
+            <MudAlert Severity="Severity.Error" Dense="true">@_error</MudAlert>
+        }
+
+        @if (_loading)
+        {
+            <MudProgressLinear Indeterminate="true" Color="Color.Primary" />
+        }
+        else
+        {
+            <MudPaper Elevation="0" Class="erp-card erp-form">
+                <MudTabs Elevation="0" ApplyEffectsToContainer="true" PanelClass="pa-4">
+                    <MudTabPanel Text="@Localizer["CompanyEditor_DataTab"]" Icon="@Icons.Material.Filled.Domain">
+                        <MudGrid Spacing="3">
+                            <MudItem xs="12" sm="6" md="6">
+                                <MudTextField @bind-Value="_name" Label="@Localizer["Common_NameColumn"]" Variant="Variant.Outlined" Margin="Margin.Dense" Required="true" />
+                            </MudItem>
+                            <MudItem xs="12" sm="6" md="6">
+                                <MudTextField @bind-Value="_legalName" Label="@Localizer["CompanyEditor_LegalNameLabel"]" Variant="Variant.Outlined" Margin="Margin.Dense" />
+                            </MudItem>
+                            <MudItem xs="12" sm="4" md="3">
+                                <MudTextField @bind-Value="_taxId" Label="@Localizer["Companies_TaxIdColumn"]" Variant="Variant.Outlined" Margin="Margin.Dense" Required="true" />
+                            </MudItem>
+                            <MudItem xs="12" sm="4" md="3">
+                                <MudTextField @bind-Value="_email" Label="@Localizer["CompanyEditor_EmailColumn"]" Variant="Variant.Outlined" Margin="Margin.Dense" InputType="InputType.Email" />
+                            </MudItem>
+                            <MudItem xs="12" sm="4" md="3">
+                                <MudTextField @bind-Value="_phone" Label="@Localizer["PartnerForm_PhoneLabel"]" Variant="Variant.Outlined" Margin="Margin.Dense" />
+                            </MudItem>
+
+                            <MudItem xs="12" sm="6" md="6">
+                                <MudTextField @bind-Value="_address" Label="@Localizer["PartnerForm_AddressLabel"]" Variant="Variant.Outlined" Margin="Margin.Dense" />
+                            </MudItem>
+                            <MudItem xs="12" sm="3" md="3">
+                                <MudTextField @bind-Value="_postalCode" Label="@Localizer["PartnerForm_PostalCodeLabel"]" Variant="Variant.Outlined" Margin="Margin.Dense" />
+                            </MudItem>
+                            <MudItem xs="12" sm="3" md="3">
+                                <MudTextField @bind-Value="_city" Label="@Localizer["CompanyEditor_CityColumn"]" Variant="Variant.Outlined" Margin="Margin.Dense" />
+                            </MudItem>
+                            <MudItem xs="12" sm="4" md="3">
+                                <MudSelect @bind-Value="_country" Label="@Localizer["PartnerForm_CountryLabel"]" Variant="Variant.Outlined" Margin="Margin.Dense">
+                                    @foreach (var country in Countries.All)
+                                    {
+                                        <MudSelectItem T="string" Value="@country.Code">@country.Name</MudSelectItem>
+                                    }
+                                </MudSelect>
+                            </MudItem>
+                        </MudGrid>
+
+                        <MudStack Row="true" Justify="Justify.FlexEnd" Class="mt-4">
+                            <MudButton Variant="Variant.Filled" Color="Color.Primary"
+                                       StartIcon="@Icons.Material.Filled.Save"
+                                       Disabled="@(_saving || !CanSave)"
+                                       OnClick="SaveAsync">
+                                @Localizer["Common_SaveButton"]
+                            </MudButton>
+                        </MudStack>
+                    </MudTabPanel>
+
+                    <MudTabPanel Text="@Localizer["CompanyEditor_UsersTab"]" Icon="@Icons.Material.Filled.People">
+                        <MudTable Items="_memberships" Hover="true" Striped="true" Dense="true" Loading="_workingUsers"
+                                  Breakpoint="Breakpoint.Sm">
+                            <HeaderContent>
+                                <MudTh>@Localizer["CompanyEditor_UserColumn"]</MudTh>
+                                <MudTh>@Localizer["CompanyEditor_EmailColumn"]</MudTh>
+                                <MudTh Style="width: 200px;">@Localizer["CompanyEditor_RoleLabel"]</MudTh>
+                                <MudTh Style="width: 140px;">@Localizer["Common_StatusColumn"]</MudTh>
+                            </HeaderContent>
+                            <RowTemplate>
+                                <MudTd DataLabel="@Localizer["CompanyEditor_UserColumn"]">@DescribeUser(context.UserId)</MudTd>
+                                <MudTd DataLabel="@Localizer["CompanyEditor_EmailColumn"]">
+                                    <MudText Typo="Typo.caption" Color="Color.Secondary">@DescribeEmail(context.UserId)</MudText>
+                                </MudTd>
+                                <MudTd DataLabel="@Localizer["CompanyEditor_RoleLabel"]">@context.Role</MudTd>
+                                <MudTd DataLabel="@Localizer["Common_StatusColumn"]">
+                                    @if (context.IsActive)
+                                    {
+                                        <MudChip T="string" Size="Size.Small" Color="Color.Success" Variant="Variant.Text">@Localizer["Common_Active"]</MudChip>
+                                    }
+                                    else
+                                    {
+                                        <MudChip T="string" Size="Size.Small" Color="Color.Default" Variant="Variant.Text">@Localizer["Common_Inactive"]</MudChip>
+                                    }
+                                </MudTd>
+                            </RowTemplate>
+                            <NoRecordsContent>
+                                <MudText Typo="Typo.body2" Color="Color.Secondary">@Localizer["CompanyEditor_NoUsersMessage"]</MudText>
+                            </NoRecordsContent>
+                        </MudTable>
+                    </MudTabPanel>
+
+                    <MudTabPanel Text="@Localizer["CompanyEditor_WarehousesTab"]" Icon="@Icons.Material.Filled.Warehouse">
+                        <MudTable Items="_warehouses" Hover="true" Striped="true" Dense="true"
+                                  Loading="_workingWarehouses" Breakpoint="Breakpoint.Sm">
+                            <HeaderContent>
+                                <MudTh>@Localizer["Common_CodeColumn"]</MudTh>
+                                <MudTh>@Localizer["Common_NameColumn"]</MudTh>
+                                <MudTh>@Localizer["CompanyEditor_CityColumn"]</MudTh>
+                                <MudTh Style="width: 140px;">@Localizer["CompanyEditor_DefaultColumn"]</MudTh>
+                                <MudTh Style="width: 120px;">@Localizer["Common_StatusColumn"]</MudTh>
+                            </HeaderContent>
+                            <RowTemplate>
+                                <MudTd DataLabel="@Localizer["Common_CodeColumn"]">
+                                    <MudText Typo="Typo.body2" Style="font-family: monospace;">@context.Code</MudText>
+                                </MudTd>
+                                <MudTd DataLabel="@Localizer["Common_NameColumn"]">@context.Name</MudTd>
+                                <MudTd DataLabel="@Localizer["CompanyEditor_CityColumn"]">@DescribeCity(context)</MudTd>
+                                <MudTd DataLabel="@Localizer["CompanyEditor_DefaultColumn"]">
+                                    @if (context.IsDefault)
+                                    {
+                                        <MudChip T="string" Size="Size.Small" Color="Color.Primary" Variant="Variant.Outlined">@Localizer["CompanyEditor_DefaultChip"]</MudChip>
+                                    }
+                                </MudTd>
+                                <MudTd DataLabel="@Localizer["Common_StatusColumn"]">
+                                    @if (context.IsActive)
+                                    {
+                                        <MudChip T="string" Size="Size.Small" Color="Color.Success" Variant="Variant.Text">@Localizer["Common_Active"]</MudChip>
+                                    }
+                                    else
+                                    {
+                                        <MudChip T="string" Size="Size.Small" Color="Color.Default" Variant="Variant.Text">@Localizer["Common_Inactive"]</MudChip>
+                                    }
+                                </MudTd>
+                            </RowTemplate>
+                            <NoRecordsContent>
+                                <MudText Typo="Typo.body2" Color="Color.Secondary">@Localizer["CompanyEditor_NoWarehousesMessage"]</MudText>
+                            </NoRecordsContent>
+                        </MudTable>
+                    </MudTabPanel>
+
+                    <MudTabPanel Text="@Localizer["CompanyEditor_AtTab"]" Icon="@Icons.Material.Filled.Https">
+                        <MudText Typo="Typo.body2" Color="Color.Secondary" Class="mb-4">
+                            @Localizer["CompanyEditor_AtTabDescription"]
+                        </MudText>
+
+                        @if (_atStatus is not null)
+                        {
+                            <MudAlert Severity="Severity.Success" Dense="true" Class="mb-4">
+                                @string.Format(Localizer["CompanyEditor_AtCredentialsRegistered"],
+                                    _atStatus.SubUserId, _atStatus.UpdatedAtUtc.ToString("yyyy-MM-dd HH:mm")) UTC.
+                            </MudAlert>
+                        }
+                        else
+                        {
+                            <MudAlert Severity="Severity.Warning" Dense="true" Class="mb-4">
+                                @Localizer["CompanyEditor_AtCredentialsMissing"]
+                            </MudAlert>
+                        }
+
+                        <MudGrid Spacing="3">
+                            <MudItem xs="12" sm="6" md="4">
+                                <MudTextField @bind-Value="_atSubUserId" Label="@Localizer["CompanyEditor_AtSubUserIdLabel"]"
+                                              HelperText="@Localizer["CompanyEditor_AtSubUserIdHelperText"]"
+                                              Variant="Variant.Outlined" Margin="Margin.Dense" />
+                            </MudItem>
+                            <MudItem xs="12" sm="6" md="4">
+                                <MudTextField @bind-Value="_atPassword" Label="@Localizer["CompanyEditor_AtPasswordLabel"]"
+                                              InputType="InputType.Password" Variant="Variant.Outlined" Margin="Margin.Dense" />
+                            </MudItem>
+                        </MudGrid>
+
+                        <MudStack Row="true" Justify="Justify.FlexEnd" Class="mt-4">
+                            <MudButton Variant="Variant.Filled" Color="Color.Primary"
+                                       StartIcon="@Icons.Material.Filled.Save"
+                                       Disabled="@(_workingAt || string.IsNullOrWhiteSpace(_atSubUserId) || string.IsNullOrWhiteSpace(_atPassword))"
+                                       OnClick="SaveAtCredentialsAsync">
+                                @Localizer["Common_SaveButton"]
+                            </MudButton>
+                        </MudStack>
+                    </MudTabPanel>
+                </MudTabs>
+            </MudPaper>
+        }
+    }
+</MudStack>
+
+@code {
+    private bool _loading;
+    private bool _saving;
+    private string? _error;
+
+    private Guid _loadedCompanyId;
+
+    private string _name = string.Empty;
+    private string _legalName = string.Empty;
+    private string _taxId = string.Empty;
+    private string _email = string.Empty;
+    private string _phone = string.Empty;
+    private string _address = string.Empty;
+    private string _city = string.Empty;
+    private string _postalCode = string.Empty;
+    private string _country = "PT";
+    private bool _isActive = true;
+
+    private bool _workingUsers;
+    private List<UserCompanyAdmin> _memberships = [];
+    private List<IdentityUser> _users = [];
+
+    private bool _workingWarehouses;
+    private List<Warehouse> _warehouses = [];
+
+    private bool _workingAt;
+    private CompanyAtCredentialStatus? _atStatus;
+    private string _atSubUserId = string.Empty;
+    private string _atPassword = string.Empty;
+
+    private bool CanSave =>
+        !string.IsNullOrWhiteSpace(_name) && !string.IsNullOrWhiteSpace(_taxId);
+
+    protected override async Task OnInitializedAsync()
+    {
+        await Company.EnsureLoadedAsync();
+        Company.Changed += OnCompanyChanged;
+        await LoadAsync();
+    }
+
+    private async void OnCompanyChanged() => await InvokeAsync(LoadAsync);
+
+    private async Task LoadAsync()
+    {
+        if (!Company.HasCompany)
+            return;
+
+        var companyId = Company.SelectedCompanyId;
+
+        if (_loadedCompanyId == companyId && !_loading)
+            return;
+
+        _loadedCompanyId = companyId;
+        _loading = true;
+        _error = null;
+
+        try
+        {
+            var company = await CoreApi.GetCompanyAsync(companyId);
+
+            if (company is null)
+            {
+                _error = Localizer["CompanyEditor_NotFound"];
+                return;
+            }
+
+            _name = company.Name;
+            _legalName = company.LegalName ?? string.Empty;
+            _taxId = company.TaxId;
+            _email = company.Email ?? string.Empty;
+            _phone = company.Phone ?? string.Empty;
+            _address = company.Address ?? string.Empty;
+            _city = company.City ?? string.Empty;
+            _postalCode = company.PostalCode ?? string.Empty;
+            _country = string.IsNullOrWhiteSpace(company.Country) ? "PT" : company.Country;
+            _isActive = company.IsActive;
+
+            await LoadUsersAsync(companyId);
+            await LoadWarehousesAsync(companyId);
+            await LoadAtCredentialStatusAsync(companyId);
+        }
+        catch (Exception ex)
+        {
+            _error = string.Format(Localizer["CompanyEditor_LoadError"], ex.Message);
+        }
+        finally
+        {
+            _loading = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task LoadUsersAsync(Guid companyId)
+    {
+        _workingUsers = true;
+
+        try
+        {
+            var (memberships, _) = await CoreApi.GetUserCompaniesAsync(companyId);
+            _memberships = [.. memberships];
+
+            var (users, _) = await IdentityApi.GetUsersAsync();
+            _users = [.. users];
+        }
+        catch (Exception ex)
+        {
+            _error = string.Format(Localizer["CompanyEditor_LoadUsersError"], ex.Message);
+        }
+        finally
+        {
+            _workingUsers = false;
+        }
+    }
+
+    private async Task LoadWarehousesAsync(Guid companyId)
+    {
+        _workingWarehouses = true;
+
+        try
+        {
+            var (warehouses, error) = await StockApi.GetWarehousesAsync(companyId);
+            _warehouses = [.. warehouses];
+
+            if (error is not null)
+                _error = error;
+        }
+        catch (Exception ex)
+        {
+            _error = string.Format(Localizer["CompanyEditor_LoadWarehousesError"], ex.Message);
+        }
+        finally
+        {
+            _workingWarehouses = false;
+        }
+    }
+
+    private async Task LoadAtCredentialStatusAsync(Guid companyId)
+    {
+        try
+        {
+            _atStatus = await CoreApi.GetCompanyAtCredentialStatusAsync(companyId);
+        }
+        catch (Exception ex)
+        {
+            _error = string.Format(Localizer["CompanyEditor_LoadAtCredentialsError"], ex.Message);
+        }
+    }
+
+    private async Task SaveAtCredentialsAsync()
+    {
+        _workingAt = true;
+        _error = null;
+
+        try
+        {
+            var error = await CoreApi.SetCompanyAtCredentialsAsync(
+                Company.SelectedCompanyId, new SetCompanyAtCredentialsRequest(_atSubUserId.Trim(), _atPassword));
+
+            if (error is not null)
+            {
+                _error = error;
+                return;
+            }
+
+            Snackbar.Add(Localizer["CompanyEditor_AtCredentialsSaved"].Value, Severity.Success);
+            _atPassword = string.Empty;
+            await LoadAtCredentialStatusAsync(Company.SelectedCompanyId);
+        }
+        catch (Exception ex)
+        {
+            _error = string.Format(Localizer["CompanyEditor_SaveAtCredentialsError"], ex.Message);
+        }
+        finally
+        {
+            _workingAt = false;
+        }
+    }
+
+    private static string? Trimmed(string value) =>
+        string.IsNullOrWhiteSpace(value) ? null : value.Trim();
+
+    private static string NormalizeCountry(string value) =>
+        string.IsNullOrWhiteSpace(value) ? "PT" : value.Trim();
+
+    private static string DescribeCity(Warehouse warehouse) =>
+        string.Join(" ", new[] { warehouse.PostalCode, warehouse.City }
+            .Where(part => !string.IsNullOrWhiteSpace(part)));
+
+    private string DescribeUser(string userId) =>
+        _users.FirstOrDefault(user => user.Id == userId) is { FullName: { Length: > 0 } fullName }
+            ? fullName
+            : DescribeEmail(userId);
+
+    private string DescribeEmail(string userId) =>
+        _users.FirstOrDefault(user => user.Id == userId)?.Email ?? userId;
+
+    private async Task SaveAsync()
+    {
+        _saving = true;
+        _error = null;
+
+        try
+        {
+            var request = new UpdateCompanyRequest(
+                _name.Trim(), _taxId.Trim(), Trimmed(_legalName), Trimmed(_email), Trimmed(_phone), _isActive,
+                Trimmed(_address), Trimmed(_city), Trimmed(_postalCode), NormalizeCountry(_country));
+
+            var (_, error) = await CoreApi.UpdateCompanyAsync(Company.SelectedCompanyId, request);
+
+            if (error is not null)
+            {
+                _error = error;
+                return;
+            }
+
+            await Company.RefreshAsync();
+            Snackbar.Add(Localizer["CompanyEditor_Updated"].Value, Severity.Success);
+        }
+        catch (Exception ex)
+        {
+            _error = string.Format(Localizer["CompanyEditor_SaveError"], ex.Message);
+        }
+        finally
+        {
+            _saving = false;
+        }
+    }
+
+    public void Dispose() => Company.Changed -= OnCompanyChanged;
+}

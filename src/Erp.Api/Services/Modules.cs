@@ -49,6 +49,9 @@ public static class Modules
         // Sequential codes for the master data, composed from the catalogue and the counters.
         services.AddScoped<MasterDataCodes>();
 
+        // Demo/training data, composed from the catalogue and the series registry.
+        services.AddScoped<DemoDataService>();
+
         // What every module that issues fiscal documents shares: the signing key, the signer, and
         // the SAF-T exporter, which collects from whichever modules register an ISaftDocumentSource.
         services.AddFiscalPT(configuration, allowDevelopmentKeyGeneration);

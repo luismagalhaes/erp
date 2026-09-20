@@ -10,6 +10,7 @@
 @inject NavigationManager Navigation
 @inject CompanyState Company
 @inject WarehouseState Warehouse
+@inject SubscriptionState Subscription
 @inject IStringLocalizer<MainResources> Localizer
 @inject IDialogService DialogService
 @inject IJSRuntime JS
@@ -111,6 +112,19 @@
 
     <MudMainContent Class="erp-main">
         <MudContainer MaxWidth="MaxWidth.ExtraLarge" Class="my-4 pt-4">
+            @if (!_subscriptionWarningDismissed && Subscription.IsExpired && Subscription.Current is { } subscription)
+            {
+                @* A warning, never a gate: an expired subscription is between us and the customer,
+                   not a reason to lock them out of their own invoicing. *@
+                <MudAlert Severity="Severity.Warning" Dense="true" Class="mb-4" ShowCloseIcon="true"
+                          CloseIconClicked="@(() => _subscriptionWarningDismissed = true)">
+                    @string.Format(
+                        Localizer["Subscription_ExpiredWarning"],
+                        subscription.PlanName,
+                        subscription.ExpiresAtUtc.ToLocalTime().ToString("yyyy-MM-dd"))
+                </MudAlert>
+            }
+
             @Body
         </MudContainer>
     </MudMainContent>
@@ -119,13 +133,27 @@
 @code {
     private bool _drawerOpen = true;
     private bool _isDarkMode;
+    private bool _subscriptionWarningDismissed;
 
     protected override async Task OnInitializedAsync()
     {
         Company.Changed += OnCompanyStateChanged;
         Warehouse.Changed += OnWarehouseStateChanged;
+        Subscription.Changed += OnSubscriptionStateChanged;
+
         await Company.EnsureLoadedAsync();
+
+        // An account that belongs to no company has nothing to show behind this layout: every page
+        // would only be able to say the same thing. Sign-up carries its own chrome — no side menu,
+        // since there is nowhere to navigate to yet — so this leaves the layout entirely.
+        if (Company.NeedsOnboarding)
+        {
+            Navigation.NavigateTo("get-started");
+            return;
+        }
+
         await Warehouse.EnsureLoadedAsync();
+        await Subscription.EnsureLoadedAsync(Company.SelectedCompanyId);
     }
 
     private void ToggleDrawer() => _drawerOpen = !_drawerOpen;
@@ -139,9 +167,16 @@
 
     private void OnWarehouseChanged(Guid warehouseId) => Warehouse.Select(warehouseId);
 
-    private void OnCompanyStateChanged() => InvokeAsync(StateHasChanged);
+    private void OnCompanyStateChanged() =>
+        InvokeAsync(async () =>
+        {
+            await Subscription.EnsureLoadedAsync(Company.SelectedCompanyId);
+            StateHasChanged();
+        });
 
     private void OnWarehouseStateChanged() => InvokeAsync(StateHasChanged);
+
+    private void OnSubscriptionStateChanged() => InvokeAsync(StateHasChanged);
 
     private async Task OpenProfile()
         => await JS.InvokeVoidAsync("open", $"{Configuration["Services:IdentityApi"]}/Profile", "_blank");
@@ -173,5 +208,6 @@
     {
         Company.Changed -= OnCompanyStateChanged;
         Warehouse.Changed -= OnWarehouseStateChanged;
+        Subscription.Changed -= OnSubscriptionStateChanged;
     }
 }

@@ -147,6 +147,15 @@
   <data name="Account_SignIn_ErrorAccountLocked" xml:space="preserve">
     <value>Account locked. Try again later.</value>
   </data>
+  <data name="Account_SignIn_SuccessEmailConfirmed" xml:space="preserve">
+    <value>Email confirmed successfully. You can now sign in.</value>
+  </data>
+  <data name="Account_SignIn_ErrorEmailNotConfirmed" xml:space="preserve">
+    <value>You have not confirmed your email yet. Check your inbox.</value>
+  </data>
+  <data name="Account_SignIn_ResendConfirmationLink" xml:space="preserve">
+    <value>Resend confirmation email</value>
+  </data>
   <data name="Account_SignIn_ErrorInvalidCredentials" xml:space="preserve">
     <value>Incorrect email or password.</value>
   </data>
@@ -179,6 +188,54 @@
   </data>
   <data name="Account_SignUp_ErrorPasswordsDoNotMatch" xml:space="preserve">
     <value>Passwords do not match.</value>
+  </data>
+  <data name="Account_SignUp_EmailSubject" xml:space="preserve">
+    <value>Confirm your ERP account</value>
+  </data>
+  <data name="Account_SignUp_EmailGreeting" xml:space="preserve">
+    <value>Hi {0},</value>
+  </data>
+  <data name="Account_SignUp_EmailBody" xml:space="preserve">
+    <value>Click here to confirm your account and be able to sign in.</value>
+  </data>
+  <data name="Account_SignUpConfirmation_PageTitle" xml:space="preserve">
+    <value>Sign Up — Confirmation</value>
+  </data>
+  <data name="Account_SignUpConfirmation_Heading" xml:space="preserve">
+    <value>Check your inbox</value>
+  </data>
+  <data name="Account_SignUpConfirmation_Message" xml:space="preserve">
+    <value>We sent a confirmation link to the email you provided. You have to click it before you can sign in.</value>
+  </data>
+  <data name="Account_SignUpConfirmation_BackToSignInLink" xml:space="preserve">
+    <value>Back to sign in</value>
+  </data>
+  <data name="Account_ConfirmEmail_PageTitle" xml:space="preserve">
+    <value>Confirm Email — ERP</value>
+  </data>
+  <data name="Account_ConfirmEmail_SuccessHeading" xml:space="preserve">
+    <value>Account confirmed</value>
+  </data>
+  <data name="Account_ConfirmEmail_SuccessMessage" xml:space="preserve">
+    <value>Your account has been confirmed successfully. You can now sign in.</value>
+  </data>
+  <data name="Account_ConfirmEmail_ErrorHeading" xml:space="preserve">
+    <value>Could not confirm</value>
+  </data>
+  <data name="Account_ConfirmEmail_ErrorMessage" xml:space="preserve">
+    <value>This confirmation link is invalid or has expired.</value>
+  </data>
+  <data name="Account_ResendConfirmation_PageTitle" xml:space="preserve">
+    <value>Resend Confirmation — ERP</value>
+  </data>
+  <data name="Account_ResendConfirmation_Heading" xml:space="preserve">
+    <value>Resend confirmation email</value>
+  </data>
+  <data name="Account_ResendConfirmation_EmailLabel" xml:space="preserve">
+    <value>Email</value>
+  </data>
+  <data name="Account_ResendConfirmation_SubmitButton" xml:space="preserve">
+    <value>Resend</value>
   </data>
   <data name="Account_ForgotPassword_PageTitle" xml:space="preserve">
     <value>Forgot Password — ERP</value>
@@ -321,6 +378,9 @@
   <data name="NavMenu_Home" xml:space="preserve">
     <value>Home</value>
   </data>
+  <data name="NavMenu_SessionLogs" xml:space="preserve">
+    <value>Session logs</value>
+  </data>
   <data name="NavMenu_Backoffice" xml:space="preserve">
     <value>Backoffice</value>
   </data>
@@ -362,6 +422,39 @@
   </data>
   <data name="Backoffice_Index_Heading" xml:space="preserve">
     <value>Backoffice</value>
+  </data>
+  <data name="Backoffice_SessionLogs_PageTitle" xml:space="preserve">
+    <value>Session Logs</value>
+  </data>
+  <data name="Backoffice_SessionLogs_PageDescription" xml:space="preserve">
+    <value>Every sign-in attempt, successful or not.</value>
+  </data>
+  <data name="Backoffice_SessionLogs_ItemsLabel" xml:space="preserve">
+    <value>entries</value>
+  </data>
+  <data name="Backoffice_SessionLogs_DateColumn" xml:space="preserve">
+    <value>Date</value>
+  </data>
+  <data name="Backoffice_SessionLogs_EmailColumn" xml:space="preserve">
+    <value>Email</value>
+  </data>
+  <data name="Backoffice_SessionLogs_ResultColumn" xml:space="preserve">
+    <value>Result</value>
+  </data>
+  <data name="Backoffice_SessionLogs_IpColumn" xml:space="preserve">
+    <value>IP address</value>
+  </data>
+  <data name="Backoffice_SessionLogs_Succeeded" xml:space="preserve">
+    <value>Signed in</value>
+  </data>
+  <data name="Backoffice_SessionLogs_InvalidCredentials" xml:space="preserve">
+    <value>Invalid credentials</value>
+  </data>
+  <data name="Backoffice_SessionLogs_LockedOut" xml:space="preserve">
+    <value>Account locked</value>
+  </data>
+  <data name="Backoffice_SessionLogs_EmailNotConfirmed" xml:space="preserve">
+    <value>Email not confirmed</value>
   </data>
   <data name="Backoffice_Users_PageTitle" xml:space="preserve">
     <value>Backoffice - Users</value>
@@ -419,6 +512,9 @@
   </data>
   <data name="Backoffice_Users_ActiveColumn" xml:space="preserve">
     <value>Active</value>
+  </data>
+  <data name="Backoffice_Users_EmailConfirmedColumn" xml:space="preserve">
+    <value>Email confirmed</value>
   </data>
   <data name="Backoffice_Users_CreatedAtColumn" xml:space="preserve">
     <value>Created at</value>

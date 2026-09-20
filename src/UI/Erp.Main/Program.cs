@@ -174,6 +174,7 @@ builder.Services.ConfigureAll<Microsoft.Extensions.Http.HttpClientFactoryOptions
 // Company currently selected in the header, shared by every page of the circuit.
 builder.Services.AddScoped<CompanyState>();
 builder.Services.AddScoped<WarehouseState>();
+builder.Services.AddScoped<SubscriptionState>();
 
 var app = builder.Build();
 

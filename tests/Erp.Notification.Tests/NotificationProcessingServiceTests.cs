@@ -27,7 +27,7 @@ public class NotificationProcessingServiceTests
     };
 
     private void GivenPending(params EmailNotification[] notifications) =>
-        _storage.GetPendingAsync(Arg.Any<int>(), Arg.Any<CancellationToken>()).Returns(notifications);
+        _storage.GetPendingAsync(Arg.Any<int>(), Arg.Any<int>(), Arg.Any<CancellationToken>()).Returns(notifications);
 
     [Fact]
     public async Task ProcessPendingAsync_marks_delivered_emails_as_sent()
@@ -35,7 +35,7 @@ public class NotificationProcessingServiceTests
         var notification = Pending();
         GivenPending(notification);
 
-        var processed = await CreateService().ProcessPendingAsync(10);
+        var processed = await CreateService().ProcessPendingAsync(10, 5);
 
         processed.Should().Be(1);
         notification.Status.Should().Be(EmailNotificationStatus.Sent);
@@ -52,7 +52,7 @@ public class NotificationProcessingServiceTests
         _sender.SendAsync(notification.ToEmail, Arg.Any<string>(), Arg.Any<string>(), Arg.Any<CancellationToken>())
             .ThrowsAsync(new InvalidOperationException("Smtp:Host is not configured."));
 
-        var processed = await CreateService().ProcessPendingAsync(10);
+        var processed = await CreateService().ProcessPendingAsync(10, 5);
 
         processed.Should().Be(1);
         notification.Status.Should().Be(EmailNotificationStatus.Failed);
@@ -71,7 +71,7 @@ public class NotificationProcessingServiceTests
         _sender.SendAsync("falha@empresa.pt", Arg.Any<string>(), Arg.Any<string>(), Arg.Any<CancellationToken>())
             .ThrowsAsync(new TimeoutException("timeout"));
 
-        var processed = await CreateService().ProcessPendingAsync(10);
+        var processed = await CreateService().ProcessPendingAsync(10, 5);
 
         processed.Should().Be(2);
         failing.Status.Should().Be(EmailNotificationStatus.Failed);
@@ -87,8 +87,8 @@ public class NotificationProcessingServiceTests
             .ThrowsAsync(new TimeoutException("timeout"));
 
         var service = CreateService();
-        await service.ProcessPendingAsync(10);
-        await service.ProcessPendingAsync(10);
+        await service.ProcessPendingAsync(10, 5);
+        await service.ProcessPendingAsync(10, 5);
 
         notification.RetryCount.Should().Be(2);
     }
@@ -98,7 +98,7 @@ public class NotificationProcessingServiceTests
     {
         GivenPending();
 
-        var processed = await CreateService().ProcessPendingAsync(10);
+        var processed = await CreateService().ProcessPendingAsync(10, 5);
 
         processed.Should().Be(0);
         await _sender.DidNotReceive().SendAsync(
@@ -110,8 +110,19 @@ public class NotificationProcessingServiceTests
     {
         GivenPending();
 
-        await CreateService().ProcessPendingAsync(7);
+        await CreateService().ProcessPendingAsync(7, 5);
 
-        await _storage.Received(1).GetPendingAsync(7, Arg.Any<CancellationToken>());
+        await _storage.Received(1).GetPendingAsync(7, 5, Arg.Any<CancellationToken>());
+    }
+
+    /// <summary>The actual fix: a failed email must stop being retried once it hits the cap.</summary>
+    [Fact]
+    public async Task ProcessPendingAsync_asks_the_storage_for_the_configured_retry_cap()
+    {
+        GivenPending();
+
+        await CreateService().ProcessPendingAsync(10, 3);
+
+        await _storage.Received(1).GetPendingAsync(10, 3, Arg.Any<CancellationToken>());
     }
 }

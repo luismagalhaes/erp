@@ -23,5 +23,15 @@ public class IdentityApiClient(HttpClient http) : ApiClientBase(http)
         var users = await response.Content.ReadFromJsonAsync<List<IdentityUser>>(cancellationToken);
         return (users ?? [], null);
     }
+
+    /// <summary>
+    /// Finishes sign-up by granting the signed-in user the User role, once their company exists.
+    /// Signing up leaves an account with no role at all, so this is what makes it a usable one.
+    /// </summary>
+    public async Task<string?> CompleteOnboardingAsync(CancellationToken cancellationToken = default)
+    {
+        var response = await Http.PostAsync("api/self-service/complete-onboarding", null, cancellationToken);
+        return response.IsSuccessStatusCode ? null : await ApiResponse.ReadErrorAsync(response, cancellationToken);
+    }
 }
 

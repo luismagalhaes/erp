@@ -1,0 +1,73 @@
+@page "/Backoffice/SessionLogs"
+@using Microsoft.AspNetCore.Components.Web
+@using Microsoft.Extensions.Localization
+@using IdentityResourcesType = Erp.Identity.Resources.IdentityResources
+@attribute [Authorize(Roles = "SuperAdmin")]
+@inject ILoginAuditService LoginAuditService
+@inject IStringLocalizer<IdentityResourcesType> Localizer
+
+<PageTitle>@Localizer["Backoffice_SessionLogs_PageTitle"]</PageTitle>
+
+<MudStack Spacing="4">
+    <PageHeader Title="@Localizer["Backoffice_SessionLogs_PageTitle"]"
+                Description="@Localizer["Backoffice_SessionLogs_PageDescription"]" />
+
+    <DataGrid T="LoginAuditListItem" Items="@_entries" Loading="@_loading"
+              SearchFields="@_searchFields"
+              SearchPlaceholder="@Localizer["Backoffice_Common_SearchPlaceholder"]"
+              EmptyIcon="@Icons.Material.Filled.History"
+              EmptyTitle="@Localizer["Backoffice_Common_NoRecords"]"
+              ItemsLabel="@Localizer["Backoffice_SessionLogs_ItemsLabel"]"
+              OnRefresh="LoadAsync">
+        <Columns>
+            <PropertyColumn Property="x => x.OccurredAtUtc" Title="@Localizer["Backoffice_SessionLogs_DateColumn"]">
+                <CellTemplate>
+                    @context.Item.OccurredAtUtc.ToLocalTime().ToString("yyyy-MM-dd HH:mm:ss")
+                </CellTemplate>
+            </PropertyColumn>
+            <PropertyColumn Property="x => x.Email" Title="@Localizer["Backoffice_SessionLogs_EmailColumn"]" />
+            <PropertyColumn Property="x => x.Succeeded" Title="@Localizer["Backoffice_SessionLogs_ResultColumn"]">
+                <CellTemplate>
+                    @if (context.Item.Succeeded)
+                    {
+                        <MudChip T="string" Size="Size.Small" Variant="Variant.Text" Color="Color.Success">
+                            @Localizer["Backoffice_SessionLogs_Succeeded"]
+                        </MudChip>
+                    }
+                    else
+                    {
+                        <MudChip T="string" Size="Size.Small" Variant="Variant.Text" Color="Color.Error">
+                            @FailureLabel(context.Item.FailureReason)
+                        </MudChip>
+                    }
+                </CellTemplate>
+            </PropertyColumn>
+            <PropertyColumn Property="x => x.RemoteIp" Title="@Localizer["Backoffice_SessionLogs_IpColumn"]">
+                <CellTemplate>@(context.Item.RemoteIp ?? "—")</CellTemplate>
+            </PropertyColumn>
+        </Columns>
+    </DataGrid>
+</MudStack>
+
+@code {
+    private static readonly Func<LoginAuditListItem, string?>[] _searchFields = [x => x.Email, x => x.RemoteIp];
+
+    private List<LoginAuditListItem> _entries = [];
+    private bool _loading = true;
+
+    protected override async Task OnInitializedAsync() => await LoadAsync();
+
+    private async Task LoadAsync()
+    {
+        _loading = true;
+        _entries = (await LoginAuditService.GetRecentAsync()).ToList();
+        _loading = false;
+    }
+
+    private string FailureLabel(string? failureReason) => failureReason switch
+    {
+        "LockedOut" => Localizer["Backoffice_SessionLogs_LockedOut"],
+        "EmailNotConfirmed" => Localizer["Backoffice_SessionLogs_EmailNotConfirmed"],
+        _ => Localizer["Backoffice_SessionLogs_InvalidCredentials"]
+    };
+}

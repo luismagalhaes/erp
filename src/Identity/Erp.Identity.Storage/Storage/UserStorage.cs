@@ -43,6 +43,7 @@ public sealed class UserStorage(IDbContextFactory<ApplicationDbContext> dbContex
                 user.Email ?? string.Empty,
                 user.FullName,
                 user.IsActive,
+                user.EmailConfirmed,
                 user.CreatedAt,
                 rolesByUserId.TryGetValue(user.Id, out var roles) ? roles.ToList() : [],
                 user.PreferredLanguage));
@@ -74,6 +75,7 @@ public sealed class UserStorage(IDbContextFactory<ApplicationDbContext> dbContex
             user.Email ?? string.Empty,
             user.FullName,
             user.IsActive,
+            user.EmailConfirmed,
             roles,
             user.PreferredLanguage);
     }

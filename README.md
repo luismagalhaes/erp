@@ -322,6 +322,12 @@ Ao mesmo tempo corrigiram-se dois problemas vizinhos que a mesma revisão expôs
 
 **Roles**: apenas `SuperAdmin` e `User`. O `SuperAdmin` configura o tenant; todos os outros são `User`, e o que podem ver depende da empresa a que pertencem. O menu de Backoffice do `Erp.Main` e o backoffice do Identity só são visíveis a `SuperAdmin`, e os endpoints administrativos exigem a política `Admin`.
 
+**Uma conta criada em `/Account/SignUp` não consegue iniciar sessão antes de confirmar o email.** `options.SignIn.RequireConfirmedAccount = true` ([`Erp.Identity.Storage/DependencyInjection.cs`](src/Identity/Erp.Identity.Storage/DependencyInjection.cs)) é o que o `Microsoft.AspNetCore.Identity` já sabe fazer sozinho: `SignInManager.PasswordSignInAsync` devolve `SignInResult.NotAllowed` para uma conta cujo `EmailConfirmed` continue `false`, sem precisar de nenhuma verificação manual em [`AuthenticationEndpoints`](src/Identity/Erp.Identity/Endpoints/AuthenticationEndpoints.cs). O registo gera o token com `GenerateEmailConfirmationTokenAsync`, envia-o por email (reaproveitando o [`IEmailService`](src/Identity/Erp.Identity.Infrastructure/Application/IEmailService.cs) que já existia para a recuperação de palavra-passe) e mostra `/Account/SignUpConfirmation` em vez de deixar entrar de imediato; `/Account/ConfirmEmail` é quem chama `ConfirmEmailAsync` e, a partir daí, a conta consegue autenticar-se. `/Account/ResendConfirmation` reenvia o link sem nunca revelar se a conta existe ou já está confirmada — a mesma cautela que `ForgotPassword` já seguia. **O utilizador semeado pelo `SeedData` já nasce com `EmailConfirmed = true`**, por isso não é afetado; qualquer conta que já existisse antes desta alteração, sem o ter confirmado, fica bloqueada até o fazer.
+
+**O `returnUrl` de um pedido OIDC (`/connect/authorize/...`) sobrevive ao registo, não só ao login.** Antes, clicar em "Criar conta" a partir do ecrã de login — o caminho normal para alguém que chega vindo do `Erp.Main` — perdia a querystring logo no link, e o `SignUp.razor` nunca sequer a lia. Agora `ReturnUrl` viaja como parâmetro de query por todas as páginas da cadeia (`SignIn` ⇄ `SignUp` → `SignUpConfirmation` → link do email → `ConfirmEmail` → de volta a `SignIn`), através de [`ReturnUrlHelper.Sanitize`](src/Identity/Erp.Identity/Services/ReturnUrlHelper.cs) — um único sítio, partilhado com `AuthenticationEndpoints`, para aceitar só um caminho relativo ou um URL `http(s)` absoluto. A validação que decide mesmo se o redirecionamento é seguro continua a ser `IIdentityServerInteractionService.IsValidReturnUrl`, chamada só uma vez, no momento em que `/authentication/login` completa o fluxo — o resto é só o valor a não se perder pelo caminho.
+
+**Cada início de sessão bem-sucedido ou falhado fica registado — no log estruturado e numa tabela própria.** `POST /authentication/login` regista sempre o resultado pelo `ILogger` estruturado do host — nunca o email ou a palavra-passe — com `userId` e `remoteIp` no sucesso, e `lockedOut`/`notAllowed` (conta por confirmar) na falha. Em paralelo, cada tentativa grava uma linha em [`LoginAudit`](src/Identity/Erp.Identity.Domain/Storage/LoginAudit.cs) (esta sim, com o email tentado — é o próprio propósito da página) através de [`ILoginAuditService`](src/Identity/Erp.Identity.Infrastructure/Application/ILoginAuditService.cs), visível no backoffice do Identity em **Logs de Sessão** — um link de topo, junto ao Início, não dentro do grupo Backoffice, só visível a `SuperAdmin`.
+
 Para que a autorização por role funcione são precisas **três** coisas, e falhando qualquer uma os endpoints com `[Authorize(Roles = ...)]` respondem **403 mesmo a um SuperAdmin**:
 
 1. cada `ApiResource` declara `UserClaims = { "role" }` — sem isso o *access token* não leva roles nenhumas, mesmo que o utilizador as tenha;
@@ -420,11 +426,11 @@ dotnet test Erp.slnx --filter "Category!=E2E"
 
 **980 testes em onze projetos**, em duas famílias com propósitos diferentes. Um décimo segundo projeto, `Erp.E2ETests`, guarda testes de browser à parte — não correm neste comando porque precisam dos hosts a correr localmente (ver [abaixo](#testes-end-to-end--playwright-contra-a-ui-real)).
 
-### Testes de unidade — 941, sem base de dados
+### Testes de unidade — 980, sem base de dados
 
 As camadas Application são testadas com storages substituídos (NSubstitute), a biblioteca fiscal é testada diretamente — incluindo a validação dos ficheiros SAF-T e de inventário contra os XSD oficiais — e o cliente de email, a obtenção de tokens do Identity e as integrações keyless em [`Erp.Dependencies`](tests/Erp.Dependencies.Tests/) (moradas.dev e VIES) com um `HttpMessageHandler` de teste que grava os pedidos e devolve respostas guionadas, sem rede nenhuma. O `NifValidator` (módulo 11) é testado à parte, por ser lógica pura sem HTTP. [`Erp.Api.Tests`](tests/Erp.Api.Tests/) testa o `RequireCompanyAccessFilter` isoladamente — um `ActionExecutingContext` construído à mão, sem host nenhum a correr — cobrindo o SuperAdmin a passar sem consultar a base, o `[AllowAnyCompany]` a saltar a verificação, e o `companyId` a ser encontrado tanto num parâmetro direto como numa propriedade `CompanyId` do corpo do pedido. Correm em segundos e não precisam de nada instalado.
 
-### Testes de integração — 39, contra SQL Server
+### Testes de integração — 44, contra SQL Server
 
 Existem para responder às três perguntas que um storage substituído **não consegue** responder:
 
@@ -578,6 +584,10 @@ Todos os módulos de negócio são servidos por um único host (`Erp.Api`) e um 
 
 **O código postal segue o país.** Em Portugal só se aceita `XXXX-XXX`, com dígitos — o formato que o SAF-T e os *webservices* da AT esperam — e o ecrã escreve o hífen sozinho. Noutro país fica como for escrito. A regra vive em [`PostalCodes`](src/Shared/Erp.Common/PostalCodes.cs) e é aplicada nas fichas, na empresa e no cliente de cada fatura.
 
+**Registo de uma empresa pelo próprio utilizador (*self-service*).** Registar-se no Identity deixa a conta **sem role nenhuma** e sem empresa — de propósito: uma conta que não pertence a nenhuma empresa ainda não é utilizador de nada. Ao entrar no `Erp.Main` nesse estado, o `MainLayout` reencaminha para `/get-started`, uma página com *layout* próprio (sem menu lateral, [`OnboardingLayout`](src/UI/Erp.Main/Layout/OnboardingLayout.razor)) que mostra os pacotes de subscrição ativos, pede os dados da empresa — com a mesma procura por NIF no VIES e por código postal das restantes fichas — e cria tudo numa transação: a empresa (com armazém, Ecovalor e séries, como qualquer outra), a subscrição no pacote escolhido e a associação do utilizador à empresa como `Owner`. Só **depois de a empresa existir** é que a conta recebe a role `User` do Identity, através do único endpoint em que alguém sem role pode mexer nas suas próprias — [`POST /api/self-service/complete-onboarding`](src/Identity/Erp.Identity/Controllers/SelfServiceController.cs), que apenas concede `User` e apenas a quem o token identifica. A página termina a forçar novo *login*: as *claims* de role são lidas uma vez, no início da sessão, por isso o *cookie* anterior continuaria a dizer que a conta não tem nenhuma. As duas bases de dados são distintas, por isso não há transação comum entre criar a empresa e conceder a role — se a segunda falhar, a empresa fica criada e o erro é mostrado, em vez de ser engolido.
+
+**Pacotes de subscrição.** Um [`SubscriptionPlan`](src/Modules/Erp.Core/Domain/SubscriptionPlan.cs) tem nome, descrição, preço e periodicidade (`Trial`, `Monthly`, `Annual`); um pacote de teste diz também quantos dias dura. A migração semeia três de partida — *Free* (30 dias), *Mensal* e *Anual* — **com preços que são apenas um ponto de partida**, para serem ajustados no backoffice. Cada empresa tem no máximo uma [`CompanySubscription`](src/Modules/Erp.Core/Domain/CompanySubscription.cs): mudar de pacote reescreve-a, e a validade é calculada a partir do próprio pacote (dias do teste, um mês, um ano) ou escrita à mão por um SuperAdmin. **Não há gateway de pagamentos**: comprar um pacote é registado, não cobrado. Estar expirada **nunca bloqueia nada** — o `MainLayout` mostra um aviso dispensável e a aplicação continua a funcionar. O backoffice tem CRUD dos pacotes (`/subscription-plans`) e a lista de que empresa está em que pacote, com a ação de mudar (`/subscriptions`), ambos só para SuperAdmin.
+
 **Ecovalor — taxas de gestão de resíduos (baterias, óleos, etc.).** Desde 2020 a lei (DL 152-D/2017) exige que estas taxas apareçam **numa linha própria do documento**, nunca embutidas no preço do artigo, com IVA à taxa normal acrescido por cima. Um artigo aponta para um [`EcoFeeType`](src/Modules/Erp.Core/Domain/EcoFeeType.cs) — código, cálculo por unidade ou por quilograma, valor e entidade gestora — e criar o tipo cria automaticamente o pseudo-artigo (`ProductType = "I"`, taxas e encargos no SAF-T) em que a taxa é faturada. Ao adicionar à fatura ou à guia um artigo com Ecovalor associado, a UI gera de imediato a linha da taxa a seguir à do artigo, com a mesma quantidade; essa linha é uma linha normal para efeitos de totais, IVA, impressão e SAF-T, mas fica marcada (`IsEcoFee`) para nunca movimentar stock — uma taxa não é um artigo em armazém. **Toda a empresa nova nasce já com dois Ecovalor** (baterias, óleos), com valores de partida que têm de ser confirmados/ajustados à tabela oficial em vigor.
 
 | Método | Rota | Autorização |
@@ -605,6 +615,12 @@ Todos os módulos de negócio são servidos por um único host (`Erp.Api`) e um 
 | `GET` `POST` `PUT` | `/api/eco-fee-types` | `Read` / `Write` |
 | `GET` | `/api/lookups/postal-codes/{postalCode}` | `Read` |
 | `GET` | `/api/lookups/vat-numbers/{nif}` | `Read` |
+| `GET` | `/api/subscription-plans?activeOnly=` · `/api/subscription-plans/odata` · `/api/subscription-plans/{id}` | `Read` |
+| `POST` `PUT` | `/api/subscription-plans` · `/api/subscription-plans/{id}` | `Admin` |
+| `GET` | `/api/company-subscriptions/odata` · `/api/company-subscriptions/{companyId}` | `Read` |
+| `PUT` | `/api/company-subscriptions/{companyId}` | `Admin` |
+| `GET` | `/api/companies/self-service/status` | Autenticado |
+| `POST` | `/api/companies/self-service` | Autenticado |
 | `GET` | `/api/access/me/companies` | Autenticado |
 | `GET` | `/api/access/me/companies/{companyId}/role` | Autenticado |
 | `POST` | `/api/access/check-role` | Autenticado |
@@ -848,8 +864,11 @@ O cliente é identificado nos documentos **pelo NIF** — não há id do cliente
 |---|---|---|
 | `GET` | `/api/users` | `erp.identity.read` + Admin/SuperAdmin |
 | `GET` | `/api/users/{id}` | `erp.identity.read` + Admin/SuperAdmin |
+| `POST` | `/api/self-service/complete-onboarding` | Autenticado, sem role |
 
 Os utilizadores vivem no Identity, por isso o backoffice do `Erp.Main` lê-os daqui em vez de manter uma cópia. É uma API só de leitura, servida pelo próprio host do IdentityServer com o audience `identity-api`, num esquema Bearer separado — os esquemas por omissão continuam a ser os cookies do ASP.NET Identity, portanto a UI do Identity não é afetada.
+
+A exceção é `complete-onboarding`: é o único ponto em que alguém sem role nenhuma pode alterar as suas próprias. É deliberadamente estreito — concede apenas a role `User`, apenas à conta que o token identifica, nunca remove nada e nunca concede `SuperAdmin`. Atribuir roles a outras contas continua onde estava, no backoffice, só para SuperAdmin.
 
 **A associação utilizador ↔ empresa vive no Core** (`/api/user-companies`), porque é lá que as empresas existem. É essa tabela que alimenta o seletor de empresa no cabeçalho: um utilizador sem associações não vê empresa nenhuma.
 
@@ -871,6 +890,8 @@ O scope de envio é deliberadamente separado de `erp.read` e `erp.write`: o clie
 O segredo que o Identity apresenta vem de `ServiceAuthentication:ClientSecret` (user secrets ou cofre — ver [Configuração e segredos](#configuração-e-segredos)). Em desenvolvimento, se não estiver configurado, cai no valor de `Constants.Clients.IdentityServiceSecret` para a máquina local funcionar sem preparação. **O lado do Identity Server não segue essa mesma regra**: o [SeedData](src/Identity/Erp.Identity.Storage/Data/SeedData.cs) cria o client `identity-service` sem nenhum secret — tem de ser definido manualmente no backoffice (Clients → identity-service) em cada ambiente, com o mesmo valor que for registado em `ServiceAuthentication:ClientSecret` nesse ambiente. Sem isto, o envio de email por recuperação de password falha com 401.
 
 O [`EmailQueueWorker`](src/Modules/Erp.Notification/Application/Services/EmailQueueWorker.cs), um `BackgroundService` registado em `AddNotificationApplication`, corre dentro do próprio `Erp.Api` e drena a fila no intervalo definido em `NotificationWorker:PollingIntervalSeconds` — mas só trata do ciclo/intervalo: o envio em si é do [`NotificationProcessingService`](src/Modules/Erp.Notification/Application/Services/NotificationProcessingService.cs), que chama o [`SmtpEmailSender`](src/Modules/Erp.Notification/Application/Services/SmtpEmailSender.cs) (MailKit) por notificação pendente. Uma falha de entrega marca a notificação como `Failed` com o erro e incrementa as tentativas, sem parar o ciclo.
+
+**Até `NotificationWorker:MaxRetries` tentativas (5 por omissão), depois fica `Failed` para sempre.** Sem este limite, uma notificação `Failed` era considerada "pendente" pela própria query que alimenta o worker — `GetPendingAsync` lia `Status == Pending || Status == Failed` sem olhar a quantas vezes já tinha tentado — por isso um endereço permanentemente inválido ou um SMTP em baixo era reenviado para sempre, a cada ciclo. Agora uma linha `Failed` só volta a ser lida enquanto `RetryCount < MaxRetries`; ao atingir o limite, fica ali — visível no histórico, com o último erro — até alguém a reenviar manualmente pelo backoffice, o que também repõe `RetryCount` a zero.
 
 ---
 

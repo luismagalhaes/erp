@@ -44,14 +44,18 @@ public class EmailHistoryServiceTests
         await _storage.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
     }
 
+    /// <summary>
+    /// A notification that had already used up its automatic attempts gets a full new run at it —
+    /// not just whatever was left over from before someone stepped in by hand.
+    /// </summary>
     [Fact]
-    public async Task RequeueFailedAsync_keeps_the_retry_count_so_the_history_stays_honest()
+    public async Task RequeueFailedAsync_resets_the_retry_count()
     {
         var notification = Given(EmailNotificationStatus.Failed);
 
         await CreateService().RequeueFailedAsync(notification.Id);
 
-        notification.RetryCount.Should().Be(2);
+        notification.RetryCount.Should().Be(0);
     }
 
     [Theory]

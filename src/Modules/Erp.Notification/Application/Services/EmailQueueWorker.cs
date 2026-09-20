@@ -36,7 +36,7 @@ public sealed class EmailQueueWorker(
                 await using var scope = scopeFactory.CreateAsyncScope();
                 var processor = scope.ServiceProvider.GetRequiredService<INotificationProcessingService>();
 
-                var processed = await processor.ProcessPendingAsync(_options.BatchSize, stoppingToken);
+                var processed = await processor.ProcessPendingAsync(_options.BatchSize, _options.MaxRetries, stoppingToken);
 
                 if (processed > 0)
                     logger.LogInformation("Processed {Count} pending notifications.", processed);

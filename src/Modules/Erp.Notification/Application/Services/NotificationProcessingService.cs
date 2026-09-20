@@ -11,9 +11,9 @@ public sealed class NotificationProcessingService(
     IEmailSender emailSender,
     ILogger<NotificationProcessingService> logger) : INotificationProcessingService
 {
-    public async Task<int> ProcessPendingAsync(int batchSize, CancellationToken cancellationToken = default)
+    public async Task<int> ProcessPendingAsync(int batchSize, int maxRetries, CancellationToken cancellationToken = default)
     {
-        var pending = await storage.GetPendingAsync(batchSize, cancellationToken);
+        var pending = await storage.GetPendingAsync(batchSize, maxRetries, cancellationToken);
 
         foreach (var notification in pending)
         {
@@ -36,6 +36,13 @@ public sealed class NotificationProcessingService(
                 notification.RetryCount++;
                 notification.LastError = ex.InnerException?.Message ?? ex.Message;
                 notification.ProcessedAtUtc = DateTime.UtcNow;
+
+                if (notification.RetryCount >= maxRetries)
+                {
+                    logger.LogWarning(
+                        "Notification {NotificationId} to {ToEmail} gave up after {RetryCount} attempts.",
+                        notification.Id, notification.ToEmail, notification.RetryCount);
+                }
             }
         }
 

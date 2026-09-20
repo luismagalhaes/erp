@@ -16,6 +16,7 @@ public static class DependencyInjection
         services.AddScoped<IApiResourceService, ApiResourceService>();
         services.AddScoped<IIdentityResourceService, IdentityResourceService>();
         services.AddScoped<IIdentityProviderService, IdentityProviderService>();
+        services.AddScoped<ILoginAuditService, LoginAuditService>();
         return services;
     }
 }

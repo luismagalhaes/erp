@@ -1,0 +1,26 @@
+@page "/Account/SignUpConfirmation"
+@layout Layout.AuthLayout
+@using Microsoft.AspNetCore.Components.Web
+@using Microsoft.Extensions.Localization
+@using Erp.Identity.Resources
+@attribute [AllowAnonymous]
+@inject NavigationManager Navigation
+@inject IStringLocalizer<IdentityResources> Localizer
+
+<PageTitle>@Localizer["Account_SignUpConfirmation_PageTitle"]</PageTitle>
+
+<div class="content-card mud-elevation-1">
+    <h2>@Localizer["Account_SignUpConfirmation_Heading"]</h2>
+    <p>@Localizer["Account_SignUpConfirmation_Message"]</p>
+    <div class="auth-links mt-16">
+        <a class="auth-link" href="@SignInLink">@Localizer["Account_SignUpConfirmation_BackToSignInLink"]</a>
+    </div>
+</div>
+
+@code {
+    [SupplyParameterFromQuery]
+    public string? ReturnUrl { get; set; }
+
+    private string SignInLink => Navigation.GetUriWithQueryParameters(
+        "/Account/SignIn", new Dictionary<string, object?> { ["returnUrl"] = ReturnUrl });
+}

@@ -3,8 +3,10 @@
 @using Microsoft.AspNetCore.Components.Web
 @using Microsoft.Extensions.Localization
 @using Erp.Identity.Resources
+@using Erp.Identity.Services
 @attribute [AllowAnonymous]
 @inject UserManager<ApplicationUser> UserManager
+@inject IEmailService EmailService
 @inject NavigationManager Navigation
 @inject IStringLocalizer<IdentityResources> Localizer
 
@@ -47,7 +49,7 @@
         </EditForm>
 
         <div class="auth-links mt-16">
-            <a class="auth-link" href="/Account/SignIn">@Localizer["Account_SignUp_SignInLink"]</a>
+            <a class="auth-link" href="@SignInLink">@Localizer["Account_SignUp_SignInLink"]</a>
         </div>
     </div>
 </div>
@@ -55,6 +57,12 @@
 @code {
     private InputModel Input { get; set; } = new();
     private string? ErrorMessage { get; set; }
+
+    [SupplyParameterFromQuery]
+    public string? ReturnUrl { get; set; }
+
+    private string SignInLink => Navigation.GetUriWithQueryParameters(
+        "/Account/SignIn", new Dictionary<string, object?> { ["returnUrl"] = ReturnUrl });
 
     private async Task HandleSubmitAsync()
     {
@@ -77,11 +85,37 @@
         var result = await UserManager.CreateAsync(user, Input.Password!);
         if (result.Succeeded)
         {
-            Navigation.NavigateTo("/Account/SignIn?registered=1", forceLoad: true);
+            await SendConfirmationEmailAsync(user);
+
+            var confirmationPage = Navigation.GetUriWithQueryParameters(
+                "/Account/SignUpConfirmation", new Dictionary<string, object?> { ["returnUrl"] = ReturnUrl });
+            Navigation.NavigateTo(confirmationPage, forceLoad: true);
             return;
         }
 
         ErrorMessage = string.Join(" ", result.Errors.Select(e => e.Description));
+    }
+
+    /// <summary>
+    /// The account exists but cannot sign in yet — SignIn.RequireConfirmedAccount is on, and this
+    /// is the only way it gets turned off for this user.
+    /// </summary>
+    private async Task SendConfirmationEmailAsync(ApplicationUser user)
+    {
+        var token = await UserManager.GenerateEmailConfirmationTokenAsync(user);
+        var encodedToken = WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes(token));
+
+        var confirmLink = Navigation.GetUriWithQueryParameters(
+            "/Account/ConfirmEmail",
+            new Dictionary<string, object?>
+            {
+                ["email"] = user.Email,
+                ["token"] = encodedToken,
+                ["returnUrl"] = ReturnUrl
+            });
+
+        var html = $"<p>{Localizer["Account_SignUp_EmailGreeting", user.FullName]}</p><p>{Localizer["Account_SignUp_EmailBody"]} <a href=\"{confirmLink}\">link</a></p>";
+        await EmailService.SendAsync(user.Email!, Localizer["Account_SignUp_EmailSubject"], html);
     }
 
     private sealed class InputModel

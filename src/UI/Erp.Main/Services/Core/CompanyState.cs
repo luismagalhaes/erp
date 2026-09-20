@@ -25,10 +25,20 @@ public sealed class CompanyState(CoreApiClient coreApi, IStringLocalizer<MainRes
 
     public string? LoadError { get; private set; }
 
+    /// <summary>
+    /// True when the list could not be read at all, as opposed to having been read and come back
+    /// empty. The difference matters: an empty list means the user has to go through sign-up, while
+    /// a failed load means the API is unreachable and sending them to sign-up would be a lie.
+    /// </summary>
+    public bool LoadFailed { get; private set; }
+
     public UserCompany? Selected =>
         Companies.FirstOrDefault(company => company.CompanyId == SelectedCompanyId);
 
     public bool HasCompany => SelectedCompanyId != Guid.Empty;
+
+    /// <summary>The account exists but belongs to no company yet, so it still has to be signed up.</summary>
+    public bool NeedsOnboarding => IsLoaded && !LoadFailed && Companies.Count == 0;
 
     /// <summary>Raised when the list is loaded or the user picks another company.</summary>
     public event Action? Changed;
@@ -55,6 +65,7 @@ public sealed class CompanyState(CoreApiClient coreApi, IStringLocalizer<MainRes
                 Companies = await coreApi.GetMyCompaniesAsync(cancellationToken);
                 SelectedCompanyId = Companies.FirstOrDefault()?.CompanyId ?? Guid.Empty;
                 LoadError = Companies.Count == 0 ? (string?)localizer["CompanyState_NoCompanyAssociated"] : null;
+                LoadFailed = false;
             }
             catch (Exception ex)
             {
@@ -63,6 +74,7 @@ public sealed class CompanyState(CoreApiClient coreApi, IStringLocalizer<MainRes
                 Companies = [];
                 SelectedCompanyId = Guid.Empty;
                 LoadError = localizer["CompanyState_LoadError", ex.Message];
+                LoadFailed = true;
             }
 
             IsLoaded = true;

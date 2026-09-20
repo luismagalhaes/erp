@@ -45,6 +45,15 @@ public sealed record UpdateCompanyRequest(
 /// <summary>The registered WDT subutilizador and when it was set, without the password.</summary>
 public sealed record CompanyAtCredentialStatus(string SubUserId, DateTime UpdatedAtUtc);
 
+/// <summary>What demo data was created for the company, or that it was already there.</summary>
+public sealed record DemoDataResult(
+    bool Applied,
+    int Families,
+    int Subfamilies,
+    int Brands,
+    int Products,
+    int SeriesCommunicated);
+
 public sealed record SetCompanyAtCredentialsRequest(string SubUserId, string Password);
 
 public sealed record IdentityUser(

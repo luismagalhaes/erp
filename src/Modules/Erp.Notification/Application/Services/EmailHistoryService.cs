@@ -21,7 +21,11 @@ public sealed class EmailHistoryService(IEmailNotificationStorage storage) : IEm
         if (notification is null || notification.Status != EmailNotificationStatus.Failed)
             return false;
 
+        // A fresh RetryCount too: a notification that had already used up its automatic attempts
+        // gets a full new run at it, not just the one attempt left over from before someone stepped
+        // in by hand.
         notification.Status = EmailNotificationStatus.Pending;
+        notification.RetryCount = 0;
         notification.LastError = null;
         notification.ProcessedAtUtc = null;
 

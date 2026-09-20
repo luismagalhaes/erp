@@ -53,6 +53,7 @@
     </MudNavGroup>
 
     <MudNavGroup Title="@Localizer["NavMenu_SettingsGroup"]" Icon="@Icons.Material.Filled.Settings" Expanded="false">
+        <MudNavLink Href="company-settings" Icon="@Icons.Material.Filled.Domain">@Localizer["NavMenu_CompanySettings"]</MudNavLink>
         <MudNavLink Href="series" Icon="@Icons.Material.Filled.FormatListNumbered">@Localizer["NavMenu_Series"]</MudNavLink>
     </MudNavGroup>
 
@@ -61,6 +62,8 @@
     <AuthorizeView Roles="@Constants.Roles.SuperAdmin">
         <MudNavGroup Title="@Localizer["NavMenu_BackofficeGroup"]" Icon="@Icons.Material.Filled.AdminPanelSettings" Expanded="false">
             <MudNavLink Href="companies" Icon="@Icons.Material.Filled.Domain">@Localizer["NavMenu_Companies"]</MudNavLink>
+            <MudNavLink Href="subscription-plans" Icon="@Icons.Material.Filled.LocalOffer">@Localizer["NavMenu_SubscriptionPlans"]</MudNavLink>
+            <MudNavLink Href="subscriptions" Icon="@Icons.Material.Filled.CardMembership">@Localizer["NavMenu_Subscriptions"]</MudNavLink>
             <MudNavLink Href="vat-rates" Icon="@Icons.Material.Filled.TableView">@Localizer["NavMenu_VatRates"]</MudNavLink>
             <MudNavLink Href="notifications" Icon="@Icons.Material.Filled.Email">@Localizer["NavMenu_Notifications"]</MudNavLink>
         </MudNavGroup>

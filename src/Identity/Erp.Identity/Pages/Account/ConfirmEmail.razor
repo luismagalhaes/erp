@@ -1,0 +1,77 @@
+@page "/Account/ConfirmEmail"
+@layout Layout.AuthLayout
+@using Microsoft.AspNetCore.Components.Web
+@using Microsoft.Extensions.Localization
+@using Erp.Identity.Resources
+@using Erp.Identity.Services
+@attribute [AllowAnonymous]
+@inject UserManager<ApplicationUser> UserManager
+@inject NavigationManager Navigation
+@inject IStringLocalizer<IdentityResources> Localizer
+
+<PageTitle>@Localizer["Account_ConfirmEmail_PageTitle"]</PageTitle>
+
+<div class="content-card mud-elevation-1">
+    @if (_confirmed)
+    {
+        <h2>@Localizer["Account_ConfirmEmail_SuccessHeading"]</h2>
+        <p>@Localizer["Account_ConfirmEmail_SuccessMessage"]</p>
+    }
+    else
+    {
+        <h2>@Localizer["Account_ConfirmEmail_ErrorHeading"]</h2>
+        <p>@Localizer["Account_ConfirmEmail_ErrorMessage"]</p>
+        <div class="auth-links mt-16">
+            <a class="auth-link" href="@ResendLink">@Localizer["Account_SignIn_ResendConfirmationLink"]</a>
+        </div>
+    }
+
+    <div class="auth-links mt-16">
+        <a class="auth-link" href="@SignInLink">@Localizer["Account_ForgotPasswordConfirmation_BackToSignInLink"]</a>
+    </div>
+</div>
+
+@code {
+    private bool _confirmed;
+
+    [SupplyParameterFromQuery]
+    public string? Email { get; set; }
+
+    [SupplyParameterFromQuery]
+    public string? Token { get; set; }
+
+    [SupplyParameterFromQuery]
+    public string? ReturnUrl { get; set; }
+
+    private string SignInLink => Navigation.GetUriWithQueryParameters(
+        "/Account/SignIn",
+        _confirmed
+            ? new Dictionary<string, object?> { ["confirmed"] = "1", ["returnUrl"] = ReturnUrl }
+            : new Dictionary<string, object?> { ["returnUrl"] = ReturnUrl });
+
+    private string ResendLink => Navigation.GetUriWithQueryParameters(
+        "/Account/ResendConfirmation", new Dictionary<string, object?> { ["email"] = Email, ["returnUrl"] = ReturnUrl });
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (string.IsNullOrWhiteSpace(Email) || string.IsNullOrWhiteSpace(Token))
+            return;
+
+        var user = await UserManager.FindByEmailAsync(Email);
+        if (user is null)
+            return;
+
+        string token;
+        try
+        {
+            token = Encoding.UTF8.GetString(WebEncoders.Base64UrlDecode(Token));
+        }
+        catch
+        {
+            return;
+        }
+
+        var result = await UserManager.ConfirmEmailAsync(user, token);
+        _confirmed = result.Succeeded;
+    }
+}

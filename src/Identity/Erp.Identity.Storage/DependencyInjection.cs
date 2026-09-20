@@ -37,6 +37,12 @@ public static class DependencyInjection
                 options.Lockout.MaxFailedAccessAttempts = 5;
                 options.Lockout.DefaultLockoutTimeSpan = TimeSpan.FromMinutes(15);
                 options.User.RequireUniqueEmail = true;
+
+                // A signed-up account cannot sign in until the confirmation email's link is
+                // clicked — SignUp.razor sends it, ConfirmEmail.razor is what turns this off for
+                // that one account. PasswordSignInAsync then returns SignInResult.NotAllowed for
+                // an unconfirmed account instead of authenticating it.
+                options.SignIn.RequireConfirmedAccount = true;
             })
             .AddEntityFrameworkStores<ApplicationDbContext>()
             .AddDefaultTokenProviders();
@@ -88,6 +94,7 @@ public static class DependencyInjection
         services.AddScoped<IApiResourceStorage, ApiResourceStorage>();
         services.AddScoped<IIdentityResourceStorage, IdentityResourceStorage>();
         services.AddScoped<IIdentityProviderStorage, IdentityProviderStorage>();
+        services.AddScoped<ILoginAuditStorage, LoginAuditStorage>();
 
         return services;
     }

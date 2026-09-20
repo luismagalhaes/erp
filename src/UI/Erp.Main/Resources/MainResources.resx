@@ -166,9 +166,14 @@
   <data name="NavMenu_Reports" xml:space="preserve"><value>Relatórios</value></data>
   <data name="NavMenu_SettingsGroup" xml:space="preserve"><value>Configuração</value></data>
   <data name="NavMenu_Series" xml:space="preserve"><value>Séries de faturação</value></data>
+  <data name="NavMenu_CompanySettings" xml:space="preserve"><value>Empresa</value></data>
+  <data name="CompanySettings_PageTitle" xml:space="preserve"><value>Configurações da empresa</value></data>
+  <data name="CompanySettings_NoCompanySelected" xml:space="preserve"><value>Nenhuma empresa selecionada.</value></data>
   <data name="NavMenu_VatRates" xml:space="preserve"><value>Taxas de IVA</value></data>
   <data name="NavMenu_BackofficeGroup" xml:space="preserve"><value>Backoffice</value></data>
   <data name="NavMenu_Companies" xml:space="preserve"><value>Empresas</value></data>
+  <data name="NavMenu_SubscriptionPlans" xml:space="preserve"><value>Pacotes de subscrição</value></data>
+  <data name="NavMenu_Subscriptions" xml:space="preserve"><value>Subscrições</value></data>
   <data name="NavMenu_Notifications" xml:space="preserve"><value>Notificações</value></data>
 
   <data name="Dashboard_PageTitle" xml:space="preserve"><value>Dashboard — ERP</value></data>
@@ -239,6 +244,74 @@
   <data name="Companies_LegalNameColumn" xml:space="preserve"><value>Designação legal</value></data>
   <data name="Companies_TaxIdColumn" xml:space="preserve"><value>NIF</value></data>
 
+  <data name="SubscriptionPlans_PageTitle" xml:space="preserve"><value>Pacotes de subscrição</value></data>
+  <data name="SubscriptionPlans_NewPlan" xml:space="preserve"><value>Novo pacote</value></data>
+  <data name="SubscriptionPlans_SearchPlaceholder" xml:space="preserve"><value>Procurar por nome</value></data>
+  <data name="SubscriptionPlans_EmptyTitle" xml:space="preserve"><value>Sem pacotes para mostrar</value></data>
+  <data name="SubscriptionPlans_EmptyDescription" xml:space="preserve"><value>Ajuste os filtros ou crie o primeiro pacote.</value></data>
+  <data name="SubscriptionPlans_ItemsLabel" xml:space="preserve"><value>pacotes</value></data>
+  <data name="SubscriptionPlans_LoadErrorMessage" xml:space="preserve"><value>Não foi possível carregar os pacotes</value></data>
+  <data name="SubscriptionPlans_PriceColumn" xml:space="preserve"><value>Preço</value></data>
+  <data name="SubscriptionPlans_BillingPeriodColumn" xml:space="preserve"><value>Periodicidade</value></data>
+  <data name="SubscriptionPlans_TrialDaysColumn" xml:space="preserve"><value>Dias de teste</value></data>
+
+  <data name="SubscriptionPlanEditor_NewTitle" xml:space="preserve"><value>Novo pacote</value></data>
+  <data name="SubscriptionPlanEditor_EditTitle" xml:space="preserve"><value>Editar pacote</value></data>
+  <data name="SubscriptionPlanEditor_Description" xml:space="preserve"><value>O que o pacote custa e quanto tempo dura. Um pacote desativado deixa de aparecer no registo de novas empresas, mas continua válido para quem já o tem.</value></data>
+  <data name="SubscriptionPlanEditor_NameLabel" xml:space="preserve"><value>Nome</value></data>
+  <data name="SubscriptionPlanEditor_DescriptionLabel" xml:space="preserve"><value>Descrição</value></data>
+  <data name="SubscriptionPlanEditor_PriceLabel" xml:space="preserve"><value>Preço</value></data>
+  <data name="SubscriptionPlanEditor_BillingPeriodLabel" xml:space="preserve"><value>Periodicidade</value></data>
+  <data name="SubscriptionPlanEditor_TrialDaysLabel" xml:space="preserve"><value>Dias de teste</value></data>
+  <data name="SubscriptionPlanEditor_TrialDaysHelperText" xml:space="preserve"><value>Só se aplica a pacotes de teste.</value></data>
+  <data name="SubscriptionPlanEditor_ActiveLabel" xml:space="preserve"><value>Ativo</value></data>
+  <data name="SubscriptionPlanEditor_NotFound" xml:space="preserve"><value>Pacote não encontrado.</value></data>
+  <data name="SubscriptionPlanEditor_Created" xml:space="preserve"><value>Pacote criado.</value></data>
+  <data name="SubscriptionPlanEditor_Updated" xml:space="preserve"><value>Pacote atualizado.</value></data>
+
+  <data name="BillingPeriod_Trial" xml:space="preserve"><value>Teste</value></data>
+  <data name="BillingPeriod_Monthly" xml:space="preserve"><value>Mensal</value></data>
+  <data name="BillingPeriod_Annual" xml:space="preserve"><value>Anual</value></data>
+
+  <data name="Subscriptions_PageTitle" xml:space="preserve"><value>Subscrições</value></data>
+  <data name="Subscriptions_Description" xml:space="preserve"><value>Que pacote cada empresa tem e até quando.</value></data>
+  <data name="Subscriptions_SearchPlaceholder" xml:space="preserve"><value>Procurar por empresa ou pacote</value></data>
+  <data name="Subscriptions_EmptyTitle" xml:space="preserve"><value>Sem subscrições para mostrar</value></data>
+  <data name="Subscriptions_EmptyDescription" xml:space="preserve"><value>Ainda não há nenhuma empresa associada a um pacote.</value></data>
+  <data name="Subscriptions_ItemsLabel" xml:space="preserve"><value>subscrições</value></data>
+  <data name="Subscriptions_LoadErrorMessage" xml:space="preserve"><value>Não foi possível carregar as subscrições</value></data>
+  <data name="Subscriptions_CompanyColumn" xml:space="preserve"><value>Empresa</value></data>
+  <data name="Subscriptions_PlanColumn" xml:space="preserve"><value>Pacote</value></data>
+  <data name="Subscriptions_StartedColumn" xml:space="preserve"><value>Início</value></data>
+  <data name="Subscriptions_ExpiresColumn" xml:space="preserve"><value>Expira</value></data>
+  <data name="Subscriptions_StatusColumn" xml:space="preserve"><value>Estado</value></data>
+  <data name="Subscriptions_ActiveStatus" xml:space="preserve"><value>Ativa</value></data>
+  <data name="Subscriptions_ExpiredStatus" xml:space="preserve"><value>Expirada</value></data>
+  <data name="Subscriptions_ChangeAction" xml:space="preserve"><value>Mudar de pacote</value></data>
+  <data name="Subscriptions_ChangeTitle" xml:space="preserve"><value>Mudar o pacote de {0}</value></data>
+  <data name="Subscriptions_ChangeHint" xml:space="preserve"><value>As datas ficam em branco para serem calculadas a partir do pacote escolhido.</value></data>
+  <data name="Subscriptions_Changed" xml:space="preserve"><value>Subscrição atualizada.</value></data>
+  <data name="Subscription_ExpiredWarning" xml:space="preserve"><value>A subscrição {0} expirou em {1}. Contacte-nos para escolher um novo pacote.</value></data>
+
+  <data name="Onboarding_PageTitle" xml:space="preserve"><value>Começar</value></data>
+  <data name="Onboarding_HeaderTitle" xml:space="preserve"><value>Bem-vindo</value></data>
+  <data name="Onboarding_Description" xml:space="preserve"><value>Escolha um pacote e registe a sua empresa para começar a usar a plataforma.</value></data>
+  <data name="Onboarding_ChoosePlanTitle" xml:space="preserve"><value>1. Escolha o seu pacote</value></data>
+  <data name="Onboarding_CompanyDataTitle" xml:space="preserve"><value>2. Dados da empresa</value></data>
+  <data name="Onboarding_SelectPlanButton" xml:space="preserve"><value>Escolher</value></data>
+  <data name="Onboarding_SelectedPlan" xml:space="preserve"><value>Pacote escolhido</value></data>
+  <data name="Onboarding_ChangePlanButton" xml:space="preserve"><value>Mudar de pacote</value></data>
+  <data name="Onboarding_TrialBadge" xml:space="preserve"><value>{0} dias grátis</value></data>
+  <data name="Onboarding_FreePrice" xml:space="preserve"><value>Grátis</value></data>
+  <data name="Onboarding_PricePerMonth" xml:space="preserve"><value>{0} / mês</value></data>
+  <data name="Onboarding_PricePerYear" xml:space="preserve"><value>{0} / ano</value></data>
+  <data name="Onboarding_CreateButton" xml:space="preserve"><value>Criar empresa</value></data>
+  <data name="Onboarding_CreatingButton" xml:space="preserve"><value>A criar...</value></data>
+  <data name="Onboarding_CreateError" xml:space="preserve"><value>Não foi possível criar a empresa: {0}</value></data>
+  <data name="Onboarding_NoPlansWarning" xml:space="preserve"><value>Não há nenhum pacote disponível de momento. Contacte o suporte.</value></data>
+  <data name="Onboarding_RoleError" xml:space="preserve"><value>A empresa foi criada, mas não foi possível ativar a sua conta: {0}. Volte a entrar e tente novamente.</value></data>
+  <data name="Onboarding_LogoutButton" xml:space="preserve"><value>Sair</value></data>
+
   <data name="Families_PageTitle" xml:space="preserve"><value>Famílias</value></data>
   <data name="Families_Subfamilies" xml:space="preserve"><value>Subfamílias</value></data>
   <data name="Families_NewFamily" xml:space="preserve"><value>Nova família</value></data>
@@ -256,6 +329,10 @@
   <data name="CompanyEditor_LegalNameLabel" xml:space="preserve"><value>Designação legal</value></data>
   <data name="CompanyEditor_AddressSectionHint" xml:space="preserve"><value>Sede — o cabeçalho do SAF-T exige a morada, por isso sem ela o ficheiro sai incompleto.</value></data>
   <data name="CompanyEditor_ActiveLabel" xml:space="preserve"><value>Empresa ativa</value></data>
+  <data name="CompanyEditor_ApplyDemoDataButton" xml:space="preserve"><value>Aplicar Demo</value></data>
+  <data name="CompanyEditor_DemoDataApplied" xml:space="preserve"><value>Dados de demonstração criados: {0} produtos e {1} séries comunicadas.</value></data>
+  <data name="CompanyEditor_DemoDataAlreadyApplied" xml:space="preserve"><value>Esta empresa já tem dados de demonstração aplicados.</value></data>
+  <data name="CompanyEditor_DemoDataError" xml:space="preserve"><value>Não foi possível aplicar os dados de demonstração: {0}</value></data>
   <data name="CompanyEditor_UsersTab" xml:space="preserve"><value>Utilizadores</value></data>
   <data name="CompanyEditor_UsersTabDisabledHint" xml:space="preserve"><value>Guarde a empresa antes de associar utilizadores</value></data>
   <data name="CompanyEditor_UsersTabDescription" xml:space="preserve"><value>Quem tem acesso a esta empresa. É esta lista que alimenta o seletor de empresa no cabeçalho.</value></data>

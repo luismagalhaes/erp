@@ -1,0 +1,184 @@
+@page "/subscriptions"
+@attribute [Authorize(Roles = Constants.Roles.SuperAdmin)]
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.Extensions.Localization
+@using MudBlazor
+@using Erp.Common
+@using Erp.Main.Components.Common
+@using Erp.Main.Models.Core
+@using Erp.Main.Resources
+@using Erp.Main.Services
+@inject CoreApiClient CoreApi
+@inject ISnackbar Snackbar
+@inject IStringLocalizer<MainResources> Localizer
+
+@*
+    Which company is on which package. There is no payment gateway behind any of this, so a company
+    that buys a package is recorded here by hand rather than charged: the edit action is what says
+    "they moved to the annual one".
+*@
+<PageTitle>@Localizer["Subscriptions_PageTitle"]</PageTitle>
+
+<MudStack Spacing="4">
+    <PageHeader Title="@Localizer["Subscriptions_PageTitle"]" Description="@Localizer["Subscriptions_Description"]" />
+
+    <DataGrid @ref="_grid" T="CompanySubscription" CompanyScoped="false"
+              LoadAsync="@((_, query, ct) => CoreApi.QueryCompanySubscriptionsAsync(query, ct))"
+              SearchFields="SearchFields" DefaultOrderBy="CompanyName"
+              SearchPlaceholder="@Localizer["Subscriptions_SearchPlaceholder"]"
+              EmptyIcon="@Icons.Material.Filled.CardMembership"
+              EmptyTitle="@Localizer["Subscriptions_EmptyTitle"]"
+              EmptyDescription="@Localizer["Subscriptions_EmptyDescription"]"
+              ItemsLabel="@Localizer["Subscriptions_ItemsLabel"]"
+              LoadErrorMessage="@Localizer["Subscriptions_LoadErrorMessage"]">
+        <Columns>
+            <PropertyColumn Property="x => x.CompanyName" Title="@Localizer["Subscriptions_CompanyColumn"]" />
+            <PropertyColumn Property="x => x.PlanName" Title="@Localizer["Subscriptions_PlanColumn"]" />
+            <PropertyColumn Property="x => x.BillingPeriod" Title="@Localizer["SubscriptionPlans_BillingPeriodColumn"]">
+                <CellTemplate>@Localizer[$"BillingPeriod_{context.Item.BillingPeriod}"]</CellTemplate>
+            </PropertyColumn>
+            <PropertyColumn Property="x => x.StartedAtUtc" Title="@Localizer["Subscriptions_StartedColumn"]">
+                <CellTemplate>@context.Item.StartedAtUtc.ToLocalTime().ToString("yyyy-MM-dd")</CellTemplate>
+            </PropertyColumn>
+            <PropertyColumn Property="x => x.ExpiresAtUtc" Title="@Localizer["Subscriptions_ExpiresColumn"]">
+                <CellTemplate>@context.Item.ExpiresAtUtc.ToLocalTime().ToString("yyyy-MM-dd")</CellTemplate>
+            </PropertyColumn>
+            <TemplateColumn Title="@Localizer["Subscriptions_StatusColumn"]" Sortable="false" Filterable="false">
+                <CellTemplate>
+                    <MudChip T="string" Size="Size.Small" Variant="Variant.Text"
+                             Color="@(context.Item.IsExpired ? Color.Error : Color.Success)">
+                        @(context.Item.IsExpired ? Localizer["Subscriptions_ExpiredStatus"] : Localizer["Subscriptions_ActiveStatus"])
+                    </MudChip>
+                </CellTemplate>
+            </TemplateColumn>
+            <TemplateColumn Title="" Sortable="false" Filterable="false" Hideable="false"
+                            StickyRight="true"
+                            CellClass="erp-numeric" HeaderClass="erp-numeric">
+                <CellTemplate>
+                    <MudIconButton Icon="@Icons.Material.Filled.Edit" Size="Size.Small"
+                                   title="@Localizer["Subscriptions_ChangeAction"]"
+                                   OnClick="@(() => OpenChange(context.Item))" />
+                </CellTemplate>
+            </TemplateColumn>
+        </Columns>
+    </DataGrid>
+</MudStack>
+
+<MudDialog @bind-Visible="_changeOpen" Options="_dialogOptions">
+    <TitleContent>
+        <MudText Typo="Typo.h6">@string.Format(Localizer["Subscriptions_ChangeTitle"], _editing?.CompanyName)</MudText>
+    </TitleContent>
+    <DialogContent>
+        @if (!string.IsNullOrWhiteSpace(_error))
+        {
+            <MudAlert Severity="Severity.Error" Dense="true" Class="mb-3">@_error</MudAlert>
+        }
+
+        <MudGrid Spacing="3">
+            <MudItem xs="12">
+                <MudSelect T="Guid" @bind-Value="_planId" Label="@Localizer["Subscriptions_PlanColumn"]"
+                           Variant="Variant.Outlined" Margin="Margin.Dense">
+                    @foreach (var plan in _plans)
+                    {
+                        <MudSelectItem T="Guid" Value="@plan.Id">
+                            @plan.Name — @Localizer[$"BillingPeriod_{plan.BillingPeriod}"] (@plan.Price.ToString("N2") €)
+                        </MudSelectItem>
+                    }
+                </MudSelect>
+            </MudItem>
+            <MudItem xs="12" sm="6">
+                <MudDatePicker @bind-Date="_startedAt" Label="@Localizer["Subscriptions_StartedColumn"]"
+                               Variant="Variant.Outlined" Margin="Margin.Dense" DateFormat="yyyy-MM-dd" Clearable="true" />
+            </MudItem>
+            <MudItem xs="12" sm="6">
+                <MudDatePicker @bind-Date="_expiresAt" Label="@Localizer["Subscriptions_ExpiresColumn"]"
+                               Variant="Variant.Outlined" Margin="Margin.Dense" DateFormat="yyyy-MM-dd" Clearable="true" />
+            </MudItem>
+            <MudItem xs="12">
+                <MudText Typo="Typo.caption" Color="Color.Secondary">@Localizer["Subscriptions_ChangeHint"]</MudText>
+            </MudItem>
+        </MudGrid>
+    </DialogContent>
+    <DialogActions>
+        <MudButton Variant="Variant.Text" OnClick="@(() => _changeOpen = false)">@Localizer["Common_CancelButton"]</MudButton>
+        <MudButton Variant="Variant.Filled" Color="Color.Primary" Disabled="@(_saving || _planId == Guid.Empty)"
+                   OnClick="SaveAsync">
+            @Localizer["Common_SaveButton"]
+        </MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    /// <summary>
+    /// Maps the toolbar search to the DTO members the API exposes, so a renamed column never
+    /// produces an invalid $filter.
+    /// </summary>
+    private static readonly string[] SearchFields = ["CompanyName", "PlanName"];
+
+    private readonly DialogOptions _dialogOptions = new() { MaxWidth = MaxWidth.Small, FullWidth = true };
+
+    private DataGrid<CompanySubscription>? _grid;
+    private List<SubscriptionPlan> _plans = [];
+
+    private bool _changeOpen;
+    private bool _saving;
+    private string? _error;
+
+    private CompanySubscription? _editing;
+    private Guid _planId;
+    private DateTime? _startedAt;
+    private DateTime? _expiresAt;
+
+    protected override async Task OnInitializedAsync()
+    {
+        // Every package, not only the active ones: a company can legitimately still be on one that
+        // is no longer offered, and the dropdown has to be able to show it.
+        var (plans, _) = await CoreApi.GetSubscriptionPlansAsync();
+        _plans = [.. plans];
+    }
+
+    private void OpenChange(CompanySubscription subscription)
+    {
+        _editing = subscription;
+        _planId = subscription.PlanId;
+        _startedAt = null;
+        _expiresAt = null;
+        _error = null;
+        _changeOpen = true;
+    }
+
+    private async Task SaveAsync()
+    {
+        if (_editing is null)
+            return;
+
+        _saving = true;
+        _error = null;
+
+        try
+        {
+            var error = await CoreApi.AssignCompanySubscriptionAsync(
+                _editing.CompanyId,
+                new AssignSubscriptionRequest(
+                    _planId,
+                    _startedAt?.ToUniversalTime(),
+                    _expiresAt?.ToUniversalTime()));
+
+            if (error is not null)
+            {
+                _error = error;
+                return;
+            }
+
+            _changeOpen = false;
+            Snackbar.Add(Localizer["Subscriptions_Changed"].Value, Severity.Success);
+
+            if (_grid is not null)
+                await _grid.ReloadAsync();
+        }
+        finally
+        {
+            _saving = false;
+        }
+    }
+}

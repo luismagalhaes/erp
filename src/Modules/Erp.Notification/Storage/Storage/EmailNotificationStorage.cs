@@ -14,10 +14,11 @@ public sealed class EmailNotificationStorage(AppDbContext dbContext) : IEmailNot
         await dbContext.Set<EmailNotification>().AddAsync(notification, cancellationToken);
     }
 
-    public async Task<IReadOnlyList<EmailNotification>> GetPendingAsync(int take, CancellationToken cancellationToken = default)
+    public async Task<IReadOnlyList<EmailNotification>> GetPendingAsync(int take, int maxRetries, CancellationToken cancellationToken = default)
     {
         return await dbContext.Set<EmailNotification>()
-            .Where(x => x.Status == EmailNotificationStatus.Pending || x.Status == EmailNotificationStatus.Failed)
+            .Where(x => x.Status == EmailNotificationStatus.Pending
+                || (x.Status == EmailNotificationStatus.Failed && x.RetryCount < maxRetries))
             .OrderBy(x => x.CreatedAtUtc)
             .Take(take)
             .ToListAsync(cancellationToken);

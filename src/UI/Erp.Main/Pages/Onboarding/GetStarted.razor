@@ -1,0 +1,321 @@
+@page "/get-started"
+@layout OnboardingLayout
+@attribute [Authorize]
+@using Microsoft.AspNetCore.Authorization
+@using MudBlazor
+@using Microsoft.Extensions.Localization
+@using Erp.Common
+@using Erp.Main.Components.Common
+@using Erp.Main.Layout
+@using Erp.Main.Models.Core
+@using Erp.Main.Resources
+@using Erp.Main.Services
+@inject CoreApiClient CoreApi
+@inject IdentityApiClient IdentityApi
+@inject LookupApiClient Lookups
+@inject CompanyState Company
+@inject NavigationManager Navigation
+@inject IStringLocalizer<MainResources> L
+
+@*
+    Sign-up for an account that has no company yet: pick a package, register the company, done.
+    Everywhere else creating a company is SuperAdmin-only; this page is the one self-service path,
+    and it ends by signing the user in again so the role they have just been granted is actually in
+    their principal — role claims are read once at sign-in, so the old cookie would still say they
+    have none.
+*@
+<PageTitle>@L["Onboarding_PageTitle"]</PageTitle>
+
+<MudStack Spacing="4">
+    <MudStack Spacing="0">
+        <MudText Typo="Typo.h4">@L["Onboarding_HeaderTitle"]</MudText>
+        <MudText Typo="Typo.body1" Color="Color.Secondary">@L["Onboarding_Description"]</MudText>
+    </MudStack>
+
+    @if (!string.IsNullOrWhiteSpace(_error))
+    {
+        <MudAlert Severity="Severity.Error" Dense="true">@_error</MudAlert>
+    }
+
+    @if (_loading)
+    {
+        <MudProgressLinear Indeterminate="true" Color="Color.Primary" />
+    }
+    else if (_plans.Count == 0)
+    {
+        <MudAlert Severity="Severity.Warning">@L["Onboarding_NoPlansWarning"]</MudAlert>
+    }
+    else if (_selectedPlan is null)
+    {
+        <MudText Typo="Typo.h6">@L["Onboarding_ChoosePlanTitle"]</MudText>
+
+        <MudGrid Spacing="3">
+            @foreach (var plan in _plans)
+            {
+                <MudItem xs="12" sm="6" md="4">
+                    <MudPaper Elevation="0" Outlined="true" Class="pa-4 erp-card d-flex flex-column" Style="height: 100%;">
+                        <MudStack Spacing="2" Class="flex-grow-1">
+                            <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center">
+                                <MudText Typo="Typo.h6">@plan.Name</MudText>
+                                @if (plan.BillingPeriod == BillingPeriods.Trial)
+                                {
+                                    <MudChip T="string" Size="Size.Small" Color="Color.Success" Variant="Variant.Text">
+                                        @string.Format(L["Onboarding_TrialBadge"], plan.TrialDays)
+                                    </MudChip>
+                                }
+                            </MudStack>
+
+                            <MudText Typo="Typo.h5" Color="Color.Primary">@PriceLabel(plan)</MudText>
+                            <MudText Typo="Typo.body2" Color="Color.Secondary">@plan.Description</MudText>
+                        </MudStack>
+
+                        <MudButton Variant="Variant.Filled" Color="Color.Primary" FullWidth="true" Class="mt-4"
+                                   OnClick="@(() => SelectPlan(plan))">
+                            @L["Onboarding_SelectPlanButton"]
+                        </MudButton>
+                    </MudPaper>
+                </MudItem>
+            }
+        </MudGrid>
+    }
+    else
+    {
+        <MudPaper Elevation="0" Outlined="true" Class="pa-4 erp-card">
+            <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center">
+                <MudStack Spacing="0">
+                    <MudText Typo="Typo.caption" Color="Color.Secondary">@L["Onboarding_SelectedPlan"]</MudText>
+                    <MudText Typo="Typo.h6">@_selectedPlan.Name — @PriceLabel(_selectedPlan)</MudText>
+                </MudStack>
+                <MudButton Variant="Variant.Text" Disabled="@_creating" OnClick="@(() => _selectedPlan = null)">
+                    @L["Onboarding_ChangePlanButton"]
+                </MudButton>
+            </MudStack>
+        </MudPaper>
+
+        <MudText Typo="Typo.h6">@L["Onboarding_CompanyDataTitle"]</MudText>
+
+        <MudPaper Elevation="0" Class="pa-4 erp-card erp-form">
+            <MudGrid Spacing="3">
+                <MudItem xs="12" sm="6" md="6">
+                    <MudTextField @bind-Value="_name" Label="@L["Common_NameColumn"]" Variant="Variant.Outlined" Margin="Margin.Dense" Required="true" />
+                </MudItem>
+                <MudItem xs="12" sm="6" md="6">
+                    <MudTextField @bind-Value="_legalName" Label="@L["CompanyEditor_LegalNameLabel"]" Variant="Variant.Outlined" Margin="Margin.Dense" />
+                </MudItem>
+                <MudItem xs="12" sm="4" md="4">
+                    <MudTextField @bind-Value="_taxId" Label="@L["Companies_TaxIdColumn"]" Variant="Variant.Outlined" Margin="Margin.Dense" Required="true"
+                                  Adornment="Adornment.End" AdornmentIcon="@Icons.Material.Filled.Search"
+                                  OnAdornmentClick="LookupTaxIdAsync" AdornmentAriaLabel="@L["PartnerForm_TaxIdLookupTooltip"]" />
+                </MudItem>
+                <MudItem xs="12" sm="4" md="4">
+                    <MudTextField @bind-Value="_email" Label="@L["CompanyEditor_EmailColumn"]" Variant="Variant.Outlined" Margin="Margin.Dense" InputType="InputType.Email" />
+                </MudItem>
+                <MudItem xs="12" sm="4" md="4">
+                    <MudTextField @bind-Value="_phone" Label="@L["PartnerForm_PhoneLabel"]" Variant="Variant.Outlined" Margin="Margin.Dense" />
+                </MudItem>
+
+                @if (!string.IsNullOrWhiteSpace(_taxIdLookupMessage))
+                {
+                    <MudItem xs="12">
+                        <MudAlert Severity="@_taxIdLookupSeverity" Dense="true">@_taxIdLookupMessage</MudAlert>
+                    </MudItem>
+                }
+
+                <MudItem xs="12" sm="6" md="6">
+                    <MudTextField @bind-Value="_address" Label="@L["PartnerForm_AddressLabel"]" Variant="Variant.Outlined" Margin="Margin.Dense" />
+                </MudItem>
+                <MudItem xs="12" sm="3" md="3">
+                    <PostalCodeField @bind-Value="_postalCode" Country="@_country"
+                                     LookupResolved="OnPostalCodeResolved" StreetSelected="OnStreetSelected"
+                                     Label="@L["PartnerForm_PostalCodeLabel"]" />
+                </MudItem>
+                <MudItem xs="12" sm="3" md="3">
+                    <MudTextField @bind-Value="_city" Label="@L["CompanyEditor_CityColumn"]" Variant="Variant.Outlined" Margin="Margin.Dense" />
+                </MudItem>
+                <MudItem xs="12" sm="4" md="3">
+                    <MudSelect @bind-Value="_country" Label="@L["PartnerForm_CountryLabel"]" Variant="Variant.Outlined" Margin="Margin.Dense">
+                        @foreach (var country in Countries.All)
+                        {
+                            <MudSelectItem T="string" Value="@country.Code">@country.Name</MudSelectItem>
+                        }
+                    </MudSelect>
+                </MudItem>
+            </MudGrid>
+
+            <MudStack Row="true" Justify="Justify.FlexEnd" Class="mt-4">
+                <MudButton Variant="Variant.Filled" Color="Color.Primary" Size="Size.Large"
+                           StartIcon="@Icons.Material.Filled.RocketLaunch"
+                           Disabled="@(_creating || !CanCreate)"
+                           OnClick="CreateAsync">
+                    @(_creating ? L["Onboarding_CreatingButton"] : L["Onboarding_CreateButton"])
+                </MudButton>
+            </MudStack>
+        </MudPaper>
+    }
+</MudStack>
+
+@code {
+    private bool _loading = true;
+    private bool _creating;
+    private bool _lookingUpTaxId;
+    private string? _error;
+
+    private List<SubscriptionPlan> _plans = [];
+    private SubscriptionPlan? _selectedPlan;
+
+    private string _name = string.Empty;
+    private string _legalName = string.Empty;
+    private string _taxId = string.Empty;
+    private string _email = string.Empty;
+    private string _phone = string.Empty;
+    private string _address = string.Empty;
+    private string _postalCode = string.Empty;
+    private string _city = string.Empty;
+    private string _country = "PT";
+
+    private string? _taxIdLookupMessage;
+    private Severity _taxIdLookupSeverity = Severity.Info;
+
+    private bool CanCreate =>
+        _selectedPlan is not null
+        && !string.IsNullOrWhiteSpace(_name)
+        && !string.IsNullOrWhiteSpace(_taxId)
+        && PostalCodes.IsValid(_postalCode, _country);
+
+    protected override async Task OnInitializedAsync()
+    {
+        // Somebody who already has a company has nothing to do here — most likely they bookmarked
+        // the page, or came back with the browser's back button after signing up.
+        await Company.EnsureLoadedAsync();
+
+        if (Company.HasCompany)
+        {
+            Navigation.NavigateTo("", forceLoad: true);
+            return;
+        }
+
+        var (plans, error) = await CoreApi.GetSubscriptionPlansAsync(activeOnly: true);
+
+        _plans = [.. plans];
+        _error = error;
+        _loading = false;
+    }
+
+    private void SelectPlan(SubscriptionPlan plan) => _selectedPlan = plan;
+
+    private string PriceLabel(SubscriptionPlan plan) => plan.BillingPeriod switch
+    {
+        BillingPeriods.Trial => L["Onboarding_FreePrice"],
+        BillingPeriods.Monthly => string.Format(L["Onboarding_PricePerMonth"], $"{plan.Price:N2} €"),
+        BillingPeriods.Annual => string.Format(L["Onboarding_PricePerYear"], $"{plan.Price:N2} €"),
+        _ => $"{plan.Price:N2} €"
+    };
+
+    private void OnPostalCodeResolved(PostalCodeLookupResult result)
+    {
+        if (string.IsNullOrWhiteSpace(_city))
+            _city = result.Locality ?? result.Municipality ?? string.Empty;
+    }
+
+    private void OnStreetSelected(string address) => _address = address;
+
+    /// <summary>Same VIES lookup the company editor offers, so signing up fills in as much as it can.</summary>
+    private async Task LookupTaxIdAsync()
+    {
+        if (_lookingUpTaxId || string.IsNullOrWhiteSpace(_taxId))
+            return;
+
+        _lookingUpTaxId = true;
+        _taxIdLookupMessage = null;
+
+        try
+        {
+            var result = await Lookups.GetVatNumberAsync(_taxId);
+
+            if (result is null || !result.IsStructurallyValid)
+            {
+                _taxIdLookupSeverity = Severity.Error;
+                _taxIdLookupMessage = L["PartnerForm_TaxIdInvalidMessage"];
+                return;
+            }
+
+            if (result.Source != VatNumberValidationSource.Vies || result.IsRegisteredInVies != true)
+            {
+                _taxIdLookupSeverity = Severity.Success;
+                _taxIdLookupMessage = L["PartnerForm_TaxIdValidMessage"];
+                return;
+            }
+
+            if (string.IsNullOrWhiteSpace(_name) && !string.IsNullOrWhiteSpace(result.RegisteredName))
+                _name = result.RegisteredName;
+
+            if (string.IsNullOrWhiteSpace(_address) && !string.IsNullOrWhiteSpace(result.RegisteredAddress))
+                _address = result.RegisteredAddress;
+
+            if (string.IsNullOrWhiteSpace(_postalCode) && !string.IsNullOrWhiteSpace(result.RegisteredPostalCode))
+                _postalCode = result.RegisteredPostalCode;
+
+            if (string.IsNullOrWhiteSpace(_city) && !string.IsNullOrWhiteSpace(result.RegisteredCity))
+                _city = result.RegisteredCity;
+
+            _taxIdLookupSeverity = Severity.Success;
+            _taxIdLookupMessage = string.Format(L["PartnerForm_TaxIdFoundMessage"], result.RegisteredName);
+        }
+        finally
+        {
+            _lookingUpTaxId = false;
+        }
+    }
+
+    private async Task CreateAsync()
+    {
+        if (_selectedPlan is null)
+            return;
+
+        _creating = true;
+        _error = null;
+
+        try
+        {
+            var (company, error) = await CoreApi.CreateMyCompanyAsync(new SelfServiceCompanyRequest(
+                _selectedPlan.Id,
+                _name.Trim(),
+                _taxId.Trim(),
+                Trimmed(_legalName),
+                Trimmed(_email),
+                Trimmed(_phone),
+                Trimmed(_address),
+                Trimmed(_city),
+                Trimmed(_postalCode),
+                _country));
+
+            if (company is null)
+            {
+                _error = string.Format(L["Onboarding_CreateError"], error);
+                return;
+            }
+
+            // The company exists now; this is what turns the account into a usable one. The two
+            // live in different databases, so a failure here leaves the company created and the
+            // account still roleless — which is why it is reported instead of swallowed.
+            var roleError = await IdentityApi.CompleteOnboardingAsync();
+
+            if (!string.IsNullOrWhiteSpace(roleError))
+            {
+                _error = string.Format(L["Onboarding_RoleError"], roleError);
+                return;
+            }
+
+            // Signing in again is not optional: role claims are fetched once, at sign-in, so the
+            // principal in the current cookie still says this account has no role at all.
+            Navigation.NavigateTo("authentication/login?returnUrl=%2F", forceLoad: true);
+        }
+        finally
+        {
+            _creating = false;
+        }
+    }
+
+    private static string? Trimmed(string value) =>
+        string.IsNullOrWhiteSpace(value) ? null : value.Trim();
+}

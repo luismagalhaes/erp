@@ -159,6 +159,21 @@
   <data name="Account_SignIn_ErrorInvalidCredentials" xml:space="preserve">
     <value>Incorrect email or password.</value>
   </data>
+  <data name="Account_SignIn_OrDivider" xml:space="preserve">
+    <value>or</value>
+  </data>
+  <data name="Account_SignIn_GoogleButton" xml:space="preserve">
+    <value>Continue with Google</value>
+  </data>
+  <data name="Account_SignIn_MicrosoftButton" xml:space="preserve">
+    <value>Continue with Microsoft</value>
+  </data>
+  <data name="Account_SignIn_ErrorExternalLogin" xml:space="preserve">
+    <value>We couldn't sign you in with that provider. Try again, or use your email and password.</value>
+  </data>
+  <data name="Account_SignIn_ErrorCaptcha" xml:space="preserve">
+    <value>We couldn't confirm you're not a robot. Please try again.</value>
+  </data>
   <data name="Account_SignUp_PageTitle" xml:space="preserve">
     <value>Sign Up — ERP</value>
   </data>
@@ -365,6 +380,15 @@
   </data>
   <data name="Profile_ChangePasswordButton" xml:space="preserve">
     <value>Change password</value>
+  </data>
+  <data name="Profile_SetPasswordButton" xml:space="preserve">
+    <value>Set password</value>
+  </data>
+  <data name="Profile_PasswordSet" xml:space="preserve">
+    <value>Password set.</value>
+  </data>
+  <data name="Profile_NoPasswordHint" xml:space="preserve">
+    <value>This account first signed in through an external provider (Google or Microsoft) and doesn't have a password yet. Set one to also be able to sign in with email and password.</value>
   </data>
   <data name="Profile_InfoUpdated" xml:space="preserve">
     <value>Details updated.</value>

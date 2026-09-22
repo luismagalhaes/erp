@@ -48,6 +48,9 @@ public static class DependencyInjection
         })
         .AddHttpMessageHandler<ServiceTokenHandler>();
 
+        services.AddHttpClient<IRecaptchaVerifier, RecaptchaVerifier>(httpClient =>
+            httpClient.BaseAddress = new Uri("https://www.google.com/"));
+
         return services;
     }
 }

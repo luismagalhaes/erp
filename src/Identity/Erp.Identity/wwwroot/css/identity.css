@@ -307,6 +307,46 @@ html, body {
     color: var(--mud-palette-error);
 }
 
+.auth-divider {
+    display: flex;
+    align-items: center;
+    text-align: center;
+    color: var(--mud-palette-text-secondary);
+    font-size: 0.8rem;
+    margin: 1rem 0;
+}
+
+.auth-divider::before,
+.auth-divider::after {
+    content: "";
+    flex: 1;
+    border-bottom: 1px solid var(--mud-palette-lines-inputs);
+}
+
+.auth-divider span {
+    padding: 0 .8rem;
+}
+
+.auth-button-oauth {
+    width: 100%;
+    box-sizing: border-box;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: .6rem;
+    border: 1px solid var(--mud-palette-lines-inputs);
+    border-radius: 8px;
+    padding: .65rem;
+    background: var(--mud-palette-surface);
+    color: var(--mud-palette-text-primary);
+    font-weight: 600;
+    text-decoration: none;
+}
+
+.auth-button-oauth + .auth-button-oauth {
+    margin-top: .6rem;
+}
+
 table {
     width: 100%;
     border-collapse: collapse;

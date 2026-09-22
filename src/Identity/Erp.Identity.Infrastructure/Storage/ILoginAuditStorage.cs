@@ -15,4 +15,8 @@ public interface ILoginAuditStorage
     /// <param name="take">Capped read — a session log is for the most recent activity, not an
     /// unbounded table the backoffice would otherwise have to load in full.</param>
     Task<IReadOnlyList<LoginAuditListItem>> GetRecentAsync(int take, CancellationToken cancellationToken = default);
+
+    /// <summary>How many failed sign-ins this IP has racked up within <paramref name="window"/> —
+    /// what decides whether reCAPTCHA is required yet.</summary>
+    Task<int> CountRecentFailuresAsync(string remoteIp, TimeSpan window, CancellationToken cancellationToken = default);
 }

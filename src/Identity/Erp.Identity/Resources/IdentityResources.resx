@@ -159,6 +159,21 @@
   <data name="Account_SignIn_ErrorInvalidCredentials" xml:space="preserve">
     <value>Email ou palavra-passe incorretos.</value>
   </data>
+  <data name="Account_SignIn_OrDivider" xml:space="preserve">
+    <value>ou</value>
+  </data>
+  <data name="Account_SignIn_GoogleButton" xml:space="preserve">
+    <value>Continuar com a Google</value>
+  </data>
+  <data name="Account_SignIn_MicrosoftButton" xml:space="preserve">
+    <value>Continuar com a Microsoft</value>
+  </data>
+  <data name="Account_SignIn_ErrorExternalLogin" xml:space="preserve">
+    <value>Não foi possível iniciar sessão com esse provedor. Tente novamente ou use email e palavra-passe.</value>
+  </data>
+  <data name="Account_SignIn_ErrorCaptcha" xml:space="preserve">
+    <value>Não foi possível confirmar que não é um robô. Tente novamente.</value>
+  </data>
   <data name="Account_SignUp_PageTitle" xml:space="preserve">
     <value>Criar Conta — ERP</value>
   </data>
@@ -365,6 +380,15 @@
   </data>
   <data name="Profile_ChangePasswordButton" xml:space="preserve">
     <value>Alterar palavra-passe</value>
+  </data>
+  <data name="Profile_SetPasswordButton" xml:space="preserve">
+    <value>Definir palavra-passe</value>
+  </data>
+  <data name="Profile_PasswordSet" xml:space="preserve">
+    <value>Palavra-passe definida.</value>
+  </data>
+  <data name="Profile_NoPasswordHint" xml:space="preserve">
+    <value>Esta conta entrou pela primeira vez através de um provedor externo (Google ou Microsoft) e ainda não tem palavra-passe. Defina uma para também poder entrar com email e palavra-passe.</value>
   </data>
   <data name="Profile_InfoUpdated" xml:space="preserve">
     <value>Dados atualizados.</value>

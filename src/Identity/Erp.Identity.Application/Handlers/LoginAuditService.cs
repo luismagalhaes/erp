@@ -20,4 +20,7 @@ public sealed class LoginAuditService(ILoginAuditStorage storage) : ILoginAuditS
 
     public Task<IReadOnlyList<LoginAuditListItem>> GetRecentAsync(CancellationToken cancellationToken = default)
         => storage.GetRecentAsync(RecentTake, cancellationToken);
+
+    public Task<int> CountRecentFailuresAsync(string remoteIp, TimeSpan window, CancellationToken cancellationToken = default)
+        => storage.CountRecentFailuresAsync(remoteIp, window, cancellationToken);
 }

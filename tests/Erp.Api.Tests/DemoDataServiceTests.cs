@@ -25,12 +25,18 @@ public class DemoDataServiceTests
     private readonly IProductService _products = Substitute.For<IProductService>();
     private readonly IEcoFeeTypeService _ecoFeeTypes = Substitute.For<IEcoFeeTypeService>();
     private readonly ISeriesService _series = Substitute.For<ISeriesService>();
+    private readonly IDocumentNumbers _documentNumbers = Substitute.For<IDocumentNumbers>();
+    private readonly IUnitOfWork _unitOfWork = Substitute.For<IUnitOfWork>();
 
     private readonly Guid _companyId = Guid.NewGuid();
     private readonly Guid _batteryEcoFeeTypeId = Guid.NewGuid();
 
     public DemoDataServiceTests()
     {
+        // MasterDataCodes opens a transaction per code it hands out — an unconfigured
+        // BeginTransactionAsync returns null, and CommitAsync is then called on that null.
+        _unitOfWork.BeginTransactionAsync(Arg.Any<CancellationToken>()).Returns(Substitute.For<ITransaction>());
+
         _families.CodeExistsAsync(_companyId, Arg.Any<string>(), Arg.Any<CancellationToken>()).Returns(false);
 
         // Every company already has its two default Ecovalor types by the time demo data runs —
@@ -62,7 +68,8 @@ public class DemoDataServiceTests
     }
 
     private DemoDataService CreateService() =>
-        new(_families, _subfamilies, _brands, _products, _ecoFeeTypes, _series, NullLogger<DemoDataService>.Instance);
+        new(_families, _subfamilies, _brands, _products, _ecoFeeTypes, _series,
+            new MasterDataCodes(_documentNumbers, _unitOfWork), NullLogger<DemoDataService>.Instance);
 
     /// <summary>The actual bug: series that already existed before "Aplicar Demo" ran must still get communicated.</summary>
     [Fact]
@@ -106,7 +113,11 @@ public class DemoDataServiceTests
     [Fact]
     public async Task ApplyAsync_does_nothing_when_demo_data_was_already_applied()
     {
-        _families.CodeExistsAsync(_companyId, "DEMO-F01", Arg.Any<CancellationToken>()).Returns(true);
+        // "Travões" is the first family the demo catalogue creates — its presence is what marks a
+        // company as already seeded, since codes are no longer a fingerprint of the demo data now
+        // that families get the same sequential codes a hand-created one would.
+        _families.GetAllAsync(_companyId, Arg.Any<CancellationToken>())
+            .Returns([new ProductFamilyDto(Guid.NewGuid(), "1", "Travões", true, 0)]);
 
         var result = await CreateService().ApplyAsync(_companyId, "user-1");
 

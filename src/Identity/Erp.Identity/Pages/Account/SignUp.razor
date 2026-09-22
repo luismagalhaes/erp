@@ -1,7 +1,10 @@
 @page "/Account/SignUp"
 @layout Layout.AuthLayout
 @using Microsoft.AspNetCore.Components.Web
+@using Microsoft.AspNetCore.Http
 @using Microsoft.Extensions.Localization
+@using Microsoft.JSInterop
+@using Erp.Identity.Common.Constants
 @using Erp.Identity.Resources
 @using Erp.Identity.Services
 @attribute [AllowAnonymous]
@@ -10,6 +13,10 @@
 @inject NavigationManager Navigation
 @inject IConfiguration Configuration
 @inject IStringLocalizer<IdentityResources> Localizer
+@inject IRecaptchaVerifier RecaptchaVerifier
+@inject ISignUpAttemptTracker SignUpAttemptTracker
+@inject IHttpContextAccessor HttpContextAccessor
+@inject IJSRuntime JS
 
 <PageTitle>@Localizer["Account_SignUp_PageTitle"]</PageTitle>
 
@@ -49,6 +56,43 @@
             <button type="submit" class="auth-button">@Localizer["Account_SignUp_SubmitButton"]</button>
         </EditForm>
 
+        @if (RequireCaptcha)
+        {
+            <script src="/js/recaptcha.js"></script>
+            <script src="https://www.google.com/recaptcha/api.js?render=@RecaptchaSiteKey"></script>
+        }
+
+        @if (GoogleEnabled || MicrosoftEnabled)
+        {
+            <div class="auth-divider"><span>@Localizer["Account_SignIn_OrDivider"]</span></div>
+        }
+
+        @if (GoogleEnabled)
+        {
+            <a class="auth-button-oauth" href="@GoogleLoginLink">
+                <svg width="18" height="18" viewBox="0 0 18 18" aria-hidden="true">
+                    <path fill="#4285F4" d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.717v2.258h2.908c1.702-1.567 2.684-3.874 2.684-6.615z" />
+                    <path fill="#34A853" d="M9 18c2.43 0 4.467-.806 5.956-2.18l-2.908-2.259c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332C2.438 15.983 5.482 18 9 18z" />
+                    <path fill="#FBBC05" d="M3.964 10.71c-.18-.54-.282-1.117-.282-1.71s.102-1.17.282-1.71V4.958H.957C.347 6.173 0 7.548 0 9s.348 2.827.957 4.042l3.007-2.332z" />
+                    <path fill="#EA4335" d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0 5.482 0 2.438 2.017.957 4.958L3.964 6.29C4.672 4.163 6.656 3.58 9 3.58z" />
+                </svg>
+                @Localizer["Account_SignIn_GoogleButton"]
+            </a>
+        }
+
+        @if (MicrosoftEnabled)
+        {
+            <a class="auth-button-oauth" href="@MicrosoftLoginLink">
+                <svg width="18" height="18" viewBox="0 0 21 21" aria-hidden="true">
+                    <rect x="1" y="1" width="9" height="9" fill="#f25022" />
+                    <rect x="11" y="1" width="9" height="9" fill="#7fba00" />
+                    <rect x="1" y="11" width="9" height="9" fill="#00a4ef" />
+                    <rect x="11" y="11" width="9" height="9" fill="#ffb900" />
+                </svg>
+                @Localizer["Account_SignIn_MicrosoftButton"]
+            </a>
+        }
+
         <div class="auth-links mt-16">
             <a class="auth-link" href="@SignInLink">@Localizer["Account_SignUp_SignInLink"]</a>
         </div>
@@ -65,9 +109,56 @@
     private string SignInLink => Navigation.GetUriWithQueryParameters(
         "/Account/SignIn", new Dictionary<string, object?> { ["returnUrl"] = ReturnUrl });
 
+    // Both buttons take you through the exact same /authentication/{provider}-login endpoint as
+    // SignIn.razor — the callback creates an account on first use, so there's nothing sign-up
+    // specific for these two to do beyond being present on this page too.
+    private bool GoogleEnabled => !string.IsNullOrWhiteSpace(Configuration["Authentication:Google:ClientId"])
+        && !string.IsNullOrWhiteSpace(Configuration["Authentication:Google:ClientSecret"]);
+
+    private string GoogleLoginLink => Navigation.GetUriWithQueryParameters(
+        "/authentication/google-login", new Dictionary<string, object?> { ["returnUrl"] = ReturnUrl });
+
+    private bool MicrosoftEnabled => !string.IsNullOrWhiteSpace(Configuration["Authentication:Microsoft:ClientId"])
+        && !string.IsNullOrWhiteSpace(Configuration["Authentication:Microsoft:ClientSecret"]);
+
+    private string MicrosoftLoginLink => Navigation.GetUriWithQueryParameters(
+        "/authentication/microsoft-login", new Dictionary<string, object?> { ["returnUrl"] = ReturnUrl });
+
+    private string? RemoteIp => HttpContextAccessor.HttpContext?.Connection.RemoteIpAddress?.ToString();
+
+    private string? RecaptchaSiteKey => Configuration["Recaptcha:SiteKey"];
+
+    // Sign-up has no "failed attempt" the way sign-in does — this counts submissions instead, via
+    // ISignUpAttemptTracker (in-memory, see its own comments). Read once at render so the page and
+    // the reCAPTCHA script it may load stay in agreement for the whole request.
+    private int _attemptCount;
+
+    private bool RequireCaptcha => RecaptchaVerifier.IsConfigured
+        && _attemptCount >= Constants.Recaptcha.AttemptThreshold
+        && !string.IsNullOrWhiteSpace(RecaptchaSiteKey);
+
+    protected override void OnInitialized()
+    {
+        _attemptCount = SignUpAttemptTracker.GetCount(RemoteIp, Constants.Recaptcha.Window);
+    }
+
     private async Task HandleSubmitAsync()
     {
         ErrorMessage = null;
+
+        var requireCaptcha = RequireCaptcha;
+        SignUpAttemptTracker.RecordAttempt(RemoteIp, Constants.Recaptcha.Window);
+
+        if (requireCaptcha)
+        {
+            var token = await JS.InvokeAsync<string>("erpRecaptcha.execute", RecaptchaSiteKey, Constants.Recaptcha.SignUpAction);
+            var captchaOk = await RecaptchaVerifier.VerifyAsync(token, RemoteIp, Constants.Recaptcha.SignUpAction);
+            if (!captchaOk)
+            {
+                ErrorMessage = Localizer["Account_SignIn_ErrorCaptcha"];
+                return;
+            }
+        }
 
         var firstName = (Input.FirstName ?? string.Empty).Trim();
         var lastName = (Input.LastName ?? string.Empty).Trim();

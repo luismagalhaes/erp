@@ -75,12 +75,20 @@
                         <MudAlert Severity="Severity.Error" Dense="true" Class="mb-4">@_passwordError</MudAlert>
                     }
 
+                    @if (!_hasPassword)
+                    {
+                        <MudAlert Severity="Severity.Info" Dense="true" Class="mb-4">@Localizer["Profile_NoPasswordHint"]</MudAlert>
+                    }
+
                     <MudGrid>
-                        <MudItem xs="12" md="6">
-                            <MudTextField @bind-Value="_currentPassword" Label="@Localizer["Profile_CurrentPasswordLabel"]"
-                                          Variant="Variant.Outlined" InputType="InputType.Password" Required="true" />
-                        </MudItem>
-                        <MudItem xs="12" md="6"></MudItem>
+                        @if (_hasPassword)
+                        {
+                            <MudItem xs="12" md="6">
+                                <MudTextField @bind-Value="_currentPassword" Label="@Localizer["Profile_CurrentPasswordLabel"]"
+                                              Variant="Variant.Outlined" InputType="InputType.Password" Required="true" />
+                            </MudItem>
+                            <MudItem xs="12" md="6"></MudItem>
+                        }
                         <MudItem xs="12" md="6">
                             <MudTextField @bind-Value="_newPassword" Label="@Localizer["Profile_NewPasswordLabel"]"
                                           Variant="Variant.Outlined" InputType="InputType.Password" Required="true" />
@@ -93,9 +101,9 @@
 
                     <MudStack Row="true" Justify="Justify.FlexEnd" Class="mt-4">
                         <MudButton Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Filled.Lock"
-                                   Disabled="@(_savingPassword || string.IsNullOrWhiteSpace(_currentPassword) || string.IsNullOrWhiteSpace(_newPassword) || string.IsNullOrWhiteSpace(_confirmPassword))"
-                                   OnClick="ChangePasswordAsync">
-                            @Localizer["Profile_ChangePasswordButton"]
+                                   Disabled="@(_savingPassword || (_hasPassword && string.IsNullOrWhiteSpace(_currentPassword)) || string.IsNullOrWhiteSpace(_newPassword) || string.IsNullOrWhiteSpace(_confirmPassword))"
+                                   OnClick="SavePasswordAsync">
+                            @Localizer[_hasPassword ? "Profile_ChangePasswordButton" : "Profile_SetPasswordButton"]
                         </MudButton>
                     </MudStack>
                 </MudTabPanel>
@@ -109,6 +117,7 @@
 
     private ApplicationUser? _user;
     private bool _loading = true;
+    private bool _hasPassword;
 
     private string _firstName = string.Empty;
     private string _lastName = string.Empty;
@@ -137,6 +146,11 @@
             _lastName = _user.LastName;
             _email = _user.Email ?? string.Empty;
             _preferredLanguage = _user.PreferredLanguage;
+
+            // An account created from its first Google/Microsoft sign-in has no password at all —
+            // ChangePasswordAsync would always fail for it since there is nothing to verify the
+            // "current password" field against.
+            _hasPassword = await UserManager.HasPasswordAsync(_user);
         }
 
         _loading = false;
@@ -197,7 +211,7 @@
         }
     }
 
-    private async Task ChangePasswordAsync()
+    private async Task SavePasswordAsync()
     {
         if (_user is null)
             return;
@@ -213,17 +227,23 @@
 
         try
         {
-            var result = await UserManager.ChangePasswordAsync(_user, _currentPassword, _newPassword);
+            // AddPasswordAsync for an account with none yet (its first sign-in was external) —
+            // ChangePasswordAsync would reject it outright, since it always fails to verify a
+            // "current password" against a PasswordHash that doesn't exist.
+            var result = _hasPassword
+                ? await UserManager.ChangePasswordAsync(_user, _currentPassword, _newPassword)
+                : await UserManager.AddPasswordAsync(_user, _newPassword);
+
             if (!result.Succeeded)
             {
                 _passwordError = string.Join(" ", result.Errors.Select(e => e.Description));
                 return;
             }
 
-            Snackbar.Add(Localizer["Profile_PasswordChanged"].Value, Severity.Success);
+            Snackbar.Add(Localizer[_hasPassword ? "Profile_PasswordChanged" : "Profile_PasswordSet"].Value, Severity.Success);
 
-            // Same reason as SaveInfoAsync: ChangePasswordAsync bumps the security stamp, so the
-            // cookie has to be reissued through a plain endpoint, not from inside the circuit.
+            // Same reason as SaveInfoAsync: both calls above bump the security stamp, so the cookie
+            // has to be reissued through a plain endpoint, not from inside the circuit.
             Navigation.NavigateTo("/authentication/refresh-sign-in?returnUrl=%2FProfile", forceLoad: true);
         }
         finally

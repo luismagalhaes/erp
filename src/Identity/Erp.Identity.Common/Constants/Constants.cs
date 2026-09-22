@@ -114,5 +114,21 @@
             public const string IdentityServiceClientName = "Identity Service (M2M)";
             public const string IdentityServiceSecret = "identity-service-secret";
         }
+
+        /// <summary>
+        /// reCAPTCHA v3 only kicks in once a form has been abused a few times — the first attempts
+        /// from a given IP go through with no challenge at all, invisible or otherwise.
+        /// </summary>
+        public static class Recaptcha
+        {
+            /// <summary>Attempts allowed before reCAPTCHA starts being required.</summary>
+            public const int AttemptThreshold = 3;
+
+            /// <summary>How far back an attempt still counts towards the threshold.</summary>
+            public static readonly TimeSpan Window = TimeSpan.FromMinutes(15);
+
+            public const string SignInAction = "signin";
+            public const string SignUpAction = "signup";
+        }
     }
 }

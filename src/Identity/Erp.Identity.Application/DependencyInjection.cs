@@ -17,6 +17,7 @@ public static class DependencyInjection
         services.AddScoped<IIdentityResourceService, IdentityResourceService>();
         services.AddScoped<IIdentityProviderService, IdentityProviderService>();
         services.AddScoped<ILoginAuditService, LoginAuditService>();
+        services.AddSingleton<ISignUpAttemptTracker, SignUpAttemptTracker>();
         return services;
     }
 }

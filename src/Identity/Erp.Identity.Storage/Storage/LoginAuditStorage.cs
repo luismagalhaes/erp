@@ -39,4 +39,13 @@ public sealed class LoginAuditStorage(IDbContextFactory<ApplicationDbContext> db
             .Select(x => new LoginAuditListItem(x.Id, x.UserId, x.Email, x.Succeeded, x.FailureReason, x.RemoteIp, x.OccurredAtUtc))
             .ToListAsync(cancellationToken);
     }
+
+    public async Task<int> CountRecentFailuresAsync(string remoteIp, TimeSpan window, CancellationToken cancellationToken = default)
+    {
+        await using var dbContext = await dbContextFactory.CreateDbContextAsync(cancellationToken);
+
+        var since = DateTime.UtcNow - window;
+        return await dbContext.LoginAudits.CountAsync(
+            x => x.RemoteIp == remoteIp && !x.Succeeded && x.OccurredAtUtc >= since, cancellationToken);
+    }
 }

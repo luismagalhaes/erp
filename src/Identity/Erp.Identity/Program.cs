@@ -7,6 +7,7 @@ using Erp.Identity.Storage;
 using Erp.Identity.Common.Configuration;
 using Erp.Identity.Telemetry;
 using Duende.IdentityServer;
+using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Localization;
 using MudBlazor.Services;
@@ -35,6 +36,9 @@ builder.Services.AddIdentityDependencies(
     builder.Configuration,
     builder.Environment.IsDevelopment() ? Constants.Clients.IdentityServiceSecret : null);
 builder.Services.AddMudServices();
+// SignIn.razor/SignUp.razor read the caller's IP during their initial (pre-interactive) render to
+// decide whether reCAPTCHA is required yet — only valid at that point, never inside the circuit.
+builder.Services.AddHttpContextAccessor();
 
 builder.Services.AddLocalization();
 builder.Services.Configure<RequestLocalizationOptions>(options =>
@@ -64,7 +68,7 @@ builder.Services.AddControllers(options => options.Filters.Add<RequestLoggingFil
 
 // Bearer scheme for the users API this host serves. The default schemes stay the cookie
 // ones set up by ASP.NET Identity, so the UI is unaffected.
-builder.Services.AddAuthentication()
+var authenticationBuilder = builder.Services.AddAuthentication()
     .AddJwtBearer(options =>
     {
         options.Authority = builder.Configuration["IdentityServer:Authority"];
@@ -78,6 +82,43 @@ builder.Services.AddAuthentication()
         options.TokenValidationParameters.RoleClaimType = Constants.Claims.Role;
         options.TokenValidationParameters.NameClaimType = Constants.Claims.Name;
     });
+
+var googleClientId = builder.Configuration["Authentication:Google:ClientId"];
+var googleClientSecret = builder.Configuration["Authentication:Google:ClientSecret"];
+
+// Optional, not EnsureConfigured: an environment with no Google credentials set still starts
+// fine, it just doesn't offer the "continue with Google" button (SignIn.razor hides it too).
+if (!string.IsNullOrWhiteSpace(googleClientId) && !string.IsNullOrWhiteSpace(googleClientSecret))
+{
+    authenticationBuilder.AddGoogle(options =>
+    {
+        options.ClientId = googleClientId;
+        options.ClientSecret = googleClientSecret;
+        options.Scope.Add("email");
+    });
+}
+
+var microsoftClientId = builder.Configuration["Authentication:Microsoft:ClientId"];
+var microsoftClientSecret = builder.Configuration["Authentication:Microsoft:ClientSecret"];
+
+// Same optional pattern as Google above: no credentials configured just means no Microsoft
+// button and no handler registered, not a startup failure.
+if (!string.IsNullOrWhiteSpace(microsoftClientId) && !string.IsNullOrWhiteSpace(microsoftClientSecret))
+{
+    authenticationBuilder.AddMicrosoftAccount(options =>
+    {
+        options.ClientId = microsoftClientId;
+        options.ClientSecret = microsoftClientSecret;
+
+        // Microsoft Graph's "mail" field — the default claim source for ClaimTypes.Email — is
+        // null for a lot of real accounts (personal Microsoft accounts especially, but also some
+        // work/school ones without an Exchange mailbox). "userPrincipalName" is always populated
+        // and is an email address in the vast majority of tenants, so it's kept as a fallback
+        // claim for HandleExternalLoginCallbackAsync to read when "mail" comes back empty.
+        options.ClaimActions.MapJsonKey(AuthenticationEndpoints.MicrosoftUserPrincipalNameClaimType, "userPrincipalName");
+    });
+}
+
 builder.Services.AddCors(options =>
     options.AddPolicy("BlazorPolicy", policy =>
         policy.WithOrigins(builder.Configuration.GetSection("AllowedOrigins").Get<string[]>() ?? [])

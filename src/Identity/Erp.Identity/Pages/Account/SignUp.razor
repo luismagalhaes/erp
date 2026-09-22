@@ -129,7 +129,7 @@
     private string? RecaptchaSiteKey => Configuration["Recaptcha:SiteKey"];
 
     // Sign-up has no "failed attempt" the way sign-in does — this counts submissions instead, via
-    // ISignUpAttemptTracker (in-memory, see its own comments). Read once at render so the page and
+    // ISignUpAttemptTracker (persisted — see its own comments). Read once at render so the page and
     // the reCAPTCHA script it may load stay in agreement for the whole request.
     private int _attemptCount;
 
@@ -137,9 +137,9 @@
         && _attemptCount >= Constants.Recaptcha.AttemptThreshold
         && !string.IsNullOrWhiteSpace(RecaptchaSiteKey);
 
-    protected override void OnInitialized()
+    protected override async Task OnInitializedAsync()
     {
-        _attemptCount = SignUpAttemptTracker.GetCount(RemoteIp, Constants.Recaptcha.Window);
+        _attemptCount = await SignUpAttemptTracker.GetCountAsync(RemoteIp, Constants.Recaptcha.Window);
     }
 
     private async Task HandleSubmitAsync()
@@ -147,7 +147,7 @@
         ErrorMessage = null;
 
         var requireCaptcha = RequireCaptcha;
-        SignUpAttemptTracker.RecordAttempt(RemoteIp, Constants.Recaptcha.Window);
+        await SignUpAttemptTracker.RecordAttemptAsync(RemoteIp);
 
         if (requireCaptcha)
         {

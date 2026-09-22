@@ -287,7 +287,6 @@ public sealed class EcoFeeTypeStorage(AppDbContext dbContext) : IEcoFeeTypeStora
     public async Task<IReadOnlyList<EcoFeeType>> GetAllAsync(Guid companyId, CancellationToken cancellationToken = default) =>
         await dbContext.Set<EcoFeeType>()
             .AsNoTracking()
-            .Include(x => x.FeeProduct)
             .Where(x => x.CompanyId == companyId)
             .OrderBy(x => x.Description)
             .ToListAsync(cancellationToken);
@@ -307,13 +306,11 @@ public sealed class EcoFeeTypeStorage(AppDbContext dbContext) : IEcoFeeTypeStora
                 CalculationBasis = x.CalculationBasis.ToString(),
                 Rate = x.Rate,
                 ManagingEntityName = x.ManagingEntityName,
-                IsActive = x.IsActive,
-                FeeProductCode = x.FeeProduct!.ProductCode
+                IsActive = x.IsActive
             });
 
     public Task<EcoFeeType?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default) =>
         dbContext.Set<EcoFeeType>()
-            .Include(x => x.FeeProduct)
             .FirstOrDefaultAsync(x => x.Id == id, cancellationToken);
 
     public Task<bool> CodeExistsAsync(Guid companyId, string code, CancellationToken cancellationToken = default) =>

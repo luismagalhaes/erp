@@ -42,6 +42,9 @@ public static class SaftConstants
     /// <summary>SAF-T ProductType: services.</summary>
     public const string ProductTypeService = "S";
 
+    /// <summary>SAF-T ProductType: taxes and fees — an eco-fee's own line, never an article.</summary>
+    public const string ProductTypeTax = "I";
+
     /// <summary>Document families whose lines are debits rather than credits.</summary>
     public static readonly string[] DebitDocumentTypes = ["NC"];
 

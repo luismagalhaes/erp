@@ -90,8 +90,24 @@ public static class AuthenticationEndpoints
             // NotAllowed is what SignInManager returns when SignIn.RequireConfirmedAccount is on
             // and the account's email is still unconfirmed — the one other reason this can fail,
             // since nothing else in this app's options makes an account "not allowed" to sign in.
-            var errorType = result.IsLockedOut ? "locked" : result.IsNotAllowed ? "unconfirmed" : "1";
-            var failureReason = result.IsLockedOut ? "LockedOut" : result.IsNotAllowed ? "EmailNotConfirmed" : "InvalidCredentials";
+            string errorType;
+            string failureReason;
+
+            if (result.IsLockedOut)
+            {
+                errorType = "locked";
+                failureReason = "LockedOut";
+            }
+            else if (result.IsNotAllowed)
+            {
+                errorType = "unconfirmed";
+                failureReason = "EmailNotConfirmed";
+            }
+            else
+            {
+                errorType = "1";
+                failureReason = "InvalidCredentials";
+            }
 
             var failedUser = await signInManager.UserManager.FindByEmailAsync(email);
             await loginAudit.RecordAsync(failedUser?.Id, email, succeeded: false, failureReason, remoteIp);

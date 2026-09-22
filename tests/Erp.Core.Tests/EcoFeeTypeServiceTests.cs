@@ -8,8 +8,8 @@ using NSubstitute;
 namespace Erp.Core.Tests;
 
 /// <summary>
-/// An eco-fee ("Ecovalor") is always invoiced as its own pseudo-product — the law requires it on
-/// its own line — so creating or updating one keeps that product in step.
+/// An eco-fee ("Ecovalor") is invoiced as its own document line, built straight from its own code,
+/// description and rate — it needs no catalog article of its own, only a code an article cannot reuse.
 /// </summary>
 public class EcoFeeTypeServiceTests
 {
@@ -26,35 +26,23 @@ public class EcoFeeTypeServiceTests
         new(_companyId, code, "Ecovalor - Pilhas e baterias", calculationBasis, rate, "Ecopilhas / Amb3E");
 
     [Fact]
-    public async Task CreateAsync_creates_the_fee_and_its_pseudo_product_together()
+    public async Task CreateAsync_creates_the_fee_from_its_own_fields()
     {
-        Product? addedProduct = null;
-        _products.When(x => x.AddAsync(Arg.Any<Product>(), Arg.Any<CancellationToken>()))
-            .Do(call => addedProduct = call.Arg<Product>());
-
         var created = await CreateService().CreateAsync(Request());
 
-        addedProduct.Should().NotBeNull();
-        addedProduct!.ProductCode.Should().Be("ECOVALOR-BAT");
-        addedProduct.ProductType.Should().Be("I");
-        addedProduct.UnitPrice.Should().Be(0.03m);
-        addedProduct.UnitOfMeasure.Should().Be("UN");
-
-        created.FeeProductCode.Should().Be("ECOVALOR-BAT");
+        created.Code.Should().Be("ECOVALOR-BAT");
         created.CalculationBasis.Should().Be("PerUnit");
+        created.Rate.Should().Be(0.03m);
+        created.ManagingEntityName.Should().Be("Ecopilhas / Amb3E");
     }
 
-    /// <summary>A fee billed by weight invoices its pseudo-product in kilograms, not units.</summary>
+    /// <summary>No pseudo-product exists any more, so creating a fee never touches the article catalogue.</summary>
     [Fact]
-    public async Task CreateAsync_uses_kilograms_for_a_per_kg_fee()
+    public async Task CreateAsync_does_not_create_a_catalog_article()
     {
-        Product? addedProduct = null;
-        _products.When(x => x.AddAsync(Arg.Any<Product>(), Arg.Any<CancellationToken>()))
-            .Do(call => addedProduct = call.Arg<Product>());
+        await CreateService().CreateAsync(Request());
 
-        await CreateService().CreateAsync(Request("ECOVALOR-OLEO", "PerKg", 0.10m));
-
-        addedProduct!.UnitOfMeasure.Should().Be("KG");
+        await _products.DidNotReceive().AddAsync(Arg.Any<Product>(), Arg.Any<CancellationToken>());
     }
 
     [Fact]
@@ -94,12 +82,9 @@ public class EcoFeeTypeServiceTests
         await act.Should().ThrowAsync<ArgumentException>().WithMessage("*calculation basis*");
     }
 
-    /// <summary>Raising the rate updates the pseudo-product too, since it is not an article a user
-    /// edits separately.</summary>
     [Fact]
-    public async Task UpdateAsync_keeps_the_pseudo_product_in_step_with_the_fee()
+    public async Task UpdateAsync_changes_the_rate_and_description()
     {
-        var feeProduct = new Product { CompanyId = _companyId, ProductCode = "ECOVALOR-BAT", Description = "Old", UnitPrice = 0.03m };
         var ecoFeeType = new EcoFeeType
         {
             CompanyId = _companyId,
@@ -107,9 +92,7 @@ public class EcoFeeTypeServiceTests
             Description = "Old",
             CalculationBasis = EcoFeeCalculationBasis.PerUnit,
             Rate = 0.03m,
-            ManagingEntityName = "Ecopilhas / Amb3E",
-            FeeProductId = feeProduct.Id,
-            FeeProduct = feeProduct
+            ManagingEntityName = "Ecopilhas / Amb3E"
         };
 
         _ecoFeeTypes.GetByIdAsync(ecoFeeType.Id, Arg.Any<CancellationToken>()).Returns(ecoFeeType);
@@ -119,8 +102,7 @@ public class EcoFeeTypeServiceTests
             new UpdateEcoFeeTypeRequest("Ecovalor - Pilhas (2026)", 0.05m, "Ecopilhas / Amb3E", true));
 
         updated!.Rate.Should().Be(0.05m);
-        feeProduct.UnitPrice.Should().Be(0.05m);
-        feeProduct.Description.Should().Be("Ecovalor - Pilhas (2026)");
+        updated.Description.Should().Be("Ecovalor - Pilhas (2026)");
     }
 
     [Fact]

@@ -37,8 +37,8 @@ public class DemoDataServiceTests
         // seeded when the company itself was created, same as the series.
         _ecoFeeTypes.GetAllAsync(_companyId, Arg.Any<CancellationToken>()).Returns(
         [
-            new EcoFeeTypeDto(_batteryEcoFeeTypeId, Constants.DefaultEcoFeeTypes.All[0].Code, "Ecovalor - Pilhas e baterias", "PerUnit", 0.03m, "Ecopilhas / Amb3E", true, "DEMO-ECOFEE-BAT"),
-            new EcoFeeTypeDto(Guid.NewGuid(), Constants.DefaultEcoFeeTypes.All[1].Code, "Ecovalor - Óleos lubrificantes", "PerKg", 0.10m, "SOGILUB", true, "DEMO-ECOFEE-OLEO")
+            new EcoFeeTypeDto(_batteryEcoFeeTypeId, Constants.DefaultEcoFeeTypes.All[0].Code, "Ecovalor - Pilhas e baterias", "PerUnit", 0.03m, "Ecopilhas / Amb3E", true),
+            new EcoFeeTypeDto(Guid.NewGuid(), Constants.DefaultEcoFeeTypes.All[1].Code, "Ecovalor - Óleos lubrificantes", "PerKg", 0.10m, "SOGILUB", true)
         ]);
 
         _families.CreateAsync(Arg.Any<CreateProductFamilyRequest>(), Arg.Any<CancellationToken>())

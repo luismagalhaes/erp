@@ -13,7 +13,8 @@ public enum EcoFeeCalculationBasis
 /// An environmental fee — "Ecovalor" — a waste-management entity charges per article under
 /// DL 152-D/2017, such as the fee on batteries or on lubricating oils. It is never folded into the
 /// price of the article that carries it: the law requires it on its own document line, taxed with
-/// VAT like any other line, so it is invoiced as its own pseudo-product (<see cref="FeeProduct"/>).
+/// VAT like any other line, marked <c>IsEcoFee</c> and built straight from <see cref="Code"/>,
+/// <see cref="Description"/> and <see cref="Rate"/> — it needs no catalog article of its own.
 /// </summary>
 public sealed class EcoFeeType
 {
@@ -34,14 +35,6 @@ public sealed class EcoFeeType
     public string ManagingEntityName { get; set; } = string.Empty;
 
     public bool IsActive { get; set; } = true;
-
-    /// <summary>
-    /// The pseudo-product this fee is invoiced as: a SAF-T "I" (taxes and fees) product, created
-    /// alongside the fee and kept in step with it, so a line can reference it like any other article.
-    /// </summary>
-    public Guid FeeProductId { get; set; }
-
-    public Product? FeeProduct { get; set; }
 
     public DateTime CreatedAtUtc { get; set; } = DateTime.UtcNow;
 

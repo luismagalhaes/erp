@@ -138,10 +138,11 @@ public static class Constants
     }
 
     /// <summary>
-    /// The eco-fees ("Ecovalor") every new company starts with, so batteries and lubricating oils —
-    /// the two most common waste streams a small business invoices — work out of the box. The rates
-    /// are starting points, not this year's official table: a company edits them to what its waste
-    /// management entity actually charges before it relies on them.
+    /// The eco-fees ("Ecovalor") every new company starts with, so the waste streams a small
+    /// business most often invoices — batteries, oils, tyres, electrical/electronic equipment,
+    /// packaging, end-of-life vehicles — work out of the box. The rates are starting points, not
+    /// this year's official table: a company edits them to what its waste management entity
+    /// actually charges before it relies on them.
     /// </summary>
     public static class DefaultEcoFeeTypes
     {
@@ -149,7 +150,11 @@ public static class Constants
         public static readonly (string Code, string Description, string CalculationBasis, decimal Rate, string ManagingEntityName)[] All =
         [
             ("ECOVALOR-BAT", "Ecovalor - Pilhas e baterias", "PerUnit", 0.03m, "Ecopilhas / Amb3E"),
-            ("ECOVALOR-OLEO", "Ecovalor - Óleos lubrificantes", "PerKg", 0.10m, "SOGILUB")
+            ("ECOVALOR-OLEO", "Ecovalor - Óleos lubrificantes", "PerKg", 0.10m, "SOGILUB"),
+            ("ECOVALOR-PNEU", "Ecovalor - Pneus", "PerUnit", 1.50m, "Valorpneu"),
+            ("ECOVALOR-REEE", "Ecovalor - Equipamentos elétricos e eletrónicos", "PerUnit", 0.50m, "Electrão"),
+            ("ECOVALOR-EMB", "Ecovalor - Embalagens", "PerKg", 0.15m, "Sociedade Ponto Verde"),
+            ("ECOVALOR-VFV", "Ecovalor - Veículos em fim de vida", "PerUnit", 15.00m, "Valorcar")
         ];
     }
 

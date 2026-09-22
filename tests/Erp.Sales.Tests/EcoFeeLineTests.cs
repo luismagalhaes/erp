@@ -64,4 +64,27 @@ public class EcoFeeLineTests
 
         await act.Should().ThrowAsync<ArgumentException>().WithMessage("*which was not found*");
     }
+
+    /// <summary>The fee is collected in full for the managing entity, so a commercial discount on the
+    /// article it rides along with can never carry over to it.</summary>
+    [Fact]
+    public async Task IssueAsync_refuses_a_discount_on_an_eco_fee_line()
+    {
+        var series = _context.GivenCommunicatedSeries(_companyId);
+
+        var request = SalesTestContext.InvoiceRequest(_companyId, series.Id,
+            SalesTestContext.Line(),
+            SalesTestContext.Line() with
+            {
+                ProductCode = "ECOVALOR-BAT",
+                ProductDescription = "Ecovalor - Pilhas e baterias",
+                IsEcoFee = true,
+                EcoFeeForLineNumber = 1,
+                DiscountPercentage = 10
+            });
+
+        var act = () => _context.CreateService().IssueAsync(request, "user-1");
+
+        await act.Should().ThrowAsync<ArgumentException>().WithMessage("*cannot carry a discount*");
+    }
 }

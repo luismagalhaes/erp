@@ -157,11 +157,6 @@ public sealed class CoreModelConfiguration : IModuleModelConfiguration
             entity.Property(x => x.Rate).HasPrecision(19, 6);
 
             entity.HasIndex(x => new { x.CompanyId, x.Code }).IsUnique();
-
-            entity.HasOne(x => x.FeeProduct)
-                .WithMany()
-                .HasForeignKey(x => x.FeeProductId)
-                .OnDelete(DeleteBehavior.Restrict);
         });
 
         modelBuilder.Entity<Customer>(entity => ConfigurePartner(entity));

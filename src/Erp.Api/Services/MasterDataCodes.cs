@@ -19,10 +19,12 @@ public sealed class MasterDataCodes(IDocumentNumbers documentNumbers, IUnitOfWor
     /// <summary>A counter that keeps hitting taken codes is broken, not unlucky.</summary>
     private const int MaxAttempts = 1000;
 
+    /// <param name="companyId"></param>
     /// <param name="requestedCode">The caller's code; blank means "give me the next one".</param>
     /// <param name="counterKey">One of <see cref="Constants.CodeCounters"/>.</param>
     /// <param name="codeExists">Whether the company already uses a code.</param>
     /// <param name="create">Creates the record with the code it is given, saving the changes.</param>
+    /// <param name="cancellationToken"></param>
     public async Task<T> CreateAsync<T>(
         Guid companyId,
         string? requestedCode,

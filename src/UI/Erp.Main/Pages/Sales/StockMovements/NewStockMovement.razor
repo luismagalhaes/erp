@@ -218,8 +218,11 @@
                         <MudNumericField @bind-Value="context.UnitPrice" Margin="Margin.Dense" Min="0" Format="N2" />
                     </MudTd>
                     <MudTd DataLabel="@L["NewInvoice_DiscountColumn"]">
+                        @* The eco-fee is collected in full for the managing entity: a discount on the article
+                           it rides along with never carries over to it. *@
                         <MudNumericField @bind-Value="context.DiscountPercentage" Immediate="true" Margin="Margin.Dense" Min="0" Max="100"
-                                         Format="0.##" HideSpinButtons="true" Adornment="Adornment.End" AdornmentText="%" />
+                                         Format="0.##" HideSpinButtons="true" Adornment="Adornment.End" AdornmentText="%"
+                                         Disabled="@context.IsEcoFee" />
                     </MudTd>
                     <MudTd DataLabel="@L["NewStockMovement_TaxColumn"]">
                         <MudSelect T="string" Value="context.TaxCode"
@@ -519,7 +522,7 @@
 
         var companion = new LineEditor
         {
-            ProductCode = ecoFeeType.FeeProductCode,
+            ProductCode = ecoFeeType.Code,
             ProductDescription = ecoFeeType.Description,
             Quantity = line.Quantity,
             UnitPrice = isPerKg ? ecoFeeType.Rate * (product.EcoFeeWeightKg ?? 0m) : ecoFeeType.Rate,

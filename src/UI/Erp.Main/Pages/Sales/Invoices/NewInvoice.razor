@@ -179,8 +179,11 @@
                             <MudNumericField @bind-Value="context.UnitPrice" Immediate="true" Margin="Margin.Dense" Variant="Variant.Text" Min="0" Format="N2" HideSpinButtons="true" />
                         </MudTd>
                         <MudTd DataLabel="@L["NewInvoice_DiscountColumn"]">
+                            @* The eco-fee is collected in full for the managing entity: a discount on the article
+                               it rides along with never carries over to it. *@
                             <MudNumericField @bind-Value="context.DiscountPercentage" Immediate="true" Margin="Margin.Dense" Variant="Variant.Text"
-                                             Min="0" Max="100" Format="0.##" HideSpinButtons="true" Adornment="Adornment.End" AdornmentText="%" />
+                                             Min="0" Max="100" Format="0.##" HideSpinButtons="true" Adornment="Adornment.End" AdornmentText="%"
+                                             Disabled="@context.IsEcoFee" />
                         </MudTd>
                         <MudTd DataLabel="@L["NewInvoice_TaxColumn"]">
                             @* Box and list both show the rate alone — the four PT tiers are known by their percentage, not a name. *@
@@ -575,7 +578,7 @@
 
         var companion = new LineEditor
         {
-            ProductCode = ecoFeeType.FeeProductCode,
+            ProductCode = ecoFeeType.Code,
             ProductDescription = ecoFeeType.Description,
             UnitOfMeasure = isPerKg ? "KG" : "UN",
             Quantity = line.Quantity,

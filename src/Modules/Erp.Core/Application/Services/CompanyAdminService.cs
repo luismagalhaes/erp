@@ -9,7 +9,6 @@ namespace Erp.Core.Application.Services;
 public sealed class CompanyAdminService(
     ICompanyStorage storage,
     IWarehouseStorage warehouseStorage,
-    IProductStorage productStorage,
     IEcoFeeTypeStorage ecoFeeTypeStorage) : ICompanyAdminService
 {
     public async Task<IReadOnlyList<CompanyListItemDto>> GetAllAsync(CancellationToken cancellationToken = default)
@@ -93,21 +92,6 @@ public sealed class CompanyAdminService(
     {
         foreach (var seed in Constants.DefaultEcoFeeTypes.All)
         {
-            var feeProduct = new Product
-            {
-                CompanyId = companyId,
-                ProductCode = seed.Code,
-                Description = seed.Description,
-                ProductType = "I",
-                InventoryCategory = "M",
-                UnitOfMeasure = seed.CalculationBasis == nameof(EcoFeeCalculationBasis.PerKg) ? "KG" : "UN",
-                UnitPrice = seed.Rate,
-                DefaultTaxCode = FiscalPT.Documents.TaxCodes.Normal,
-                DefaultTaxPercentage = 23m
-            };
-
-            await productStorage.AddAsync(feeProduct, cancellationToken);
-
             await ecoFeeTypeStorage.AddAsync(new EcoFeeType
             {
                 CompanyId = companyId,
@@ -115,9 +99,7 @@ public sealed class CompanyAdminService(
                 Description = seed.Description,
                 CalculationBasis = Enum.Parse<EcoFeeCalculationBasis>(seed.CalculationBasis),
                 Rate = seed.Rate,
-                ManagingEntityName = seed.ManagingEntityName,
-                FeeProductId = feeProduct.Id,
-                FeeProduct = feeProduct
+                ManagingEntityName = seed.ManagingEntityName
             }, cancellationToken);
         }
     }

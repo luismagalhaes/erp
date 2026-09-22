@@ -279,6 +279,11 @@ public sealed class StockMovementService(
 
                 ecoFeeForLineId = lines.Find(x => x.LineNumber == parentLineNumber)?.Id
                     ?? throw new ArgumentException($"Line {lineNumber} references line {parentLineNumber}, which was not found before it.", nameof(requestLines));
+
+                // The fee is collected in full on behalf of the managing entity: a commercial discount
+                // on the article it rides along with never carries over to it.
+                if (line.DiscountPercentage != 0)
+                    throw new ArgumentException($"Line {lineNumber} is an eco-fee, so it cannot carry a discount.", nameof(requestLines));
             }
 
             // The same arithmetic as an invoice: the discount comes off the rounded gross amount.

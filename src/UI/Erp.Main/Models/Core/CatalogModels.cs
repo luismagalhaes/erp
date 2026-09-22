@@ -178,8 +178,7 @@ public sealed record EcoFeeType(
     string CalculationBasis,
     decimal Rate,
     string ManagingEntityName,
-    bool IsActive,
-    string FeeProductCode);
+    bool IsActive);
 
 public sealed record CreateEcoFeeTypeRequest(
     Guid CompanyId,

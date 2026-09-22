@@ -13,11 +13,9 @@ public class CompanyAdminServiceTests
 
     private readonly IWarehouseStorage _warehouses = Substitute.For<IWarehouseStorage>();
 
-    private readonly IProductStorage _products = Substitute.For<IProductStorage>();
-
     private readonly IEcoFeeTypeStorage _ecoFeeTypes = Substitute.For<IEcoFeeTypeStorage>();
 
-    private CompanyAdminService CreateService() => new(_storage, _warehouses, _products, _ecoFeeTypes);
+    private CompanyAdminService CreateService() => new(_storage, _warehouses, _ecoFeeTypes);
 
     /// <summary>Stock has nowhere to go until a company has a default warehouse.</summary>
     [Fact]
@@ -46,22 +44,11 @@ public class CompanyAdminServiceTests
         _ecoFeeTypes.When(x => x.AddAsync(Arg.Any<EcoFeeType>(), Arg.Any<CancellationToken>()))
             .Do(call => addedEcoFeeTypes.Add(call.Arg<EcoFeeType>()));
 
-        var addedProducts = new List<Product>();
-        _products.When(x => x.AddAsync(Arg.Any<Product>(), Arg.Any<CancellationToken>()))
-            .Do(call => addedProducts.Add(call.Arg<Product>()));
-
         var created = await CreateService().CreateAsync(new CreateCompanyRequest("Alfa", "500000001"));
 
         addedEcoFeeTypes.Should().HaveCount(Erp.Common.Constants.DefaultEcoFeeTypes.All.Length);
         addedEcoFeeTypes.Should().OnlyContain(x => x.CompanyId == created.Id);
         addedEcoFeeTypes.Select(x => x.Code).Should().BeEquivalentTo(Erp.Common.Constants.DefaultEcoFeeTypes.All.Select(x => x.Code));
-
-        // Each eco-fee is invoiced as its own pseudo-product, a SAF-T "I" (taxes and fees) article.
-        addedProducts.Should().HaveCount(Erp.Common.Constants.DefaultEcoFeeTypes.All.Length);
-        addedProducts.Should().OnlyContain(x => x.ProductType == "I" && x.CompanyId == created.Id);
-
-        foreach (var ecoFeeType in addedEcoFeeTypes)
-            ecoFeeType.FeeProductId.Should().Be(addedProducts.Single(x => x.ProductCode == ecoFeeType.Code).Id);
     }
 
     [Fact]

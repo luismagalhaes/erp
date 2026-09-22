@@ -92,10 +92,10 @@ public sealed class SalesSaftSource(
     {
         var lines = documents
             .SelectMany(document => document.Lines)
-            .Select(line => (line.ProductCode, line.ProductDescription))
+            .Select(line => (line.ProductCode, line.ProductDescription, line.IsEcoFee))
             .Concat(movements
                 .SelectMany(movement => movement.Lines)
-                .Select(line => (line.ProductCode, line.ProductDescription)));
+                .Select(line => (line.ProductCode, line.ProductDescription, line.IsEcoFee)));
 
         return [.. lines
             .Where(line => !string.IsNullOrWhiteSpace(line.ProductCode))
@@ -103,6 +103,7 @@ public sealed class SalesSaftSource(
             .OrderBy(group => group.Key, StringComparer.Ordinal)
             .Select(group => new SaftProduct
             {
+                ProductType = group.First().IsEcoFee ? SaftConstants.ProductTypeTax : SaftConstants.ProductTypeGoods,
                 ProductCode = group.Key,
                 ProductDescription = group.First().ProductDescription,
                 ProductNumberCode = group.Key

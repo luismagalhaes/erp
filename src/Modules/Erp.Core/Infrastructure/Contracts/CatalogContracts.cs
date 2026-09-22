@@ -379,8 +379,7 @@ public sealed record EcoFeeTypeDto
         string calculationBasis,
         decimal rate,
         string managingEntityName,
-        bool isActive,
-        string feeProductCode)
+        bool isActive)
     {
         Id = id;
         Code = code;
@@ -389,7 +388,6 @@ public sealed record EcoFeeTypeDto
         Rate = rate;
         ManagingEntityName = managingEntityName;
         IsActive = isActive;
-        FeeProductCode = feeProductCode;
     }
 
     public Guid Id { get; init; }
@@ -402,9 +400,6 @@ public sealed record EcoFeeTypeDto
     public decimal Rate { get; init; }
     public string ManagingEntityName { get; init; } = string.Empty;
     public bool IsActive { get; init; }
-
-    /// <summary>The code of the pseudo-product this fee is invoiced as.</summary>
-    public string FeeProductCode { get; init; } = string.Empty;
 }
 
 public sealed record CreateEcoFeeTypeRequest(

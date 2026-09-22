@@ -21,6 +21,7 @@ public sealed class SubscriptionPlansController(
     ILogger<SubscriptionPlansController> logger) : ControllerBase
 {
     /// <param name="activeOnly">True for the sign-up page, which must not offer a retired package.</param>
+    /// <param name="cancellationToken"></param>
     [HttpGet]
     [ProducesResponseType<IReadOnlyList<SubscriptionPlanDto>>(StatusCodes.Status200OK)]
     public async Task<ActionResult<IReadOnlyList<SubscriptionPlanDto>>> GetAll(

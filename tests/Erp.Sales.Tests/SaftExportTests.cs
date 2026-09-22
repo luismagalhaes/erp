@@ -91,7 +91,8 @@ public class SaftExportTests
         decimal net = 200m,
         decimal tax = 46m,
         string productCode = "ART001",
-        string userId = "user-1")
+        string userId = "user-1",
+        bool isEcoFee = false)
     {
         var series = IssuedSeries(documentType);
         var sequence = series.TakeNextSequence();
@@ -107,7 +108,8 @@ public class SaftExportTests
             TaxCountryRegion = "PT",
             TaxCode = "NOR",
             TaxPercentage = 23m,
-            TaxAmount = tax
+            TaxAmount = tax,
+            IsEcoFee = isEcoFee
         };
 
         var document = SalesDocument.Issue(
@@ -234,6 +236,21 @@ public class SaftExportTests
 
         masterFiles.Elements(Ns + "Product").Select(x => x.Element(Ns + "ProductCode")!.Value)
             .Should().BeEquivalentTo(["ART001", "ART002"]);
+    }
+
+    [Fact]
+    public async Task ExportAsync_declares_an_eco_fee_line_as_product_type_tax()
+    {
+        GivenInvoice(productCode: "ART001");
+        GivenInvoice(productCode: "ECOVALOR-BAT", isEcoFee: true);
+
+        var masterFiles = Parse(await CreateExporter().ExportAsync(Spec())).Element(Ns + "MasterFiles")!;
+
+        var products = masterFiles.Elements(Ns + "Product").ToList();
+        products.Single(x => x.Element(Ns + "ProductCode")!.Value == "ART001")
+            .Element(Ns + "ProductType")!.Value.Should().Be("P");
+        products.Single(x => x.Element(Ns + "ProductCode")!.Value == "ECOVALOR-BAT")
+            .Element(Ns + "ProductType")!.Value.Should().Be("I");
     }
 
     [Fact]

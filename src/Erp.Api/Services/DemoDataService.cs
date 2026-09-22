@@ -34,6 +34,7 @@ public sealed class DemoDataService(
     IProductService productService,
     IEcoFeeTypeService ecoFeeTypeService,
     ISeriesService seriesService,
+    MasterDataCodes masterDataCodes,
     ILogger<DemoDataService> logger)
 {
     private const string CodePrefix = "DEMO-";
@@ -72,9 +73,12 @@ public sealed class DemoDataService(
     /// </summary>
     public async Task<DemoDataResult> ApplyAsync(Guid companyId, string? userId, CancellationToken cancellationToken = default)
     {
-        var firstFamilyCode = $"{CodePrefix}F01";
+        // Families, subfamilies and brands now get the same sequential code (1, 2, 3...) a user
+        // creating one by hand would get, so that code is no longer a fingerprint of the demo data
+        // itself — the first family's name is: nothing else creates a family called "Travões".
+        var existingFamilies = await familyService.GetAllAsync(companyId, cancellationToken);
 
-        if (await familyService.CodeExistsAsync(companyId, firstFamilyCode, cancellationToken))
+        if (existingFamilies.Any(family => family.Name == Catalogue[0].FamilyName))
         {
             logger.LogInformation("Demo data was already applied to company {CompanyId}; nothing to do.", companyId);
             return new DemoDataResult(false, 0, 0, 0, 0, 0);
@@ -93,15 +97,28 @@ public sealed class DemoDataService(
         return new DemoDataResult(true, families.Count, subfamilies.Count, brands.Count, products, seriesCommunicated);
     }
 
+    /// <summary>Creates a record with the same sequential code (1, 2, 3...) a blank code gets from
+    /// the portal — see <c>MasterDataCodes</c> and, for example, <c>BrandsController.Create</c>.</summary>
+    private Task<T> CreateWithNextCodeAsync<T>(
+        Guid companyId,
+        string counterKey,
+        Func<string, CancellationToken, Task<bool>> codeExists,
+        Func<string, Task<T>> create,
+        CancellationToken cancellationToken) =>
+        masterDataCodes.CreateAsync(companyId, requestedCode: null, counterKey, codeExists, create, cancellationToken);
+
     private async Task<List<ProductFamilyDto>> CreateFamiliesAsync(Guid companyId, CancellationToken cancellationToken)
     {
         var families = new List<ProductFamilyDto>();
 
-        for (var i = 0; i < Catalogue.Length; i++)
+        foreach (var entry in Catalogue)
         {
-            var code = $"{CodePrefix}F{i + 1:00}";
-            var family = await familyService.CreateAsync(
-                new CreateProductFamilyRequest(companyId, code, Catalogue[i].FamilyName), cancellationToken);
+            var family = await CreateWithNextCodeAsync(
+                companyId,
+                Constants.CodeCounters.ProductFamilies,
+                (code, ct) => familyService.CodeExistsAsync(companyId, code, ct),
+                code => familyService.CreateAsync(new CreateProductFamilyRequest(companyId, code, entry.FamilyName), cancellationToken),
+                cancellationToken);
             families.Add(family);
         }
 
@@ -112,15 +129,18 @@ public sealed class DemoDataService(
         Guid companyId, List<ProductFamilyDto> families, CancellationToken cancellationToken)
     {
         var subfamilies = new List<ProductSubfamilyDto>();
-        var counter = 1;
 
         for (var familyIndex = 0; familyIndex < Catalogue.Length; familyIndex++)
         {
             foreach (var (subfamilyName, _, _) in Catalogue[familyIndex].Subfamilies)
             {
-                var code = $"{CodePrefix}S{counter++:00}";
-                var subfamily = await subfamilyService.CreateAsync(
-                    new CreateProductSubfamilyRequest(companyId, families[familyIndex].Id, code, subfamilyName),
+                var familyId = families[familyIndex].Id;
+                var subfamily = await CreateWithNextCodeAsync(
+                    companyId,
+                    Constants.CodeCounters.ProductSubfamilies,
+                    (code, ct) => subfamilyService.CodeExistsAsync(companyId, code, ct),
+                    code => subfamilyService.CreateAsync(
+                        new CreateProductSubfamilyRequest(companyId, familyId, code, subfamilyName), cancellationToken),
                     cancellationToken);
                 subfamilies.Add(subfamily);
             }
@@ -133,10 +153,14 @@ public sealed class DemoDataService(
     {
         var brands = new List<BrandDto>();
 
-        for (var i = 0; i < Brands.Length; i++)
+        foreach (var name in Brands)
         {
-            var code = $"{CodePrefix}B{i + 1:00}";
-            var brand = await brandService.CreateAsync(new CreateBrandRequest(companyId, code, Brands[i]), cancellationToken);
+            var brand = await CreateWithNextCodeAsync(
+                companyId,
+                Constants.CodeCounters.Brands,
+                (code, ct) => brandService.CodeExistsAsync(companyId, code, ct),
+                code => brandService.CreateAsync(new CreateBrandRequest(companyId, code, name), cancellationToken),
+                cancellationToken);
             brands.Add(brand);
         }
 

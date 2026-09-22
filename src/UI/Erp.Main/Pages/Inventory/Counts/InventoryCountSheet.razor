@@ -8,7 +8,6 @@
 @using Erp.Main.Resources
 @using Microsoft.Extensions.Localization
 @inject StockApiClient StockApi
-@inject CatalogApiClient Catalog
 @inject NavigationManager Navigation
 @inject ISnackbar Snackbar
 @inject IStringLocalizer<MainResources> Localizer
@@ -199,15 +198,9 @@
 
         <MudGrid>
             <MudItem xs="12" md="7">
-                <MudSelect T="Guid?" Value="_addProductId" ValueChanged="OnAddProductChanged"
-                           Label="@Localizer["InventoryCountSheet_AddProductLabel"]" Variant="Variant.Outlined" Margin="Margin.Dense" Required="true">
-                    @foreach (var product in _products)
-                    {
-                        <MudSelectItem T="Guid?" Value="@product.Id">
-                            @product.ProductCode — @product.Description
-                        </MudSelectItem>
-                    }
-                </MudSelect>
+                <ProductAutocomplete SelectedProduct="_addProduct" ProductChanged="OnAddProductChanged"
+                                     Variant="Variant.Outlined" Margin="Margin.Dense"
+                                     Label="@Localizer["InventoryCountSheet_AddProductLabel"]" Required="true" />
             </MudItem>
             <MudItem xs="12" md="5">
                 <MudSelect T="Guid?" @bind-Value="_addWarehouseId" @bind-Value:after="StateHasChanged"
@@ -236,7 +229,7 @@
     <DialogActions>
         <MudButton OnClick="@(() => _addOpen = false)">@Localizer["InventoryCountSheet_CancelButton"]</MudButton>
         <MudButton Variant="Variant.Filled" Color="Color.Primary"
-                   Disabled="@(_adding || _addProductId is null || _addWarehouseId is null)"
+                   Disabled="@(_adding || _addProduct is null || _addWarehouseId is null)"
                    OnClick="AddLineAsync">
             @Localizer["InventoryCountSheet_AddButton"]
         </MudButton>
@@ -257,13 +250,12 @@
     private InventoryCount? _count;
     private List<InventoryCountLine> _lines = [];
     private List<Warehouse> _warehouses = [];
-    private List<ProductListItem> _products = [];
 
     private readonly DialogOptions _dialogOptions = new() { MaxWidth = MaxWidth.Medium, FullWidth = true };
 
     private bool _addOpen;
     private bool _adding;
-    private Guid? _addProductId;
+    private ProductListItem? _addProduct;
     private Guid? _addWarehouseId;
     private decimal? _addUnitCost;
 
@@ -303,12 +295,7 @@
                 var (warehouses, error) = await StockApi.GetWarehousesAsync(_count.CompanyId);
                 _warehouses = [.. warehouses.Where(warehouse => warehouse.IsActive)];
 
-                // The sheet can grow, so the product file has to be at hand.
-                var (products, productsError) = await Catalog.GetProductsAsync(_count.CompanyId);
-                _products = [.. products.Where(product => product.IsActive)
-                    .OrderBy(product => product.ProductCode, StringComparer.Ordinal)];
-
-                _error = error ?? productsError;
+                _error = error;
             }
         }
         catch (Exception ex)
@@ -323,7 +310,7 @@
 
     private void OpenAddLine()
     {
-        _addProductId = null;
+        _addProduct = null;
         _addUnitCost = null;
 
         // A count of one warehouse has only one answer, so it is fixed rather than asked for.
@@ -334,11 +321,11 @@
     }
 
     /// <summary>Suggests the cost from the product file, which the user is free to overwrite.</summary>
-    private void OnAddProductChanged(Guid? productId)
+    private void OnAddProductChanged(ProductListItem? product)
     {
-        _addProductId = productId;
+        _addProduct = product;
 
-        if (_products.FirstOrDefault(x => x.Id == productId) is { } product && _addUnitCost is null)
+        if (product is not null && _addUnitCost is null)
             _addUnitCost = product.UnitCost == 0 ? null : product.UnitCost;
 
         StateHasChanged();
@@ -346,7 +333,7 @@
 
     private async Task AddLineAsync()
     {
-        if (_products.FirstOrDefault(x => x.Id == _addProductId) is not { } product)
+        if (_addProduct is not { } product)
             return;
 
         _adding = true;

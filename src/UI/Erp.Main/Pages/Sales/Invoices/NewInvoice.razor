@@ -94,10 +94,8 @@
 
         <EditorCard Title="@L["NewInvoice_CustomerSectionTitle"]" Icon="@Icons.Material.Filled.PersonOutline">
             <HeaderActions>
-                <MudAutocomplete T="Partner" Value="_customer" ValueChanged="OnCustomerChosen"
-                                 SearchFunc="SearchCustomersAsync" ToStringFunc="@(c => c is null ? string.Empty : $"{c.Name} ({c.TaxId})")"
-                                 Placeholder="@L["NewInvoice_PickCustomerPlaceholder"]" Clearable="true" ResetValueOnEmptyText="true"
-                                 Variant="Variant.Outlined" Margin="Margin.Dense" Style="min-width: 280px;" />
+                <PartnerAutocomplete SelectedPartner="_customer" PartnerChanged="OnCustomerChosen"
+                                     Placeholder="@L["NewInvoice_PickCustomerPlaceholder"]" Style="min-width: 280px;" />
             </HeaderActions>
             <ChildContent>
                 <MudGrid Spacing="3">
@@ -145,7 +143,7 @@
             <ChildContent>
                 <MudTable Items="_lines" Dense="true" Hover="true" Breakpoint="Breakpoint.Sm" Elevation="0">
                     <HeaderContent>
-                        <MudTh Style="width: 220px;">@L["NewInvoice_ProductColumn"]</MudTh>
+                        <MudTh Style="width: 260px;">@L["NewInvoice_ProductColumn"]</MudTh>
                         <MudTh>@L["NewInvoice_DescriptionColumn"]</MudTh>
                         <MudTh Style="width: 90px;">@L["NewInvoice_QuantityColumn"]</MudTh>
                         <MudTh Style="width: 110px;">@L["NewInvoice_UnitPriceColumn"]</MudTh>
@@ -156,17 +154,8 @@
                     </HeaderContent>
                     <RowTemplate>
                         <MudTd DataLabel="@L["NewInvoice_ProductColumn"]">
-                            @* Closed, the box shows only the code; typing searches the code and the description too. *@
-                            <MudAutocomplete T="Guid?" Value="context.ProductId"
-                                             ValueChanged="@(productId => OnProductChanged(context, productId))"
-                                             SearchFunc="SearchProductsAsync" ToStringFunc="@(id => ProductCode(id))"
-                                             ResetValueOnEmptyText="true" CoerceText="true"
-                                             Variant="Variant.Text" Margin="Margin.Dense" Dense="true" Clearable="true"
-                                             Placeholder="@L["NewInvoice_FreeProductPlaceholder"]">
-                                <ItemTemplate Context="productId">
-                                    <MudText>@ProductCode(productId) — @ProductDescription(productId)</MudText>
-                                </ItemTemplate>
-                            </MudAutocomplete>
+                            <ProductAutocomplete SelectedProduct="context.SelectedProduct"
+                                                  ProductChanged="@(product => OnProductChanged(context, product))" />
                         </MudTd>
                         <MudTd DataLabel="@L["NewInvoice_DescriptionColumn"]">
                             <MudTextField @bind-Value="context.ProductDescription" Immediate="true" Margin="Margin.Dense" Variant="Variant.Text" />
@@ -278,9 +267,7 @@
     private bool _lookingUpCustomerTaxId;
 
     private List<SalesSeries> _series = [];
-    private List<ProductListItem> _products = [];
     private List<VatRate> _taxRates = [];
-    private List<Partner> _customers = [];
     private List<Warehouse> _warehouses = [];
     private List<EcoFeeType> _ecoFeeTypes = [];
     private readonly List<LineEditor> _lines = [new()];
@@ -314,8 +301,8 @@
         .. _lines
             // A line with no product chosen yet still carries the editor's default 23% — real for
             // no article at all, so it has no business in the breakdown until one is picked. Code,
-            // not ProductId: an eco-fee companion line has a ProductCode but no catalog ProductId,
-            // and is just as real as the article it rides along with.
+            // not SelectedProduct: an eco-fee companion line has a ProductCode but no catalog article
+            // behind it, and is just as real as the article it rides along with.
             .Where(line => !string.IsNullOrWhiteSpace(line.ProductCode))
             .GroupBy(line => (line.TaxCode, line.TaxPercentage))
             .OrderByDescending(group => group.Key.TaxPercentage)
@@ -363,7 +350,6 @@
         if (!Company.HasCompany)
         {
             _series = [];
-            _products = [];
             _loading = false;
             StateHasChanged();
             return;
@@ -378,13 +364,6 @@
             // partem da fatura em vez de se escreverem outra vez, e as guias e recibos também.
             _series = [.. series.Where(x => x.CanIssue && InvoiceTypes.IsSale(x.DocumentType))];
             _seriesId = _series.FirstOrDefault()?.Id ?? Guid.Empty;
-
-            // The catalogue is master data served by the Core module, not by Sales.
-            var (products, _) = await Catalog.GetProductsAsync(companyId);
-            _products = [.. products.Where(x => x.IsActive)];
-
-            var (customers, _) = await Catalog.GetCustomersAsync(companyId);
-            _customers = [.. customers.Where(x => x.IsActive).OrderBy(x => x.Name)];
 
             // Mainland rates — this document has no fiscal-region selector of its own.
             var (rates, _) = await Catalog.GetVatRatesAsync();
@@ -423,18 +402,6 @@
 
         if (IsInvoiceReceipt || (_dueDate is not null && _dueDate < date))
             _dueDate = date;
-    }
-
-    private Task<IEnumerable<Partner>> SearchCustomersAsync(string? text, CancellationToken cancellationToken)
-    {
-        IEnumerable<Partner> matches = string.IsNullOrWhiteSpace(text)
-            ? _customers
-            : _customers.Where(c =>
-                c.Name.Contains(text, StringComparison.OrdinalIgnoreCase)
-                || c.TaxId.Contains(text, StringComparison.OrdinalIgnoreCase)
-                || c.Code.Contains(text, StringComparison.OrdinalIgnoreCase));
-
-        return Task.FromResult(matches);
     }
 
     /// <summary>Picking a customer fills the fields; they stay editable, as the document keeps its own copy.</summary>
@@ -531,13 +498,12 @@
         _lines.Remove(line);
     }
 
-    private void OnProductChanged(LineEditor line, Guid? productId)
+    private void OnProductChanged(LineEditor line, ProductListItem? product)
     {
         RemoveEcoFeeCompanion(line);
 
-        line.ProductId = productId;
+        line.SelectedProduct = product;
 
-        var product = _products.FirstOrDefault(x => x.Id == productId);
         if (product is null)
             return;
 
@@ -602,25 +568,6 @@
 
         if (taxCode != TaxCodes.Exempt)
             line.ExemptionCode = null;
-    }
-
-    /// <summary>What the closed product box shows: the code alone keeps the line readable.</summary>
-    private string ProductCode(Guid? productId) =>
-        _products.FirstOrDefault(product => product.Id == productId)?.ProductCode ?? string.Empty;
-
-    private string ProductDescription(Guid? productId) =>
-        _products.FirstOrDefault(product => product.Id == productId)?.Description ?? string.Empty;
-
-    /// <summary>Matches on code or description, so typing either finds the article.</summary>
-    private Task<IEnumerable<Guid?>> SearchProductsAsync(string? text, CancellationToken cancellationToken)
-    {
-        IEnumerable<ProductListItem> matches = string.IsNullOrWhiteSpace(text)
-            ? _products
-            : _products.Where(product =>
-                product.ProductCode.Contains(text, StringComparison.OrdinalIgnoreCase)
-                || product.Description.Contains(text, StringComparison.OrdinalIgnoreCase));
-
-        return Task.FromResult(matches.Select(product => (Guid?)product.Id));
     }
 
     /// <summary>And the tax box shows the rate, not the name of the rate.</summary>
@@ -716,7 +663,9 @@
 
     private sealed class LineEditor
     {
-        public Guid? ProductId { get; set; }
+        /// <summary>The article behind the autocomplete's box, kept whole so the box can show its
+        /// code without a lookup back into a catalogue that is never held in full.</summary>
+        public ProductListItem? SelectedProduct { get; set; }
         public string ProductCode { get; set; } = string.Empty;
         public string ProductDescription { get; set; } = string.Empty;
         public string UnitOfMeasure { get; set; } = "UN";

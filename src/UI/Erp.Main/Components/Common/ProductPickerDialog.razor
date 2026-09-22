@@ -1,0 +1,229 @@
+@* Advanced article search: family and brand filters over the full catalogue, paged and filtered
+   server side through OData, for companies whose product file is far too large to load in full
+   (see the plain autocomplete on the invoice line, which covers the quick reference lookup). *@
+@implements IDisposable
+@using MudBlazor
+@using Erp.Main.Models.Core
+@using Erp.Main.Services
+@using Erp.Main.Resources
+@using Microsoft.Extensions.Localization
+@inject CatalogApiClient Catalog
+@inject CompanyState Company
+@inject IStringLocalizer<MainResources> L
+
+<MudDialog Visible="Open" VisibleChanged="OnVisibleChangedAsync" Options="_dialogOptions">
+    <TitleContent>
+        <MudText Typo="Typo.h6">@L["ProductPicker_Title"]</MudText>
+    </TitleContent>
+    <DialogContent>
+        <DataGrid @ref="_grid" T="ProductListItem"
+                  LoadAsync="LoadProductsAsync"
+                  SearchFields="SearchFields" DefaultOrderBy="ProductCode"
+                  SearchPlaceholder="@L["Products_SearchPlaceholder"]"
+                  EmptyIcon="@Icons.Material.Filled.Inventory2"
+                  ItemsLabel="@L["Products_ItemsLabel"]"
+                  LoadErrorMessage="@L["Products_LoadError"]"
+                  Height="60vh"
+                  RowClick="OnRowClickedAsync">
+            <Columns>
+                <PropertyColumn Property="x => x.ProductCode" Title="@L["Products_CodeColumn"]" />
+                <PropertyColumn Property="x => x.Description" Title="@L["Products_DescriptionColumn"]" />
+                <PropertyColumn Property="x => x.FamilyName" Title="@L["Products_FamilyColumn"]">
+                    <FilterTemplate>
+                        <MudStack Spacing="2" Class="pa-2" Style="min-width: 260px;">
+                            <MudAutocomplete T="string" Label="@L["Products_FamilyColumn"]" Placeholder="@L["Products_FamilyFilterPlaceholder"]"
+                                             Value="@string.Empty"
+                                             ValueChanged="@(value => AddFamilyFilterAsync(context, value))"
+                                             SearchFunc="SearchFamiliesAsync" ResetValueOnEmptyText="true"
+                                             CoerceValue="false" MaxItems="null"
+                                             Margin="Margin.Dense" Variant="Variant.Outlined" Dense="true" />
+
+                            @if (_familyFilter.Count > 0)
+                            {
+                                <MudChipSet T="string" AllClosable="true"
+                                            OnClose="@(chip => RemoveFamilyFilterAsync(context, chip.Value))">
+                                    @foreach (var name in _familyFilter)
+                                    {
+                                        <MudChip T="string" Value="@name" Size="Size.Small"
+                                                 Color="Color.Primary" Variant="Variant.Text">@name</MudChip>
+                                    }
+                                </MudChipSet>
+                            }
+                        </MudStack>
+                    </FilterTemplate>
+                </PropertyColumn>
+                <PropertyColumn Property="x => x.BrandName" Title="@L["Products_BrandColumn"]">
+                    <FilterTemplate>
+                        <MudStack Spacing="2" Class="pa-2" Style="min-width: 260px;">
+                            <MudAutocomplete T="string" Label="@L["Products_BrandColumn"]" Placeholder="@L["ProductPicker_BrandFilterPlaceholder"]"
+                                             Value="@string.Empty"
+                                             ValueChanged="@(value => AddBrandFilterAsync(context, value))"
+                                             SearchFunc="SearchBrandsAsync" ResetValueOnEmptyText="true"
+                                             CoerceValue="false" MaxItems="null"
+                                             Margin="Margin.Dense" Variant="Variant.Outlined" Dense="true" />
+
+                            @if (_brandFilter.Count > 0)
+                            {
+                                <MudChipSet T="string" AllClosable="true"
+                                            OnClose="@(chip => RemoveBrandFilterAsync(context, chip.Value))">
+                                    @foreach (var name in _brandFilter)
+                                    {
+                                        <MudChip T="string" Value="@name" Size="Size.Small"
+                                                 Color="Color.Primary" Variant="Variant.Text">@name</MudChip>
+                                    }
+                                </MudChipSet>
+                            }
+                        </MudStack>
+                    </FilterTemplate>
+                </PropertyColumn>
+                <PropertyColumn Property="x => x.UnitPrice" Title="@L["Products_PriceColumn"]" Format="N2"
+                                CellClass="erp-numeric" HeaderClass="erp-numeric" />
+            </Columns>
+        </DataGrid>
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="@(() => OnVisibleChangedAsync(false))">@L["Common_CancelButton"]</MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [Parameter] public bool Open { get; set; }
+
+    [Parameter] public EventCallback<bool> OpenChanged { get; set; }
+
+    /// <summary>Raised with the chosen article; the dialog closes itself before this fires.</summary>
+    [Parameter] public EventCallback<ProductListItem> Picked { get; set; }
+
+    private readonly DialogOptions _dialogOptions = new() { MaxWidth = MaxWidth.Large, FullWidth = true };
+
+    private DataGrid<ProductListItem>? _grid;
+
+    private static readonly string[] SearchFields = ["ProductCode", "Description", "Barcode"];
+
+    /// <summary>The families and brands feeding the column filters, reloaded when the company changes.</summary>
+    private IReadOnlyList<ProductFamily> _families = [];
+    private IReadOnlyList<Brand> _brands = [];
+
+    private readonly List<string> _familyFilter = [];
+    private readonly List<string> _brandFilter = [];
+
+    protected override async Task OnInitializedAsync()
+    {
+        Company.Changed += OnCompanyChanged;
+        await Company.EnsureLoadedAsync();
+        await LoadFilterOptionsAsync();
+    }
+
+    private async void OnCompanyChanged() => await InvokeAsync(LoadFilterOptionsAsync);
+
+    private async Task LoadFilterOptionsAsync()
+    {
+        if (!Company.HasCompany)
+        {
+            _families = [];
+            _brands = [];
+            return;
+        }
+
+        var (families, _) = await Catalog.GetFamiliesAsync(Company.SelectedCompanyId);
+        _families = families;
+        _familyFilter.Clear();
+
+        var (brands, _) = await Catalog.GetBrandsAsync(Company.SelectedCompanyId);
+        _brands = brands;
+        _brandFilter.Clear();
+    }
+
+    /// <summary>Active articles only: an article the catalogue no longer sells has no business on a fatura.</summary>
+    private Task<(IReadOnlyList<ProductListItem> Items, int Count, string? Error)> LoadProductsAsync(
+        Guid companyId, ODataQuery query, CancellationToken ct) =>
+        Catalog.QueryProductsAsync(companyId, query.Filter("IsActive eq true"), ct);
+
+    private Task<IEnumerable<string>> SearchFamiliesAsync(string? value, CancellationToken cancellationToken)
+    {
+        var matches = _families
+            .Select(family => family.Name)
+            .Where(name => !_familyFilter.Contains(name))
+            .Where(name => string.IsNullOrWhiteSpace(value)
+                || name.Contains(value, StringComparison.OrdinalIgnoreCase));
+
+        return Task.FromResult<IEnumerable<string>>(matches.ToArray());
+    }
+
+    private Task AddFamilyFilterAsync(FilterContext<ProductListItem> context, string? value)
+    {
+        if (string.IsNullOrWhiteSpace(value) || _familyFilter.Contains(value))
+            return Task.CompletedTask;
+
+        _familyFilter.Add(value);
+        return ApplyChipFilterAsync(context, _familyFilter);
+    }
+
+    private Task RemoveFamilyFilterAsync(FilterContext<ProductListItem> context, string? value)
+    {
+        if (value is null || !_familyFilter.Remove(value))
+            return Task.CompletedTask;
+
+        return ApplyChipFilterAsync(context, _familyFilter);
+    }
+
+    private Task<IEnumerable<string>> SearchBrandsAsync(string? value, CancellationToken cancellationToken)
+    {
+        var matches = _brands
+            .Select(brand => brand.Name)
+            .Where(name => !_brandFilter.Contains(name))
+            .Where(name => string.IsNullOrWhiteSpace(value)
+                || name.Contains(value, StringComparison.OrdinalIgnoreCase));
+
+        return Task.FromResult<IEnumerable<string>>(matches.ToArray());
+    }
+
+    private Task AddBrandFilterAsync(FilterContext<ProductListItem> context, string? value)
+    {
+        if (string.IsNullOrWhiteSpace(value) || _brandFilter.Contains(value))
+            return Task.CompletedTask;
+
+        _brandFilter.Add(value);
+        return ApplyChipFilterAsync(context, _brandFilter);
+    }
+
+    private Task RemoveBrandFilterAsync(FilterContext<ProductListItem> context, string? value)
+    {
+        if (value is null || !_brandFilter.Remove(value))
+            return Task.CompletedTask;
+
+        return ApplyChipFilterAsync(context, _brandFilter);
+    }
+
+    /// <summary>Feeds a chip selection back into its column filter; an empty selection clears it.</summary>
+    private static async Task ApplyChipFilterAsync(FilterContext<ProductListItem> context, List<string> selected)
+    {
+        if (context.FilterDefinition is not { } filterDefinition)
+            return;
+
+        if (selected.Count == 0)
+        {
+            await context.Actions.ClearFilterAsync(filterDefinition);
+            return;
+        }
+
+        filterDefinition.Operator = FilterOperator.String.Equal;
+        filterDefinition.Value = selected.ToArray();
+
+        await context.Actions.ApplyFilterAsync(filterDefinition);
+    }
+
+    private async Task OnRowClickedAsync(ProductListItem product)
+    {
+        await OnVisibleChangedAsync(false);
+        await Picked.InvokeAsync(product);
+    }
+
+    private async Task OnVisibleChangedAsync(bool visible)
+    {
+        Open = visible;
+        await OpenChanged.InvokeAsync(visible);
+    }
+
+    public void Dispose() => Company.Changed -= OnCompanyChanged;
+}

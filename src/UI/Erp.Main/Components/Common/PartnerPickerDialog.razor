@@ -1,0 +1,81 @@
+@* Advanced customer/supplier search: the same DataGrid the Customers/Suppliers pages use, paged
+   and filtered server side, for companies whose partner file is too large for a client-side list
+   (see PartnerAutocomplete's own remark for the quick lookup this backs up). *@
+@using MudBlazor
+@using Erp.Main.Models.Core
+@using Erp.Main.Services
+@using Erp.Main.Resources
+@using Microsoft.Extensions.Localization
+@inject CatalogApiClient Catalog
+@inject CompanyState Company
+@inject IStringLocalizer<MainResources> L
+
+<MudDialog Visible="Open" VisibleChanged="OnVisibleChangedAsync" Options="_dialogOptions">
+    <TitleContent>
+        <MudText Typo="Typo.h6">@(Kind == PartnerKind.Supplier ? L["PartnerPicker_TitleSupplier"] : L["PartnerPicker_TitleCustomer"])</MudText>
+    </TitleContent>
+    <DialogContent>
+        <DataGrid @ref="_grid" T="Partner"
+                  LoadAsync="LoadPartnersAsync"
+                  SearchFields="SearchFields" DefaultOrderBy="Code"
+                  SearchPlaceholder="@L["Customers_SearchPlaceholder"]"
+                  EmptyIcon="@Icons.Material.Filled.People"
+                  ItemsLabel="@L["Customers_ItemsLabel"]"
+                  LoadErrorMessage="@L["Customers_LoadError"]"
+                  Height="60vh"
+                  RowClick="OnRowClickedAsync">
+            <Columns>
+                <PropertyColumn Property="x => x.Code" Title="@L["Customers_CodeColumn"]" />
+                <PropertyColumn Property="x => x.Name" Title="@L["Customers_NameColumn"]" />
+                <PropertyColumn Property="x => x.TaxId" Title="@L["Customers_TaxIdColumn"]" />
+                <PropertyColumn Property="x => x.City" Title="@L["Customers_CityColumn"]" />
+                <PropertyColumn Property="x => x.Email" Title="@L["Customers_EmailColumn"]" />
+            </Columns>
+        </DataGrid>
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="@(() => OnVisibleChangedAsync(false))">@L["Common_CancelButton"]</MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [Parameter] public bool Open { get; set; }
+
+    [Parameter] public EventCallback<bool> OpenChanged { get; set; }
+
+    /// <summary>Raised with the chosen partner; the dialog closes itself before this fires.</summary>
+    [Parameter] public EventCallback<Partner> Picked { get; set; }
+
+    /// <summary>Whether this searches the customer file or the supplier file — two different API
+    /// routes, since a company's customers and suppliers are kept as separate lists.</summary>
+    [Parameter] public PartnerKind Kind { get; set; } = PartnerKind.Customer;
+
+    private readonly DialogOptions _dialogOptions = new() { MaxWidth = MaxWidth.Large, FullWidth = true };
+
+    private DataGrid<Partner>? _grid;
+
+    private static readonly string[] SearchFields = ["Code", "Name", "TaxId"];
+
+    /// <summary>Active partners only: one no longer traded with has no business on a new document.</summary>
+    private Task<(IReadOnlyList<Partner> Items, int Count, string? Error)> LoadPartnersAsync(
+        Guid companyId, ODataQuery query, CancellationToken ct)
+    {
+        query.Filter("IsActive eq true");
+
+        return Kind == PartnerKind.Supplier
+            ? Catalog.QuerySuppliersAsync(companyId, query, ct)
+            : Catalog.QueryCustomersAsync(companyId, query, ct);
+    }
+
+    private async Task OnRowClickedAsync(Partner partner)
+    {
+        await OnVisibleChangedAsync(false);
+        await Picked.InvokeAsync(partner);
+    }
+
+    private async Task OnVisibleChangedAsync(bool visible)
+    {
+        Open = visible;
+        await OpenChanged.InvokeAsync(visible);
+    }
+}

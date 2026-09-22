@@ -1,0 +1,127 @@
+@* The article picker for a document line: a quick server-side search by reference, barcode or
+   description (the catalogue is never loaded in full — see ProductPickerDialog's own remark).
+   The line is usually a narrow column, so the search icon inside the box doubles as the button
+   that opens the advanced search — there is no separate icon competing for that width — and the
+   dropdown itself is allowed to grow past the box so "code — description" never wraps. *@
+@using MudBlazor
+@using Erp.Main.Models.Core
+@using Erp.Main.Services
+@using Erp.Main.Resources
+@using Microsoft.Extensions.Localization
+@inject CatalogApiClient Catalog
+@inject CompanyState Company
+@inject IStringLocalizer<MainResources> L
+
+<MudAutocomplete T="ProductListItem" Value="SelectedProduct" ValueChanged="OnAutocompleteChangedAsync"
+                 SearchFunc="SearchProductsAsync" ToStringFunc="@(product => product?.ProductCode ?? string.Empty)"
+                 ResetValueOnEmptyText="true" CoerceText="true" DebounceInterval="300"
+                 Variant="Variant" Margin="Margin" Dense="true" Clearable="true" Style="@Style"
+                 Label="@Label" Required="Required"
+                 Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.Search"
+                 OnAdornmentClick="OpenPicker" AdornmentAriaLabel="@L["ProductAutocomplete_AdvancedSearchTooltip"]"
+                 RelativeWidth="DropdownWidth.Adaptive"
+                 Placeholder="@(Placeholder ?? L["ProductAutocomplete_Placeholder"])">
+    <ItemTemplate Context="product">
+        <MudStack Spacing="1" Class="py-1">
+            <MudText Typo="Typo.body2"><b>@product.ProductCode</b> — @product.Description</MudText>
+            @if (!string.IsNullOrWhiteSpace(product.FamilyName) || !string.IsNullOrWhiteSpace(product.BrandName))
+            {
+                <MudStack Row="true" Spacing="1">
+                    @if (!string.IsNullOrWhiteSpace(product.FamilyName))
+                    {
+                        <MudChip T="string" Size="Size.Small" Variant="Variant.Text">@product.FamilyName</MudChip>
+                    }
+                    @if (!string.IsNullOrWhiteSpace(product.BrandName))
+                    {
+                        <MudChip T="string" Size="Size.Small" Variant="Variant.Text">@product.BrandName</MudChip>
+                    }
+                </MudStack>
+            }
+        </MudStack>
+    </ItemTemplate>
+    <BeforeItemsTemplate>
+        <MudText Typo="Typo.caption" Color="Color.Secondary" Class="px-4 pt-2 pb-1">
+            @string.Format(L["ProductAutocomplete_MatchCount"], _lastMatchCount, _lastQuery)
+        </MudText>
+    </BeforeItemsTemplate>
+    <AfterItemsTemplate>
+        <MudDivider />
+        <MudButton Variant="Variant.Text" FullWidth="true" Size="Size.Small"
+                   StartIcon="@Icons.Material.Filled.FilterAlt" Class="px-4 py-2"
+                   OnClick="OpenPicker">
+            @L["ProductAutocomplete_AdvancedSearchTooltip"]
+        </MudButton>
+    </AfterItemsTemplate>
+    <NoItemsTemplate>
+        <MudStack Spacing="1" Class="pa-4">
+            <MudText Typo="Typo.body2" Color="Color.Secondary">
+                @string.Format(L["ProductAutocomplete_NoMatches"], _lastQuery)
+            </MudText>
+            <MudButton Variant="Variant.Text" Size="Size.Small"
+                       StartIcon="@Icons.Material.Filled.FilterAlt"
+                       OnClick="OpenPicker">
+                @L["ProductAutocomplete_AdvancedSearchTooltip"]
+            </MudButton>
+        </MudStack>
+    </NoItemsTemplate>
+</MudAutocomplete>
+
+<ProductPickerDialog @bind-Open="_pickerOpen" Picked="OnAutocompleteChangedAsync" />
+
+@code {
+    /// <summary>The article currently shown in the box, kept whole so it can be displayed without
+    /// a lookup back into a catalogue this control never holds in full.</summary>
+    [Parameter, EditorRequired] public ProductListItem? SelectedProduct { get; set; }
+
+    /// <summary>Raised with the article the user picked, from either the quick search or the
+    /// advanced dialog, or with null when the box is cleared. The caller decides what filling in
+    /// the rest of the line (price, tax, unit) that choice triggers.</summary>
+    [Parameter, EditorRequired] public EventCallback<ProductListItem?> ProductChanged { get; set; }
+
+    /// <summary>Shown while the box is empty. Defaults to a localized "Free" hint.</summary>
+    [Parameter] public string? Placeholder { get; set; }
+
+    /// <summary>A document line wants the same dense text field every other cell in its table uses;
+    /// a standalone dialog field (see InventoryCountSheet's "add article" dialog) wants an outlined
+    /// one with a floating label like its neighbours.</summary>
+    [Parameter] public Variant Variant { get; set; } = Variant.Text;
+
+    [Parameter] public Margin Margin { get; set; } = Margin.Dense;
+
+    [Parameter] public string? Style { get; set; }
+
+    [Parameter] public string? Label { get; set; }
+
+    [Parameter] public bool Required { get; set; }
+
+    private bool _pickerOpen;
+    private string _lastQuery = string.Empty;
+    private int _lastMatchCount;
+
+    private Task OnAutocompleteChangedAsync(ProductListItem? product) => ProductChanged.InvokeAsync(product);
+
+    private void OpenPicker() => _pickerOpen = true;
+
+    /// <summary>
+    /// Matches on reference, barcode or description, queried straight from the catalogue: with
+    /// companies carrying a million articles, the file cannot be held in the browser, so every
+    /// keystroke asks the database for a short, ranked window instead.
+    /// </summary>
+    private async Task<IEnumerable<ProductListItem>> SearchProductsAsync(string? text, CancellationToken cancellationToken)
+    {
+        _lastQuery = text ?? string.Empty;
+        _lastMatchCount = 0;
+
+        if (string.IsNullOrWhiteSpace(text) || !Company.HasCompany)
+            return [];
+
+        var query = new ODataQuery { Top = 8, Count = false };
+        query.Filter(ODataQuery.ContainsAny(text.Trim(), "ProductCode", "Description", "Barcode"));
+        query.Filter("IsActive eq true");
+        query.OrderBy("ProductCode", descending: false);
+
+        var (items, _, _) = await Catalog.QueryProductsAsync(Company.SelectedCompanyId, query, cancellationToken);
+        _lastMatchCount = items.Count;
+        return items;
+    }
+}

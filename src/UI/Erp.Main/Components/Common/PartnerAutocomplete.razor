@@ -1,0 +1,136 @@
+@* The customer/supplier picker for a document header: a quick server-side search by code, name or
+   tax id (the partner file is never loaded in full, same reasoning as ProductAutocomplete) with a
+   rich dropdown, plus an icon that opens the advanced search for when the name is not known. *@
+@using MudBlazor
+@using Erp.Main.Models.Core
+@using Erp.Main.Services
+@using Erp.Main.Resources
+@using Microsoft.Extensions.Localization
+@inject CatalogApiClient Catalog
+@inject CompanyState Company
+@inject IStringLocalizer<MainResources> L
+
+<MudAutocomplete T="Partner" Value="SelectedPartner" ValueChanged="OnAutocompleteChangedAsync"
+                 SearchFunc="SearchPartnersAsync" ToStringFunc="@(partner => partner is null ? string.Empty : $"{partner.Name} ({partner.TaxId})")"
+                 ResetValueOnEmptyText="true" CoerceText="true" DebounceInterval="300"
+                 Variant="Variant" Margin="Margin" Dense="true" Clearable="true" Style="@Style"
+                 Label="@Label" Required="Required" HelperText="@HelperText" Disabled="Disabled"
+                 Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.Search"
+                 OnAdornmentClick="OpenPicker" AdornmentAriaLabel="@AdvancedSearchLabel"
+                 RelativeWidth="DropdownWidth.Adaptive"
+                 Placeholder="@(Placeholder ?? DefaultPlaceholder)">
+    <ItemTemplate Context="partner">
+        <MudStack Spacing="1" Class="py-1">
+            <MudText Typo="Typo.body2"><b>@partner.Name</b> — @partner.TaxId</MudText>
+            @if (!string.IsNullOrWhiteSpace(partner.City))
+            {
+                <MudStack Row="true" Spacing="1">
+                    <MudChip T="string" Size="Size.Small" Variant="Variant.Text">@partner.City</MudChip>
+                </MudStack>
+            }
+        </MudStack>
+    </ItemTemplate>
+    <BeforeItemsTemplate>
+        <MudText Typo="Typo.caption" Color="Color.Secondary" Class="px-4 pt-2 pb-1">
+            @string.Format(L["PartnerAutocomplete_MatchCount"], _lastMatchCount, _lastQuery)
+        </MudText>
+    </BeforeItemsTemplate>
+    <AfterItemsTemplate>
+        <MudDivider />
+        <MudButton Variant="Variant.Text" FullWidth="true" Size="Size.Small"
+                   StartIcon="@Icons.Material.Filled.FilterAlt" Class="px-4 py-2"
+                   OnClick="OpenPicker">
+            @AdvancedSearchLabel
+        </MudButton>
+    </AfterItemsTemplate>
+    <NoItemsTemplate>
+        <MudStack Spacing="1" Class="pa-4">
+            <MudText Typo="Typo.body2" Color="Color.Secondary">
+                @string.Format(L["PartnerAutocomplete_NoMatches"], _lastQuery)
+            </MudText>
+            <MudButton Variant="Variant.Text" Size="Size.Small"
+                       StartIcon="@Icons.Material.Filled.FilterAlt"
+                       OnClick="OpenPicker">
+                @AdvancedSearchLabel
+            </MudButton>
+        </MudStack>
+    </NoItemsTemplate>
+</MudAutocomplete>
+
+<PartnerPickerDialog @bind-Open="_pickerOpen" Picked="OnAutocompleteChangedAsync" Kind="Kind" />
+
+@code {
+    /// <summary>The partner currently shown in the box, kept whole so it can be displayed without a
+    /// lookup back into a file this control never holds in full.</summary>
+    [Parameter, EditorRequired] public Partner? SelectedPartner { get; set; }
+
+    /// <summary>Raised with the partner the user picked, from either the quick search or the
+    /// advanced dialog, or with null when the box is cleared.</summary>
+    [Parameter, EditorRequired] public EventCallback<Partner?> PartnerChanged { get; set; }
+
+    /// <summary>Whether this searches the customer file or the supplier file.</summary>
+    [Parameter] public PartnerKind Kind { get; set; } = PartnerKind.Customer;
+
+    /// <summary>Shown while the box is empty. Defaults to a localized, kind-aware hint.</summary>
+    [Parameter] public string? Placeholder { get; set; }
+
+    /// <summary>A document header picks one partner in an outlined field; a line, further down a
+    /// table, wants the same dense text field every other cell uses. Outlined/Dense either way.</summary>
+    [Parameter] public Variant Variant { get; set; } = Variant.Outlined;
+
+    [Parameter] public Margin Margin { get; set; } = Margin.Dense;
+
+    [Parameter] public string? Style { get; set; }
+
+    /// <summary>A standalone form field wants a floating label like its neighbours; a header field
+    /// (see NewInvoice's customer picker) has none and just leans on the placeholder.</summary>
+    [Parameter] public string? Label { get; set; }
+
+    [Parameter] public bool Required { get; set; }
+
+    [Parameter] public string? HelperText { get; set; }
+
+    [Parameter] public bool Disabled { get; set; }
+
+    private bool _pickerOpen;
+    private string _lastQuery = string.Empty;
+    private int _lastMatchCount;
+
+    private string DefaultPlaceholder => Kind == PartnerKind.Supplier
+        ? L["PartnerAutocomplete_PlaceholderSupplier"]
+        : L["PartnerAutocomplete_PlaceholderCustomer"];
+
+    private string AdvancedSearchLabel => Kind == PartnerKind.Supplier
+        ? L["PartnerAutocomplete_AdvancedSearchTooltipSupplier"]
+        : L["PartnerAutocomplete_AdvancedSearchTooltipCustomer"];
+
+    private Task OnAutocompleteChangedAsync(Partner? partner) => PartnerChanged.InvokeAsync(partner);
+
+    private void OpenPicker() => _pickerOpen = true;
+
+    /// <summary>
+    /// Matches on code, name or tax id, queried straight from the partner file: with companies
+    /// carrying a large customer or supplier base, the file cannot be held in the browser, so every
+    /// keystroke asks the database for a short, ranked window instead.
+    /// </summary>
+    private async Task<IEnumerable<Partner>> SearchPartnersAsync(string? text, CancellationToken cancellationToken)
+    {
+        _lastQuery = text ?? string.Empty;
+        _lastMatchCount = 0;
+
+        if (string.IsNullOrWhiteSpace(text) || !Company.HasCompany)
+            return [];
+
+        var query = new ODataQuery { Top = 8, Count = false };
+        query.Filter(ODataQuery.ContainsAny(text.Trim(), "Code", "Name", "TaxId"));
+        query.Filter("IsActive eq true");
+        query.OrderBy("Name", descending: false);
+
+        var (items, _, _) = Kind == PartnerKind.Supplier
+            ? await Catalog.QuerySuppliersAsync(Company.SelectedCompanyId, query, cancellationToken)
+            : await Catalog.QueryCustomersAsync(Company.SelectedCompanyId, query, cancellationToken);
+
+        _lastMatchCount = items.Count;
+        return items;
+    }
+}

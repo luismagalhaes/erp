@@ -95,14 +95,10 @@
             <MudText Typo="Typo.h6" Class="mb-3">@L["NewStockMovement_RecipientTitle"]</MudText>
             <MudGrid>
                 <MudItem xs="12" md="4">
-                    <MudSelect T="Guid?" Value="_partnerId" ValueChanged="OnPartnerChanged"
-                               Label="@(_partyIsSupplier ? L["NewStockMovement_SupplierLabel"] : L["NewStockMovement_CustomerLabel"])" Variant="Variant.Outlined" Margin="Margin.Dense"
-                               Clearable="true" Placeholder="@L["NewStockMovement_FreePlaceholder"]">
-                        @foreach (var partner in _partyIsSupplier ? _suppliers : _customers)
-                        {
-                            <MudSelectItem T="Guid?" Value="@partner.Id">@partner.Name (@partner.TaxId)</MudSelectItem>
-                        }
-                    </MudSelect>
+                    <PartnerAutocomplete SelectedPartner="_selectedPartner" PartnerChanged="OnPartnerChanged"
+                                         Kind="@(_partyIsSupplier ? PartnerKind.Supplier : PartnerKind.Customer)"
+                                         Label="@(_partyIsSupplier ? L["NewStockMovement_SupplierLabel"] : L["NewStockMovement_CustomerLabel"])"
+                                         Placeholder="@L["NewStockMovement_FreePlaceholder"]" />
                 </MudItem>
                 <MudItem xs="12" md="3">
                     <MudTextField @bind-Value="_partyTaxId" Label="@L["NewStockMovement_TaxIdLabel"]" Variant="Variant.Outlined" Margin="Margin.Dense"
@@ -187,25 +183,8 @@
                 </HeaderContent>
                 <RowTemplate>
                     <MudTd DataLabel="@L["NewStockMovement_ProductColumn"]">
-                        @if (_products.Count > 0)
-                        {
-                            @* Closed, the box shows only the code; the list still spells the article out. *@
-                            <MudSelect T="Guid?" Value="context.ProductId"
-                                       ValueChanged="@(productId => OnProductChanged(context, productId))"
-                                       ToStringFunc="@(id => ProductCode(id))"
-                                       Margin="Margin.Dense" Clearable="true" Placeholder="@L["NewStockMovement_FreePlaceholder"]">
-                                @foreach (var product in _products)
-                                {
-                                    <MudSelectItem T="Guid?" Value="@product.Id">
-                                        @product.ProductCode — @product.Description
-                                    </MudSelectItem>
-                                }
-                            </MudSelect>
-                        }
-                        else
-                        {
-                            <MudTextField @bind-Value="context.ProductCode" Margin="Margin.Dense" Placeholder="@L["NewStockMovement_CodePlaceholder"]" />
-                        }
+                        <ProductAutocomplete SelectedProduct="context.SelectedProduct"
+                                              ProductChanged="@(product => OnProductChanged(context, product))" />
                     </MudTd>
                     <MudTd DataLabel="@L["NewStockMovement_DescriptionColumn"]">
                         <MudTextField @bind-Value="context.ProductDescription" Margin="Margin.Dense" />
@@ -299,7 +278,7 @@
     private string _comments = string.Empty;
     private string? _exemptionCode;
 
-    private Guid? _partnerId;
+    private Partner? _selectedPartner;
     private string _partyTaxId = string.Empty;
     private string _partyName = string.Empty;
     private bool _partyIsSupplier;
@@ -316,11 +295,8 @@
     private void OnShipToStreetSelected(string address) => _shipToAddress = address;
 
     private List<SalesSeries> _series = [];
-    private List<ProductListItem> _products = [];
-    private List<Partner> _customers = [];
     private List<Warehouse> _warehouses = [];
     private Guid? _warehouseId;
-    private List<Partner> _suppliers = [];
     private List<VatRate> _taxRates = [];
     private List<EcoFeeType> _ecoFeeTypes = [];
     private readonly List<LineEditor> _lines = [new()];
@@ -354,10 +330,6 @@
                 group.Sum(LineTotal),
                 group.Sum(TaxAmount)))
     ];
-
-    /// <summary>What the closed product box shows: the code alone keeps the line readable.</summary>
-    private string ProductCode(Guid? productId) =>
-        _products.FirstOrDefault(product => product.Id == productId)?.ProductCode ?? string.Empty;
 
     /// <summary>And the tax box shows the rate, not the name of the rate.</summary>
     private string TaxRateLabel(string? taxCode)
@@ -406,15 +378,6 @@
             _series = [.. series.Where(x => x.CanIssue && MovementTypes.All.Any(type => type.Code == x.DocumentType))];
             _seriesId = _series.FirstOrDefault()?.Id ?? Guid.Empty;
 
-            var (products, _) = await Catalog.GetProductsAsync(Company.SelectedCompanyId);
-            _products = [.. products.Where(product => product.IsActive)];
-
-            var (customers, _) = await Catalog.GetCustomersAsync(Company.SelectedCompanyId);
-            _customers = [.. customers.Where(customer => customer.IsActive)];
-
-            var (suppliers, _) = await Catalog.GetSuppliersAsync(Company.SelectedCompanyId);
-            _suppliers = [.. suppliers.Where(supplier => supplier.IsActive)];
-
             // Mainland rates — this document has no fiscal-region selector of its own.
             var (rates, _) = await Catalog.GetVatRatesAsync();
             _taxRates = [.. rates.Where(x => x.FiscalRegion == "PT" && x.IsActive)];
@@ -443,14 +406,13 @@
     private void OnPartyKindChanged(bool isSupplier)
     {
         _partyIsSupplier = isSupplier;
-        _partnerId = null;
+        _selectedPartner = null;
     }
 
-    private void OnPartnerChanged(Guid? partnerId)
+    private void OnPartnerChanged(Partner? partner)
     {
-        _partnerId = partnerId;
+        _selectedPartner = partner;
 
-        var partner = (_partyIsSupplier ? _suppliers : _customers).FirstOrDefault(x => x.Id == partnerId);
         if (partner is null)
             return;
 
@@ -477,13 +439,12 @@
         _lines.Remove(line);
     }
 
-    private void OnProductChanged(LineEditor line, Guid? productId)
+    private void OnProductChanged(LineEditor line, ProductListItem? product)
     {
         RemoveEcoFeeCompanion(line);
 
-        line.ProductId = productId;
+        line.SelectedProduct = product;
 
-        var product = _products.FirstOrDefault(x => x.Id == productId);
         if (product is null)
             return;
 
@@ -645,7 +606,9 @@
 
     private sealed class LineEditor
     {
-        public Guid? ProductId { get; set; }
+        /// <summary>The article behind the autocomplete's box, kept whole so the box can show its
+        /// code without a lookup back into a catalogue that is never held in full.</summary>
+        public ProductListItem? SelectedProduct { get; set; }
         public string ProductCode { get; set; } = string.Empty;
         public string ProductDescription { get; set; } = string.Empty;
         public decimal Quantity { get; set; } = 1;

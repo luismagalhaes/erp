@@ -48,15 +48,8 @@
         <MudPaper Elevation="1" Class="pa-4">
             <MudGrid>
                 <MudItem xs="12" md="4">
-                    <MudSelect T="Guid?" Value="_supplierId" ValueChanged="OnSupplierChangedAsync"
-                               Label="@L["NewGoodsReceipt_SupplierLabel"]" Variant="Variant.Outlined" Required="true">
-                        @foreach (var supplier in _suppliers)
-                        {
-                            <MudSelectItem T="Guid?" Value="@supplier.Id">
-                                @supplier.Code — @supplier.Name
-                            </MudSelectItem>
-                        }
-                    </MudSelect>
+                    <PartnerAutocomplete SelectedPartner="_selectedSupplier" PartnerChanged="OnSupplierChangedAsync"
+                                         Kind="PartnerKind.Supplier" Label="@L["NewGoodsReceipt_SupplierLabel"]" Required="true" />
                 </MudItem>
                 <MudItem xs="12" md="3">
                     <MudSelect T="Guid?" @bind-Value="_warehouseId" Label="@L["NewGoodsReceipt_WarehouseLabel"]"
@@ -199,16 +192,8 @@
                         </HeaderContent>
                         <RowTemplate>
                             <MudTd DataLabel="@L["NewGoodsReceipt_ProductColumn"]">
-                                <MudSelect T="Guid?" Value="context.ProductId"
-                                           ValueChanged="@(productId => OnProductChanged(context, productId))"
-                                           Margin="Margin.Dense" Clearable="true" Placeholder="@L["NewGoodsReceipt_FreePlaceholder"]">
-                                    @foreach (var product in _products)
-                                    {
-                                        <MudSelectItem T="Guid?" Value="@product.Id">
-                                            @product.ProductCode — @product.Description
-                                        </MudSelectItem>
-                                    }
-                                </MudSelect>
+                                <ProductAutocomplete SelectedProduct="context.SelectedProduct"
+                                                      ProductChanged="@(product => OnProductChanged(context, product))" />
                             </MudTd>
                             <MudTd DataLabel="@L["NewGoodsReceipt_DescriptionColumn"]">
                                 <MudTextField @bind-Value="context.ProductDescription" Margin="Margin.Dense" />
@@ -272,14 +257,13 @@
     private bool _loadingPending;
     private string? _error;
 
+    private Partner? _selectedSupplier;
     private Guid? _supplierId;
     private Guid? _warehouseId;
     private DateTime? _receiptDate = DateTime.Today;
     private string _supplierDocumentNumber = string.Empty;
 
-    private List<Partner> _suppliers = [];
     private List<Warehouse> _warehouses = [];
-    private List<ProductListItem> _products = [];
     private List<PendingOrderLine> _pending = [];
 
     private readonly List<ChosenLine> _chosen = [];
@@ -306,6 +290,7 @@
 
     private async void OnCompanyChanged() => await InvokeAsync(async () =>
     {
+        _selectedSupplier = null;
         _supplierId = null;
         _chosen.Clear();
         _freeLines.Clear();
@@ -324,16 +309,10 @@
 
         try
         {
-            var (suppliers, suppliersError) = await Catalog.GetSuppliersAsync(Company.SelectedCompanyId);
-            _suppliers = [.. suppliers.Where(supplier => supplier.IsActive)];
-
             await WarehouseState.EnsureLoadedAsync();
             _warehouses = [.. WarehouseState.Warehouses];
 
-            var (products, productsError) = await Catalog.GetProductsAsync(Company.SelectedCompanyId);
-            _products = [.. products.Where(product => product.IsActive)];
-
-            _error = suppliersError ?? WarehouseState.LoadError ?? productsError;
+            _error = WarehouseState.LoadError;
 
             _warehouseId ??= WarehouseState.HasWarehouse ? WarehouseState.SelectedWarehouseId : null;
         }
@@ -347,13 +326,14 @@
         }
     }
 
-    private async Task OnSupplierChangedAsync(Guid? supplierId)
+    private async Task OnSupplierChangedAsync(Partner? supplier)
     {
-        _supplierId = supplierId;
+        _selectedSupplier = supplier;
+        _supplierId = supplier?.Id;
         _chosen.Clear();
         _pending = [];
 
-        if (supplierId is null)
+        if (_supplierId is null)
         {
             StateHasChanged();
             return;
@@ -364,7 +344,7 @@
 
         try
         {
-            var (pending, error) = await Purchasing.GetPendingLinesAsync(Company.SelectedCompanyId, supplierId);
+            var (pending, error) = await Purchasing.GetPendingLinesAsync(Company.SelectedCompanyId, _supplierId);
             _pending = [.. pending];
             _error = error;
 
@@ -426,11 +406,10 @@
 
     private void AddFreeLine() => _freeLines.Add(new FreeLine());
 
-    private void OnProductChanged(FreeLine line, Guid? productId)
+    private void OnProductChanged(FreeLine line, ProductListItem? product)
     {
-        line.ProductId = productId;
+        line.SelectedProduct = product;
 
-        var product = _products.FirstOrDefault(x => x.Id == productId);
         if (product is null)
             return;
 
@@ -510,7 +489,9 @@
 
     private sealed class FreeLine
     {
-        public Guid? ProductId { get; set; }
+        /// <summary>The article behind the autocomplete's box, kept whole so the box can show its
+        /// code without a lookup back into a catalogue that is never held in full.</summary>
+        public ProductListItem? SelectedProduct { get; set; }
         public string ProductCode { get; set; } = string.Empty;
         public string ProductDescription { get; set; } = string.Empty;
         public string UnitOfMeasure { get; set; } = "UN";

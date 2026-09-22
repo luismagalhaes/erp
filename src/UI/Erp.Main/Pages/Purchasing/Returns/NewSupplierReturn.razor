@@ -46,15 +46,8 @@
         <MudPaper Elevation="1" Class="pa-4">
             <MudGrid>
                 <MudItem xs="12" md="4">
-                    <MudSelect T="Guid?" Value="_supplierId" ValueChanged="OnSupplierChangedAsync"
-                               Label="@L["NewSupplierReturn_SupplierLabel"]" Variant="Variant.Outlined" Required="true">
-                        @foreach (var supplier in _suppliers)
-                        {
-                            <MudSelectItem T="Guid?" Value="@supplier.Id">
-                                @supplier.Code — @supplier.Name
-                            </MudSelectItem>
-                        }
-                    </MudSelect>
+                    <PartnerAutocomplete SelectedPartner="_selectedSupplier" PartnerChanged="OnSupplierChangedAsync"
+                                         Kind="PartnerKind.Supplier" Label="@L["NewSupplierReturn_SupplierLabel"]" Required="true" />
                 </MudItem>
                 <MudItem xs="12" md="3">
                     <MudDatePicker @bind-Date="_returnDate" Label="@L["NewSupplierReturn_DateLabel"]" Variant="Variant.Outlined"
@@ -179,11 +172,11 @@
     private bool _loadingReturnable;
     private string? _error;
 
+    private Partner? _selectedSupplier;
     private Guid? _supplierId;
     private DateTime? _returnDate = DateTime.Today;
     private string _reason = string.Empty;
 
-    private List<Partner> _suppliers = [];
     private List<ReturnableReceiptLine> _returnable = [];
 
     private readonly List<ChosenLine> _chosen = [];
@@ -200,49 +193,27 @@
     {
         Company.Changed += OnCompanyChanged;
         await Company.EnsureLoadedAsync();
-        await LoadAsync();
+        _error = Company.LoadError;
     }
 
-    private async void OnCompanyChanged() => await InvokeAsync(async () =>
+    private async void OnCompanyChanged() => await InvokeAsync(() =>
     {
+        _selectedSupplier = null;
         _supplierId = null;
         _chosen.Clear();
         _returnable = [];
-        await LoadAsync();
+        _error = Company.LoadError;
+        StateHasChanged();
     });
 
-    private async Task LoadAsync()
+    private async Task OnSupplierChangedAsync(Partner? supplier)
     {
-        if (!Company.HasCompany)
-        {
-            _error = Company.LoadError;
-            StateHasChanged();
-            return;
-        }
-
-        try
-        {
-            var (suppliers, error) = await Catalog.GetSuppliersAsync(Company.SelectedCompanyId);
-            _suppliers = [.. suppliers.Where(supplier => supplier.IsActive)];
-            _error = error;
-        }
-        catch (Exception ex)
-        {
-            _error = string.Format(L["NewSupplierReturn_LoadSuppliersError"], ex.Message);
-        }
-        finally
-        {
-            StateHasChanged();
-        }
-    }
-
-    private async Task OnSupplierChangedAsync(Guid? supplierId)
-    {
-        _supplierId = supplierId;
+        _selectedSupplier = supplier;
+        _supplierId = supplier?.Id;
         _chosen.Clear();
         _returnable = [];
 
-        if (supplierId is null)
+        if (_supplierId is null)
         {
             StateHasChanged();
             return;
@@ -253,7 +224,7 @@
 
         try
         {
-            var (items, error) = await Purchasing.GetReturnableLinesAsync(Company.SelectedCompanyId, supplierId);
+            var (items, error) = await Purchasing.GetReturnableLinesAsync(Company.SelectedCompanyId, _supplierId);
             _returnable = [.. items];
             _error = error;
         }

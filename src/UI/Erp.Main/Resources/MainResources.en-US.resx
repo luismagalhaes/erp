@@ -497,6 +497,20 @@
   <data name="Products_TaxColumn" xml:space="preserve"><value>VAT</value></data>
   <data name="Products_StatusColumn" xml:space="preserve"><value>Status</value></data>
   <data name="Products_EditAction" xml:space="preserve"><value>Edit</value></data>
+  <data name="ProductPicker_Title" xml:space="preserve"><value>Search article</value></data>
+  <data name="ProductPicker_BrandFilterPlaceholder" xml:space="preserve"><value>Search brand...</value></data>
+  <data name="ProductAutocomplete_Placeholder" xml:space="preserve"><value>Free</value></data>
+  <data name="ProductAutocomplete_AdvancedSearchTooltip" xml:space="preserve"><value>Advanced search (family, brand, description)</value></data>
+  <data name="ProductAutocomplete_MatchCount" xml:space="preserve"><value>{0} matches for "{1}"</value></data>
+  <data name="ProductAutocomplete_NoMatches" xml:space="preserve"><value>No matches for "{0}".</value></data>
+  <data name="PartnerPicker_TitleCustomer" xml:space="preserve"><value>Search customer</value></data>
+  <data name="PartnerPicker_TitleSupplier" xml:space="preserve"><value>Search supplier</value></data>
+  <data name="PartnerAutocomplete_PlaceholderCustomer" xml:space="preserve"><value>Customer</value></data>
+  <data name="PartnerAutocomplete_PlaceholderSupplier" xml:space="preserve"><value>Supplier</value></data>
+  <data name="PartnerAutocomplete_AdvancedSearchTooltipCustomer" xml:space="preserve"><value>Advanced customer search (name, tax id, code)</value></data>
+  <data name="PartnerAutocomplete_AdvancedSearchTooltipSupplier" xml:space="preserve"><value>Advanced supplier search (name, tax id, code)</value></data>
+  <data name="PartnerAutocomplete_MatchCount" xml:space="preserve"><value>{0} matches for "{1}"</value></data>
+  <data name="PartnerAutocomplete_NoMatches" xml:space="preserve"><value>No matches for "{0}".</value></data>
   <data name="ProductEditor_NewTitle" xml:space="preserve"><value>New product</value></data>
   <data name="ProductEditor_EditTitle" xml:space="preserve"><value>Edit product</value></data>
   <data name="ProductEditor_FamiliesButton" xml:space="preserve"><value>Families</value></data>
@@ -983,8 +997,6 @@
   <data name="PurchaseOrderEditor_DiscountColumn" xml:space="preserve"><value>Discount</value></data>
   <data name="PurchaseOrderEditor_TotalColumn" xml:space="preserve"><value>Total</value></data>
   <data name="PurchaseOrderEditor_ActionsColumn" xml:space="preserve"><value>Actions</value></data>
-  <data name="PurchaseOrderEditor_FreeProductPlaceholder" xml:space="preserve"><value>Free</value></data>
-  <data name="PurchaseOrderEditor_ProductCodePlaceholder" xml:space="preserve"><value>Code</value></data>
   <data name="PurchaseOrderEditor_NetTotalLabel" xml:space="preserve"><value>Without VAT</value></data>
   <data name="PurchaseOrderEditor_TaxTotalLabel" xml:space="preserve"><value>VAT</value></data>
   <data name="PurchaseOrderEditor_GrossTotalLabel" xml:space="preserve"><value>Total</value></data>
@@ -1115,7 +1127,6 @@
   <data name="NewInvoice_TaxColumn" xml:space="preserve"><value>VAT</value></data>
   <data name="NewInvoice_TotalColumn" xml:space="preserve"><value>Total</value></data>
   <data name="NewInvoice_ActionsColumn" xml:space="preserve"><value>Actions</value></data>
-  <data name="NewInvoice_FreeProductPlaceholder" xml:space="preserve"><value>Free</value></data>
   <data name="NewInvoice_ProductCodePlaceholder" xml:space="preserve"><value>Code</value></data>
   <data name="NewInvoice_RemoveLineTooltip" xml:space="preserve"><value>Remove line</value></data>
   <data name="NewInvoice_ExemptionReasonLabel" xml:space="preserve"><value>Exemption reason</value></data>
@@ -1458,7 +1469,6 @@
   <data name="NewStockMovement_TaxColumn" xml:space="preserve"><value>Tax</value></data>
   <data name="NewStockMovement_TotalColumn" xml:space="preserve"><value>Total</value></data>
   <data name="NewStockMovement_ActionsColumn" xml:space="preserve"><value>Actions</value></data>
-  <data name="NewStockMovement_CodePlaceholder" xml:space="preserve"><value>Code</value></data>
   <data name="NewStockMovement_RemoveLineTooltip" xml:space="preserve"><value>Remove line</value></data>
   <data name="NewStockMovement_ExemptionReasonLabel" xml:space="preserve"><value>Exemption reason</value></data>
   <data name="NewStockMovement_ExemptionReasonHelp" xml:space="preserve"><value>Required when any line is tax exempt</value></data>
@@ -1568,7 +1578,6 @@
   <data name="NewSelfBilledInvoice_QuantityColumn" xml:space="preserve"><value>Qty.</value></data>
   <data name="NewSelfBilledInvoice_TaxColumn" xml:space="preserve"><value>Tax</value></data>
   <data name="NewSelfBilledInvoice_ActionsColumn" xml:space="preserve"><value>Actions</value></data>
-  <data name="NewSelfBilledInvoice_FreePlaceholder" xml:space="preserve"><value>Free</value></data>
   <data name="NewSelfBilledInvoice_NoLines" xml:space="preserve"><value>None.</value></data>
   <data name="NewSelfBilledInvoice_ExemptionReasonLabel" xml:space="preserve"><value>Exemption reason</value></data>
   <data name="NewSelfBilledInvoice_ExemptionReasonHelp" xml:space="preserve"><value>Required for any exempt line</value></data>
@@ -1648,7 +1657,6 @@
   <data name="NewSupplierInvoice_QuantityColumn" xml:space="preserve"><value>Qty.</value></data>
   <data name="NewSupplierInvoice_TaxColumn" xml:space="preserve"><value>Tax</value></data>
   <data name="NewSupplierInvoice_ActionsColumn" xml:space="preserve"><value>Actions</value></data>
-  <data name="NewSupplierInvoice_FreePlaceholder" xml:space="preserve"><value>Free</value></data>
   <data name="NewSupplierInvoice_NoLines" xml:space="preserve"><value>None.</value></data>
   <data name="NewSupplierInvoice_WarehouseLabel" xml:space="preserve"><value>Warehouse</value></data>
   <data name="NewSupplierInvoice_WarehouseHelp" xml:space="preserve"><value>Where this invoice's stock enters</value></data>
@@ -1772,7 +1780,6 @@
   <data name="NewGoodsReceipt_QuantityColumn" xml:space="preserve"><value>Qty.</value></data>
   <data name="NewGoodsReceipt_UnitColumn" xml:space="preserve"><value>Unit</value></data>
   <data name="NewGoodsReceipt_ActionsColumn" xml:space="preserve"><value>Actions</value></data>
-  <data name="NewGoodsReceipt_FreePlaceholder" xml:space="preserve"><value>Free</value></data>
   <data name="NewGoodsReceipt_NoLines" xml:space="preserve"><value>None.</value></data>
   <data name="NewGoodsReceipt_LineCountSingular" xml:space="preserve"><value>line</value></data>
   <data name="NewGoodsReceipt_LineCountPlural" xml:space="preserve"><value>lines</value></data>
@@ -1860,7 +1867,6 @@
   <data name="NewSupplierReturn_CancelButton" xml:space="preserve"><value>Cancel</value></data>
   <data name="NewSupplierReturn_SavingButton" xml:space="preserve"><value>Returning...</value></data>
   <data name="NewSupplierReturn_SaveButton" xml:space="preserve"><value>Return</value></data>
-  <data name="NewSupplierReturn_LoadSuppliersError" xml:space="preserve"><value>Unable to load the suppliers: {0}</value></data>
   <data name="NewSupplierReturn_LoadReturnableError" xml:space="preserve"><value>Unable to load what can be returned: {0}</value></data>
   <data name="NewSupplierReturn_SaveFallbackError" xml:space="preserve"><value>Unable to register the return.</value></data>
   <data name="NewSupplierReturn_SaveSuccess" xml:space="preserve"><value>Return {0} registered. Stock has been removed.</value></data>

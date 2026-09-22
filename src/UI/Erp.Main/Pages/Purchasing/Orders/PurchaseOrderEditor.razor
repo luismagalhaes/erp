@@ -54,17 +54,10 @@
             <MudText Typo="Typo.h6" Class="mb-3">@L["PurchaseOrderEditor_SupplierDeliverySectionTitle"]</MudText>
             <MudGrid>
                 <MudItem xs="12" md="4">
-                    <MudSelect T="Guid?" @bind-Value="_supplierId" Label="@L["PurchaseOrderEditor_SupplierLabel"]"
-                               Variant="Variant.Outlined" Required="true"
-                               Disabled="@(!IsNew)"
-                               HelperText="@(IsNew ? null : (string?)L["PurchaseOrderEditor_SupplierHelperText"])">
-                        @foreach (var supplier in _suppliers)
-                        {
-                            <MudSelectItem T="Guid?" Value="@supplier.Id">
-                                @supplier.Code — @supplier.Name
-                            </MudSelectItem>
-                        }
-                    </MudSelect>
+                    <PartnerAutocomplete SelectedPartner="_selectedSupplier" PartnerChanged="OnSupplierChanged"
+                                         Kind="PartnerKind.Supplier" Label="@L["PurchaseOrderEditor_SupplierLabel"]" Required="true"
+                                         Disabled="@(!IsNew)"
+                                         HelperText="@(IsNew ? null : (string?)L["PurchaseOrderEditor_SupplierHelperText"])" />
                 </MudItem>
                 <MudItem xs="12" md="4">
                     <MudSelect T="Guid?" @bind-Value="_warehouseId" Label="@L["PurchaseOrderEditor_WarehouseLabel"]"
@@ -114,23 +107,8 @@
                 </HeaderContent>
                 <RowTemplate>
                     <MudTd DataLabel="@L["PurchaseOrderEditor_ProductColumn"]">
-                        @if (_products.Count > 0)
-                        {
-                            <MudSelect T="Guid?" Value="context.ProductId"
-                                       ValueChanged="@(productId => OnProductChanged(context, productId))"
-                                       Margin="Margin.Dense" Clearable="true" Placeholder="@L["PurchaseOrderEditor_FreeProductPlaceholder"]">
-                                @foreach (var product in _products)
-                                {
-                                    <MudSelectItem T="Guid?" Value="@product.Id">
-                                        @product.ProductCode — @product.Description
-                                    </MudSelectItem>
-                                }
-                            </MudSelect>
-                        }
-                        else
-                        {
-                            <MudTextField @bind-Value="context.ProductCode" Margin="Margin.Dense" Placeholder="@L["PurchaseOrderEditor_ProductCodePlaceholder"]" />
-                        }
+                        <ProductAutocomplete SelectedProduct="context.SelectedProduct"
+                                              ProductChanged="@(product => OnProductChanged(context, product))" />
                     </MudTd>
                     <MudTd DataLabel="@L["PurchaseOrderEditor_DescriptionColumn"]">
                         <MudTextField @bind-Value="context.ProductDescription" Margin="Margin.Dense" />
@@ -224,6 +202,7 @@
     private string? _error;
     private string _number = string.Empty;
 
+    private Partner? _selectedSupplier;
     private Guid? _supplierId;
     private Guid? _warehouseId;
     private DateTime? _orderDate = DateTime.Today;
@@ -232,9 +211,7 @@
 
     private readonly List<LineEditor> _lines = [new()];
 
-    private List<Partner> _suppliers = [];
     private List<Warehouse> _warehouses = [];
-    private List<ProductListItem> _products = [];
 
     private bool CanSave =>
         _supplierId is not null
@@ -288,20 +265,14 @@
 
         try
         {
-            var (suppliers, suppliersError) = await Catalog.GetSuppliersAsync(Company.SelectedCompanyId);
-            _suppliers = [.. suppliers.Where(supplier => supplier.IsActive)];
-
             await WarehouseState.EnsureLoadedAsync();
             _warehouses = [.. WarehouseState.Warehouses];
-
-            var (products, productsError) = await Catalog.GetProductsAsync(Company.SelectedCompanyId);
-            _products = [.. products.Where(product => product.IsActive)];
 
             // Mainland rates — this document has no fiscal-region selector of its own.
             var (rates, _) = await Catalog.GetVatRatesAsync();
             _taxRates = [.. rates.Where(x => x.FiscalRegion == "PT" && x.IsActive)];
 
-            _error = suppliersError ?? WarehouseState.LoadError ?? productsError;
+            _error = WarehouseState.LoadError;
 
             if (IsNew)
                 _warehouseId = WarehouseState.HasWarehouse ? WarehouseState.SelectedWarehouseId : null;
@@ -340,6 +311,7 @@
 
         _number = order.Number;
         _supplierId = order.SupplierId;
+        _selectedSupplier = await Catalog.GetSupplierAsync(order.SupplierId);
         _warehouseId = order.WarehouseId;
         _orderDate = order.OrderDate.ToDateTime(TimeOnly.MinValue);
         _expectedDate = order.ExpectedDate?.ToDateTime(TimeOnly.MinValue);
@@ -351,7 +323,9 @@
         {
             _lines.Add(new LineEditor
             {
-                ProductId = _products.FirstOrDefault(product => product.ProductCode == line.ProductCode)?.Id,
+                // The catalogue is never preloaded, so a saved line's article is resolved by its own
+                // code, one exact lookup at a time, only when there is an existing order to redraw.
+                SelectedProduct = await FindProductByCodeAsync(line.ProductCode),
                 ProductCode = line.ProductCode,
                 ProductDescription = line.ProductDescription,
                 Quantity = line.Quantity,
@@ -367,6 +341,24 @@
             _lines.Add(new LineEditor());
     }
 
+    private async Task<ProductListItem?> FindProductByCodeAsync(string productCode)
+    {
+        if (string.IsNullOrWhiteSpace(productCode))
+            return null;
+
+        var query = new ODataQuery { Top = 1, Count = false };
+        query.Filter($"ProductCode eq {ODataQuery.Literal(productCode)}");
+
+        var (items, _, _) = await Catalog.QueryProductsAsync(Company.SelectedCompanyId, query);
+        return items.FirstOrDefault();
+    }
+
+    private void OnSupplierChanged(Partner? supplier)
+    {
+        _selectedSupplier = supplier;
+        _supplierId = supplier?.Id;
+    }
+
     private void AddLine() => _lines.Add(new LineEditor());
 
     private void RemoveLine(LineEditor line)
@@ -379,11 +371,10 @@
     /// Picking an article fills the line from the product file. The unit cost is what values the
     /// stock, so it is the sensible default for what we expect to pay.
     /// </summary>
-    private void OnProductChanged(LineEditor line, Guid? productId)
+    private void OnProductChanged(LineEditor line, ProductListItem? product)
     {
-        line.ProductId = productId;
+        line.SelectedProduct = product;
 
-        var product = _products.FirstOrDefault(x => x.Id == productId);
         if (product is null)
             return;
 
@@ -474,7 +465,9 @@
 
     private sealed class LineEditor
     {
-        public Guid? ProductId { get; set; }
+        /// <summary>The article behind the autocomplete's box, kept whole so the box can show its
+        /// code without a lookup back into a catalogue that is never held in full.</summary>
+        public ProductListItem? SelectedProduct { get; set; }
         public string ProductCode { get; set; } = string.Empty;
         public string ProductDescription { get; set; } = string.Empty;
         public decimal Quantity { get; set; } = 1;

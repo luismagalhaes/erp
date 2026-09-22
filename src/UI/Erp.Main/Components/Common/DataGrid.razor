@@ -25,8 +25,10 @@
                  SortMode="SortMode.Multiple" Dense="true" Hover="true" Striped="true"
                  DragDropColumnReordering="true" ColumnsPanelReordering="true"
                  ColumnResizeMode="ResizeMode.Column" ShowMenuIcon="true"
-                 FixedHeader="true" Height="var(--erp-grid-height)"
-                 Virtualize="true" ItemSize="36" OverscanCount="12">
+                 FixedHeader="true" Height="@Height"
+                 Virtualize="true" ItemSize="36" OverscanCount="12"
+                 RowClick="OnRowClickedAsync"
+                 RowClass="@(RowClick.HasDelegate ? "cursor-pointer" : null)">
         <ToolBarContent>
             @if (SearchFields.Count > 0)
             {
@@ -113,6 +115,18 @@
     /// </summary>
     [Parameter] public bool CompanyScoped { get; set; } = true;
 
+    /// <summary>
+    /// Raised when a row is clicked, with the row's item. Left unset, the grid behaves as a plain
+    /// listing; a page that sets it (a picker dialog) gets a pointer cursor over the rows too.
+    /// </summary>
+    [Parameter] public EventCallback<T> RowClick { get; set; }
+
+    /// <summary>
+    /// The scrollable body's CSS height. The default fills a full page under its header chrome; a
+    /// grid embedded in a dialog needs a shorter, dialog-relative height instead.
+    /// </summary>
+    [Parameter] public string Height { get; set; } = "var(--erp-grid-height)";
+
     private MudDataGrid<T>? _grid;
     private bool _loading = true;
     private string? _error;
@@ -146,6 +160,9 @@
         _search = value;
         await ReloadAsync();
     }
+
+    private Task OnRowClickedAsync(DataGridRowClickEventArgs<T> args) =>
+        RowClick.HasDelegate ? RowClick.InvokeAsync(args.Item) : Task.CompletedTask;
 
     /// <summary>
     /// Translates the grid state into an OData query and hands it to the page. The grid asks for the

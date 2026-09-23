@@ -104,7 +104,7 @@
                     <MudTd DataLabel="@L["SelfBilledInvoiceView_NumberColumn"]">@context.LineNumber</MudTd>
                     <MudTd DataLabel="@L["SelfBilledInvoiceView_CodeColumn"]">@context.ProductCode</MudTd>
                     <MudTd DataLabel="@L["SelfBilledInvoiceView_DescriptionColumn"]">@context.ProductDescription</MudTd>
-                    <MudTd DataLabel="@L["SelfBilledInvoiceView_QuantityColumn"]" Style="text-align: right;">@context.Quantity.ToString("N3")</MudTd>
+                    <MudTd DataLabel="@L["SelfBilledInvoiceView_QuantityColumn"]" Style="text-align: right;">@context.Quantity.ToString("N2")</MudTd>
                     <MudTd DataLabel="@L["SelfBilledInvoiceView_UnitPriceColumn"]" Style="text-align: right;">@context.UnitPrice.ToString("N2")</MudTd>
                     <MudTd DataLabel="@L["SelfBilledInvoiceView_NetColumn"]" Style="text-align: right;">@context.LineAmount.ToString("N2")</MudTd>
                     <MudTd DataLabel="@L["SelfBilledInvoiceView_TaxColumn"]" Style="text-align: right;">@context.TaxPercentage.ToString("N0")%</MudTd>

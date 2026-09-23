@@ -155,6 +155,36 @@ public sealed class StockMovementsController(
     }
 
     /// <summary>
+    /// Registers the ATDocCodeID by hand, for a document the automatic communication could not
+    /// send — missing credentials or a webservice outage — and whose code was obtained another way.
+    /// </summary>
+    [HttpPost("{id:guid}/communicate-manually")]
+    [Authorize(Policy = Policies.Write)]
+    [ProducesResponseType<StockMovementDetailDto>(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status409Conflict)]
+    public async Task<ActionResult<StockMovementDetailDto>> CommunicateManually(
+        Guid id,
+        [FromBody] RegisterStockMovementAtCodeRequest request,
+        CancellationToken cancellationToken)
+    {
+        if (string.IsNullOrWhiteSpace(request?.AtDocCodeId))
+            return BadRequest(new { error = "An ATDocCodeID is required." });
+
+        try
+        {
+            var result = await stockMovementService.RegisterManualCodeAsync(id, request.AtDocCodeId, cancellationToken);
+            return result is null ? NotFound() : Ok(result);
+        }
+        catch (InvalidOperationException ex)
+        {
+            logger.LogWarning(ex, "{Controller}.{Method} could not complete due to a conflict.", nameof(StockMovementsController), nameof(CommunicateManually));
+            return Conflict(new { error = ex.Message });
+        }
+    }
+
+    /// <summary>
     /// Voids a movement. The original record is preserved: this writes a status change, it does
     /// not alter or remove the document.
     /// </summary>

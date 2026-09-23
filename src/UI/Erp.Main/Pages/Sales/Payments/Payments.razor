@@ -38,12 +38,6 @@
               LoadErrorMessage="@L["Payments_LoadErrorMessage"]">
         <Columns>
             <PropertyColumn Property="x => x.PaymentRefNo" Title="@L["Payments_DocumentColumn"]" CellClass="erp-mono" />
-            <PropertyColumn Property="x => x.PaymentType" Title="@L["Payments_TypeColumn"]">
-                <CellTemplate>
-                    <MudChip T="string" Size="Size.Small" Variant="Variant.Text">@context.Item.PaymentType</MudChip>
-                </CellTemplate>
-            </PropertyColumn>
-            <PropertyColumn Property="x => x.Atcud" Title="ATCUD" CellClass="erp-mono" />
             <PropertyColumn Property="x => x.TransactionDate" Title="@L["Payments_DateColumn"]" Format="yyyy-MM-dd" />
             <PropertyColumn Property="x => x.PartyName" Title="@L["Payments_CustomerColumn"]" />
             <PropertyColumn Property="x => x.PartyTaxId" Title="@L["Payments_TaxIdColumn"]" />

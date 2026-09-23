@@ -112,14 +112,14 @@
                     </MudTd>
                     <MudTd DataLabel="@Localizer["StockCheck_WarehouseColumn"]">@WarehouseName(context.WarehouseId)</MudTd>
                     <MudTd DataLabel="@Localizer["StockCheck_RecordedBalanceColumn"]" Style="text-align: right;">
-                        @context.RecordedQuantity.ToString("N3")
+                        @context.RecordedQuantity.ToString("N2")
                     </MudTd>
                     <MudTd DataLabel="@Localizer["StockCheck_LedgerSumColumn"]" Style="text-align: right;">
-                        @context.LedgerQuantity.ToString("N3")
+                        @context.LedgerQuantity.ToString("N2")
                     </MudTd>
                     <MudTd DataLabel="@Localizer["StockCheck_DifferenceColumn"]" Style="text-align: right;">
                         <MudText Typo="Typo.body2" Color="@(context.Difference == 0 ? Color.Success : Color.Error)">
-                            <strong>@context.Difference.ToString("N3")</strong>
+                            <strong>@context.Difference.ToString("N2")</strong>
                         </MudText>
                     </MudTd>
                     <MudTd DataLabel="@Localizer["StockCheck_RecordedValueColumn"]" Style="text-align: right;">

@@ -153,7 +153,63 @@ public sealed class StockMovementService(
 
         await transaction.CommitAsync(cancellationToken);
 
+        // The goods movement is complete and legally valid the moment it is issued; the AT
+        // communication is best attempted right away so nobody has to remember to come back for
+        // it. When it cannot go through, the document is left as issued and uncommunicated — the
+        // view page lets it be retried, or the code registered by hand.
+        await TryAutoCommunicateAsync(movement, cancellationToken);
+
         return Map(movement);
+    }
+
+    /// <summary>
+    /// Attempts the AT communication right after issuing, without failing the issue itself: a
+    /// missing credential or a webservice outage here is not a reason to reject an otherwise valid
+    /// document, only a reason to flag it for later.
+    /// </summary>
+    private async Task TryAutoCommunicateAsync(StockMovement movement, CancellationToken cancellationToken)
+    {
+        try
+        {
+            var profile = await atCompanyProfileProvider.GetAsync(movement.CompanyId, cancellationToken);
+
+            if (profile is null)
+            {
+                logger.LogWarning(
+                    "Document {DocumentNumber} has no AT WDT credentials configured; it needs to be communicated manually.",
+                    movement.DocumentNumber);
+                return;
+            }
+
+            var request = BuildAtTransportDocumentRequest(movement, profile);
+            var credentials = new AtCredentials(profile.TaxId, profile.SubUserId, profile.Password);
+
+            var result = await atTransportDocumentClient.CommunicateAsync(request, credentials, cancellationToken);
+
+            if (result.IsAlert)
+            {
+                logger.LogWarning(
+                    "AT accepted document {DocumentNumber} with alert {ReturnCode}: {ReturnMessage}",
+                    movement.DocumentNumber, result.ReturnCode, result.ReturnMessage);
+            }
+
+            if (string.IsNullOrWhiteSpace(result.AtDocCodeId))
+            {
+                logger.LogWarning(
+                    "AT accepted document {DocumentNumber} but returned no ATDocCodeID; it needs to be registered manually.",
+                    movement.DocumentNumber);
+                return;
+            }
+
+            movement.Communicate(result.AtDocCodeId, DateTime.UtcNow);
+            await unitOfWork.SaveChangesAsync(cancellationToken);
+        }
+        catch (Exception ex)
+        {
+            logger.LogWarning(
+                ex, "Automatic AT communication failed for document {DocumentNumber}; it needs to be communicated manually.",
+                movement.DocumentNumber);
+        }
     }
 
     public async Task<StockMovementDetailDto?> CommunicateAsync(Guid id, CancellationToken cancellationToken = default)
@@ -188,6 +244,30 @@ public sealed class StockMovementService(
             throw new InvalidOperationException($"AT accepted document '{movement.DocumentNumber}' but returned no ATDocCodeID.");
 
         movement.Communicate(result.AtDocCodeId, DateTime.UtcNow);
+        await unitOfWork.SaveChangesAsync(cancellationToken);
+
+        return Map(movement);
+    }
+
+    /// <summary>
+    /// Registers the ATDocCodeID by hand, for a document the webservice could not communicate.
+    /// </summary>
+    public async Task<StockMovementDetailDto?> RegisterManualCodeAsync(Guid id, string atDocCodeId, CancellationToken cancellationToken = default)
+    {
+        if (string.IsNullOrWhiteSpace(atDocCodeId))
+            throw new ArgumentException("An ATDocCodeID is required.", nameof(atDocCodeId));
+
+        var movement = await movementStorage.GetByIdAsync(id, cancellationToken);
+        if (movement is null)
+            return null;
+
+        if (movement.IsVoided)
+            throw new InvalidOperationException($"Document '{movement.DocumentNumber}' is voided and cannot be communicated.");
+
+        if (!string.IsNullOrWhiteSpace(movement.AtDocCodeId))
+            throw new InvalidOperationException($"Document '{movement.DocumentNumber}' was already communicated.");
+
+        movement.Communicate(atDocCodeId.Trim(), DateTime.UtcNow);
         await unitOfWork.SaveChangesAsync(cancellationToken);
 
         return Map(movement);

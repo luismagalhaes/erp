@@ -120,6 +120,14 @@ public class SalesApiClient(HttpClient http) : ApiClientBase(http)
         return response.IsSuccessStatusCode ? null : await ApiResponse.ReadErrorAsync(response, cancellationToken);
     }
 
+    public async Task<string?> RegisterStockMovementAtCodeAsync(Guid id, string atDocCodeId, CancellationToken cancellationToken = default)
+    {
+        var response = await Http.PostAsJsonAsync(
+            $"api/stock-movements/{id}/communicate-manually", new RegisterStockMovementAtCodeRequest(atDocCodeId), cancellationToken);
+
+        return response.IsSuccessStatusCode ? null : await ApiResponse.ReadErrorAsync(response, cancellationToken);
+    }
+
     public async Task<string?> VoidStockMovementAsync(Guid id, string reason, CancellationToken cancellationToken = default)
     {
         var response = await Http.PostAsJsonAsync(

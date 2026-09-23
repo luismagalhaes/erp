@@ -32,10 +32,8 @@
     <MudPaper Elevation="0" Class="pa-4 erp-card erp-form">
         <MudGrid>
             <MudItem xs="12" md="6">
-                <MudAutocomplete T="Partner" Value="_party" ValueChanged="OnPartyChanged"
-                                 SearchFunc="SearchAsync" ToStringFunc="@(party => party is null ? string.Empty : $"{party.Name} ({party.TaxId})")"
-                                 Label="@PartyLabel" Variant="Variant.Outlined" Margin="Margin.Dense" Clearable="true"
-                                 ResetValueOnEmptyText="true" MaxItems="50" />
+                <PartnerAutocomplete SelectedPartner="_party" PartnerChanged="OnPartyChanged"
+                                     Kind="Kind" Label="@PartyLabel" Variant="Variant.Outlined" Margin="Margin.Dense" />
             </MudItem>
             <MudItem xs="6" md="3">
                 <MudDatePicker Date="ToDateTime(StartDate)" DateChanged="OnStartChanged" Clearable="true"
@@ -145,8 +143,12 @@
     /// <summary>The query string name of the party, e.g. "customerId".</summary>
     [Parameter, EditorRequired] public string PartyParameter { get; set; } = string.Empty;
 
-    [Parameter, EditorRequired]
-    public Func<Guid, Task<(IReadOnlyList<Partner> Items, string? Error)>> LoadParties { get; set; } = null!;
+    /// <summary>Whether the picker searches the customer file or the supplier file.</summary>
+    [Parameter, EditorRequired] public PartnerKind Kind { get; set; }
+
+    /// <summary>Resolves a single party by id, for the deep link a bookmarked or shared statement
+    /// arrives with. The live search itself is PartnerAutocomplete's own, same as an invoice's.</summary>
+    [Parameter, EditorRequired] public Func<Guid, Task<Partner?>> LoadParty { get; set; } = null!;
 
     [Parameter, EditorRequired]
     public Func<Guid, Guid, DateOnly?, DateOnly?, Task<(AccountStatement? Statement, string? Error)>> LoadStatement { get; set; } = null!;
@@ -159,7 +161,6 @@
 
     private bool _loading;
     private string? _error;
-    private List<Partner> _parties = [];
     private Partner? _party;
     private Guid? _partyId;
     private AccountStatement? _statement;
@@ -175,46 +176,29 @@
             StartDate = new DateOnly(DateTime.Today.Year, 1, 1);
 
         _partyId = PartyId;
-        await LoadPartiesAsync();
+        _error = Company.LoadError;
+
+        await ResolveInitialPartyAsync();
+        await LoadStatementAsync();
     }
 
-    private async void OnCompanyChanged() => await InvokeAsync(async () =>
+    private async void OnCompanyChanged() => await InvokeAsync(() =>
     {
         _party = null;
         _partyId = null;
         _statement = null;
-        await LoadPartiesAsync();
+        _error = Company.LoadError;
         StateHasChanged();
     });
 
-    private async Task LoadPartiesAsync()
+    /// <summary>Looks up the party a bookmarked or shared link named, so the picker shows it without
+    /// the user having to search again.</summary>
+    private async Task ResolveInitialPartyAsync()
     {
-        _error = Company.LoadError;
-
-        if (!Company.HasCompany)
-        {
-            _parties = [];
+        if (!Company.HasCompany || _partyId is not { } partyId)
             return;
-        }
 
-        var (parties, error) = await LoadParties(Company.SelectedCompanyId);
-        _parties = [.. parties.OrderBy(party => party.Name)];
-        _error ??= error;
-
-        _party = _parties.FirstOrDefault(party => party.Id == _partyId);
-        await LoadStatementAsync();
-    }
-
-    private Task<IEnumerable<Partner>> SearchAsync(string? text, CancellationToken cancellationToken)
-    {
-        IEnumerable<Partner> matches = string.IsNullOrWhiteSpace(text)
-            ? _parties
-            : _parties.Where(party =>
-                party.Name.Contains(text, StringComparison.OrdinalIgnoreCase)
-                || party.TaxId.Contains(text, StringComparison.OrdinalIgnoreCase)
-                || party.Code.Contains(text, StringComparison.OrdinalIgnoreCase));
-
-        return Task.FromResult(matches);
+        _party = await LoadParty(partyId);
     }
 
     private async Task OnPartyChanged(Partner? party)

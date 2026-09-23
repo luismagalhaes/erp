@@ -18,8 +18,6 @@
 <MudStack Spacing="4">
     <PageHeader Title="@L["PurchaseOrders_HeaderTitle"]">
         <Actions>
-            <MudSwitch T="bool" Value="_openOnly" ValueChanged="OnOpenOnlyChangedAsync"
-                       Color="Color.Primary" Label="@L["PurchaseOrders_OpenOnlySwitch"]" />
             <MudButton Variant="Variant.Filled" Color="Color.Primary"
                        StartIcon="@Icons.Material.Filled.Add"
                        Disabled="@(!Company.HasCompany)"
@@ -29,8 +27,8 @@
         </Actions>
     </PageHeader>
 
-    <DataGrid @ref="_grid" T="PurchaseOrderListItem"
-              LoadAsync="LoadAsync"
+    <DataGrid T="PurchaseOrderListItem"
+              LoadAsync="@((companyId, query, ct) => Purchasing.QueryOrdersAsync(companyId, query, ct))"
               SearchFields="SearchFields" DefaultOrderBy="OrderDate desc,Number desc"
               SearchPlaceholder="@L["PurchaseOrders_SearchPlaceholder"]"
               EmptyIcon="@Icons.Material.Filled.ShoppingCart"
@@ -58,8 +56,6 @@
                     </MudChip>
                 </CellTemplate>
             </PropertyColumn>
-            <PropertyColumn Property="x => x.LineCount" Title="@L["PurchaseOrders_LinesColumn"]"
-                            CellClass="erp-numeric" HeaderClass="erp-numeric" />
             <PropertyColumn Property="x => x.GrossTotal" Title="@L["PurchaseOrders_TotalColumn"]" Format="N2"
                             CellClass="erp-numeric" HeaderClass="erp-numeric" />
             <TemplateColumn Title="" Sortable="false" Filterable="false" Hideable="false"
@@ -81,30 +77,6 @@
 
 @code {
     private static readonly string[] SearchFields = ["Number", "SupplierName", "SupplierTaxId"];
-
-    private DataGrid<PurchaseOrderListItem>? _grid;
-    private bool _openOnly;
-
-    /// <summary>
-    /// The "still owed" switch is added to the query rather than applied to the page, so the count
-    /// and the paging the grid receives are already the ones of the orders being shown.
-    /// </summary>
-    private Task<(IReadOnlyList<PurchaseOrderListItem> Items, int Count, string? Error)> LoadAsync(
-        Guid companyId, ODataQuery query, CancellationToken cancellationToken)
-    {
-        if (_openOnly)
-            query.Filter("IsOpen eq true");
-
-        return Purchasing.QueryOrdersAsync(companyId, query, cancellationToken);
-    }
-
-    private async Task OnOpenOnlyChangedAsync(bool openOnly)
-    {
-        _openOnly = openOnly;
-
-        if (_grid is not null)
-            await _grid.ReloadAsync();
-    }
 
     private static Color StatusColor(string status) => status switch
     {

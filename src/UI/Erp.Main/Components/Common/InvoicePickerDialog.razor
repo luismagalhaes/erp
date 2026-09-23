@@ -1,0 +1,115 @@
+@* Advanced document search: the same DataGrid the Invoices page uses, paged and filtered server
+   side — a company can have thousands of documents, far too many to hold in a client-side list
+   (see InvoiceAutocomplete's own remark for the quick lookup this backs up). *@
+@using MudBlazor
+@using Erp.Main.Models.Sales
+@using Erp.Main.Services
+@using Erp.Main.Resources
+@using Microsoft.Extensions.Localization
+@inject SalesApiClient SalesApi
+@inject IStringLocalizer<MainResources> L
+
+<MudDialog Visible="Open" VisibleChanged="OnVisibleChangedAsync" Options="_dialogOptions">
+    <TitleContent>
+        <MudText Typo="Typo.h6">@L["InvoicePicker_Title"]</MudText>
+    </TitleContent>
+    <DialogContent>
+        <DataGrid @ref="_grid" T="InvoiceListItem"
+                  LoadAsync="LoadInvoicesAsync"
+                  SearchFields="SearchFields" DefaultOrderBy="DocumentDate desc,DocumentNumber desc"
+                  SearchPlaceholder="@L["Invoices_SearchPlaceholder"]"
+                  EmptyIcon="@Icons.Material.Filled.ReceiptLong"
+                  ItemsLabel="@L["Invoices_ItemsLabel"]"
+                  LoadErrorMessage="@L["Invoices_LoadErrorMessage"]"
+                  Height="60vh"
+                  RowClick="OnRowClickedAsync">
+            <Columns>
+                <PropertyColumn Property="x => x.DocumentNumber" Title="@L["Invoices_DocumentColumn"]" CellClass="erp-mono" />
+                <PropertyColumn Property="x => x.DocumentDate" Title="@L["Invoices_DateColumn"]" Format="yyyy-MM-dd" />
+                <PropertyColumn Property="x => x.CustomerName" Title="@L["Invoices_CustomerColumn"]" />
+                <PropertyColumn Property="x => x.GrossTotal" Title="@L["Invoices_TotalColumn"]" Format="N2"
+                                CellClass="erp-numeric" HeaderClass="erp-numeric" />
+            </Columns>
+        </DataGrid>
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="@(() => OnVisibleChangedAsync(false))">@L["Common_CancelButton"]</MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [Parameter] public bool Open { get; set; }
+
+    [Parameter] public EventCallback<bool> OpenChanged { get; set; }
+
+    /// <summary>Raised with the chosen document; the dialog closes itself before this fires.</summary>
+    [Parameter] public EventCallback<InvoiceListItem> Picked { get; set; }
+
+    /// <summary>Narrows the search to one customer's documents. Left null, every customer's
+    /// documents are searched.</summary>
+    [Parameter] public string? CustomerTaxId { get; set; }
+
+    /// <summary>When true, only documents that can still be corrected are listed: not voided, and
+    /// not themselves a credit or debit note.</summary>
+    [Parameter] public bool RectifiableOnly { get; set; }
+
+    private readonly DialogOptions _dialogOptions = new() { MaxWidth = MaxWidth.Large, FullWidth = true };
+
+    private static readonly string[] SearchFields = ["DocumentNumber", "CustomerName", "CustomerTaxId"];
+
+    private DataGrid<InvoiceListItem>? _grid;
+    private bool _previousOpen;
+    private bool _pendingReload;
+
+    /// <summary>
+    /// The dialog stays mounted, hidden, between opens, so its grid is never recreated — and a
+    /// hidden container has no measurable height, which is what a virtualized grid uses to decide
+    /// how many rows to ask for. Reloading right after the dialog actually becomes visible is what
+    /// gets it its first real page instead of the empty one a zero-height fetch would have returned.
+    /// </summary>
+    protected override void OnParametersSet()
+    {
+        if (Open && !_previousOpen)
+            _pendingReload = true;
+
+        _previousOpen = Open;
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!_pendingReload || _grid is null)
+            return;
+
+        _pendingReload = false;
+        await _grid.ReloadAsync();
+    }
+
+    private Task<(IReadOnlyList<InvoiceListItem> Items, int Count, string? Error)> LoadInvoicesAsync(
+        Guid companyId, ODataQuery query, CancellationToken cancellationToken)
+    {
+        if (!string.IsNullOrWhiteSpace(CustomerTaxId))
+            query.Filter($"CustomerTaxId eq {ODataQuery.Literal(CustomerTaxId)}");
+
+        if (RectifiableOnly)
+        {
+            query.Filter("Status ne 'A'");
+            query.Filter(string.Join(
+                " and ",
+                InvoiceTypes.Rectifying.Select(type => $"DocumentType ne {ODataQuery.Literal(type)}")));
+        }
+
+        return SalesApi.QueryInvoicesAsync(companyId, query, cancellationToken);
+    }
+
+    private async Task OnRowClickedAsync(InvoiceListItem invoice)
+    {
+        await OnVisibleChangedAsync(false);
+        await Picked.InvokeAsync(invoice);
+    }
+
+    private async Task OnVisibleChangedAsync(bool visible)
+    {
+        Open = visible;
+        await OpenChanged.InvokeAsync(visible);
+    }
+}

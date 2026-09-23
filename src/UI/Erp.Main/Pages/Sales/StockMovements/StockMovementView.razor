@@ -69,25 +69,20 @@
 
         <MudPaper Elevation="0" Class="pa-4 erp-card erp-form">
             <MudGrid>
-                <MudItem xs="12" md="3">
+                <MudItem xs="12" md="4">
                     <MudText Typo="Typo.caption" Color="Color.Secondary">
                         @(_movement.PartyIsSupplier ? L["StockMovementView_SupplierLabel"] : L["StockMovementView_CustomerLabel"])
                     </MudText>
                     <MudText>@_movement.PartyName</MudText>
                     <MudText Typo="Typo.body2" Color="Color.Secondary">@L["StockMovementView_TaxIdPrefix", _movement.PartyTaxId]</MudText>
                 </MudItem>
-                <MudItem xs="12" md="3">
+                <MudItem xs="12" md="4">
                     <MudText Typo="Typo.caption" Color="Color.Secondary">@L["StockMovementView_DocumentDateLabel"]</MudText>
                     <MudText>@_movement.MovementDate.ToString("yyyy-MM-dd")</MudText>
                 </MudItem>
-                <MudItem xs="12" md="3">
+                <MudItem xs="12" md="4">
                     <MudText Typo="Typo.caption" Color="Color.Secondary">@L["StockMovementView_SystemEntryLabel"]</MudText>
                     <MudText>@_movement.SystemEntryDateUtc.ToString("yyyy-MM-dd HH:mm:ss") UTC</MudText>
-                </MudItem>
-                <MudItem xs="12" md="3">
-                    <MudText Typo="Typo.caption" Color="Color.Secondary">@L["StockMovementView_SignatureLabel"]</MudText>
-                    <MudText Style="font-family: monospace;">@_movement.PrintableHash</MudText>
-                    <MudText Typo="Typo.body2" Color="Color.Secondary">@L["StockMovementView_CertifiedSoftwareNote"]</MudText>
                 </MudItem>
             </MudGrid>
         </MudPaper>
@@ -140,7 +135,7 @@
                     <MudTd DataLabel="@L["StockMovementView_NumberColumn"]">@context.LineNumber</MudTd>
                     <MudTd DataLabel="@L["StockMovementView_CodeColumn"]">@context.ProductCode</MudTd>
                     <MudTd DataLabel="@L["StockMovementView_DescriptionColumn"]">@context.ProductDescription</MudTd>
-                    <MudTd DataLabel="@L["StockMovementView_QuantityColumn"]" Style="text-align: right;">@context.Quantity.ToString("N3")</MudTd>
+                    <MudTd DataLabel="@L["StockMovementView_QuantityColumn"]" Style="text-align: right;">@context.Quantity.ToString("N2")</MudTd>
                     <MudTd DataLabel="@L["StockMovementView_UnitPriceColumn"]" Style="text-align: right;">@context.UnitPrice.ToString("N2")</MudTd>
                     <MudTd DataLabel="@L["NewInvoice_DiscountColumn"]" Style="text-align: right;">@DescribeDiscount(context.DiscountPercentage)</MudTd>
                     <MudTd DataLabel="@L["StockMovementView_BaseColumn"]" Style="text-align: right;">@context.LineAmount.ToString("N2")</MudTd>
@@ -150,7 +145,7 @@
         </MudPaper>
 
         <EditorCard Title="@L["NewInvoice_SummarySectionTitle"]" Icon="@Icons.Material.Filled.Calculate"
-                    Description="@string.Format(L["NewStockMovement_TotalQuantityDescription"], _movement.TotalQuantity.ToString("N3"))">
+                    Description="@string.Format(L["NewStockMovement_TotalQuantityDescription"], _movement.TotalQuantity.ToString("N2"))">
             <DocumentTotalsSummary GrossLinesTotal="_movement.GrossLinesTotal"
                                    DiscountTotal="_movement.DiscountTotal"
                                    NetTotal="_movement.NetTotal"
@@ -166,12 +161,22 @@
                     <MudText Typo="Typo.body2" Color="Color.Secondary" Class="mb-3">
                         @L["StockMovementView_CommunicationHelp"]
                     </MudText>
-                    <MudButton Variant="Variant.Filled" Color="Color.Primary"
-                               StartIcon="@Icons.Material.Filled.CloudDone"
-                               Disabled="_working"
-                               OnClick="CommunicateAsync">
-                        @L["StockMovementView_CommunicateButton"]
-                    </MudButton>
+                    <MudStack Row="true" Spacing="2" AlignItems="AlignItems.Center" Wrap="Wrap.Wrap">
+                        <MudButton Variant="Variant.Filled" Color="Color.Primary"
+                                   StartIcon="@Icons.Material.Filled.CloudDone"
+                                   Disabled="_working"
+                                   OnClick="CommunicateAsync">
+                            @L["StockMovementView_CommunicateButton"]
+                        </MudButton>
+                        <MudTextField @bind-Value="_manualAtDocCodeId" Label="@L["StockMovementView_ManualCodeLabel"]"
+                                      Variant="Variant.Outlined" Margin="Margin.Dense" Style="max-width: 320px;" />
+                        <MudButton Variant="Variant.Outlined" Color="Color.Primary"
+                                   StartIcon="@Icons.Material.Filled.Edit"
+                                   Disabled="@(_working || string.IsNullOrWhiteSpace(_manualAtDocCodeId))"
+                                   OnClick="RegisterManualCodeAsync">
+                            @L["StockMovementView_RegisterManualCodeButton"]
+                        </MudButton>
+                    </MudStack>
                 }
                 else
                 {
@@ -180,14 +185,6 @@
                         <strong>@_movement.AtDocCodeId</strong>.
                     </MudAlert>
                 }
-            </MudExpansionPanel>
-
-            <MudExpansionPanel Text="@L["StockMovementView_QrDataTitle"]">
-                <MudPaper Elevation="0" Class="pa-3" Style="overflow-x: auto;">
-                    <MudText Style="font-family: monospace; font-size: 0.8rem; white-space: nowrap;">
-                        @_movement.QrCodePayload
-                    </MudText>
-                </MudPaper>
             </MudExpansionPanel>
 
             @if (_movement.Status != "A")
@@ -223,6 +220,7 @@
     private Guid? _loadedId;
 
     private StockMovementDetail? _movement;
+    private string _manualAtDocCodeId = string.Empty;
 
     private IReadOnlyList<DocumentTotalsSummary.TaxLine> TaxBreakdown =>
         _movement?.Taxes is not { } taxes
@@ -285,6 +283,35 @@
         catch (Exception ex)
         {
             _error = L["StockMovementView_CommunicateError", ex.Message];
+        }
+        finally
+        {
+            _working = false;
+        }
+    }
+
+    private async Task RegisterManualCodeAsync()
+    {
+        _working = true;
+        _error = null;
+
+        try
+        {
+            var error = await SalesApi.RegisterStockMovementAtCodeAsync(Id, _manualAtDocCodeId.Trim());
+
+            if (error is not null)
+            {
+                _error = error;
+                return;
+            }
+
+            Snackbar.Add(L["StockMovementView_ManualCodeSuccess"], Severity.Success);
+            _manualAtDocCodeId = string.Empty;
+            await LoadAsync();
+        }
+        catch (Exception ex)
+        {
+            _error = L["StockMovementView_ManualCodeError", ex.Message];
         }
         finally
         {

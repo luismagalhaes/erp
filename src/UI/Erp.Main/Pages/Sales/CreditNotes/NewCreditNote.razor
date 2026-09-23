@@ -44,12 +44,6 @@
             <MudLink Href="series/new" Class="ml-2">@L["NewCreditNote_CreateSeriesLink"]</MudLink>
         </MudAlert>
     }
-    else if (_rectifiable.Count == 0)
-    {
-        <MudAlert Severity="Severity.Info">
-            @L["NewCreditNote_NoRectifiableInfo"]
-        </MudAlert>
-    }
     else
     {
         <EditorCard Title="@L["NewCreditNote_DocumentSectionTitle"]" Icon="@Icons.Material.Filled.CreditCard"
@@ -57,23 +51,15 @@
             <MudGrid Spacing="3">
                 @* The customer comes first: picking one narrows the invoices to that customer's. *@
                 <MudItem xs="12" md="4">
-                    <MudAutocomplete T="CustomerOption" Value="_customer" ValueChanged="OnCustomerChangedAsync"
-                                     SearchFunc="SearchCustomersAsync"
-                                     ToStringFunc="@(option => option is null ? string.Empty : $"{option.Name} ({option.TaxId})")"
-                                     Label="@L["NewCreditNote_CustomerSelectLabel"]" Variant="Variant.Outlined" Margin="Margin.Dense"
-                                     Clearable="true" ResetValueOnEmptyText="true" Required="true" />
+                    <PartnerAutocomplete SelectedPartner="_customer" PartnerChanged="OnCustomerChangedAsync"
+                                         Kind="PartnerKind.Customer" Label="@L["NewCreditNote_CustomerSelectLabel"]"
+                                         Variant="Variant.Outlined" Margin="Margin.Dense" Required="true" />
                 </MudItem>
                 <MudItem xs="12" md="4">
-                    <MudSelect T="Guid?" Value="_rectifiedDocumentId" ValueChanged="OnDocumentChangedAsync"
-                               Label="@L["NewCreditNote_InvoiceToCorrectLabel"]" Variant="Variant.Outlined" Margin="Margin.Dense"
-                               Required="true" Disabled="@(_customer is null)">
-                        @foreach (var document in _visibleDocuments)
-                        {
-                            <MudSelectItem T="Guid?" Value="@document.Id">
-                                @L["NewCreditNote_InvoiceOption", document.DocumentNumber, document.DocumentDate.ToString("yyyy-MM-dd"), document.GrossTotal.ToString("N2")]
-                            </MudSelectItem>
-                        }
-                    </MudSelect>
+                    <InvoiceAutocomplete SelectedInvoice="_selectedDocument" InvoiceChanged="OnDocumentChangedAsync"
+                                         CustomerTaxId="_customer?.TaxId" RectifiableOnly="true"
+                                         Label="@L["NewCreditNote_InvoiceToCorrectLabel"]" Variant="Variant.Outlined" Margin="Margin.Dense"
+                                         Required="true" Disabled="@(_customer is null)" />
                 </MudItem>
                 <MudItem xs="12" sm="6" md="2">
                     <MudSelect @bind-Value="_seriesId" Label="@L["NewCreditNote_SeriesLabel"]" Variant="Variant.Outlined"
@@ -152,13 +138,13 @@
                         </MudTd>
                         <MudTd DataLabel="@L["NewCreditNote_CodeColumn"]">@context.ProductCode</MudTd>
                         <MudTd DataLabel="@L["NewCreditNote_DescriptionColumn"]">@context.ProductDescription</MudTd>
-                        <MudTd DataLabel="@L["NewCreditNote_InvoicedQuantityColumn"]">@context.InvoicedQuantity.ToString("N3")</MudTd>
+                        <MudTd DataLabel="@L["NewCreditNote_InvoicedQuantityColumn"]">@context.InvoicedQuantity.ToString("N2")</MudTd>
                         <MudTd DataLabel="@L["NewCreditNote_CreditQuantityColumn"]">
                             @if (context.Selected)
                             {
                                 <MudNumericField T="decimal" Value="@context.Quantity"
                                                  ValueChanged="@(quantity => SetQuantity(context, quantity))"
-                                                 Margin="Margin.Dense" Min="0" Max="@context.InvoicedQuantity" />
+                                                 Margin="Margin.Dense" Min="0" Max="@context.InvoicedQuantity" Format="N2" />
                             }
                             else
                             {
@@ -226,15 +212,10 @@
     private string _reason = string.Empty;
 
     private List<SalesSeries> _series = [];
-    private List<InvoiceListItem> _rectifiable = [];
-    private List<InvoiceListItem> _visibleDocuments = [];
-    private List<CustomerOption> _customers = [];
-    private CustomerOption? _customer;
+    private Partner? _customer;
+    private InvoiceListItem? _selectedDocument;
     private List<CreditLine> _lines = [];
     private InvoiceDetail? _source;
-
-    /// <summary>A customer with documents left to correct, as the picker lists them.</summary>
-    private sealed record CustomerOption(string TaxId, string Name);
 
     private List<BreadcrumbItem> Breadcrumbs =>
     [
@@ -299,7 +280,6 @@
         if (!Company.HasCompany)
         {
             _series = [];
-            _rectifiable = [];
             _loading = false;
             StateHasChanged();
             return;
@@ -310,19 +290,6 @@
             var series = await SeriesApi.GetSeriesAsync(Company.SelectedCompanyId);
             _series = [.. series.Where(x => x.CanIssue && InvoiceTypes.IsRectifying(x.DocumentType))];
             _seriesId = _series.FirstOrDefault()?.Id ?? Guid.Empty;
-
-            // A voided document has nothing to correct, and a note cannot correct another note.
-            var documents = await SalesApi.GetInvoicesAsync(Company.SelectedCompanyId);
-            _rectifiable = [.. documents.Where(x => x.Status != "A" && !InvoiceTypes.IsRectifying(x.DocumentType))];
-
-            // The customers come from those documents: offering one with nothing to correct would
-            // only lead to an empty list of invoices.
-            _customers = [.. _rectifiable
-                .GroupBy(document => document.CustomerTaxId, StringComparer.Ordinal)
-                .Select(group => new CustomerOption(group.Key, group.First().CustomerName))
-                .OrderBy(customer => customer.Name)];
-
-            await OnCustomerChangedAsync(_customers.Count == 1 ? _customers[0] : null);
         }
         catch (Exception ex)
         {
@@ -335,45 +302,48 @@
         }
     }
 
-    private Task<IEnumerable<CustomerOption>> SearchCustomersAsync(string? text, CancellationToken cancellationToken)
-    {
-        IEnumerable<CustomerOption> matches = string.IsNullOrWhiteSpace(text)
-            ? _customers
-            : _customers.Where(customer =>
-                customer.Name.Contains(text, StringComparison.OrdinalIgnoreCase)
-                || customer.TaxId.Contains(text, StringComparison.OrdinalIgnoreCase));
-
-        return Task.FromResult(matches);
-    }
-
     /// <summary>
     /// Choosing the customer is the first step: the documents to correct are then only theirs, and
     /// the one at the top — the most recent — is loaded straight away.
     /// </summary>
-    private async Task OnCustomerChangedAsync(CustomerOption? customer)
+    private async Task OnCustomerChangedAsync(Partner? customer)
     {
         _customer = customer;
-        _visibleDocuments = customer is null
-            ? []
-            : [.. _rectifiable.Where(document => string.Equals(document.CustomerTaxId, customer.TaxId, StringComparison.Ordinal))];
 
-        await OnDocumentChangedAsync(_visibleDocuments.FirstOrDefault()?.Id);
+        if (customer is null)
+        {
+            await OnDocumentChangedAsync(null);
+            return;
+        }
+
+        var query = new ODataQuery { Top = 1, Count = false };
+        query.Filter($"CustomerTaxId eq {ODataQuery.Literal(customer.TaxId)}");
+        query.Filter("Status ne 'A'");
+        query.Filter(string.Join(
+            " and ",
+            InvoiceTypes.Rectifying.Select(type => $"DocumentType ne {ODataQuery.Literal(type)}")));
+        query.OrderBy("DocumentDate", descending: true);
+
+        var (items, _, _) = await SalesApi.QueryInvoicesAsync(Company.SelectedCompanyId, query);
+
+        await OnDocumentChangedAsync(items.FirstOrDefault());
     }
 
     /// <summary>
     /// Loads the invoice and copies its lines. Everything starts selected in full, so the common
     /// case — credit the whole invoice — is a single click away.
     /// </summary>
-    private async Task OnDocumentChangedAsync(Guid? documentId)
+    private async Task OnDocumentChangedAsync(InvoiceListItem? document)
     {
-        _rectifiedDocumentId = documentId;
+        _selectedDocument = document;
+        _rectifiedDocumentId = document?.Id;
         _source = null;
         _lines = [];
 
-        if (documentId is null)
+        if (document is null)
             return;
 
-        _source = await SalesApi.GetInvoiceAsync(documentId.Value);
+        _source = await SalesApi.GetInvoiceAsync(document.Id);
 
         if (_source is null)
         {
@@ -478,7 +448,7 @@
             }
 
             Snackbar.Add(L["NewCreditNote_IssuedSuccess", InvoiceTypes.Describe(note.DocumentType), note.DocumentNumber].Value, Severity.Success);
-            Navigation.NavigateTo($"invoices/{note.Id}");
+            Navigation.NavigateTo($"credit-notes/{note.Id}");
         }
         catch (Exception ex)
         {

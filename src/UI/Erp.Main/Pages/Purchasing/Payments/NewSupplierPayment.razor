@@ -512,7 +512,8 @@
 
     private sealed class MethodEditor
     {
-        public string Mechanism { get; set; } = "TB";
+        // Same default every payment method editor in the app starts a new line with.
+        public string Mechanism { get; set; } = "NU";
         public decimal Amount { get; set; }
         public DateTime? PaymentDate { get; set; } = DateTime.Today;
     }

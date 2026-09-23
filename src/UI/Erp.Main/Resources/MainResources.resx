@@ -511,6 +511,12 @@
   <data name="PartnerAutocomplete_AdvancedSearchTooltipSupplier" xml:space="preserve"><value>Pesquisa avançada de fornecedor (nome, NIF, código)</value></data>
   <data name="PartnerAutocomplete_MatchCount" xml:space="preserve"><value>{0} correspondências para "{1}"</value></data>
   <data name="PartnerAutocomplete_NoMatches" xml:space="preserve"><value>Sem correspondências para "{0}".</value></data>
+  <data name="InvoicePicker_Title" xml:space="preserve"><value>Pesquisar documento</value></data>
+  <data name="InvoiceAutocomplete_Placeholder" xml:space="preserve"><value>Número do documento</value></data>
+  <data name="InvoiceAutocomplete_AdvancedSearchTooltip" xml:space="preserve"><value>Pesquisa avançada de documentos</value></data>
+  <data name="InvoiceAutocomplete_MatchCount" xml:space="preserve"><value>{0} correspondências para "{1}"</value></data>
+  <data name="InvoiceAutocomplete_NoMatches" xml:space="preserve"><value>Sem correspondências para "{0}".</value></data>
+  <data name="InvoiceAutocomplete_NoCustomerHelp" xml:space="preserve"><value>Escolha primeiro o cliente.</value></data>
   <data name="ProductEditor_NewTitle" xml:space="preserve"><value>Novo artigo</value></data>
   <data name="ProductEditor_EditTitle" xml:space="preserve"><value>Editar artigo</value></data>
   <data name="ProductEditor_FamiliesButton" xml:space="preserve"><value>Famílias</value></data>
@@ -567,6 +573,7 @@
   <data name="StockBalances_ActionsColumn" xml:space="preserve"><value>Ações</value></data>
   <data name="StockBalances_NoCostTooltip" xml:space="preserve"><value>Nada com custo entrou ainda por compra ou acerto de abertura</value></data>
   <data name="StockBalances_AdjustTooltip" xml:space="preserve"><value>Acertar existências</value></data>
+  <data name="StockBalances_DetailsAction" xml:space="preserve"><value>Detalhes</value></data>
   <data name="StockBalances_NoRecords" xml:space="preserve"><value>Sem existências para mostrar.</value></data>
   <data name="StockBalances_TotalValueLabel" xml:space="preserve"><value>Valor das existências</value></data>
   <data name="StockBalances_TotalValueCaption" xml:space="preserve"><value>Ao custo médio ponderado do que foi comprado</value></data>
@@ -1417,9 +1424,13 @@
   <data name="StockMovementView_TaxLabel" xml:space="preserve"><value>IVA</value></data>
   <data name="StockMovementView_TotalLabel" xml:space="preserve"><value>Total</value></data>
   <data name="StockMovementView_CommunicationTitle" xml:space="preserve"><value>Comunicação à AT</value></data>
-  <data name="StockMovementView_CommunicationHelp" xml:space="preserve"><value>Comunique a guia à AT antes de o transporte começar. Enquanto não existir código, a mercadoria não pode circular.</value></data>
-  <data name="StockMovementView_CommunicateButton" xml:space="preserve"><value>Comunicar à AT</value></data>
+  <data name="StockMovementView_CommunicationHelp" xml:space="preserve"><value>A guia é comunicada à AT automaticamente ao ser emitida. Não foi possível comunicar agora — tente novamente ou registe o código manualmente assim que o obtiver. Enquanto não existir código, a mercadoria não pode circular.</value></data>
+  <data name="StockMovementView_CommunicateButton" xml:space="preserve"><value>Tentar novamente</value></data>
   <data name="StockMovementView_CommunicatedNotice" xml:space="preserve"><value>Comunicada em {0} UTC com o código</value></data>
+  <data name="StockMovementView_ManualCodeLabel" xml:space="preserve"><value>Código atribuído pela AT</value></data>
+  <data name="StockMovementView_RegisterManualCodeButton" xml:space="preserve"><value>Registar código manualmente</value></data>
+  <data name="StockMovementView_ManualCodeSuccess" xml:space="preserve"><value>Código registado manualmente. A mercadoria já pode circular.</value></data>
+  <data name="StockMovementView_ManualCodeError" xml:space="preserve"><value>Não foi possível registar o código: {0}</value></data>
   <data name="StockMovementView_QrDataTitle" xml:space="preserve"><value>Dados do código QR</value></data>
   <data name="StockMovementView_VoidMovementTitle" xml:space="preserve"><value>Anular guia</value></data>
   <data name="StockMovementView_VoidHelp" xml:space="preserve"><value>A anulação não apaga nem altera o documento: regista o novo estado e o motivo, mantendo o registo original e o seu lugar na cadeia de assinatura.</value></data>

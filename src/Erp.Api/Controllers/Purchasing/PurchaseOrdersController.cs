@@ -8,6 +8,7 @@ using Erp.Purchasing.Infrastructure.Contracts;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.OData.Query;
+using Microsoft.EntityFrameworkCore;
 
 namespace Erp.Api.Controllers.Purchasing;
 
@@ -225,6 +226,14 @@ public sealed class PurchaseOrdersController(
         {
             logger.LogWarning(ex, "{Controller}.{Method} could not complete due to a conflict.", nameof(PurchaseOrdersController), nameof(RunAsync));
             return Conflict(new { error = ex.Message });
+        }
+        catch (DbUpdateConcurrencyException ex)
+        {
+            // Someone else saved this order between it being loaded and this request landing — most
+            // often a double submit from the same screen. Either way, retrying against the current
+            // record is the only sane recovery, so this is a conflict, not a server error.
+            logger.LogWarning(ex, "{Controller}.{Method} lost a concurrent write.", nameof(PurchaseOrdersController), nameof(RunAsync));
+            return Conflict(new { error = "This order was changed by someone else meanwhile. Reload it and try again." });
         }
     }
 

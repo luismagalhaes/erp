@@ -511,6 +511,12 @@
   <data name="PartnerAutocomplete_AdvancedSearchTooltipSupplier" xml:space="preserve"><value>Advanced supplier search (name, tax id, code)</value></data>
   <data name="PartnerAutocomplete_MatchCount" xml:space="preserve"><value>{0} matches for "{1}"</value></data>
   <data name="PartnerAutocomplete_NoMatches" xml:space="preserve"><value>No matches for "{0}".</value></data>
+  <data name="InvoicePicker_Title" xml:space="preserve"><value>Search document</value></data>
+  <data name="InvoiceAutocomplete_Placeholder" xml:space="preserve"><value>Document number</value></data>
+  <data name="InvoiceAutocomplete_AdvancedSearchTooltip" xml:space="preserve"><value>Advanced document search</value></data>
+  <data name="InvoiceAutocomplete_MatchCount" xml:space="preserve"><value>{0} matches for "{1}"</value></data>
+  <data name="InvoiceAutocomplete_NoMatches" xml:space="preserve"><value>No matches for "{0}".</value></data>
+  <data name="InvoiceAutocomplete_NoCustomerHelp" xml:space="preserve"><value>Pick the customer first.</value></data>
   <data name="ProductEditor_NewTitle" xml:space="preserve"><value>New product</value></data>
   <data name="ProductEditor_EditTitle" xml:space="preserve"><value>Edit product</value></data>
   <data name="ProductEditor_FamiliesButton" xml:space="preserve"><value>Families</value></data>
@@ -567,6 +573,7 @@
   <data name="StockBalances_ActionsColumn" xml:space="preserve"><value>Actions</value></data>
   <data name="StockBalances_NoCostTooltip" xml:space="preserve"><value>Nothing with a cost has come in yet through a purchase or opening adjustment</value></data>
   <data name="StockBalances_AdjustTooltip" xml:space="preserve"><value>Adjust stock</value></data>
+  <data name="StockBalances_DetailsAction" xml:space="preserve"><value>Details</value></data>
   <data name="StockBalances_NoRecords" xml:space="preserve"><value>No stock to show.</value></data>
   <data name="StockBalances_TotalValueLabel" xml:space="preserve"><value>Stock value</value></data>
   <data name="StockBalances_TotalValueCaption" xml:space="preserve"><value>At the weighted average cost of what was purchased</value></data>
@@ -1417,9 +1424,13 @@
   <data name="StockMovementView_TaxLabel" xml:space="preserve"><value>Tax</value></data>
   <data name="StockMovementView_TotalLabel" xml:space="preserve"><value>Total</value></data>
   <data name="StockMovementView_CommunicationTitle" xml:space="preserve"><value>Tax authority communication</value></data>
-  <data name="StockMovementView_CommunicationHelp" xml:space="preserve"><value>Communicate the document to the tax authority before transport begins. Until a code exists, goods cannot be transported.</value></data>
-  <data name="StockMovementView_CommunicateButton" xml:space="preserve"><value>Communicate to AT</value></data>
+  <data name="StockMovementView_CommunicationHelp" xml:space="preserve"><value>The waybill is communicated to the tax authority automatically when issued. It could not be communicated now — retry, or register the code manually once you obtain it. Until a code exists, goods cannot be transported.</value></data>
+  <data name="StockMovementView_CommunicateButton" xml:space="preserve"><value>Retry</value></data>
   <data name="StockMovementView_CommunicatedNotice" xml:space="preserve"><value>Communicated on {0} UTC with code</value></data>
+  <data name="StockMovementView_ManualCodeLabel" xml:space="preserve"><value>Code assigned by the tax authority</value></data>
+  <data name="StockMovementView_RegisterManualCodeButton" xml:space="preserve"><value>Register code manually</value></data>
+  <data name="StockMovementView_ManualCodeSuccess" xml:space="preserve"><value>Code registered manually. The goods can now be transported.</value></data>
+  <data name="StockMovementView_ManualCodeError" xml:space="preserve"><value>Unable to register the code: {0}</value></data>
   <data name="StockMovementView_QrDataTitle" xml:space="preserve"><value>QR code data</value></data>
   <data name="StockMovementView_VoidMovementTitle" xml:space="preserve"><value>Void waybill</value></data>
   <data name="StockMovementView_VoidHelp" xml:space="preserve"><value>Voiding does not delete or alter the document: it records the new status and reason, preserving the original record and its place in the signature chain.</value></data>

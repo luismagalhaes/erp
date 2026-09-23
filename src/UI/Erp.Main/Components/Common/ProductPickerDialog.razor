@@ -97,8 +97,33 @@
     private readonly DialogOptions _dialogOptions = new() { MaxWidth = MaxWidth.Large, FullWidth = true };
 
     private DataGrid<ProductListItem>? _grid;
+    private bool _previousOpen;
+    private bool _pendingReload;
 
     private static readonly string[] SearchFields = ["ProductCode", "Description", "Barcode"];
+
+    /// <summary>
+    /// The dialog stays mounted, hidden, between opens, so its grid is never recreated — and a
+    /// hidden container has no measurable height, which is what a virtualized grid uses to decide
+    /// how many rows to ask for. Reloading right after the dialog actually becomes visible is what
+    /// gets it its first real page instead of the empty one a zero-height fetch would have returned.
+    /// </summary>
+    protected override void OnParametersSet()
+    {
+        if (Open && !_previousOpen)
+            _pendingReload = true;
+
+        _previousOpen = Open;
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!_pendingReload || _grid is null)
+            return;
+
+        _pendingReload = false;
+        await _grid.ReloadAsync();
+    }
 
     /// <summary>The families and brands feeding the column filters, reloaded when the company changes.</summary>
     private IReadOnlyList<ProductFamily> _families = [];

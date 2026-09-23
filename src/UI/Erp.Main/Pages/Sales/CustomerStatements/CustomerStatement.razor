@@ -1,6 +1,7 @@
 @page "/customer-statements"
 @attribute [Authorize]
 @using Microsoft.AspNetCore.Authorization
+@using Erp.Main.Components.Common
 @using Erp.Main.Services
 @using Erp.Main.Resources
 @using Microsoft.Extensions.Localization
@@ -18,7 +19,8 @@
                       PartyId="CustomerId"
                       StartDate="StartDate"
                       EndDate="EndDate"
-                      LoadParties="@(companyId => Catalog.GetCustomersAsync(companyId))"
+                      Kind="PartnerKind.Customer"
+                      LoadParty="@(id => Catalog.GetCustomerAsync(id))"
                       LoadStatement="@((companyId, customerId, start, end) => SalesApi.GetCustomerStatementAsync(companyId, customerId, start, end))" />
 
 @code {

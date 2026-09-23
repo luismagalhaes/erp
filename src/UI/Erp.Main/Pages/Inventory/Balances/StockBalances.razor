@@ -61,10 +61,8 @@
                 </MudSelect>
             </MudItem>
             <MudItem xs="12" md="4">
-                <MudTextField @bind-Value="_search" @bind-Value:after="StateHasChanged" Immediate="true"
-                              Label="@Localizer["StockBalances_FilterLabel"]" Variant="Variant.Outlined" Margin="Margin.Dense"
-                              Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.Search"
-                              HelperText="@Localizer["StockBalances_FilterHelperText"]" />
+                <ProductAutocomplete SelectedProduct="_selectedProduct" ProductChanged="OnProductFilterChangedAsync"
+                                     Label="@Localizer["StockBalances_FilterLabel"]" Variant="Variant.Outlined" Margin="Margin.Dense" />
             </MudItem>
             <MudItem xs="12" md="4" Class="d-flex align-center">
                 <MudSwitch @bind-Value="_onlyWithStock" @bind-Value:after="StateHasChanged"
@@ -85,7 +83,7 @@
                 <MudTh Style="text-align: right;">@Localizer["StockBalances_AverageCostColumn"]</MudTh>
                 <MudTh Style="text-align: right;">@Localizer["StockBalances_ValueColumn"]</MudTh>
                 <MudTh>@Localizer["StockBalances_LastMovementColumn"]</MudTh>
-                <MudTh Style="text-align: right;">@Localizer["StockBalances_ActionsColumn"]</MudTh>
+                <MudTh Style="width: 50px; text-align: right;"></MudTh>
             </HeaderContent>
             <RowTemplate>
                 <MudTd DataLabel="@Localizer["StockBalances_ProductColumn"]">
@@ -96,7 +94,7 @@
                 <MudTd DataLabel="@Localizer["StockBalances_QuantityColumn"]" Style="text-align: right;">
                     <MudText Typo="Typo.body2"
                              Color="@(context.Quantity < 0 ? Color.Error : Color.Default)">
-                        <strong>@context.Quantity.ToString("N3")</strong>
+                        <strong>@context.Quantity.ToString("N2")</strong>
                     </MudText>
                 </MudTd>
                 <MudTd DataLabel="@Localizer["StockBalances_AverageCostColumn"]" Style="text-align: right;">
@@ -117,10 +115,18 @@
                 <MudTd DataLabel="@Localizer["StockBalances_LastMovementColumn"]">
                     @context.LastMovementUtc.ToString("yyyy-MM-dd HH:mm")
                 </MudTd>
-                <MudTd DataLabel="@Localizer["StockBalances_ActionsColumn"]" Style="text-align: right;">
-                    <MudIconButton Icon="@Icons.Material.Filled.Tune" Size="Size.Small"
-                                   title="@Localizer["StockBalances_AdjustTooltip"]"
-                                   OnClick="@(() => OpenAdjustment(context))" />
+                <MudTd Style="text-align: right;" @onclick:stopPropagation="true">
+                    <MudMenu Icon="@Icons.Material.Filled.MoreVert" Size="Size.Small"
+                             AnchorOrigin="Origin.BottomRight" TransformOrigin="Origin.TopRight">
+                        <MudMenuItem Icon="@Icons.Material.Filled.Visibility"
+                                     OnClick="@(() => ShowLedgerAsync(context))">
+                            @Localizer["StockBalances_DetailsAction"]
+                        </MudMenuItem>
+                        <MudMenuItem Icon="@Icons.Material.Filled.Tune"
+                                     OnClick="@(() => OpenAdjustment(context))">
+                            @Localizer["StockBalances_AdjustTooltip"]
+                        </MudMenuItem>
+                    </MudMenu>
                 </MudTd>
             </RowTemplate>
             <NoRecordsContent>
@@ -192,11 +198,11 @@
                     <MudTd DataLabel="@Localizer["StockBalances_MovementColumn"]" Style="text-align: right;">
                         <MudText Typo="Typo.body2"
                                  Color="@(context.Quantity < 0 ? Color.Error : Color.Success)">
-                            @(context.Quantity > 0 ? "+" : string.Empty)@context.Quantity.ToString("N3")
+                            @(context.Quantity > 0 ? "+" : string.Empty)@context.Quantity.ToString("N2")
                         </MudText>
                     </MudTd>
                     <MudTd DataLabel="@Localizer["StockBalances_BalanceColumn"]" Style="text-align: right;">
-                        <strong>@context.RunningBalance.ToString("N3")</strong>
+                        <strong>@context.RunningBalance.ToString("N2")</strong>
                     </MudTd>
                 </RowTemplate>
                 <NoRecordsContent>
@@ -227,15 +233,15 @@
             </MudItem>
             <MudItem xs="12" md="6">
                 <MudNumericField T="decimal" Value="_adjustCurrent" Label="@Localizer["StockBalances_CurrentStockLabel"]"
-                                 Variant="Variant.Outlined" Margin="Margin.Dense" ReadOnly="true" Format="N3" />
+                                 Variant="Variant.Outlined" Margin="Margin.Dense" ReadOnly="true" Format="N2" />
             </MudItem>
             <MudItem xs="12" md="6">
                 <MudNumericField T="decimal" Value="_adjustCounted" ValueChanged="OnCountedChanged"
-                                 Label="@Localizer["StockBalances_CountedQuantityLabel"]" Variant="Variant.Outlined" Margin="Margin.Dense" Format="N3" />
+                                 Label="@Localizer["StockBalances_CountedQuantityLabel"]" Variant="Variant.Outlined" Margin="Margin.Dense" Format="N2" />
             </MudItem>
             <MudItem xs="12" md="6">
                 <MudNumericField T="decimal" Value="AdjustDifference" Label="@Localizer["StockBalances_DifferenceLabel"]"
-                                 Variant="Variant.Outlined" Margin="Margin.Dense" ReadOnly="true" Format="N3" />
+                                 Variant="Variant.Outlined" Margin="Margin.Dense" ReadOnly="true" Format="N2" />
             </MudItem>
             @if (AdjustDifference > 0)
             {
@@ -275,7 +281,7 @@
     private string? _error;
 
     private Guid? _warehouseId;
-    private string _search = string.Empty;
+    private ProductListItem? _selectedProduct;
     private bool _onlyWithStock;
 
     private List<Warehouse> _warehouses = [];
@@ -305,9 +311,14 @@
     private IEnumerable<StockBalance> Visible =>
         _balances
             .Where(x => !_onlyWithStock || x.Quantity != 0)
-            .Where(x => string.IsNullOrWhiteSpace(_search)
-                        || x.ProductCode.Contains(_search, StringComparison.OrdinalIgnoreCase)
-                        || x.ProductDescription.Contains(_search, StringComparison.OrdinalIgnoreCase));
+            .Where(x => _selectedProduct is null
+                        || string.Equals(x.ProductCode, _selectedProduct.ProductCode, StringComparison.OrdinalIgnoreCase));
+
+    private Task OnProductFilterChangedAsync(ProductListItem? product)
+    {
+        _selectedProduct = product;
+        return Task.CompletedTask;
+    }
 
     protected override async Task OnInitializedAsync()
     {

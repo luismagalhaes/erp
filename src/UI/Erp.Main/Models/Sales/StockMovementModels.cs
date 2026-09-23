@@ -42,6 +42,8 @@ public sealed record CreateStockMovementRequest(
 
 public sealed record VoidStockMovementRequest(string Reason);
 
+public sealed record RegisterStockMovementAtCodeRequest(string AtDocCodeId);
+
 public sealed record StockMovementListItem(
     Guid Id,
     string DocumentNumber,

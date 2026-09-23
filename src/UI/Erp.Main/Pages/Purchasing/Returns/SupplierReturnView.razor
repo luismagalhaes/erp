@@ -103,7 +103,7 @@
                         <MudLink Href="@($"goods-receipts/{context.ReceiptId}")">@L["SupplierReturnView_ViewLink"]</MudLink>
                     </MudTd>
                     <MudTd DataLabel="@L["SupplierReturnView_QuantityColumn"]" Style="text-align: right;">
-                        @context.Quantity.ToString("N3") @context.UnitOfMeasure
+                        @context.Quantity.ToString("N2") @context.UnitOfMeasure
                     </MudTd>
                     <MudTd DataLabel="@L["SupplierReturnView_UnitCostColumn"]" Style="text-align: right;">
                         @context.UnitCost.ToString("N2")

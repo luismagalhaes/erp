@@ -1,0 +1,139 @@
+@* The document picker for a credit/debit note: a quick server-side search by number (the
+   document file is never loaded in full — see InvoicePickerDialog's own remark), plus an icon
+   that opens the advanced search for when the number is not known. *@
+@using MudBlazor
+@using Erp.Main.Models.Sales
+@using Erp.Main.Services
+@using Erp.Main.Resources
+@using Microsoft.Extensions.Localization
+@inject SalesApiClient SalesApi
+@inject CompanyState Company
+@inject IStringLocalizer<MainResources> L
+
+<MudAutocomplete T="InvoiceListItem" Value="SelectedInvoice" ValueChanged="OnAutocompleteChangedAsync"
+                 SearchFunc="SearchInvoicesAsync" ToStringFunc="@(invoice => invoice is null ? string.Empty : $"{invoice.DocumentNumber} — {invoice.DocumentDate:yyyy-MM-dd} ({invoice.GrossTotal:N2})")"
+                 ResetValueOnEmptyText="true" CoerceText="true" DebounceInterval="300"
+                 Variant="Variant" Margin="Margin" Dense="true" Clearable="true" Style="@Style"
+                 Label="@Label" Required="Required" Disabled="Disabled"
+                 HelperText="@(Disabled ? L["InvoiceAutocomplete_NoCustomerHelp"] : HelperText)"
+                 Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.Search"
+                 OnAdornmentClick="OpenPicker" AdornmentAriaLabel="@L["InvoiceAutocomplete_AdvancedSearchTooltip"]"
+                 RelativeWidth="DropdownWidth.Adaptive"
+                 Placeholder="@(Placeholder ?? L["InvoiceAutocomplete_Placeholder"])">
+    <ItemTemplate Context="invoice">
+        <MudStack Spacing="1" Class="py-1">
+            <MudText Typo="Typo.body2"><b>@invoice.DocumentNumber</b> — @invoice.DocumentDate.ToString("yyyy-MM-dd")</MudText>
+            <MudStack Row="true" Spacing="1">
+                <MudChip T="string" Size="Size.Small" Variant="Variant.Text">@invoice.GrossTotal.ToString("N2")</MudChip>
+            </MudStack>
+        </MudStack>
+    </ItemTemplate>
+    <BeforeItemsTemplate>
+        <MudText Typo="Typo.caption" Color="Color.Secondary" Class="px-4 pt-2 pb-1">
+            @string.Format(L["InvoiceAutocomplete_MatchCount"], _lastMatchCount, _lastQuery)
+        </MudText>
+    </BeforeItemsTemplate>
+    <AfterItemsTemplate>
+        <MudDivider />
+        <MudButton Variant="Variant.Text" FullWidth="true" Size="Size.Small"
+                   StartIcon="@Icons.Material.Filled.FilterAlt" Class="px-4 py-2"
+                   OnClick="OpenPicker">
+            @L["InvoiceAutocomplete_AdvancedSearchTooltip"]
+        </MudButton>
+    </AfterItemsTemplate>
+    <NoItemsTemplate>
+        <MudStack Spacing="1" Class="pa-4">
+            <MudText Typo="Typo.body2" Color="Color.Secondary">
+                @string.Format(L["InvoiceAutocomplete_NoMatches"], _lastQuery)
+            </MudText>
+            <MudButton Variant="Variant.Text" Size="Size.Small"
+                       StartIcon="@Icons.Material.Filled.FilterAlt"
+                       OnClick="OpenPicker">
+                @L["InvoiceAutocomplete_AdvancedSearchTooltip"]
+            </MudButton>
+        </MudStack>
+    </NoItemsTemplate>
+</MudAutocomplete>
+
+<InvoicePickerDialog @bind-Open="_pickerOpen" Picked="OnAutocompleteChangedAsync"
+                     CustomerTaxId="CustomerTaxId" RectifiableOnly="RectifiableOnly" />
+
+@code {
+    /// <summary>The document currently shown in the box, kept whole so it can be displayed without
+    /// a lookup back into a file this control never holds in full.</summary>
+    [Parameter, EditorRequired] public InvoiceListItem? SelectedInvoice { get; set; }
+
+    /// <summary>Raised with the document the user picked, from either the quick search or the
+    /// advanced dialog, or with null when the box is cleared.</summary>
+    [Parameter, EditorRequired] public EventCallback<InvoiceListItem?> InvoiceChanged { get; set; }
+
+    /// <summary>Narrows the search to one customer's documents. Left null, every customer's
+    /// documents are searched.</summary>
+    [Parameter] public string? CustomerTaxId { get; set; }
+
+    /// <summary>When true, only documents that can still be corrected are offered: not voided, and
+    /// not themselves a credit or debit note.</summary>
+    [Parameter] public bool RectifiableOnly { get; set; }
+
+    [Parameter] public string? Placeholder { get; set; }
+
+    [Parameter] public Variant Variant { get; set; } = Variant.Outlined;
+
+    [Parameter] public Margin Margin { get; set; } = Margin.Dense;
+
+    [Parameter] public string? Style { get; set; }
+
+    [Parameter] public string? Label { get; set; }
+
+    [Parameter] public bool Required { get; set; }
+
+    [Parameter] public string? HelperText { get; set; }
+
+    [Parameter] public bool Disabled { get; set; }
+
+    private bool _pickerOpen;
+    private string _lastQuery = string.Empty;
+    private int _lastMatchCount;
+
+    private Task OnAutocompleteChangedAsync(InvoiceListItem? invoice) => InvoiceChanged.InvokeAsync(invoice);
+
+    private void OpenPicker()
+    {
+        if (!Disabled)
+            _pickerOpen = true;
+    }
+
+    /// <summary>
+    /// Matches on the document number, queried straight from the file: with companies carrying
+    /// thousands of documents, it cannot be held in the browser, so every keystroke asks the
+    /// database for a short, ranked window instead.
+    /// </summary>
+    private async Task<IEnumerable<InvoiceListItem>> SearchInvoicesAsync(string? text, CancellationToken cancellationToken)
+    {
+        _lastQuery = text ?? string.Empty;
+        _lastMatchCount = 0;
+
+        if (string.IsNullOrWhiteSpace(text) || !Company.HasCompany || Disabled)
+            return [];
+
+        var query = new ODataQuery { Top = 8, Count = false };
+        query.Filter(ODataQuery.ContainsAny(text.Trim(), "DocumentNumber"));
+
+        if (!string.IsNullOrWhiteSpace(CustomerTaxId))
+            query.Filter($"CustomerTaxId eq {ODataQuery.Literal(CustomerTaxId)}");
+
+        if (RectifiableOnly)
+        {
+            query.Filter("Status ne 'A'");
+            query.Filter(string.Join(
+                " and ",
+                InvoiceTypes.Rectifying.Select(type => $"DocumentType ne {ODataQuery.Literal(type)}")));
+        }
+
+        query.OrderBy("DocumentDate", descending: true);
+
+        var (items, _, _) = await SalesApi.QueryInvoicesAsync(Company.SelectedCompanyId, query, cancellationToken);
+        _lastMatchCount = items.Count;
+        return items;
+    }
+}

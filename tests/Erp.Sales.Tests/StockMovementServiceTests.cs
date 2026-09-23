@@ -45,12 +45,19 @@ public class StockMovementServiceTests
         _movements.When(x => x.AddStatusChangeAsync(Arg.Any<MovementStatusChange>(), Arg.Any<CancellationToken>()))
             .Do(call => _persistedStatusChanges.Add(call.Arg<MovementStatusChange>()));
 
+        // No AT WDT credentials by default: issuing a movement should not depend on them, and most
+        // tests here have nothing to do with the tax authority communication at all. Tests that do
+        // opt in with GivenAtCredentialsConfigured().
         _atProfiles.GetAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>())
-            .Returns(new AtCompanyProfile("123456789", "Acme", "Rua A", "Lisboa", "1000-000", "1", "secret"));
+            .Returns((AtCompanyProfile?)null);
 
         _atClient.CommunicateAsync(Arg.Any<AtTransportDocumentRequest>(), Arg.Any<AtCredentials>(), Arg.Any<CancellationToken>())
             .Returns(new AtTransportDocumentResult(true, false, 0, null, "ABC123", null, null));
     }
+
+    private void GivenAtCredentialsConfigured() =>
+        _atProfiles.GetAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>())
+            .Returns(new AtCompanyProfile("123456789", "Acme", "Rua A", "Lisboa", "1000-000", "1", "secret"));
 
     /// <summary>
     /// Substituted: what the recorder does with the stock has its own tests in Erp.Inventory.Tests.
@@ -240,7 +247,36 @@ public class StockMovementServiceTests
 
         var issued = await CreateService().IssueAsync(Request(_companyId, series.Id), "user-1");
 
-        issued.AtDocCodeId.Should().BeNull("the goods cannot move before the document is communicated");
+        issued.AtDocCodeId.Should().BeNull("there are no AT WDT credentials configured for this company");
+        issued.CommunicatedAtUtc.Should().BeNull();
+    }
+
+    [Fact]
+    public async Task IssueAsync_communicates_automatically_when_credentials_are_configured()
+    {
+        var series = GivenSeries();
+        GivenAtCredentialsConfigured();
+
+        var issued = await CreateService().IssueAsync(Request(_companyId, series.Id), "user-1");
+
+        issued.AtDocCodeId.Should().Be("ABC123");
+        issued.CommunicatedAtUtc.Should().NotBeNull();
+    }
+
+    /// <summary>A webservice outage at issue time is not a reason to reject an otherwise valid
+    /// document — only a reason to leave it for a retry, same as missing credentials.</summary>
+    [Fact]
+    public async Task IssueAsync_leaves_the_document_waiting_when_the_webservice_fails()
+    {
+        var series = GivenSeries();
+        GivenAtCredentialsConfigured();
+
+        _atClient.CommunicateAsync(Arg.Any<AtTransportDocumentRequest>(), Arg.Any<AtCredentials>(), Arg.Any<CancellationToken>())
+            .Returns(Task.FromException<AtTransportDocumentResult>(new AtTransportDocumentException(-7, "NIF mismatch")));
+
+        var issued = await CreateService().IssueAsync(Request(_companyId, series.Id), "user-1");
+
+        issued.AtDocCodeId.Should().BeNull();
         issued.CommunicatedAtUtc.Should().BeNull();
     }
 
@@ -253,6 +289,7 @@ public class StockMovementServiceTests
 
         var movement = _persisted.Single();
         _movements.GetByIdAsync(issued.Id, Arg.Any<CancellationToken>()).Returns(movement);
+        GivenAtCredentialsConfigured();
 
         var communicated = await service.CommunicateAsync(issued.Id);
 
@@ -269,6 +306,7 @@ public class StockMovementServiceTests
 
         var movement = _persisted.Single();
         _movements.GetByIdAsync(issued.Id, Arg.Any<CancellationToken>()).Returns(movement);
+        GivenAtCredentialsConfigured();
 
         _atClient.CommunicateAsync(Arg.Any<AtTransportDocumentRequest>(), Arg.Any<AtCredentials>(), Arg.Any<CancellationToken>())
             .Returns(new AtTransportDocumentResult(true, true, -100, "late communication", "ABC123", null, null));
@@ -287,6 +325,7 @@ public class StockMovementServiceTests
 
         var movement = _persisted.Single();
         _movements.GetByIdAsync(issued.Id, Arg.Any<CancellationToken>()).Returns(movement);
+        GivenAtCredentialsConfigured();
 
         _atClient.CommunicateAsync(Arg.Any<AtTransportDocumentRequest>(), Arg.Any<AtCredentials>(), Arg.Any<CancellationToken>())
             .Returns(Task.FromException<AtTransportDocumentResult>(new AtTransportDocumentException(-7, "NIF mismatch")));
@@ -323,6 +362,7 @@ public class StockMovementServiceTests
 
         var movement = _persisted.Single();
         _movements.GetByIdAsync(issued.Id, Arg.Any<CancellationToken>()).Returns(movement);
+        GivenAtCredentialsConfigured();
 
         await service.CommunicateAsync(issued.Id);
 

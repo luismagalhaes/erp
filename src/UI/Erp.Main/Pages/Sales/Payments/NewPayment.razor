@@ -4,7 +4,9 @@
 @using Microsoft.AspNetCore.Authorization
 @using Microsoft.AspNetCore.Components.Web
 @using MudBlazor
+@using Erp.Main.Components.Common
 @using Erp.Main.Models
+@using Erp.Main.Models.Core
 @using Erp.Main.Services
 @using Microsoft.Extensions.Localization
 @using Erp.Main.Resources
@@ -83,16 +85,9 @@
             <MudText Typo="Typo.h6" Class="mb-3">@L["NewPayment_CustomerSectionTitle"]</MudText>
             <MudGrid>
                 <MudItem xs="12" md="6">
-                    <MudSelect T="string" Value="_partyTaxId" ValueChanged="OnCustomerChanged"
-                               Label="@L["NewPayment_CustomerLabel"]" Variant="Variant.Outlined" Margin="Margin.Dense" Required="true"
-                               HelperText="@L["NewPayment_CustomerHelpText"]">
-                        @foreach (var customer in _customers)
-                        {
-                            <MudSelectItem T="string" Value="@customer.TaxId">
-                                @L["NewPayment_CustomerOption", customer.Name, customer.TaxId]
-                            </MudSelectItem>
-                        }
-                    </MudSelect>
+                    <PartnerAutocomplete SelectedPartner="_customer" PartnerChanged="OnCustomerChangedAsync"
+                                         Kind="PartnerKind.Customer" Label="@L["NewPayment_CustomerLabel"]" Required="true"
+                                         HelperText="@L["NewPayment_CustomerHelpText"]" />
                 </MudItem>
                 <MudItem xs="12" md="6">
                     <MudTextField @bind-Value="_partyName" Label="@L["NewPayment_NameLabel"]" Variant="Variant.Outlined" Margin="Margin.Dense" Required="true" />
@@ -247,12 +242,12 @@
     private DateTime? _transactionDate = DateTime.Today;
     private string _description = string.Empty;
 
+    private Partner? _customer;
     private string _partyTaxId = string.Empty;
     private string _partyName = string.Empty;
 
     private List<SalesSeries> _series = [];
     private List<OutstandingInvoice> _outstanding = [];
-    private List<CustomerOption> _customers = [];
     private readonly List<MethodEditor> _methods = [new()];
 
     /// <summary>Amount applied to each selected invoice, keyed by invoice.</summary>
@@ -310,13 +305,6 @@
             var (outstanding, error) = await SalesApi.GetOutstandingInvoicesAsync(Company.SelectedCompanyId);
             _outstanding = [.. outstanding];
             _error ??= error;
-
-            _customers = [.. _outstanding
-                .GroupBy(invoice => invoice.CustomerTaxId)
-                .Select(group => new CustomerOption(group.Key, group.First().CustomerName))
-                .OrderBy(customer => customer.Name)];
-
-            OnCustomerChanged(_customers.FirstOrDefault()?.TaxId ?? string.Empty);
         }
         catch (Exception ex)
         {
@@ -330,13 +318,16 @@
     }
 
     /// <summary>Changing customer restarts the selection: a receipt settles one customer only.</summary>
-    private void OnCustomerChanged(string taxId)
+    private Task OnCustomerChangedAsync(Partner? customer)
     {
-        _partyTaxId = taxId;
-        _partyName = _customers.FirstOrDefault(customer => customer.TaxId == taxId)?.Name ?? string.Empty;
+        _customer = customer;
+        _partyTaxId = customer?.TaxId ?? string.Empty;
+        _partyName = customer?.Name ?? string.Empty;
 
         _selected.Clear();
-        _visibleInvoices = [.. _outstanding.Where(invoice => invoice.CustomerTaxId == taxId)];
+        _visibleInvoices = [.. _outstanding.Where(invoice => invoice.CustomerTaxId == _partyTaxId)];
+
+        return Task.CompletedTask;
     }
 
     private bool IsSelected(OutstandingInvoice invoice) => _selected.ContainsKey(invoice.DocumentId);
@@ -427,11 +418,11 @@
         }
     }
 
-    private sealed record CustomerOption(string TaxId, string Name);
-
     private sealed class MethodEditor
     {
-        public string Mechanism { get; set; } = "TB";
+        // Same default as PaymentMethodsEditor, used by the invoice-receipt: the two should agree
+        // on what a new payment method line starts as.
+        public string Mechanism { get; set; } = "NU";
         public decimal Amount { get; set; }
         public DateTime? PaymentDate { get; set; } = DateTime.Today;
     }

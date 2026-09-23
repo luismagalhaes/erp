@@ -130,15 +130,15 @@
                     </MudTd>
                     <MudTd DataLabel="@L["PurchaseOrderView_DescriptionColumn"]">@context.ProductDescription</MudTd>
                     <MudTd DataLabel="@L["PurchaseOrderView_OrderedColumn"]" Style="text-align: right;">
-                        @context.Quantity.ToString("N3") @context.UnitOfMeasure
+                        @context.Quantity.ToString("N2") @context.UnitOfMeasure
                     </MudTd>
                     <MudTd DataLabel="@L["PurchaseOrderView_ReceivedColumn"]" Style="text-align: right;">
-                        @context.ReceivedQuantity.ToString("N3")
+                        @context.ReceivedQuantity.ToString("N2")
                     </MudTd>
                     <MudTd DataLabel="@L["PurchaseOrderView_PendingColumn"]" Style="text-align: right;">
                         <MudText Typo="Typo.body2"
                                  Color="@(context.PendingQuantity > 0 ? Color.Warning : Color.Success)">
-                            <strong>@context.PendingQuantity.ToString("N3")</strong>
+                            <strong>@context.PendingQuantity.ToString("N2")</strong>
                         </MudText>
                     </MudTd>
                     <MudTd DataLabel="@L["PurchaseOrderView_UnitCostColumn"]" Style="text-align: right;">

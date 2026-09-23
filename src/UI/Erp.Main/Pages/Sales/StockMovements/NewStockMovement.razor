@@ -191,7 +191,7 @@
                     </MudTd>
                     <MudTd DataLabel="@L["NewStockMovement_QuantityColumn"]">
                         <MudNumericField T="decimal" Value="context.Quantity" ValueChanged="@(quantity => OnQuantityChanged(context, quantity))"
-                                         Margin="Margin.Dense" Min="0" />
+                                         Margin="Margin.Dense" Min="0" Format="N2" />
                     </MudTd>
                     <MudTd DataLabel="@L["NewStockMovement_UnitPriceColumn"]">
                         <MudNumericField @bind-Value="context.UnitPrice" Margin="Margin.Dense" Min="0" Format="N2" />
@@ -238,7 +238,7 @@
         </MudPaper>
 
         <EditorCard Title="@L["NewInvoice_SummarySectionTitle"]" Icon="@Icons.Material.Filled.Calculate"
-                    Description="@string.Format(L["NewStockMovement_TotalQuantityDescription"], TotalQuantity.ToString("N3"))">
+                    Description="@string.Format(L["NewStockMovement_TotalQuantityDescription"], TotalQuantity.ToString("N2"))">
             <DocumentTotalsSummary GrossLinesTotal="GrossLinesTotal"
                                    DiscountTotal="DiscountTotal"
                                    NetTotal="NetTotal"

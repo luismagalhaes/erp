@@ -6,6 +6,8 @@
 @using Microsoft.AspNetCore.Components.Web
 @using MudBlazor
 @using Microsoft.Extensions.Localization
+@using Erp.Main.Components.Common
+@using Erp.Main.Components.Sales
 @using Erp.Main.Models
 @using Erp.Main.Resources
 @using Erp.Main.Services
@@ -50,9 +52,8 @@
     }
     else
     {
-        <MudPaper Elevation="1" Class="pa-4">
-            <MudText Typo="Typo.h6" Class="mb-3">@L["PurchaseOrderEditor_SupplierDeliverySectionTitle"]</MudText>
-            <MudGrid>
+        <EditorCard Title="@L["PurchaseOrderEditor_SupplierDeliverySectionTitle"]" Icon="@Icons.Material.Filled.LocalShipping">
+            <MudGrid Spacing="3">
                 <MudItem xs="12" md="4">
                     <PartnerAutocomplete SelectedPartner="_selectedSupplier" PartnerChanged="OnSupplierChanged"
                                          Kind="PartnerKind.Supplier" Label="@L["PurchaseOrderEditor_SupplierLabel"]" Required="true"
@@ -61,7 +62,7 @@
                 </MudItem>
                 <MudItem xs="12" md="4">
                     <MudSelect T="Guid?" @bind-Value="_warehouseId" Label="@L["PurchaseOrderEditor_WarehouseLabel"]"
-                               Variant="Variant.Outlined" Required="true">
+                               Variant="Variant.Outlined" Margin="Margin.Dense" Required="true">
                         @foreach (var warehouse in _warehouses)
                         {
                             <MudSelectItem T="Guid?" Value="@warehouse.Id">
@@ -72,119 +73,113 @@
                 </MudItem>
                 <MudItem xs="12" md="2">
                     <MudDatePicker @bind-Date="_orderDate" Label="@L["PurchaseOrderEditor_OrderDateLabel"]" Variant="Variant.Outlined"
-                                   DateFormat="yyyy-MM-dd" />
+                                   Margin="Margin.Dense" DateFormat="yyyy-MM-dd" />
                 </MudItem>
                 <MudItem xs="12" md="2">
                     <MudDatePicker @bind-Date="_expectedDate" Label="@L["PurchaseOrderEditor_ExpectedDateLabel"]"
-                                   Variant="Variant.Outlined" DateFormat="yyyy-MM-dd" Clearable="true" />
-                </MudItem>
-                <MudItem xs="12">
-                    <MudTextField @bind-Value="_notes" Label="@L["PurchaseOrderEditor_NotesLabel"]" Variant="Variant.Outlined" Lines="2" />
+                                   Variant="Variant.Outlined" Margin="Margin.Dense" DateFormat="yyyy-MM-dd" Clearable="true" />
                 </MudItem>
             </MudGrid>
-        </MudPaper>
+        </EditorCard>
 
-        <MudPaper Elevation="1" Class="pa-4">
-            <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center" Class="mb-3">
-                <MudText Typo="Typo.h6">@L["PurchaseOrderEditor_LinesSectionTitle"]</MudText>
+        <EditorCard Title="@L["PurchaseOrderEditor_LinesSectionTitle"]" Icon="@Icons.Material.Filled.List">
+            <HeaderActions>
                 <MudButton Variant="Variant.Outlined" Color="Color.Primary" Size="Size.Small"
                            StartIcon="@Icons.Material.Filled.Add" OnClick="AddLine">
                     @L["PurchaseOrderEditor_AddLineButton"]
                 </MudButton>
-            </MudStack>
+            </HeaderActions>
+            <ChildContent>
+                <MudTable Items="_lines" Dense="true" Hover="true" Breakpoint="Breakpoint.Sm" Elevation="0">
+                    <HeaderContent>
+                        <MudTh Style="width: 260px;">@L["PurchaseOrderEditor_ProductColumn"]</MudTh>
+                        <MudTh>@L["PurchaseOrderEditor_DescriptionColumn"]</MudTh>
+                        <MudTh Style="width: 90px;">@L["PurchaseOrderEditor_QuantityColumn"]</MudTh>
+                        <MudTh Style="width: 110px;">@L["PurchaseOrderEditor_UnitCostColumn"]</MudTh>
+                        <MudTh Style="width: 80px;">@L["PurchaseOrderEditor_DiscountColumn"]</MudTh>
+                        <MudTh Style="width: 90px;">@L["PurchaseOrderEditor_TaxColumn"]</MudTh>
+                        <MudTh Style="width: 100px; text-align: right;">@L["PurchaseOrderEditor_TotalColumn"]</MudTh>
+                        <MudTh Style="width: 50px;"></MudTh>
+                    </HeaderContent>
+                    <RowTemplate>
+                        <MudTd DataLabel="@L["PurchaseOrderEditor_ProductColumn"]">
+                            <ProductAutocomplete SelectedProduct="context.SelectedProduct"
+                                                  ProductChanged="@(product => OnProductChanged(context, product))" />
+                        </MudTd>
+                        <MudTd DataLabel="@L["PurchaseOrderEditor_DescriptionColumn"]">
+                            <MudTextField @bind-Value="context.ProductDescription" Immediate="true" Margin="Margin.Dense" Variant="Variant.Text" />
+                        </MudTd>
+                        <MudTd DataLabel="@L["PurchaseOrderEditor_QuantityColumn"]">
+                            <MudNumericField @bind-Value="context.Quantity" @bind-Value:after="StateHasChanged"
+                                             Immediate="true" Margin="Margin.Dense" Variant="Variant.Text" Min="0" HideSpinButtons="true" Format="N2" />
+                        </MudTd>
+                        <MudTd DataLabel="@L["PurchaseOrderEditor_UnitCostColumn"]">
+                            <MudNumericField @bind-Value="context.UnitPrice" @bind-Value:after="StateHasChanged"
+                                             Immediate="true" Margin="Margin.Dense" Variant="Variant.Text" Min="0" Format="N2" HideSpinButtons="true" />
+                        </MudTd>
+                        <MudTd DataLabel="@L["PurchaseOrderEditor_DiscountColumn"]">
+                            <MudNumericField @bind-Value="context.DiscountPercentage" @bind-Value:after="StateHasChanged"
+                                             Immediate="true" Margin="Margin.Dense" Variant="Variant.Text"
+                                             Min="0" Max="100" Format="0.##" HideSpinButtons="true" Adornment="Adornment.End" AdornmentText="%" />
+                        </MudTd>
+                        <MudTd DataLabel="@L["PurchaseOrderEditor_TaxColumn"]">
+                            @* Box and list both show the rate alone — the four PT tiers are known by their percentage, not a name. *@
+                            <MudSelect T="string" Value="context.TaxCode" ValueChanged="@(code => OnTaxCodeChanged(context, code))"
+                                       ToStringFunc="@(code => TaxRateLabel(code))"
+                                       Margin="Margin.Dense" Variant="Variant.Text">
+                                @foreach (var rate in _taxRates)
+                                {
+                                    <MudSelectItem T="string" Value="@rate.Code">@rate.Percentage.ToString("0.##")%</MudSelectItem>
+                                }
+                            </MudSelect>
+                        </MudTd>
+                        <MudTd DataLabel="@L["PurchaseOrderEditor_TotalColumn"]" Style="text-align: right;">@LineTotal(context).ToString("N2")</MudTd>
+                        <MudTd Style="text-align: right;">
+                            <MudIconButton Icon="@Icons.Material.Filled.Delete" Size="Size.Small" Color="Color.Error"
+                                           title="@L["PurchaseOrderEditor_ActionsColumn"]"
+                                           Disabled="@(_lines.Count == 1)"
+                                           OnClick="@(() => RemoveLine(context))" />
+                        </MudTd>
+                    </RowTemplate>
+                </MudTable>
+            </ChildContent>
+        </EditorCard>
 
-            <MudTable Items="_lines" Dense="true" Hover="true" Striped="true" Breakpoint="Breakpoint.Sm">
-                <HeaderContent>
-                    <MudTh Style="width: 220px;">@L["PurchaseOrderEditor_ProductColumn"]</MudTh>
-                    <MudTh>@L["PurchaseOrderEditor_DescriptionColumn"]</MudTh>
-                    <MudTh Style="width: 100px;">@L["PurchaseOrderEditor_QuantityColumn"]</MudTh>
-                    <MudTh Style="width: 90px;">@L["PurchaseOrderEditor_UnitColumn"]</MudTh>
-                    <MudTh Style="width: 130px;">@L["PurchaseOrderEditor_UnitCostColumn"]</MudTh>
-                    <MudTh Style="width: 100px;">@L["PurchaseOrderEditor_DiscountColumn"]</MudTh>
-                    <MudTh Style="width: 150px;">@L["PurchaseOrderEditor_TaxColumn"]</MudTh>
-                    <MudTh Style="width: 110px; text-align: right;">@L["PurchaseOrderEditor_TotalColumn"]</MudTh>
-                    <MudTh Style="width: 70px; text-align: right;">@L["PurchaseOrderEditor_ActionsColumn"]</MudTh>
-                </HeaderContent>
-                <RowTemplate>
-                    <MudTd DataLabel="@L["PurchaseOrderEditor_ProductColumn"]">
-                        <ProductAutocomplete SelectedProduct="context.SelectedProduct"
-                                              ProductChanged="@(product => OnProductChanged(context, product))" />
-                    </MudTd>
-                    <MudTd DataLabel="@L["PurchaseOrderEditor_DescriptionColumn"]">
-                        <MudTextField @bind-Value="context.ProductDescription" Margin="Margin.Dense" />
-                    </MudTd>
-                    <MudTd DataLabel="@L["PurchaseOrderEditor_QuantityColumn"]">
-                        <MudNumericField @bind-Value="context.Quantity" @bind-Value:after="StateHasChanged"
-                                         Margin="Margin.Dense" Min="0" />
-                    </MudTd>
-                    <MudTd DataLabel="@L["PurchaseOrderEditor_UnitColumn"]">
-                        <MudTextField @bind-Value="context.UnitOfMeasure" Margin="Margin.Dense" />
-                    </MudTd>
-                    <MudTd DataLabel="@L["PurchaseOrderEditor_UnitCostColumn"]">
-                        <MudNumericField @bind-Value="context.UnitPrice" @bind-Value:after="StateHasChanged"
-                                         Margin="Margin.Dense" Min="0" Format="N2" />
-                    </MudTd>
-                    <MudTd DataLabel="@L["PurchaseOrderEditor_DiscountColumn"]">
-                        <MudNumericField @bind-Value="context.DiscountPercentage" @bind-Value:after="StateHasChanged"
-                                         Margin="Margin.Dense" Min="0" Max="100" Format="N2" Adornment="Adornment.End" AdornmentText="%" />
-                    </MudTd>
-                    <MudTd DataLabel="@L["PurchaseOrderEditor_TaxColumn"]">
-                        <MudSelect T="string" Value="context.TaxCode"
-                                   ValueChanged="@(code => OnTaxCodeChanged(context, code))"
-                                   Margin="Margin.Dense">
-                            @foreach (var rate in _taxRates)
-                            {
-                                <MudSelectItem T="string" Value="@rate.Code">@rate.Label (@rate.Percentage.ToString("0.##")%)</MudSelectItem>
-                            }
-                        </MudSelect>
-                    </MudTd>
-                    <MudTd DataLabel="@L["PurchaseOrderEditor_TotalColumn"]" Style="text-align: right;">@LineTotal(context).ToString("N2")</MudTd>
-                    <MudTd DataLabel="@L["PurchaseOrderEditor_ActionsColumn"]" Style="text-align: right;">
-                        <MudIconButton Size="Size.Small" Icon="@Icons.Material.Filled.Delete"
-                                       Color="Color.Error" Disabled="@(_lines.Count == 1)"
-                                       OnClick="@(() => RemoveLine(context))" />
-                    </MudTd>
-                </RowTemplate>
-            </MudTable>
+        <EditorCard Title="@L["PurchaseOrderEditor_NotesLabel"]" Icon="@Icons.Material.Filled.Notes">
+            <MudTextField @bind-Value="_notes" Variant="Variant.Outlined" Margin="Margin.Dense" Lines="1" />
+        </EditorCard>
 
-            <MudDivider Class="my-4" />
+        <EditorCard Title="@L["NewInvoice_SummarySectionTitle"]" Icon="@Icons.Material.Filled.Calculate">
+            <DocumentTotalsSummary GrossLinesTotal="GrossLinesTotal"
+                                   DiscountTotal="DiscountTotal"
+                                   NetTotal="NetTotal"
+                                   TaxTotal="TaxTotal"
+                                   GrossTotal="GrossTotal"
+                                   Taxes="TaxBreakdown" />
+        </EditorCard>
 
-            <MudStack Row="true" Justify="Justify.FlexEnd" Spacing="6">
-                <MudStack Spacing="0" AlignItems="AlignItems.End">
-                    <MudText Typo="Typo.caption" Color="Color.Secondary">@L["PurchaseOrderEditor_NetTotalLabel"]</MudText>
-                    <MudText Typo="Typo.body1">@NetTotal.ToString("N2")</MudText>
-                </MudStack>
-                <MudStack Spacing="0" AlignItems="AlignItems.End">
-                    <MudText Typo="Typo.caption" Color="Color.Secondary">@L["PurchaseOrderEditor_TaxTotalLabel"]</MudText>
-                    <MudText Typo="Typo.body1">@TaxTotal.ToString("N2")</MudText>
-                </MudStack>
-                <MudStack Spacing="0" AlignItems="AlignItems.End">
-                    <MudText Typo="Typo.caption" Color="Color.Secondary">@L["PurchaseOrderEditor_GrossTotalLabel"]</MudText>
-                    <MudText Typo="Typo.h6" Color="Color.Primary">@GrossTotal.ToString("N2")</MudText>
-                </MudStack>
+        <MudPaper Elevation="0" Class="pa-3 erp-form-actions">
+            <MudStack Row="true" Justify="Justify.FlexEnd" Spacing="2">
+                <MudButton Variant="Variant.Text" OnClick="GoBack">@L["PurchaseOrderEditor_CancelButton"]</MudButton>
+
+                <MudButton Variant="Variant.Outlined" Color="Color.Primary"
+                           StartIcon="@Icons.Material.Filled.Save"
+                           Disabled="@(_saving || !CanSave)"
+                           OnClick="@(() => SaveAsync(place: false))">
+                    @(IsNew ? L["PurchaseOrderEditor_SaveDraftButton"] : L["PurchaseOrderEditor_SaveButton"])
+                </MudButton>
+
+                @if (IsNew)
+                {
+                    <MudButton Variant="Variant.Filled" Color="Color.Primary"
+                               StartIcon="@Icons.Material.Filled.Send"
+                               Disabled="@(_saving || !CanSave)"
+                               OnClick="@(() => SaveAsync(place: true))">
+                        @L["PurchaseOrderEditor_SaveAndPlaceButton"]
+                    </MudButton>
+                }
             </MudStack>
         </MudPaper>
-
-        <MudStack Row="true" Justify="Justify.FlexEnd" Spacing="2">
-            <MudButton Variant="Variant.Text" OnClick="GoBack">@L["PurchaseOrderEditor_CancelButton"]</MudButton>
-
-            <MudButton Variant="Variant.Outlined" Color="Color.Primary"
-                       StartIcon="@Icons.Material.Filled.Save"
-                       Disabled="@(_saving || !CanSave)"
-                       OnClick="@(() => SaveAsync(place: false))">
-                @(IsNew ? L["PurchaseOrderEditor_SaveDraftButton"] : L["PurchaseOrderEditor_SaveButton"])
-            </MudButton>
-
-            @if (IsNew)
-            {
-                <MudButton Variant="Variant.Filled" Color="Color.Primary"
-                           StartIcon="@Icons.Material.Filled.Send"
-                           Disabled="@(_saving || !CanSave)"
-                           OnClick="@(() => SaveAsync(place: true))">
-                    @L["PurchaseOrderEditor_SaveAndPlaceButton"]
-                </MudButton>
-            }
-        </MudStack>
     }
 </MudStack>
 
@@ -219,11 +214,29 @@
         && _orderDate is not null
         && _lines.Any(line => line.Quantity > 0 && !string.IsNullOrWhiteSpace(line.ProductCode));
 
+    private decimal GrossLinesTotal => _lines.Sum(GrossAmount);
+
+    private decimal DiscountTotal => _lines.Sum(DiscountAmount);
+
     private decimal NetTotal => _lines.Sum(LineTotal);
 
     private decimal TaxTotal => _lines.Sum(line => Round(LineTotal(line) * line.TaxPercentage / 100m));
 
     private decimal GrossTotal => NetTotal + TaxTotal;
+
+    /// <summary>The VAT grouped by rate, the same way the API builds the document's tax summary.</summary>
+    private IReadOnlyList<DocumentTotalsSummary.TaxLine> TaxBreakdown =>
+    [
+        .. _lines
+            .Where(line => !string.IsNullOrWhiteSpace(line.ProductCode))
+            .GroupBy(line => (line.TaxCode, line.TaxPercentage))
+            .OrderByDescending(group => group.Key.TaxPercentage)
+            .Select(group => new DocumentTotalsSummary.TaxLine(
+                _taxRates.FirstOrDefault(rate => rate.Code == group.Key.TaxCode)?.Label ?? group.Key.TaxCode,
+                group.Key.TaxPercentage,
+                group.Sum(LineTotal),
+                group.Sum(line => Round(LineTotal(line) * line.TaxPercentage / 100m))))
+    ];
 
     protected override async Task OnInitializedAsync()
     {
@@ -393,6 +406,12 @@
 
     private async Task SaveAsync(bool place)
     {
+        // A fast double click can dispatch a second save before the button's Disabled state reaches
+        // the browser; without this the second request races the first and loses on the order's
+        // concurrency token.
+        if (_saving)
+            return;
+
         _saving = true;
         _error = null;
 
@@ -457,10 +476,20 @@
     private void GoBack() =>
         Navigation.NavigateTo(IsNew ? "purchase-orders" : $"purchase-orders/{Id}");
 
-    private static decimal LineTotal(LineEditor line) =>
-        Round(Round(line.Quantity * line.UnitPrice) * (1 - line.DiscountPercentage / 100m));
+    private static decimal GrossAmount(LineEditor line) => Round(line.Quantity * line.UnitPrice);
+
+    private static decimal DiscountAmount(LineEditor line) => Round(GrossAmount(line) * line.DiscountPercentage / 100m);
+
+    private static decimal LineTotal(LineEditor line) => GrossAmount(line) - DiscountAmount(line);
 
     private static decimal Round(decimal value) => Math.Round(value, 2, MidpointRounding.AwayFromZero);
+
+    /// <summary>And the tax box shows the rate, not the name of the rate.</summary>
+    private string TaxRateLabel(string? taxCode)
+    {
+        var rate = _taxRates.FirstOrDefault(rate => rate.Code == taxCode);
+        return rate is null ? taxCode ?? string.Empty : $"{rate.Percentage:0.##}%";
+    }
 
 
     private sealed class LineEditor

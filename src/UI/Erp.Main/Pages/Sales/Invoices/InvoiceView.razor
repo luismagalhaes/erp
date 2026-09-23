@@ -1,4 +1,5 @@
 @page "/invoices/{Id:guid}"
+@page "/credit-notes/{Id:guid}"
 @attribute [Authorize]
 @using Microsoft.AspNetCore.Authorization
 @using Microsoft.AspNetCore.Components.Web
@@ -59,18 +60,13 @@
                     <MudText><span class="erp-mono">@_invoice.CustomerTaxId</span> — @_invoice.CustomerName</MudText>
                     <MudText Typo="Typo.body2" Color="Color.Secondary">@CustomerAddressLine</MudText>
                 </MudItem>
-                <MudItem xs="6" md="2">
+                <MudItem xs="6" md="3">
                     <MudText Typo="Typo.caption" Color="Color.Secondary">@L["InvoiceView_DocumentDateLabel"]</MudText>
                     <MudText>@_invoice.DocumentDate.ToString("yyyy-MM-dd")</MudText>
                 </MudItem>
-                <MudItem xs="6" md="2">
+                <MudItem xs="6" md="3">
                     <MudText Typo="Typo.caption" Color="Color.Secondary">@L["InvoiceView_DueDateLabel"]</MudText>
                     <MudText Color="@(IsOverdue ? Color.Error : Color.Default)">@(_invoice.DueDate?.ToString("yyyy-MM-dd") ?? "—")</MudText>
-                </MudItem>
-                <MudItem xs="12" md="2">
-                    <MudText Typo="Typo.caption" Color="Color.Secondary">@L["InvoiceView_SignatureLabel"]</MudText>
-                    <MudText Class="erp-mono">@_invoice.PrintableHash</MudText>
-                    <MudText Typo="Typo.caption" Color="Color.Secondary">@_invoice.SystemEntryDateUtc.ToString("yyyy-MM-dd HH:mm:ss") UTC</MudText>
                 </MudItem>
 
                 @if (!string.IsNullOrWhiteSpace(_invoice.RectifiedDocumentNumber))
@@ -109,7 +105,7 @@
                             <MudText Typo="Typo.caption" Color="Color.Secondary">@context.TaxExemptionCode — @context.TaxExemptionReason</MudText>
                         }
                     </MudTd>
-                    <MudTd DataLabel="@L["InvoiceView_QuantityColumn"]" Style="text-align: right;">@context.Quantity.ToString("N3")</MudTd>
+                    <MudTd DataLabel="@L["InvoiceView_QuantityColumn"]" Style="text-align: right;">@context.Quantity.ToString("N2")</MudTd>
                     <MudTd DataLabel="@L["InvoiceView_UnitPriceColumn"]" Style="text-align: right;">@context.UnitPrice.ToString("N2")</MudTd>
                     <MudTd DataLabel="@L["NewInvoice_DiscountColumn"]" Style="text-align: right;">@DescribeDiscount(context.DiscountPercentage)</MudTd>
                     <MudTd DataLabel="@L["InvoiceView_NetColumn"]" Style="text-align: right;">@context.LineAmount.ToString("N2")</MudTd>
@@ -153,20 +149,9 @@
                                    Taxes="TaxBreakdown" />
         </EditorCard>
 
-        <MudExpansionPanels Elevation="1">
-            <MudExpansionPanel Text="@L["InvoiceView_QrDataTitle"]">
-                <MudText Typo="Typo.caption" Color="Color.Secondary" Class="mb-2">
-                    @L["InvoiceView_QrDataDescription"]
-                </MudText>
-                <MudPaper Elevation="0" Class="pa-3" Style="overflow-x: auto;">
-                    <MudText Style="font-family: monospace; font-size: 0.8rem; white-space: nowrap;">
-                        @_invoice.QrCodePayload
-                    </MudText>
-                </MudPaper>
-            </MudExpansionPanel>
-
-            @if (_invoice.Status != "A")
-            {
+        @if (_invoice.Status != "A")
+        {
+            <MudExpansionPanels Elevation="1">
                 <MudExpansionPanel Text="@L["InvoiceView_VoidDocumentTitle"]">
                     <MudText Typo="Typo.body2" Color="Color.Secondary" Class="mb-3">
                         @L["InvoiceView_VoidHelpText"]
@@ -182,8 +167,8 @@
                         </MudButton>
                     </MudStack>
                 </MudExpansionPanel>
-            }
-        </MudExpansionPanels>
+            </MudExpansionPanels>
+        }
     }
 </MudStack>
 

@@ -125,17 +125,17 @@
                     <MudTd DataLabel="@L["InvoiceFromMovements_ProductCodeHeader"]">@context.Source.ProductCode</MudTd>
                     <MudTd DataLabel="@L["InvoiceFromMovements_DescriptionHeader"]">@context.Source.ProductDescription</MudTd>
                     <MudTd DataLabel="@L["InvoiceFromMovements_MovementHeader"]" Style="text-align: right;">
-                        @context.Source.PendingQuantity.ToString("N3")
+                        @context.Source.PendingQuantity.ToString("N2")
                     </MudTd>
                     <MudTd DataLabel="@L["InvoiceFromMovements_AlreadyInvoicedHeader"]" Style="text-align: right;">
-                        @(context.Source.InvoicedQuantity > 0 ? context.Source.InvoicedQuantity.ToString("N3") : "—")
+                        @(context.Source.InvoicedQuantity > 0 ? context.Source.InvoicedQuantity.ToString("N2") : "—")
                     </MudTd>
                     <MudTd DataLabel="@L["InvoiceFromMovements_ToInvoiceHeader"]">
                         @if (context.Selected)
                         {
                             <MudNumericField T="decimal" Value="@context.Quantity"
                                              ValueChanged="@(quantity => SetQuantity(context, quantity))"
-                                             Margin="Margin.Dense" Min="0" Max="@context.Source.PendingQuantity" />
+                                             Margin="Margin.Dense" Min="0" Max="@context.Source.PendingQuantity" Format="N2" />
                         }
                         else
                         {

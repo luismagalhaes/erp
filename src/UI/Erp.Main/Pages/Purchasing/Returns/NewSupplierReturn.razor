@@ -120,10 +120,10 @@
                                 </MudStack>
                             </MudTd>
                             <MudTd DataLabel="@L["NewSupplierReturn_ReceivedColumn"]" Style="text-align: right;">
-                                @context.ReceivedQuantity.ToString("N3")
+                                @context.ReceivedQuantity.ToString("N2")
                             </MudTd>
                             <MudTd DataLabel="@L["NewSupplierReturn_ReturnableColumn"]" Style="text-align: right;">
-                                @context.ReturnableQuantity.ToString("N3") @context.UnitOfMeasure
+                                @context.ReturnableQuantity.ToString("N2") @context.UnitOfMeasure
                             </MudTd>
                             <MudTd DataLabel="@L["NewSupplierReturn_ToReturnColumn"]">
                                 @if (Chosen(context) is { } chosen)
@@ -131,7 +131,7 @@
                                     <MudNumericField T="decimal" Value="chosen.Quantity"
                                                      ValueChanged="@(quantity => SetQuantity(chosen, context, quantity))"
                                                      Margin="Margin.Dense" Min="0"
-                                                     Max="@context.ReturnableQuantity" />
+                                                     Max="@context.ReturnableQuantity" Format="N2" />
                                 }
                             </MudTd>
                             <MudTd DataLabel="@L["NewSupplierReturn_CostColumn"]" Style="text-align: right;">

@@ -98,7 +98,7 @@ else
                     <td>@line.LineNumber</td>
                     <td>@line.ProductCode</td>
                     <td>@line.ProductDescription</td>
-                    <td class="num">@line.Quantity.ToString("N3")</td>
+                    <td class="num">@line.Quantity.ToString("N2")</td>
                     <td>@line.UnitOfMeasure</td>
                     <td class="num">@line.UnitPrice.ToString("N2")</td>
                     <td class="num">@line.LineAmount.ToString("N2")</td>
@@ -110,7 +110,7 @@ else
     <div class="print-summary">
         <div></div>
         <div class="print-totals">
-            <div class="row"><span>@L["StockMovementPrint_TotalQuantityLabel"]</span><span>@_movement.TotalQuantity.ToString("N3")</span></div>
+            <div class="row"><span>@L["StockMovementPrint_TotalQuantityLabel"]</span><span>@_movement.TotalQuantity.ToString("N2")</span></div>
             <div class="row"><span>@L["StockMovementPrint_NetTotalLabel"]</span><span>@_movement.NetTotal.ToString("N2")</span></div>
             <div class="row"><span>@L["StockMovementPrint_TaxLabel"]</span><span>@_movement.TaxPayable.ToString("N2")</span></div>
             <div class="row grand"><span>@L["StockMovementPrint_TotalLabel"]</span><span>@_movement.GrossTotal.ToString("N2") EUR</span></div>

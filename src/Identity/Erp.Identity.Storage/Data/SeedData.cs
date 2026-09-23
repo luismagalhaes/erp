@@ -87,6 +87,8 @@ public static class SeedData
             var result = await userManager.CreateAsync(admin, adminUser.Password);
             if (result.Succeeded)
                 await userManager.AddToRoleAsync(admin, Constants.Roles.SuperAdmin);
+            else
+                Console.WriteLine("ADMIN SEED FAILED: " + string.Join("; ", result.Errors.Select(e => e.Code + ":" + e.Description)));
         }
     }
 

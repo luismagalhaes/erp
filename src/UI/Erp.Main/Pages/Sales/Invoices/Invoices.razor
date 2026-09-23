@@ -44,12 +44,6 @@
               LoadErrorMessage="@L["Invoices_LoadErrorMessage"]">
         <Columns>
             <PropertyColumn Property="x => x.DocumentNumber" Title="@L["Invoices_DocumentColumn"]" CellClass="erp-mono" />
-            <PropertyColumn Property="x => x.DocumentType" Title="@L["Invoices_TypeColumn"]">
-                <CellTemplate>
-                    <MudChip T="string" Size="Size.Small" Variant="Variant.Text">@context.Item.DocumentType</MudChip>
-                </CellTemplate>
-            </PropertyColumn>
-            <PropertyColumn Property="x => x.Atcud" Title="@L["Invoices_AtcudColumn"]" CellClass="erp-mono" />
             <PropertyColumn Property="x => x.DocumentDate" Title="@L["Invoices_DateColumn"]" Format="yyyy-MM-dd" />
             <PropertyColumn Property="x => x.DueDate" Title="@L["Invoices_DueDateColumn"]" Format="yyyy-MM-dd" />
             <PropertyColumn Property="x => x.CustomerName" Title="@L["Invoices_CustomerColumn"]" />

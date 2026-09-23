@@ -60,6 +60,15 @@ public sealed class PurchasingModelConfiguration : IModuleModelConfiguration
             entity.ToTable("PurchaseOrderLine");
             entity.HasKey(x => x.Id);
 
+            // The id is always assigned in the domain (Guid.NewGuid() on construction), never by the
+            // database. Left at the default ValueGeneratedOnAdd, EF Core cannot tell a freshly built
+            // line from one it might already have saved, and when ReplaceLines() clears and re-adds
+            // the collection on an order that is already tracked — an edit, not a first save — it
+            // treats the new lines as existing rows to UPDATE instead of ones to INSERT. Since no row
+            // with that id exists yet, the update matches zero rows and looks like a lost concurrency
+            // race, even though nothing else touched the order.
+            entity.Property(x => x.Id).ValueGeneratedNever();
+
             entity.Property(x => x.ProductCode).HasMaxLength(60).IsRequired();
             entity.Property(x => x.ProductDescription).HasMaxLength(200).IsRequired();
             entity.Property(x => x.UnitOfMeasure).HasMaxLength(20).IsRequired();

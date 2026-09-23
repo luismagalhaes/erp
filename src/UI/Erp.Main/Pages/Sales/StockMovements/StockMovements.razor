@@ -38,17 +38,11 @@
               LoadErrorMessage="@L["StockMovements_LoadError"]">
         <Columns>
             <PropertyColumn Property="x => x.DocumentNumber" Title="@L["StockMovements_DocumentColumn"]" CellClass="erp-mono" />
-            <PropertyColumn Property="x => x.MovementType" Title="@L["StockMovements_TypeColumn"]">
-                <CellTemplate>
-                    <MudChip T="string" Size="Size.Small" Variant="Variant.Text">@context.Item.MovementType</MudChip>
-                </CellTemplate>
-            </PropertyColumn>
-            <PropertyColumn Property="x => x.Atcud" Title="@L["StockMovements_AtcudColumn"]" CellClass="erp-mono" />
             <PropertyColumn Property="x => x.MovementDate" Title="@L["StockMovements_DateColumn"]" Format="yyyy-MM-dd" />
             <PropertyColumn Property="x => x.PartyName" Title="@L["StockMovements_RecipientColumn"]" />
             <PropertyColumn Property="x => x.PartyTaxId" Title="@L["StockMovements_TaxIdColumn"]" />
             <PropertyColumn Property="x => x.MovementStartAtUtc" Title="@L["StockMovements_TransportStartColumn"]" Format="yyyy-MM-dd HH:mm" />
-            <PropertyColumn Property="x => x.TotalQuantity" Title="@L["StockMovements_QuantityColumn"]" Format="N3"
+            <PropertyColumn Property="x => x.TotalQuantity" Title="@L["StockMovements_QuantityColumn"]" Format="N2"
                             CellClass="erp-numeric" HeaderClass="erp-numeric" />
             <PropertyColumn Property="x => x.AtDocCodeId" Title="@L["StockMovements_CommunicationColumn"]">
                 <CellTemplate>

@@ -62,7 +62,7 @@
                 </MudItem>
                 <MudItem xs="6" md="3">
                     <MudText Typo="Typo.caption" Color="Color.Secondary">@Localizer["InventoryCountSheet_TotalAdjustmentLabel"]</MudText>
-                    <MudText Typo="Typo.h5">@TotalDifference.ToString("N3")</MudText>
+                    <MudText Typo="Typo.h5">@TotalDifference.ToString("N2")</MudText>
                 </MudItem>
                 <MudItem xs="6" md="3" Class="d-flex align-center justify-end">
                     @if (_count.IsOpen)
@@ -124,7 +124,7 @@
                     <MudTd DataLabel="@Localizer["InventoryCountSheet_DescriptionColumn"]">@context.ProductDescription</MudTd>
                     <MudTd DataLabel="@Localizer["InventoryCountSheet_WarehouseColumn"]">@WarehouseName(context.WarehouseId)</MudTd>
                     <MudTd DataLabel="@Localizer["InventoryCountSheet_SystemColumn"]" Style="text-align: right;">
-                        @context.SystemQuantity.ToString("N3")
+                        @context.SystemQuantity.ToString("N2")
                     </MudTd>
                     <MudTd DataLabel="@Localizer["InventoryCountSheet_CountedColumn"]" Style="text-align: right;">
                         @if (_count.IsOpen)
@@ -133,11 +133,11 @@
                                              ValueChanged="@(value => SetCounted(context, value))"
                                              Variant="Variant.Text" Margin="Margin.Dense"
                                              HideSpinButtons="true" Style="max-width: 120px;"
-                                             Class="ml-auto" Format="N3" />
+                                             Class="ml-auto" Format="N2" />
                         }
                         else
                         {
-                            @context.CountedQuantity.ToString("N3")
+                            @context.CountedQuantity.ToString("N2")
                         }
                     </MudTd>
                     <MudTd DataLabel="@Localizer["InventoryCountSheet_DifferenceColumn"]" Style="text-align: right;">
@@ -462,7 +462,7 @@
     };
 
     private static string Signed(decimal difference) =>
-        difference > 0 ? $"+{difference:N3}" : difference.ToString("N3");
+        difference > 0 ? $"+{difference:N2}" : difference.ToString("N2");
 
     private string ScopeLabel(string scope) => scope switch
     {

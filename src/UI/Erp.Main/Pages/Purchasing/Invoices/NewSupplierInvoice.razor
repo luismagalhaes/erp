@@ -155,7 +155,7 @@
                                 </MudStack>
                             </MudTd>
                             <MudTd DataLabel="@L["NewSupplierInvoice_PendingColumn"]" Style="text-align: right;">
-                                @context.PendingQuantity.ToString("N3") @context.UnitOfMeasure
+                                @context.PendingQuantity.ToString("N2") @context.UnitOfMeasure
                             </MudTd>
                             <MudTd DataLabel="@L["NewSupplierInvoice_ToInvoiceColumn"]">
                                 @if (Chosen(context) is { } chosen)
@@ -163,7 +163,7 @@
                                     <MudNumericField T="decimal" Value="chosen.Quantity"
                                                      ValueChanged="@(quantity => SetQuantity(chosen, context, quantity))"
                                                      Margin="Margin.Dense" Min="0"
-                                                     Max="@context.PendingQuantity" />
+                                                     Max="@context.PendingQuantity" Format="N2" />
                                 }
                             </MudTd>
                             <MudTd DataLabel="@L["NewSupplierInvoice_UnitPriceColumn"]">

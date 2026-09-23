@@ -82,18 +82,20 @@ public static class PaymentTypes
 /// <summary>SAF-T payment mechanisms, for the UI selects.</summary>
 public static class PaymentMechanismOptions
 {
+    // Ascending by description, so every screen that lists these (invoices, receipts, supplier
+    // payments) shows them in the same, predictable order.
     public static readonly (string Code, string Label)[] All =
     [
-        ("NU", "Numerário"),
-        ("CH", "Cheque"),
-        ("CD", "Cartão de débito"),
         ("CC", "Cartão de crédito"),
-        ("TB", "Transferência bancária"),
-        ("DE", "Débito directo"),
+        ("CD", "Cartão de débito"),
+        ("CH", "Cheque"),
         ("CO", "Cheque ou cartão oferta"),
         ("CS", "Compensação de saldos em conta corrente"),
+        ("DE", "Débito directo"),
         ("LC", "Letra comercial"),
-        ("OU", "Outro")
+        ("NU", "Numerário"),
+        ("OU", "Outro"),
+        ("TB", "Transferência bancária")
     ];
 
     public static string Describe(string code) =>

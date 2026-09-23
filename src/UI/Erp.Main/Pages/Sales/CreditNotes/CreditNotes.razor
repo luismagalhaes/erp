@@ -38,13 +38,6 @@
               LoadErrorMessage="@L["CreditNotes_LoadErrorMessage"]">
         <Columns>
             <PropertyColumn Property="x => x.DocumentNumber" Title="@L["CreditNotes_DocumentColumn"]" CellClass="erp-mono" />
-            <PropertyColumn Property="x => x.DocumentType" Title="@L["CreditNotes_TypeColumn"]">
-                <CellTemplate>
-                    <MudChip T="string" Size="Size.Small" Variant="Variant.Text">
-                        @InvoiceTypes.Describe(context.Item.DocumentType)
-                    </MudChip>
-                </CellTemplate>
-            </PropertyColumn>
             <PropertyColumn Property="x => x.DocumentDate" Title="@L["CreditNotes_DateColumn"]" Format="yyyy-MM-dd" />
             <PropertyColumn Property="x => x.CustomerName" Title="@L["CreditNotes_CustomerColumn"]" />
             <PropertyColumn Property="x => x.CustomerTaxId" Title="@L["CreditNotes_TaxIdColumn"]" />
@@ -65,7 +58,7 @@
                     <MudMenu Icon="@Icons.Material.Filled.MoreVert" Size="Size.Small"
                              AnchorOrigin="Origin.BottomRight" TransformOrigin="Origin.TopRight">
                         <MudMenuItem Icon="@Icons.Material.Filled.Visibility"
-                                     OnClick="@(() => Navigation.NavigateTo($"invoices/{context.Item.Id}"))">
+                                     OnClick="@(() => Navigation.NavigateTo($"credit-notes/{context.Item.Id}"))">
                             @L["CreditNotes_ViewDocument"]
                         </MudMenuItem>
                     </MudMenu>

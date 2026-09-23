@@ -61,23 +61,18 @@
 
         <MudPaper Elevation="0" Class="pa-4 erp-card erp-form">
             <MudGrid>
-                <MudItem xs="12" md="3">
+                <MudItem xs="12" md="4">
                     <MudText Typo="Typo.caption" Color="Color.Secondary">@L["PaymentView_CustomerLabel"]</MudText>
                     <MudText>@_payment.PartyName</MudText>
                     <MudText Typo="Typo.body2" Color="Color.Secondary">@L["PaymentView_TaxIdPrefix", _payment.PartyTaxId]</MudText>
                 </MudItem>
-                <MudItem xs="12" md="3">
+                <MudItem xs="12" md="4">
                     <MudText Typo="Typo.caption" Color="Color.Secondary">@L["PaymentView_DateLabel"]</MudText>
                     <MudText>@_payment.TransactionDate.ToString("yyyy-MM-dd")</MudText>
                 </MudItem>
-                <MudItem xs="12" md="3">
+                <MudItem xs="12" md="4">
                     <MudText Typo="Typo.caption" Color="Color.Secondary">@L["PaymentView_SystemEntryLabel"]</MudText>
                     <MudText>@_payment.SystemEntryDateUtc.ToString("yyyy-MM-dd HH:mm:ss") UTC</MudText>
-                </MudItem>
-                <MudItem xs="12" md="3">
-                    <MudText Typo="Typo.caption" Color="Color.Secondary">@L["PaymentView_SignatureLabel"]</MudText>
-                    <MudText Style="font-family: monospace;">@_payment.PrintableHash</MudText>
-                    <MudText Typo="Typo.body2" Color="Color.Secondary">@L["PaymentView_CertifiedSoftwareNote"]</MudText>
                 </MudItem>
 
                 @if (!string.IsNullOrWhiteSpace(_payment.Description))
@@ -152,17 +147,9 @@
             </MudPaper>
         </MudStack>
 
-        <MudExpansionPanels Elevation="1">
-            <MudExpansionPanel Text="@L["PaymentView_QrDataTitle"]">
-                <MudPaper Elevation="0" Class="pa-3" Style="overflow-x: auto;">
-                    <MudText Style="font-family: monospace; font-size: 0.8rem; white-space: nowrap;">
-                        @_payment.QrCodePayload
-                    </MudText>
-                </MudPaper>
-            </MudExpansionPanel>
-
-            @if (_payment.Status != "A")
-            {
+        @if (_payment.Status != "A")
+        {
+            <MudExpansionPanels Elevation="1">
                 <MudExpansionPanel Text="@L["PaymentView_VoidPaymentTitle"]">
                     <MudText Typo="Typo.body2" Color="Color.Secondary" Class="mb-3">
                         @L["PaymentView_VoidHelpText"]
@@ -178,8 +165,8 @@
                         </MudButton>
                     </MudStack>
                 </MudExpansionPanel>
-            }
-        </MudExpansionPanels>
+            </MudExpansionPanels>
+        }
     }
 </MudStack>
 

@@ -263,7 +263,7 @@ O `Erp.Sales` e o `Erp.Purchasing` referenciam o `Erp.Inventory`, para que emiti
 
 Estas portas estão referenciadas em configuração (URLs de callback OIDC, CORS, `Services:*` no [Erp.Main/appsettings.json](src/UI/Erp.Main/appsettings.json) e nos clients semeados). Alterar uma porta implica atualizar também esses pontos.
 
-O `Erp.Api` expõe, em desenvolvimento, o documento **OpenAPI** em `/openapi/v1.json` e a referência interativa **Scalar** em `/scalar` (a raiz `/` redireciona para lá), e responde a `GET /health` sem autenticação através de um `HealthController`.
+O `Erp.Api` expõe, em desenvolvimento, o documento **OpenAPI** em `/openapi/v1.json` e a referência interativa **Scalar** em `/scalar` (a raiz `/` redireciona para lá), e responde a `GET /health` sem autenticação através de um `HealthController`. O `Erp.Identity` expõe igualmente o OpenAPI (`/openapi/v1.json`) e o Scalar em `/scalar`, mas a raiz `/` continua a ser a página inicial da UI — o Scalar só se abre escrevendo `/scalar`.
 
 ---
 

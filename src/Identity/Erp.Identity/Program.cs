@@ -11,6 +11,7 @@ using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Localization;
 using MudBlazor.Services;
+using Scalar.AspNetCore;
 using Erp.Identity.Common.Localization;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -65,6 +66,7 @@ builder.Services.AddCascadingAuthenticationState();
 // The logging filter runs once per action instead of every action logging its own entry — see
 // RequestLoggingFilter.
 builder.Services.AddControllers(options => options.Filters.Add<RequestLoggingFilter>());
+builder.Services.AddOpenApi();
 
 // Bearer scheme for the users API this host serves. The default schemes stay the cookie
 // ones set up by ASP.NET Identity, so the UI is unaffected.
@@ -150,6 +152,13 @@ app.UseAntiforgery();
 app.MapAuthenticationEndpoints();
 app.MapCultureEndpoints();
 app.MapControllers();
+
+// Unlike the ERP API, "/" stays the Blazor UI's home page: Scalar is only reached by typing /scalar.
+app.MapOpenApi();
+app.MapScalarApiReference(options =>
+{
+    options.Title = "ERP Identity API";
+});
 
 app.MapRazorComponents<Erp.Identity.Shell.App>()
     .AddInteractiveServerRenderMode();

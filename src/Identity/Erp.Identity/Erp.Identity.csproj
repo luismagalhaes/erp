@@ -21,10 +21,12 @@
     <PackageReference Include="Microsoft.AspNetCore.Authentication.Google" Version="10.*" />
     <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="10.*" />
     <PackageReference Include="Microsoft.AspNetCore.Authentication.MicrosoftAccount" Version="10.*" />
+    <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="10.*" />
     <PackageReference Include="MudBlazor" Version="8.*" />
     <PackageReference Include="OpenTelemetry.Extensions.Hosting" Version="1.*" />
     <PackageReference Include="OpenTelemetry.Instrumentation.AspNetCore" Version="1.*" />
     <PackageReference Include="OpenTelemetry.Instrumentation.Http" Version="1.*" />
+    <PackageReference Include="Scalar.AspNetCore" Version="2.*" />
 	  <PackageReference Include="SonarAnalyzer.CSharp" Version="9.32.0.97167" PrivateAssets="all" />
   </ItemGroup>
 

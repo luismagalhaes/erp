@@ -8,10 +8,23 @@ namespace Erp.Core.Storage.Storage;
 
 public sealed class CompanySubscriptionStorage(AppDbContext dbContext) : ICompanySubscriptionStorage
 {
-    public Task<CompanySubscription?> GetByCompanyIdAsync(Guid companyId, CancellationToken cancellationToken = default) =>
-        dbContext.Set<CompanySubscription>()
+    public Task<CompanySubscription?> GetActiveByCompanyIdAsync(Guid companyId, CancellationToken cancellationToken = default)
+    {
+        var now = DateTime.UtcNow;
+
+        return dbContext.Set<CompanySubscription>()
             .Include(x => x.Plan)
-            .FirstOrDefaultAsync(x => x.CompanyId == companyId, cancellationToken);
+            .Where(x => x.CompanyId == companyId && x.StartedAtUtc <= now && x.ExpiresAtUtc > now)
+            .OrderByDescending(x => x.ExpiresAtUtc)
+            .FirstOrDefaultAsync(cancellationToken);
+    }
+
+    public async Task<IReadOnlyList<CompanySubscription>> GetAllByCompanyIdAsync(Guid companyId, CancellationToken cancellationToken = default) =>
+        await dbContext.Set<CompanySubscription>()
+            .Include(x => x.Plan)
+            .Where(x => x.CompanyId == companyId)
+            .OrderBy(x => x.StartedAtUtc)
+            .ToListAsync(cancellationToken);
 
     public IQueryable<CompanySubscriptionDto> Query() =>
         dbContext.Set<CompanySubscription>()
@@ -34,6 +47,13 @@ public sealed class CompanySubscriptionStorage(AppDbContext dbContext) : ICompan
 
     public async Task AddAsync(CompanySubscription subscription, CancellationToken cancellationToken = default) =>
         await dbContext.Set<CompanySubscription>().AddAsync(subscription, cancellationToken);
+
+    public Task<CompanySubscription?> GetByIdAsync(Guid companyId, Guid subscriptionId, CancellationToken cancellationToken = default) =>
+        dbContext.Set<CompanySubscription>()
+            .FirstOrDefaultAsync(x => x.Id == subscriptionId && x.CompanyId == companyId, cancellationToken);
+
+    public void Remove(CompanySubscription subscription) =>
+        dbContext.Set<CompanySubscription>().Remove(subscription);
 
     public Task SaveChangesAsync(CancellationToken cancellationToken = default) =>
         dbContext.SaveChangesAsync(cancellationToken);

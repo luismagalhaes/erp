@@ -20,6 +20,11 @@ public static class DependencyInjection
         services.AddScoped<IUserCompanyService, UserCompanyService>();
         services.AddScoped<IUserCompanyAdminService, UserCompanyAdminService>();
 
+        // A company managing its own people. The Identity host it looks people up on and invites
+        // through is an external dependency: IIdentityOnboardingClient is registered by
+        // Erp.Dependencies (AddErpDependencies), not here.
+        services.AddScoped<ICompanyMemberService, CompanyMemberService>();
+
         // Master data shared by every module.
         services.AddScoped<IBrandService, BrandService>();
         services.AddScoped<IProductFamilyService, ProductFamilyService>();

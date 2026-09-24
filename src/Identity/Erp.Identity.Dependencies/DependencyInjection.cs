@@ -19,7 +19,7 @@ public static class DependencyInjection
         IConfiguration configuration,
         string? developmentClientSecret = null)
     {
-        services.Configure<NotificationEmailOptions>(configuration.GetSection("NotificationService"));
+        services.Configure<NotificationEmailOptions>(configuration.GetSection(NotificationEmailOptions.SectionName));
 
         services.Configure<ServiceAuthenticationOptions>(options =>
         {
@@ -42,7 +42,7 @@ public static class DependencyInjection
             var options = serviceProvider.GetRequiredService<IOptions<NotificationEmailOptions>>().Value;
 
             if (string.IsNullOrWhiteSpace(options.BaseUrl))
-                throw new InvalidOperationException("NotificationService:BaseUrl is not configured.");
+                throw new InvalidOperationException($"{NotificationEmailOptions.SectionName}:BaseUrl is not configured.");
 
             httpClient.BaseAddress = new Uri(options.BaseUrl);
         })

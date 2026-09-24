@@ -1014,4 +1014,67 @@
   <data name="Backoffice_Clients_Deleted" xml:space="preserve">
     <value>Client deleted.</value>
   </data>
+  <data name="NavMenu_OnboardingRequests" xml:space="preserve">
+    <value>Onboarding Requests</value>
+  </data>
+  <data name="Backoffice_OnboardingRequests_PageTitle" xml:space="preserve">
+    <value>Onboarding Requests</value>
+  </data>
+  <data name="Backoffice_OnboardingRequests_PageDescription" xml:space="preserve">
+    <value>Invitations companies sent to people who do not have an account yet.</value>
+  </data>
+  <data name="Backoffice_OnboardingRequests_ItemsLabel" xml:space="preserve">
+    <value>requests</value>
+  </data>
+  <data name="Backoffice_OnboardingRequests_EmailColumn" xml:space="preserve">
+    <value>Invited email</value>
+  </data>
+  <data name="Backoffice_OnboardingRequests_CompanyColumn" xml:space="preserve">
+    <value>Company</value>
+  </data>
+  <data name="Backoffice_OnboardingRequests_RoleColumn" xml:space="preserve">
+    <value>Role</value>
+  </data>
+  <data name="Backoffice_OnboardingRequests_InvitedByColumn" xml:space="preserve">
+    <value>Invited by</value>
+  </data>
+  <data name="Backoffice_OnboardingRequests_StatusColumn" xml:space="preserve">
+    <value>Status</value>
+  </data>
+  <data name="Backoffice_OnboardingRequests_CreatedColumn" xml:space="preserve">
+    <value>Created</value>
+  </data>
+  <data name="Backoffice_OnboardingRequests_LastSentColumn" xml:space="preserve">
+    <value>Last sent</value>
+  </data>
+  <data name="Backoffice_OnboardingRequests_Pending" xml:space="preserve">
+    <value>Pending</value>
+  </data>
+  <data name="Backoffice_OnboardingRequests_Completed" xml:space="preserve">
+    <value>Completed</value>
+  </data>
+  <data name="Backoffice_OnboardingRequests_Cancelled" xml:space="preserve">
+    <value>Cancelled</value>
+  </data>
+  <data name="Backoffice_OnboardingRequests_CancelAction" xml:space="preserve">
+    <value>Cancel request</value>
+  </data>
+  <data name="Backoffice_OnboardingRequests_Cancelled_Message" xml:space="preserve">
+    <value>Request cancelled.</value>
+  </data>
+  <data name="Onboarding_Email_Subject" xml:space="preserve">
+    <value>You have been invited to {0} on the ERP</value>
+  </data>
+  <data name="Onboarding_Email_Greeting" xml:space="preserve">
+    <value>Hello,</value>
+  </data>
+  <data name="Onboarding_Email_Body" xml:space="preserve">
+    <value>{0} invited you to access the company {1} on the ERP. Create your account with this email to accept the invitation.</value>
+  </data>
+  <data name="Onboarding_Email_InviterFallback" xml:space="preserve">
+    <value>A colleague</value>
+  </data>
+  <data name="Onboarding_Email_Link" xml:space="preserve">
+    <value>Create account</value>
+  </data>
 </root>

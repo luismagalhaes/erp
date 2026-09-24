@@ -18,6 +18,7 @@
 @inject CompanyState Company
 @inject NavigationManager Navigation
 @inject ISnackbar Snackbar
+@inject IDialogService DialogService
 @inject IStringLocalizer<MainResources> Localizer
 
 <PageTitle>@(IsNew ? Localizer["CompanyEditor_NewTitle"] : Localizer["CompanyEditor_EditTitle"])</PageTitle>
@@ -326,6 +327,95 @@
                         </MudButton>
                     </MudStack>
                 </MudTabPanel>
+
+                <MudTabPanel Text="@Localizer["CompanyEditor_SubscriptionTab"]" Icon="@Icons.Material.Filled.CardMembership" Disabled="IsNew"
+                             ToolTip="@(IsNew ? Localizer["CompanyEditor_SubscriptionTabDisabledHint"].Value : null)">
+                    <MudText Typo="Typo.body2" Color="Color.Secondary" Class="mb-4">
+                        @Localizer["CompanyEditor_SubscriptionTabDescription"]
+                    </MudText>
+
+                    @if (_subscriptionError is not null)
+                    {
+                        <MudAlert Severity="Severity.Error" Dense="true" Class="mb-4">@_subscriptionError</MudAlert>
+                    }
+
+                    @if (_workingSubscription)
+                    {
+                        <MudProgressLinear Indeterminate="true" Color="Color.Primary" />
+                    }
+                    else
+                    {
+                        @if (_subscriptions.Count == 0)
+                        {
+                            <MudAlert Severity="Severity.Warning" Dense="true" Class="mb-4">
+                                @Localizer["CompanyEditor_NoSubscriptionMessage"]
+                            </MudAlert>
+                        }
+                        else
+                        {
+                            <MudTable T="CompanySubscription" Items="@_subscriptions" Dense="true" Hover="true" Class="mb-4 erp-card" Elevation="0" Outlined="true">
+                                <HeaderContent>
+                                    <MudTh>@Localizer["Subscriptions_PlanColumn"]</MudTh>
+                                    <MudTh>@Localizer["Common_StatusColumn"]</MudTh>
+                                    <MudTh>@Localizer["Subscriptions_StartedColumn"]</MudTh>
+                                    <MudTh>@Localizer["Subscriptions_ExpiresColumn"]</MudTh>
+                                    <MudTh></MudTh>
+                                </HeaderContent>
+                                <RowTemplate>
+                                    <MudTd DataLabel="@Localizer["Subscriptions_PlanColumn"].Value">@context.PlanName</MudTd>
+                                    <MudTd DataLabel="@Localizer["Common_StatusColumn"].Value">
+                                        <MudChip T="string" Size="Size.Small" Variant="Variant.Text" Color="@StatusColorFor(context)">
+                                            @StatusLabelFor(context)
+                                        </MudChip>
+                                    </MudTd>
+                                    <MudTd DataLabel="@Localizer["Subscriptions_StartedColumn"].Value">@context.StartedAtUtc.ToLocalTime().ToString("yyyy-MM-dd")</MudTd>
+                                    <MudTd DataLabel="@Localizer["Subscriptions_ExpiresColumn"].Value">@context.ExpiresAtUtc.ToLocalTime().ToString("yyyy-MM-dd")</MudTd>
+                                    <MudTd Class="erp-numeric">
+                                        <MudIconButton Icon="@Icons.Material.Filled.Delete" Size="Size.Small" Color="Color.Error"
+                                                       OnClick="@(() => RemoveSubscriptionAsync(context))" />
+                                    </MudTd>
+                                </RowTemplate>
+                            </MudTable>
+                        }
+
+                        <MudText Typo="Typo.subtitle2" Class="mb-2">@Localizer["Subscriptions_ChangeAction"]</MudText>
+
+                        <MudGrid Spacing="3">
+                            <MudItem xs="12" sm="6" md="4">
+                                <MudSelect T="Guid?" @bind-Value="_subscriptionPlanId" Label="@Localizer["Subscriptions_PlanColumn"]"
+                                           Placeholder="@Localizer["Subscriptions_PlanPlaceholder"].Value"
+                                           Variant="Variant.Outlined" Margin="Margin.Dense">
+                                    @foreach (var plan in _subscriptionPlans)
+                                    {
+                                        <MudSelectItem T="Guid?" Value="@((Guid?)plan.Id)">
+                                            @plan.Name — @Localizer[$"BillingPeriod_{plan.BillingPeriod}"] (@plan.Price.ToString("N2") €)
+                                        </MudSelectItem>
+                                    }
+                                </MudSelect>
+                            </MudItem>
+                            <MudItem xs="12" sm="3" md="3">
+                                <MudDatePicker @bind-Date="_subscriptionStartedAt" Label="@Localizer["Subscriptions_StartedColumn"]"
+                                               Variant="Variant.Outlined" Margin="Margin.Dense" DateFormat="yyyy-MM-dd" Clearable="true" />
+                            </MudItem>
+                            <MudItem xs="12" sm="3" md="3">
+                                <MudDatePicker @bind-Date="_subscriptionExpiresAt" Label="@Localizer["Subscriptions_ExpiresColumn"]"
+                                               Variant="Variant.Outlined" Margin="Margin.Dense" DateFormat="yyyy-MM-dd" Clearable="true" />
+                            </MudItem>
+                            <MudItem xs="12" md="2" Class="d-flex align-center">
+                                <MudButton Variant="Variant.Filled" Color="Color.Primary" FullWidth="true"
+                                           StartIcon="@Icons.Material.Filled.Save"
+                                           Disabled="@(_savingSubscription || _subscriptionPlanId is null)"
+                                           OnClick="SaveSubscriptionAsync">
+                                    @Localizer["Common_SaveButton"]
+                                </MudButton>
+                            </MudItem>
+                        </MudGrid>
+
+                        <MudText Typo="Typo.caption" Color="Color.Secondary" Class="mt-2">
+                            @Localizer["Subscriptions_ChangeHint"]
+                        </MudText>
+                    }
+                </MudTabPanel>
             </MudTabs>
         </MudPaper>
     }
@@ -446,6 +536,16 @@
 
     private bool _applyingDemoData;
 
+    private bool _workingSubscription;
+    private bool _savingSubscription;
+    private string? _subscriptionError;
+    private CompanySubscription? _subscription;
+    private List<CompanySubscription> _subscriptions = [];
+    private List<SubscriptionPlan> _subscriptionPlans = [];
+    private Guid? _subscriptionPlanId;
+    private DateTime? _subscriptionStartedAt;
+    private DateTime? _subscriptionExpiresAt;
+
     private async Task ApplyDemoDataAsync()
     {
         _applyingDemoData = true;
@@ -538,6 +638,7 @@
             await LoadUsersAsync();
             await LoadWarehousesAsync();
             await LoadAtCredentialStatusAsync();
+            await LoadSubscriptionAsync();
         }
         catch (Exception ex)
         {
@@ -650,6 +751,119 @@
         {
             _workingAt = false;
         }
+    }
+
+    private static Color StatusColorFor(CompanySubscription subscription)
+    {
+        var now = DateTime.UtcNow;
+        if (subscription.StartedAtUtc > now)
+            return Color.Info;
+
+        return subscription.IsExpired ? Color.Error : Color.Success;
+    }
+
+    private LocalizedString StatusLabelFor(CompanySubscription subscription)
+    {
+        var now = DateTime.UtcNow;
+        if (subscription.StartedAtUtc > now)
+            return Localizer["Subscriptions_ScheduledStatus"];
+
+        return subscription.IsExpired ? Localizer["Subscriptions_ExpiredStatus"] : Localizer["Subscriptions_ActiveStatus"];
+    }
+
+    private async Task LoadSubscriptionAsync()
+    {
+        _workingSubscription = true;
+        _subscriptionError = null;
+
+        try
+        {
+            _subscription = await CoreApi.GetCompanySubscriptionAsync(Id!.Value);
+
+            var (subscriptions, subscriptionsError) = await CoreApi.GetAllCompanySubscriptionsAsync(Id!.Value);
+            // Newest first: the ones a SuperAdmin cares about looking at are the current and
+            // scheduled ones, not the oldest expired row.
+            _subscriptions = [.. subscriptions.OrderByDescending(x => x.StartedAtUtc)];
+
+            if (subscriptionsError is not null)
+                _subscriptionError = subscriptionsError;
+
+            // Every package, not only the active ones: a company can legitimately still be on one
+            // that is no longer offered, and the dropdown has to be able to show it.
+            var (plans, error) = await CoreApi.GetSubscriptionPlansAsync();
+            _subscriptionPlans = [.. plans];
+
+            if (error is not null)
+                _subscriptionError = error;
+
+            _subscriptionPlanId = null;
+            _subscriptionStartedAt = null;
+            _subscriptionExpiresAt = null;
+        }
+        catch (Exception ex)
+        {
+            _subscriptionError = string.Format(Localizer["CompanyEditor_LoadSubscriptionError"], ex.Message);
+        }
+        finally
+        {
+            _workingSubscription = false;
+        }
+    }
+
+    private async Task SaveSubscriptionAsync()
+    {
+        if (_subscriptionPlanId is null)
+            return;
+
+        _savingSubscription = true;
+        _subscriptionError = null;
+
+        try
+        {
+            var error = await CoreApi.AssignCompanySubscriptionAsync(
+                Id!.Value,
+                new AssignSubscriptionRequest(
+                    _subscriptionPlanId.Value,
+                    _subscriptionStartedAt?.ToUniversalTime(),
+                    _subscriptionExpiresAt?.ToUniversalTime()));
+
+            if (error is not null)
+            {
+                _subscriptionError = error;
+                return;
+            }
+
+            Snackbar.Add(Localizer["Subscriptions_Changed"].Value, Severity.Success);
+            await LoadSubscriptionAsync();
+        }
+        finally
+        {
+            _savingSubscription = false;
+        }
+    }
+
+    private async Task RemoveSubscriptionAsync(CompanySubscription subscription)
+    {
+        var confirmed = await DialogService.ShowMessageBox(
+            Localizer["Subscriptions_DeleteHeading"].Value,
+            string.Format(Localizer["Subscriptions_DeleteConfirm"], subscription.PlanName),
+            yesText: Localizer["Common_DeleteButton"].Value,
+            cancelText: Localizer["Common_CancelButton"].Value);
+
+        if (confirmed != true)
+            return;
+
+        _subscriptionError = null;
+
+        var error = await CoreApi.RemoveCompanySubscriptionAsync(Id!.Value, subscription.Id);
+        if (error is not null)
+        {
+            _subscriptionError = error;
+            return;
+        }
+
+        Snackbar.Add(Localizer["Subscriptions_Deleted"].Value, Severity.Success);
+        await LoadSubscriptionAsync();
     }
 
     /// <summary>Fills in the city when it is still blank; an existing value is never overwritten.</summary>

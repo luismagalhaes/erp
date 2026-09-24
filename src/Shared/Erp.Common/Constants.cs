@@ -95,6 +95,9 @@ public static class Constants
         /// <summary>Reading users from the Identity host, to assign them to companies.</summary>
         public const string ErpIdentityRead = "erp.identity.read";
 
+        /// <summary>Inviting people to a company through the Identity host. Granted only to the ERP API itself.</summary>
+        public const string ErpIdentityOnboarding = "erp.identity.onboarding";
+
         /// <summary>
         /// Identity scope, not an API scope: it carries the role claim into the id_token so the
         /// UI can hide what a user may not reach. The API reads roles from the access token,

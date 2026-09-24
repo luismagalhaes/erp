@@ -118,6 +118,7 @@ public static class SeedData
         new ApiScope(Constants.Scopes.ErpWrite, Constants.ScopeDisplayNames.ErpWrite),
         new ApiScope(Constants.Scopes.ErpNotificationSend, Constants.ScopeDisplayNames.NotificationSend),
         new ApiScope(Constants.Scopes.ErpIdentityRead,     Constants.ScopeDisplayNames.IdentityRead),
+        new ApiScope(Constants.Scopes.ErpIdentityOnboarding, Constants.ScopeDisplayNames.IdentityOnboarding),
     ];
 
     /// <summary>
@@ -142,7 +143,7 @@ public static class SeedData
         // to companies without duplicating the user store.
         new ApiResource(Constants.ApiResources.IdentityApi, Constants.ApiResources.IdentityApiDisplayName)
         {
-            Scopes = { Constants.Scopes.ErpIdentityRead },
+            Scopes = { Constants.Scopes.ErpIdentityRead, Constants.Scopes.ErpIdentityOnboarding },
             UserClaims = { Constants.Claims.Role, Constants.Claims.Name }
         },
     ];
@@ -151,8 +152,8 @@ public static class SeedData
     [
         new Client
         {
-            ClientId = Constants.Clients.BlazorWasmClientId,
-            ClientName = Constants.Clients.BlazorWasmClientName,
+            ClientId = Constants.Clients.ErpPortalClientId,
+            ClientName = Constants.Clients.ErpPortalClientName,
             AllowedGrantTypes = GrantTypes.Code,
             RequireClientSecret = false,
             RequirePkce = true,
@@ -173,16 +174,28 @@ public static class SeedData
             RefreshTokenExpiration = TokenExpiration.Sliding,
             SlidingRefreshTokenLifetime = 86400,
         },
+        // The two service clients below are the machine to machine pair between this host and the ERP
+        // API, one per direction. No secret is seeded for either on purpose: the seed only creates, it
+        // never updates an existing client, so a value baked in here would either be the same in every
+        // environment or, once seeded, impossible to rotate by changing config. Set the secret from
+        // the backoffice after first deploy, one per environment.
         new Client
         {
-            ClientId = Constants.Clients.IdentityServiceClientId,
-            ClientName = Constants.Clients.IdentityServiceClientName,
+            ClientId = Constants.Clients.ErpApiClientId,
+            ClientName = Constants.Clients.ErpApiClientName,
             AllowedGrantTypes = GrantTypes.ClientCredentials,
-            // No secret is seeded here on purpose: the seed only creates, it never updates an
-            // existing client, so a value baked in here would either be the same in every
-            // environment or, once seeded, impossible to rotate by changing config. Set the
-            // secret for this client from the backoffice after first deploy, one per environment.
             RequireClientSecret = true,
+            // The ERP API calling this host: inviting people to a company.
+            AllowedScopes = { Constants.Scopes.ErpIdentityOnboarding },
+            AccessTokenLifetime = 3600
+        },
+        new Client
+        {
+            ClientId = Constants.Clients.ErpIdentityClientId,
+            ClientName = Constants.Clients.ErpIdentityClientName,
+            AllowedGrantTypes = GrantTypes.ClientCredentials,
+            RequireClientSecret = true,
+            // This host calling the ERP API: queueing emails.
             AllowedScopes = { Constants.Scopes.ErpNotificationSend },
             AccessTokenLifetime = 3600
         },

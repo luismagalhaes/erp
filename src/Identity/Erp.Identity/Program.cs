@@ -22,10 +22,10 @@ builder.Configuration.EnsureConfigured(
     "IdentityServer:Authority",
     "AdminUser:Email",
     "AdminUser:Password",
-    "NotificationService:BaseUrl",
-    "ServiceAuthentication:Authority",
-    "ServiceAuthentication:ClientId",
-    "ServiceAuthentication:ClientSecret");
+    "ErpApi:BaseUrl",
+    "ErpIdentityClient:Authority",
+    "ErpIdentityClient:ClientId",
+    "ErpIdentityClient:ClientSecret");
 
 builder.AddErpOpenTelemetry(Constants.ApiResources.IdentityApi);
 
@@ -34,7 +34,7 @@ builder.Services.AddIdentityApplication();
 // Outside development the service secret has to come from user secrets or a secret store.
 builder.Services.AddIdentityDependencies(
     builder.Configuration,
-    builder.Environment.IsDevelopment() ? Constants.Clients.IdentityServiceSecret : null);
+    builder.Environment.IsDevelopment() ? Constants.Clients.ErpIdentityDevelopmentSecret : null);
 builder.Services.AddMudServices();
 // SignIn.razor/SignUp.razor read the caller's IP during their initial (pre-interactive) render to
 // decide whether reCAPTCHA is required yet — only valid at that point, never inside the circuit.
@@ -83,7 +83,15 @@ var authenticationBuilder = builder.Services.AddAuthentication()
         options.TokenValidationParameters.NameClaimType = Constants.Claims.Name;
     });
 
-var googleClientId = builder.Configuration["Authentication:Google:ClientId"];
+// Service to service only: the ERP API raises and reads onboarding requests with a client
+// credentials token carrying this scope, which no user facing client is ever granted.
+builder.Services.AddAuthorizationBuilder()
+    .AddPolicy(Constants.Policies.Onboarding, policy => policy.RequireAssertion(context =>
+        context.User.FindAll("scope")
+            .SelectMany(claim => claim.Value.Split(' ', StringSplitOptions.RemoveEmptyEntries))
+            .Contains(Constants.Scopes.ErpIdentityOnboarding, StringComparer.Ordinal)));
+
+var googleClientId =builder.Configuration["Authentication:Google:ClientId"];
 var googleClientSecret = builder.Configuration["Authentication:Google:ClientSecret"];
 
 // Optional, not EnsureConfigured: an environment with no Google credentials set still starts

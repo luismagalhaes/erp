@@ -96,6 +96,7 @@ public static class DependencyInjection
         services.AddScoped<IIdentityProviderStorage, IdentityProviderStorage>();
         services.AddScoped<ILoginAuditStorage, LoginAuditStorage>();
         services.AddScoped<ISignUpAttemptStorage, SignUpAttemptStorage>();
+        services.AddScoped<IOnboardingRequestStorage, OnboardingRequestStorage>();
 
         return services;
     }

@@ -12,8 +12,35 @@ namespace Erp.Api.Controllers.Core;
 [ApiController]
 [Route("api/access")]
 [Authorize]
-public sealed class AccessController(IUserCompanyService userCompanyService) : ControllerBase
+public sealed class AccessController(
+    IUserCompanyService userCompanyService,
+    ICompanyMemberService companyMemberService,
+    ILogger<AccessController> logger) : ControllerBase
 {
+    /// <summary>
+    /// Turns the invitations waiting for the caller into memberships. A person invited by a company
+    /// signs up from the email, and this is what makes that company appear the first time they open
+    /// the application. Never fails the caller: if the Identity host cannot be asked, nothing is
+    /// claimed this time and the next call tries again.
+    /// </summary>
+    [HttpPost("me/claim-invitations")]
+    public async Task<ActionResult<ClaimInvitationsResult>> ClaimInvitations(CancellationToken cancellationToken)
+    {
+        var userId = GetCurrentUserId();
+        if (string.IsNullOrWhiteSpace(userId))
+            return Unauthorized();
+
+        try
+        {
+            return Ok(new ClaimInvitationsResult(await companyMemberService.ClaimInvitationsAsync(userId, cancellationToken)));
+        }
+        catch (Exception ex) when (ex is HttpRequestException or InvalidOperationException)
+        {
+            logger.LogWarning(ex, "{Controller}.{Method} could not read the invitations of {UserId}.", nameof(AccessController), nameof(ClaimInvitations), userId);
+            return Ok(new ClaimInvitationsResult(0));
+        }
+    }
+
     [HttpGet("me/companies")]
     public async Task<ActionResult<IReadOnlyList<UserCompanyDto>>> GetMyCompanies(CancellationToken cancellationToken)
     {

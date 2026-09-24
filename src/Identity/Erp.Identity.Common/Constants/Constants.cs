@@ -70,6 +70,12 @@
             public const string ErpIdentityRead = "erp.identity.read";
 
             /// <summary>
+            /// Inviting people to a company and reading those invitations back. Granted only to the
+            /// ERP API itself, which is the authority on who may invite whom; never to a user client.
+            /// </summary>
+            public const string ErpIdentityOnboarding = "erp.identity.onboarding";
+
+            /// <summary>
             /// Identity scope, not an API scope: it carries the role claim into the id_token so the
             /// UI can hide what a user may not reach. The API reads roles from the access token,
             /// where the API resources already declare them.
@@ -83,6 +89,7 @@
             public const string ErpWrite = "ERP — Write";
             public const string NotificationSend = "Notification — Send";
             public const string IdentityRead = "Identity — Read";
+            public const string IdentityOnboarding = "Identity — Onboarding";
             public const string Roles = "Roles";
         }
 
@@ -102,17 +109,37 @@
 
         public static class Clients
         {
-            public const string BlazorWasmClientId = "blazor-wasm";
-            public const string BlazorWasmClientName = "ERP — UI";
+            public const string ErpPortalClientId = "erp-portal";
+            public const string ErpPortalClientName = "ERP — Portal";
             public const string HttpsLocalhost7019 = "https://localhost:7019";
             public const string HttpLocalhost5191 = "http://localhost:5191";
             public const string LoginCallbackPath = "/authentication/login-callback";
             public const string LogoutCallbackPath = "/authentication/logout-callback";
 
-            /// <summary>The Identity host itself, when it queues emails on the notification service.</summary>
-            public const string IdentityServiceClientId = "identity-service";
-            public const string IdentityServiceClientName = "Identity Service (M2M)";
-            public const string IdentityServiceSecret = "identity-service-secret";
+            /// <summary>The ERP API itself, when it calls this host (inviting people to a company).</summary>
+            public const string ErpApiClientId = "erp-api";
+            public const string ErpApiClientName = "ERP API (M2M)";
+
+            /// <summary>The Identity host itself, when it calls the ERP API (queueing emails).</summary>
+            public const string ErpIdentityClientId = "erp-identity";
+            public const string ErpIdentityClientName = "ERP Identity (M2M)";
+
+            /// <summary>Secret of <see cref="ErpIdentityClientId"/> used on a development machine when none is configured.</summary>
+            public const string ErpIdentityDevelopmentSecret = "erp-identity-secret";
+        }
+
+        public static class Policies
+        {
+            /// <summary>Service callers holding <see cref="Scopes.ErpIdentityOnboarding"/>; no role is involved.</summary>
+            public const string Onboarding = "Onboarding";
+        }
+
+        /// <summary>Where an invitation to join a company stands.</summary>
+        public static class OnboardingStatuses
+        {
+            public const string Pending = "Pending";
+            public const string Completed = "Completed";
+            public const string Cancelled = "Cancelled";
         }
 
         /// <summary>

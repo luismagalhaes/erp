@@ -1,0 +1,96 @@
+@page "/Backoffice/OnboardingRequests"
+@using Microsoft.AspNetCore.Components.Web
+@using Microsoft.Extensions.Localization
+@using Erp.Identity.Common.Constants
+@using IdentityResourcesType = Erp.Identity.Resources.IdentityResources
+@attribute [Authorize(Roles = "SuperAdmin")]
+@inject IOnboardingRequestService OnboardingRequestService
+@inject ISnackbar Snackbar
+@inject IStringLocalizer<IdentityResourcesType> Localizer
+
+<PageTitle>@Localizer["Backoffice_OnboardingRequests_PageTitle"]</PageTitle>
+
+<MudStack Spacing="4">
+    <PageHeader Title="@Localizer["Backoffice_OnboardingRequests_PageTitle"]" />
+
+    <DataGrid T="OnboardingRequestListItem" Items="@_requests" Loading="@_loading"
+              SearchFields="@_searchFields"
+              SearchPlaceholder="@Localizer["Backoffice_Common_SearchPlaceholder"]"
+              EmptyIcon="@Icons.Material.Filled.MarkEmailUnread"
+              EmptyTitle="@Localizer["Backoffice_Common_NoRecords"]"
+              ItemsLabel="@Localizer["Backoffice_OnboardingRequests_ItemsLabel"]"
+              OnRefresh="LoadAsync">
+        <Columns>
+            <PropertyColumn Property="x => x.Email" Title="@Localizer["Backoffice_OnboardingRequests_EmailColumn"]" />
+            <PropertyColumn Property="x => x.CompanyName" Title="@Localizer["Backoffice_OnboardingRequests_CompanyColumn"]" />
+            <PropertyColumn Property="x => x.Role" Title="@Localizer["Backoffice_OnboardingRequests_RoleColumn"]" />
+            <PropertyColumn Property="x => x.InvitedByEmail" Title="@Localizer["Backoffice_OnboardingRequests_InvitedByColumn"]">
+                <CellTemplate>@(context.Item.InvitedByEmail ?? "—")</CellTemplate>
+            </PropertyColumn>
+            <PropertyColumn Property="x => x.Status" Title="@Localizer["Backoffice_OnboardingRequests_StatusColumn"]">
+                <CellTemplate>
+                    <MudChip T="string" Size="Size.Small" Variant="Variant.Text" Color="@StatusColor(context.Item.Status)">
+                        @StatusLabel(context.Item.Status)
+                    </MudChip>
+                </CellTemplate>
+            </PropertyColumn>
+            <PropertyColumn Property="x => x.CreatedAtUtc" Title="@Localizer["Backoffice_OnboardingRequests_CreatedColumn"]">
+                <CellTemplate>@context.Item.CreatedAtUtc.ToLocalTime().ToString("yyyy-MM-dd HH:mm")</CellTemplate>
+            </PropertyColumn>
+            <PropertyColumn Property="x => x.LastSentAtUtc" Title="@Localizer["Backoffice_OnboardingRequests_LastSentColumn"]">
+                <CellTemplate>@context.Item.LastSentAtUtc.ToLocalTime().ToString("yyyy-MM-dd HH:mm")</CellTemplate>
+            </PropertyColumn>
+            <TemplateColumn Title="" Sortable="false" Filterable="false" Hideable="false"
+                            StickyRight="true" CellClass="erp-numeric" HeaderClass="erp-numeric">
+                <CellTemplate>
+                    @if (context.Item.Status == Constants.OnboardingStatuses.Pending)
+                    {
+                        <MudTooltip Text="@Localizer["Backoffice_OnboardingRequests_CancelAction"]">
+                            <MudIconButton Icon="@Icons.Material.Filled.Cancel" Size="Size.Small" Color="Color.Error"
+                                           OnClick="@(() => CancelAsync(context.Item))" />
+                        </MudTooltip>
+                    }
+                </CellTemplate>
+            </TemplateColumn>
+        </Columns>
+    </DataGrid>
+</MudStack>
+
+@code {
+    private static readonly Func<OnboardingRequestListItem, string?>[] _searchFields =
+        [x => x.Email, x => x.CompanyName, x => x.InvitedByEmail];
+
+    private List<OnboardingRequestListItem> _requests = [];
+    private bool _loading = true;
+
+    protected override async Task OnInitializedAsync() => await LoadAsync();
+
+    private async Task LoadAsync()
+    {
+        _loading = true;
+        _requests = (await OnboardingRequestService.GetAllAsync()).ToList();
+        _loading = false;
+    }
+
+    private async Task CancelAsync(OnboardingRequestListItem request)
+    {
+        if (await OnboardingRequestService.CancelAsync(request.Id))
+            Snackbar.Add(Localizer["Backoffice_OnboardingRequests_Cancelled_Message"].Value, Severity.Success);
+
+        await LoadAsync();
+    }
+
+    private static Color StatusColor(string status) => status switch
+    {
+        Constants.OnboardingStatuses.Completed => Color.Success,
+        Constants.OnboardingStatuses.Cancelled => Color.Default,
+        _ => Color.Warning
+    };
+
+    private string StatusLabel(string status) => status switch
+    {
+        Constants.OnboardingStatuses.Completed => Localizer["Backoffice_OnboardingRequests_Completed"],
+        Constants.OnboardingStatuses.Cancelled => Localizer["Backoffice_OnboardingRequests_Cancelled"],
+        _ => Localizer["Backoffice_OnboardingRequests_Pending"]
+    };
+}

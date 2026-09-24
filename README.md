@@ -277,10 +277,11 @@ O `Erp.Identity` é o único emissor de tokens. O `Erp.Main` autentica por **Aut
 
 | Scope | Quem o recebe | Para quê |
 |---|---|---|
-| `erp.read` | `blazor-wasm` | Ler qualquer módulo da `erp-api` |
-| `erp.write` | `blazor-wasm` | Escrever em qualquer módulo da `erp-api` |
-| `erp.notification.send` | `identity-service` | Identity → ERP API, para enfileirar email |
-| `erp.identity.read` | `blazor-wasm` | Blazor → Identity API, para consultar utilizadores |
+| `erp.read` | `erp-portal` | Ler qualquer módulo da `erp-api` |
+| `erp.write` | `erp-portal` | Escrever em qualquer módulo da `erp-api` |
+| `erp.notification.send` | `erp-identity` | Identity → ERP API, para enfileirar email |
+| `erp.identity.onboarding` | `erp-api` | ERP API → Identity, para convidar pessoas para uma empresa |
+| `erp.identity.read` | `erp-portal` | Blazor → Identity API, para consultar utilizadores |
 
 Como todos os módulos de negócio correm num só host, não há um par de scopes por módulo: o token diz apenas se a aplicação **lê** ou **escreve**, e o que o chamador alcança dentro da API é depois decidido por role e por pertença à empresa. Repare que `erp.notification.send` e `erp.identity.read` apontam em sentidos opostos e validam audiences diferentes: o primeiro é o Identity a chamar a `erp-api`, o segundo é a UI a chamar a `identity-api`.
 
@@ -317,8 +318,9 @@ Ao mesmo tempo corrigiram-se dois problemas vizinhos que a mesma revisão expôs
 
 | ClientId | Tipo | Finalidade |
 |---|---|---|
-| `blazor-wasm` | Code + PKCE | Erp.Main |
-| `identity-service` | Client Credentials | O próprio Identity a enfileirar emails |
+| `erp-portal` | Code + PKCE | Erp.Main — autentica os utilizadores |
+| `erp-api` | Client Credentials | O `Erp.Api` a chamar o Identity (convites de *onboarding*) |
+| `erp-identity` | Client Credentials | O Identity a chamar o `Erp.Api` (enfileirar emails) |
 
 **Roles**: apenas `SuperAdmin` e `User`. O `SuperAdmin` configura o tenant; todos os outros são `User`, e o que podem ver depende da empresa a que pertencem. O menu de Backoffice do `Erp.Main` e o backoffice do Identity só são visíveis a `SuperAdmin`, e os endpoints administrativos exigem a política `Admin`.
 
@@ -562,15 +564,15 @@ Fazer o deploy não chega para o login funcionar — três coisas têm de estar 
 
    | Host | Chaves a preencher em appsettings |
    |---|---|
-   | Erp.Api | `IdentityServer:Authority`, `AT:SeriesUrl`, `AT:TransportDocumentsUrl` |
-   | Erp.Identity | `IdentityServer:Authority`, `NotificationService:BaseUrl`, `ServiceAuthentication:Authority`/`ClientId`/`Scope` |
+   | Erp.Api | `IdentityServer:Authority`, `ErpApiClient:Authority`/`ClientId`, `AT:SeriesUrl`, `AT:TransportDocumentsUrl` |
+   | Erp.Identity | `IdentityServer:Authority`, `ErpApi:BaseUrl`, `ErpIdentityClient:Authority`/`ClientId`/`Scope` |
    | Erp.Main | `OidcConfiguration:Authority`/`RedirectUri`/`PostLogoutRedirectUri`, `Services:Api`/`IdentityApi` |
 
    Todas apontam para o **URL real** da Web App de cada peça nesse ambiente (ex. `https://erp-api-staging.azurewebsites.net`), nunca para `localhost` nem para o URL de outro ambiente.
 
-3. **Registar os segredos desse ambiente no cofre** (`ConnectionStrings:*`, `Smtp:*`, `AT:SigningKeyPem`, `ServiceAuthentication:ClientSecret`, `AdminUser:*`) e as três variáveis de arranque do Infisical como *Application setting* nas Web Apps desse ambiente — ver [Configuração e segredos](#configuração-e-segredos).
+3. **Registar os segredos desse ambiente no cofre** (`ConnectionStrings:*`, `Smtp:*`, `AT:SigningKeyPem`, `ErpIdentityClient:ClientSecret`, `ErpApiClient:ClientSecret`, `AdminUser:*`) e as três variáveis de arranque do Infisical como *Application setting* nas Web Apps desse ambiente — ver [Configuração e segredos](#configuração-e-segredos).
 
-4. **Registar esse mesmo URL do Erp.Main como cliente autorizado no Identity.** Este é o passo que falta hoje, e que faz o login falhar em staging mesmo com o passo 2 feito: o `RedirectUris`, `PostLogoutRedirectUris` e `AllowedCorsOrigins` do client `blazor-wasm` **não vêm de configuração** — estão fixos em código, em [`Constants.Clients`](src/Identity/Erp.Identity.Common/Constants/Constants.cs#L103-L111) (só `HttpsLocalhost7019`/`HttpLocalhost5191`) e usados em [`SeedData.cs`](src/Identity/Erp.Identity.Storage/Data/SeedData.cs#L160-L162). Como o seed corre em todo o arranque (ver [Como executar](#como-executar)), só esses dois `localhost` ficam autorizados em qualquer ambiente — o Duende recusa qualquer outro `redirect_uri` com *invalid_redirect_uri*, mesmo que o `appsettings.Staging.json` do Erp.Main já aponte para o URL certo. Para um ambiente novo funcionar, isto tem de mudar em código (acrescentar o URL desse ambiente à lista de `Constants.Clients`, ou tornar isto configurável por `appsettings` em vez de fixo) e o Identity tem de ser publicado de novo.
+4. **Registar esse mesmo URL do Erp.Main como cliente autorizado no Identity.** Este é o passo que falta hoje, e que faz o login falhar em staging mesmo com o passo 2 feito: o `RedirectUris`, `PostLogoutRedirectUris` e `AllowedCorsOrigins` do client `erp-portal` **não vêm de configuração** — estão fixos em código, em [`Constants.Clients`](src/Identity/Erp.Identity.Common/Constants/Constants.cs#L103-L111) (só `HttpsLocalhost7019`/`HttpLocalhost5191`) e usados em [`SeedData.cs`](src/Identity/Erp.Identity.Storage/Data/SeedData.cs#L160-L162). Como o seed corre em todo o arranque (ver [Como executar](#como-executar)), só esses dois `localhost` ficam autorizados em qualquer ambiente — o Duende recusa qualquer outro `redirect_uri` com *invalid_redirect_uri*, mesmo que o `appsettings.Staging.json` do Erp.Main já aponte para o URL certo. Para um ambiente novo funcionar, isto tem de mudar em código (acrescentar o URL desse ambiente à lista de `Constants.Clients`, ou tornar isto configurável por `appsettings` em vez de fixo) e o Identity tem de ser publicado de novo.
 
 ---
 
@@ -589,6 +591,17 @@ Todos os módulos de negócio são servidos por um único host (`Erp.Api`) e um 
 **O código postal segue o país.** Em Portugal só se aceita `XXXX-XXX`, com dígitos — o formato que o SAF-T e os *webservices* da AT esperam — e o ecrã escreve o hífen sozinho. Noutro país fica como for escrito. A regra vive em [`PostalCodes`](src/Shared/Erp.Common/PostalCodes.cs) e é aplicada nas fichas, na empresa e no cliente de cada fatura.
 
 **Registo de uma empresa pelo próprio utilizador (*self-service*).** Registar-se no Identity deixa a conta **sem role nenhuma** e sem empresa — de propósito: uma conta que não pertence a nenhuma empresa ainda não é utilizador de nada. Ao entrar no `Erp.Main` nesse estado, o `MainLayout` reencaminha para `/get-started`, uma página com *layout* próprio (sem menu lateral, [`OnboardingLayout`](src/UI/Erp.Main/Layout/OnboardingLayout.razor)) que mostra os pacotes de subscrição ativos, pede os dados da empresa — com a mesma procura por NIF no VIES e por código postal das restantes fichas — e cria tudo numa transação: a empresa (com armazém, Ecovalor e séries, como qualquer outra), a subscrição no pacote escolhido e a associação do utilizador à empresa como `Owner`. Só **depois de a empresa existir** é que a conta recebe a role `User` do Identity, através do único endpoint em que alguém sem role pode mexer nas suas próprias — [`POST /api/self-service/complete-onboarding`](src/Identity/Erp.Identity/Controllers/SelfServiceController.cs), que apenas concede `User` e apenas a quem o token identifica. A página termina a forçar novo *login*: as *claims* de role são lidas uma vez, no início da sessão, por isso o *cookie* anterior continuaria a dizer que a conta não tem nenhuma. As duas bases de dados são distintas, por isso não há transação comum entre criar a empresa e conceder a role — se a segunda falhar, a empresa fica criada e o erro é mostrado, em vez de ser engolido.
+
+**Configuração da empresa pelos próprios utilizadores.** Em *Configuração → Empresa* ([`CompanySettings`](src/UI/Erp.Main/Pages/Core/CompanySettings/CompanySettings.razor)) qualquer membro da empresa altera os dados da empresa, cria e edita **armazéns**, altera as credenciais **AT** (subutilizador WDT — só de escrita, a password nunca volta), vê as **subscrições** da empresa (em curso, agendadas e expiradas, com a opção de subscrever um pacote) e gere as **pessoas** da empresa. Não há papéis dentro da empresa: quem pertence a ela pode geri-la, e a API nunca deixa remover o último membro ativo.
+
+**Adicionar pessoas por email, e convites (*onboarding*).** O `Erp.Api` é a autoridade sobre quem pode convidar quem; o Identity guarda e envia os convites. Ao adicionar um email ([`CompanyMembersController`](src/Erp.Api/Controllers/Core/CompanyMembersController.cs)) o `Erp.Api` pergunta ao Identity, em nome próprio (*client credentials*, client `erp-api`, scope `erp.identity.onboarding` — nenhum client de utilizador o tem), se o email já tem conta:
+
+- **Já tem conta** — o Identity não cria nada (mas garante que a conta tem a role `User`) e o `Erp.Api` associa-a de imediato à empresa (reativa a associação se a pessoa tinha sido removida).
+- **Não tem conta** — o Identity cria um pedido de *onboarding* (`OnboardingRequest`, `Pending`) e envia por email um convite com a ligação para `/Account/SignUp?email=…`. Convidar o mesmo email para a mesma empresa outra vez **reenvia** o pedido em vez de o duplicar. Os pedidos são visíveis no backoffice do Identity, em *Pedidos de Onboarding* (só SuperAdmin), onde também se podem cancelar.
+
+Quando a pessoa se regista e confirma o email (ou entra com Google/Microsoft, que já vem confirmado), a primeira abertura do `Erp.Main` chama `POST /api/access/me/claim-invitations` ([`CompanyState`](src/UI/Erp.Main/Services/Core/CompanyState.cs)): o `Erp.Api` pede ao Identity os pedidos pendentes **desse** utilizador — só devolve algum se o email da conta estiver confirmado, para ninguém reclamar um convite com um endereço que não é seu —, cria as associações e marca os pedidos como `Completed` (o Identity concede então a role `User`). Como as *claims* de role só são lidas no início da sessão, o `MainLayout` força um novo *login* logo a seguir. Se o Identity não responder, a abertura da aplicação não falha: tenta-se de novo na sessão seguinte.
+
+**Configuração dos clients de serviço.** O `Erp.Api` chama o Identity como o client `erp-api` (scope `erp.identity.onboarding`, fixo no código), configurado em `ErpApiClient:*` — `Authority` (o do Identity, que é também o host dos convites) e `ClientId` em `appsettings.*.json` do `Erp.Api`, e `ClientSecret` no cofre (`ERPAPICLIENT__CLIENTSECRET`). O Identity chama o `Erp.Api` como `erp-identity` (scope `erp.notification.send`), configurado em `ErpIdentityClient:*` (`ERPIDENTITYCLIENT__CLIENTSECRET`). São dois clients com dois secrets, um por direção, e nenhum tem valor por omissão no `Erp.Api`. Sem o secret do `erp-api`, adicionar por email falha com um erro claro (502) e a lista de convites pendentes aparece como indisponível — a lista de membros continua a funcionar. Depois de criar a base do Identity de raiz, é preciso definir os dois secrets no backoffice (ver [Configuração e segredos](#configuração-e-segredos)).
 
 **Pacotes de subscrição.** Um [`SubscriptionPlan`](src/Modules/Erp.Core/Domain/SubscriptionPlan.cs) tem nome, descrição, preço e periodicidade (`Trial`, `Monthly`, `Annual`); um pacote de teste diz também quantos dias dura. A migração semeia três de partida — *Free* (30 dias), *Mensal* e *Anual* — **com preços que são apenas um ponto de partida**, para serem ajustados no backoffice. Cada empresa tem no máximo uma [`CompanySubscription`](src/Modules/Erp.Core/Domain/CompanySubscription.cs): mudar de pacote reescreve-a, e a validade é calculada a partir do próprio pacote (dias do teste, um mês, um ano) ou escrita à mão por um SuperAdmin. **Não há gateway de pagamentos**: comprar um pacote é registado, não cobrado. Estar expirada **nunca bloqueia nada** — o `MainLayout` mostra um aviso dispensável e a aplicação continua a funcionar. O backoffice tem CRUD dos pacotes (`/subscription-plans`) e a lista de que empresa está em que pacote, com a ação de mudar (`/subscriptions`), ambos só para SuperAdmin.
 
@@ -625,7 +638,12 @@ Todos os módulos de negócio são servidos por um único host (`Erp.Api`) e um 
 | `PUT` | `/api/company-subscriptions/{companyId}` | `Admin` |
 | `GET` | `/api/companies/self-service/status` | Autenticado |
 | `POST` | `/api/companies/self-service` | Autenticado |
+| `GET` | `/api/companies/{companyId}/members` | `Read` (membro da empresa) |
+| `POST` | `/api/companies/{companyId}/members` | `Write` (membro da empresa) |
+| `DELETE` | `/api/companies/{companyId}/members/{membershipId}` · `/api/companies/{companyId}/members/invitations/{invitationId}` | `Write` (membro da empresa) |
+| `GET` `PUT` | `/api/companies/{id}/at-credentials` | `Read` / `Write` (SuperAdmin ou membro da empresa) |
 | `GET` | `/api/access/me/companies` | Autenticado |
+| `POST` | `/api/access/me/claim-invitations` | Autenticado |
 | `GET` | `/api/access/me/companies/{companyId}/role` | Autenticado |
 | `POST` | `/api/access/check-role` | Autenticado |
 
@@ -887,11 +905,11 @@ A exceção é `complete-onboarding`: é o único ponto em que alguém sem role 
 | `GET` | `/api/notifications/{id}` | `Read` |
 | `POST` | `/api/notifications/{id}/requeue` | `Write` |
 
-O enfileiramento é chamado serviço a serviço (o Identity, na recuperação de password) com um token de **client credentials** obtido no próprio Identity pelo client `identity-service`, cujo único scope é `erp.notification.send`. O [ClientCredentialsTokenProvider](src/Identity/Erp.Identity.Dependencies/Services/ClientCredentialsTokenProvider.cs) pede o token e reutiliza-o até perto de expirar; o [ServiceTokenHandler](src/Identity/Erp.Identity.Dependencies/Services/ServiceTokenHandler.cs) anexa-o ao pedido.
+O enfileiramento é chamado serviço a serviço (o Identity, na recuperação de password) com um token de **client credentials** obtido no próprio Identity pelo client `erp-identity`, cujo único scope é `erp.notification.send`. O [ClientCredentialsTokenProvider](src/Identity/Erp.Identity.Dependencies/Services/ClientCredentialsTokenProvider.cs) pede o token e reutiliza-o até perto de expirar; o [ServiceTokenHandler](src/Identity/Erp.Identity.Dependencies/Services/ServiceTokenHandler.cs) anexa-o ao pedido.
 
 O scope de envio é deliberadamente separado de `erp.read` e `erp.write`: o cliente da UI tem os dois últimos, para consultar e reenviar, mas **não** pode enfileirar email — caso contrário qualquer utilizador autenticado poderia mandar mensagens em nome do ERP.
 
-O segredo que o Identity apresenta vem de `ServiceAuthentication:ClientSecret` (user secrets ou cofre — ver [Configuração e segredos](#configuração-e-segredos)). Em desenvolvimento, se não estiver configurado, cai no valor de `Constants.Clients.IdentityServiceSecret` para a máquina local funcionar sem preparação. **O lado do Identity Server não segue essa mesma regra**: o [SeedData](src/Identity/Erp.Identity.Storage/Data/SeedData.cs) cria o client `identity-service` sem nenhum secret — tem de ser definido manualmente no backoffice (Clients → identity-service) em cada ambiente, com o mesmo valor que for registado em `ServiceAuthentication:ClientSecret` nesse ambiente. Sem isto, o envio de email por recuperação de password falha com 401.
+O segredo que o Identity apresenta vem de `ErpIdentityClient:ClientSecret` (user secrets ou cofre — ver [Configuração e segredos](#configuração-e-segredos)). Em desenvolvimento, se não estiver configurado, cai no valor de `Constants.Clients.ErpIdentityDevelopmentSecret` para a máquina local funcionar sem preparação. **O lado do Identity Server não segue essa mesma regra**: o [SeedData](src/Identity/Erp.Identity.Storage/Data/SeedData.cs) cria os clients `erp-identity` e `erp-api` sem nenhum secret — têm de ser definidos manualmente no backoffice (Clients → erp-identity / erp-api) em cada ambiente, com o mesmo valor que for registado nesse ambiente em `ErpIdentityClient:ClientSecret` (`erp-identity`) e `ErpApiClient:ClientSecret` (`erp-api`). Sem isto, o envio de email por recuperação de password falha com 401.
 
 O [`EmailQueueWorker`](src/Modules/Erp.Notification/Application/Services/EmailQueueWorker.cs), um `BackgroundService` registado em `AddNotificationApplication`, corre dentro do próprio `Erp.Api` e drena a fila no intervalo definido em `NotificationWorker:PollingIntervalSeconds` — mas só trata do ciclo/intervalo: o envio em si é do [`NotificationProcessingService`](src/Modules/Erp.Notification/Application/Services/NotificationProcessingService.cs), que chama o [`SmtpEmailSender`](src/Modules/Erp.Notification/Application/Services/SmtpEmailSender.cs) (MailKit) por notificação pendente. Uma falha de entrega marca a notificação como `Failed` com o erro e incrementa as tentativas, sem parar o ciclo.
 
@@ -1025,7 +1043,7 @@ Registo honesto do que ainda não está feito, para evitar surpresas:
 - **Cobertura de testes desigual** — a lógica fiscal, a emissão, o stock e os serviços do Core estão cobertos; as camadas Storage (EF Core) e as páginas Blazor não têm testes.
 - **Ecovalor: valores de partida, não a tabela oficial** — os dois Ecovalor criados com cada empresa nova (baterias, óleos) têm um código, base de cálculo e entidade gestora corretos, mas o valor é um ponto de partida a confirmar contra a portaria em vigor, não um número verificado nesta sessão. Na nota de crédito, a linha do Ecovalor é só mais uma linha da fatura de origem — fica selecionada por omissão como todas as outras, mas nada impede o utilizador de a destacar do artigo a que pertence (por exemplo, creditar o artigo sem creditar a taxa).
 - **Deploy sem aprovação formal** — o job `deploy` (ver [Integração contínua e deploy](#integração-contínua-e-deploy)) só corre por `workflow_dispatch`, nunca por push, porque **Required reviewers em *environments* do GitHub exige plano Pro/Team/Enterprise para repositórios privados** — no Free essa opção não aparece. A autorização hoje é "só quem tem acesso ao repositório consegue clicar em Run workflow", não uma aprovação registada por outra pessoa. Corrige-se fazendo *upgrade* do plano do GitHub e voltando a gatilhar por `environment:` com *reviewers*.
-- **Client do Identity só aceita `localhost`** — o `RedirectUris`/`PostLogoutRedirectUris`/`AllowedCorsOrigins` do client `blazor-wasm` está fixo em código ([Constants.Clients](src/Identity/Erp.Identity.Common/Constants/Constants.cs#L103-L111), usado em [SeedData.cs](src/Identity/Erp.Identity.Storage/Data/SeedData.cs#L160-L162)), não vem de `appsettings`. Um Erp.Main publicado em staging/produção tenta redirecionar para o seu URL real depois do login, e o Identity recusa por não estar na lista — falha com *invalid_redirect_uri*, mesmo que o `appsettings.Staging.json` do Erp.Main já esteja correto (ver [Checklist para pôr um ambiente novo](#checklist-para-pôr-um-ambiente-novo-stagingprodução-a-funcionar)). Falta acrescentar o URL de cada ambiente a essa lista, ou tornar isto configurável.
+- **Client do Identity só aceita `localhost`** — o `RedirectUris`/`PostLogoutRedirectUris`/`AllowedCorsOrigins` do client `erp-portal` está fixo em código ([Constants.Clients](src/Identity/Erp.Identity.Common/Constants/Constants.cs#L103-L111), usado em [SeedData.cs](src/Identity/Erp.Identity.Storage/Data/SeedData.cs#L160-L162)), não vem de `appsettings`. Um Erp.Main publicado em staging/produção tenta redirecionar para o seu URL real depois do login, e o Identity recusa por não estar na lista — falha com *invalid_redirect_uri*, mesmo que o `appsettings.Staging.json` do Erp.Main já esteja correto (ver [Checklist para pôr um ambiente novo](#checklist-para-pôr-um-ambiente-novo-stagingprodução-a-funcionar)). Falta acrescentar o URL de cada ambiente a essa lista, ou tornar isto configurável.
 
 
 ## Configuração e segredos
@@ -1055,9 +1073,9 @@ Os nomes dos secrets no Infisical seguem a convenção de variável de ambiente 
 
 | Host | Fica em `appsettings.*.json` (não secreto) | Vem do cofre |
 |---|---|---|
-| Erp.Api | `IdentityServer:Authority`, `AT:SeriesUrl`, `AT:TransportDocumentsUrl`, `Smtp:Host`/`Port`/`UseSsl`/`FromEmail`/`FromName`, `NotificationWorker:BatchSize`/`PollingIntervalSeconds`, `Fiscal:IssuerTaxId`/`CertificateNumber`/`KeyVersion`, `Dependencies:PostalCodeBaseAddress`/`VatNumberValidationBaseAddress` | `ConnectionStrings:ErpDb`, `Smtp:UserName`, `Smtp:Password`, `AT:ClientCertificateBase64`, `AT:ClientCertificatePassword`, `AT:SigningKeyPem`, `AT:PublicKeyPem`, `ApplicationInsights:ConnectionString` |
-| Erp.Identity | `IdentityServer:Authority`, `NotificationService:BaseUrl`, `ServiceAuthentication:Authority`/`ClientId`/`Scope`, `Authentication:Google:ClientId`, `Authentication:Microsoft:ClientId`, `Recaptcha:SiteKey` | `ConnectionStrings:IdentityDb`, `ServiceAuthentication:ClientSecret`, `AdminUser:Email`/`FirstName`/`LastName`/`Password`, `ApplicationInsights:ConnectionString`, `Authentication:Google:ClientSecret`, `Authentication:Microsoft:ClientSecret`, `Recaptcha:SecretKey` |
-| Erp.Main | `OidcConfiguration:*`, `Services:Api`/`IdentityApi` | — (`blazor-wasm` é um client público, sem secret) |
+| Erp.Api | `IdentityServer:Authority`, `ErpApiClient:Authority`/`ClientId`, `AT:SeriesUrl`, `AT:TransportDocumentsUrl`, `Smtp:Host`/`Port`/`UseSsl`/`FromEmail`/`FromName`, `NotificationWorker:BatchSize`/`PollingIntervalSeconds`, `Fiscal:IssuerTaxId`/`CertificateNumber`/`KeyVersion`, `Dependencies:PostalCodeBaseAddress`/`VatNumberValidationBaseAddress` | `ConnectionStrings:ErpDb`, `Smtp:UserName`, `Smtp:Password`, `AT:ClientCertificateBase64`, `AT:ClientCertificatePassword`, `AT:SigningKeyPem`, `AT:PublicKeyPem`, `ErpApiClient:ClientSecret`, `ApplicationInsights:ConnectionString` |
+| Erp.Identity | `IdentityServer:Authority`, `ErpApi:BaseUrl`, `ErpIdentityClient:Authority`/`ClientId`/`Scope`, `Authentication:Google:ClientId`, `Authentication:Microsoft:ClientId`, `Recaptcha:SiteKey` | `ConnectionStrings:IdentityDb`, `ErpIdentityClient:ClientSecret`, `AdminUser:Email`/`FirstName`/`LastName`/`Password`, `ApplicationInsights:ConnectionString`, `Authentication:Google:ClientSecret`, `Authentication:Microsoft:ClientSecret`, `Recaptcha:SecretKey` |
+| Erp.Main | `OidcConfiguration:*`, `Services:Api`/`IdentityApi` | — (`erp-portal` é um client público, sem secret) |
 
 `ApplicationInsights:ConnectionString` é opcional em `Erp.Api` e `Erp.Identity`: os dois hosts usam `ILogger`/OpenTelemetry nativos (ver [`Telemetry/OpenTelemetryExtensions.cs`](src/Erp.Api/Telemetry/OpenTelemetryExtensions.cs) em cada um), e só ligam o exportador para o Azure Monitor quando esta chave está preenchida — vazia (como em `appsettings.json`), a app funciona igual, só sem exportar para o Application Insights.
 
@@ -1065,7 +1083,7 @@ Os nomes dos secrets no Infisical seguem a convenção de variável de ambiente 
 
 **A comunicação à AT está implementada para guias de transporte e para séries** ([`AtTransportDocumentClient`](src/Shared/Erp.FiscalPT/AtWebservice/TransportDocuments/AtTransportDocumentClient.cs), [`AtSeriesClient`](src/Shared/Erp.FiscalPT/AtWebservice/Series/AtSeriesClient.cs)), mas as credenciais do subutilizador (utilizador/senha do Portal das Finanças que assina o cabeçalho SOAP) não vivem no cofre — são **por empresa**, porque cada sujeito passivo cria o seu próprio subutilizador, com as permissões `WDT` (guias) e `WSE` (séries) atribuídas ao mesmo subutilizador. Ficam cifradas na tabela `CompanyAtCredential` via `Microsoft.AspNetCore.DataProtection` ([`CompanyAtCredentialService`](src/Modules/Erp.Core/Application/Services/CompanyAtCredentialService.cs)), geridas em `Backoffice → Empresas → separador AT`. Isto é a única exceção à regra "cada segredo novo vive no cofre" — é um segredo por linha na base de dados, não por ambiente.
 
-A única exceção com *fallback* de desenvolvimento é `ServiceAuthentication:ClientSecret`: se não estiver configurada, o [Program.cs](src/Identity/Erp.Identity/Program.cs) do Identity usa `Constants.Clients.IdentityServiceSecret` **só quando `IsDevelopment()`**, para a máquina local funcionar sem preparação nenhuma. Fora de Development esta chave é obrigatória.
+A única exceção com *fallback* de desenvolvimento é `ErpIdentityClient:ClientSecret`: se não estiver configurada, o [Program.cs](src/Identity/Erp.Identity/Program.cs) do Identity usa `Constants.Clients.ErpIdentityDevelopmentSecret` **só quando `IsDevelopment()`**, para a máquina local funcionar sem preparação nenhuma. Fora de Development esta chave é obrigatória.
 
 **Login com Google e com Microsoft são opcionais, e seguem o mesmo padrão.** [`Program.cs`](src/Identity/Erp.Identity/Program.cs) só regista `AddGoogle`/`AddMicrosoftAccount` quando o `ClientId`/`ClientSecret` desse provedor estão ambos preenchidos — sem eles o `Erp.Identity` arranca normalmente e [`SignIn.razor`](src/Identity/Erp.Identity/Pages/Account/SignIn.razor) esconde o botão correspondente. Em ambos os casos, `ClientId` não é secreto (fica em `appsettings.*.json`) e `ClientSecret` vai para o cofre. A lógica de callback é partilhada (`HandleExternalLoginCallbackAsync` em [`AuthenticationEndpoints.cs`](src/Identity/Erp.Identity/Endpoints/AuthenticationEndpoints.cs)): o primeiro login de uma conta externa desconhecida cria automaticamente um novo utilizador (email já confirmado, porque o provedor já o verificou) — o mesmo modelo de registo aberto que o `SignUp.razor` já usa por password; se o email já existir, a conta externa fica apenas associada a essa conta existente como mais uma forma de entrar.
 
@@ -1076,10 +1094,10 @@ A única exceção com *fallback* de desenvolvimento é `ServiceAuthentication:C
   - Em `SignIn.razor`, a contagem é de **logins falhados** pelo mesmo IP nos últimos `Constants.Recaptcha.Window` (15 min), lida de `LoginAudit` (`ILoginAuditService.CountRecentFailuresAsync`) — o mesmo endpoint valida o token outra vez do lado do servidor antes de sequer olhar para a password, nunca confiando na decisão tomada no render da página.
   - Em `SignUp.razor`, a contagem é de **submissões do formulário** pelo mesmo IP (sucesso ou falha) — não há semelhante a uma password errada num registo. Guardada em memória (`ISignUpAttemptTracker`), não em base de dados: reinicia com a app, o que é aceitável para uma medida anti-automação suave.
 
-**O secret do client `identity-service` não é semeado na base de dados.** Ao contrário do `blazor-wasm`, o [SeedData](src/Identity/Erp.Identity.Storage/Data/SeedData.cs) cria este client **sem** `ClientSecrets` — porque o seed nunca atualiza um registo já existente, só cria, e um valor gravado ali ficaria preso para sempre em todos os ambientes. Depois do primeiro deploy de um ambiente novo, é preciso:
+**Os secrets dos clients `erp-identity` e `erp-api` não são semeados na base de dados.** Ao contrário do `erp-portal`, o [SeedData](src/Identity/Erp.Identity.Storage/Data/SeedData.cs) cria estes clients **sem** `ClientSecrets` — porque o seed nunca atualiza um registo já existente, só cria, e um valor gravado ali ficaria preso para sempre em todos os ambientes. Depois do primeiro deploy de um ambiente novo, é preciso:
 
-1. Abrir o backoffice do Identity → Clients → `identity-service` → adicionar um secret.
-2. Registar esse mesmo valor em texto simples como `ServiceAuthentication:ClientSecret` no cofre desse ambiente.
+1. Abrir o backoffice do Identity → Clients → `erp-identity` e `erp-api` → adicionar um secret a cada um (valores diferentes).
+2. Registar cada valor em texto simples no cofre desse ambiente: o do `erp-identity` como `ERPIDENTITYCLIENT__CLIENTSECRET` (lido pelo Identity) e o do `erp-api` como `ERPAPICLIENT__CLIENTSECRET` (lido pelo `Erp.Api`).
 
 Sem os dois passos, o Identity não consegue chamar o `Erp.Api` para enfileirar emails — a recuperação de password falha em silêncio do lado do utilizador e em 401 nos logs.
 
@@ -1096,7 +1114,8 @@ Environments do Infisical: `dev`, `staging` e (quando existir) `prod` — os mes
 | `SMTP__USERNAME` / `SMTP__PASSWORD` | Vazio, ou uma conta de teste |
 | `AT__CLIENTCERTIFICATEBASE64` / `AT__CLIENTCERTIFICATEPASSWORD` | Vazio até haver um certificado de testes emitido pela AT |
 | `AT__PUBLICKEYPEM` | Vazio até se pedir a chave à AT — sem ela, comunicar uma guia ou uma série falha com "AT:PublicKeyPem is not configured" |
-| `SERVICEAUTHENTICATION__CLIENTSECRET` | `identity-service-secret` (o mesmo do *fallback* de código) |
+| `ERPIDENTITYCLIENT__CLIENTSECRET` | `erp-identity-secret` (o mesmo do *fallback* de código) |
+| `ERPAPICLIENT__CLIENTSECRET` | Segredo definido no backoffice para o client `erp-api` — sem ele, adicionar utilizadores por email (convites) não funciona |
 | `ADMINUSER__EMAIL` / `FIRSTNAME` / `LASTNAME` / `PASSWORD` | À escolha de quem administra o ambiente de dev |
 | `AT__SIGNINGKEYPEM` | Vazio — gera/reutiliza sozinho uma chave local em `%LOCALAPPDATA%\Erp\Sales\` |
 | `APPLICATIONINSIGHTS__CONNECTIONSTRING` | Vazio — sem Application Insights em dev |
@@ -1113,7 +1132,8 @@ Environments do Infisical: `dev`, `staging` e (quando existir) `prod` — os mes
 | `SMTP__USERNAME` / `SMTP__PASSWORD` | Caixa de correio real de staging |
 | `AT__CLIENTCERTIFICATEBASE64` / `AT__CLIENTCERTIFICATEPASSWORD` | Certificado SSL de staging emitido pela AT, partilhado pelos dois webservices (séries e guias) |
 | `AT__PUBLICKEYPEM` | Chave pública pedida à AT por email (`asi-cd@at.gov.pt`), partilhada pelos dois webservices |
-| `SERVICEAUTHENTICATION__CLIENTSECRET` | Segredo novo e forte, igual ao que for definido no backoffice para o client `identity-service` (ver acima) |
+| `ERPIDENTITYCLIENT__CLIENTSECRET` | Segredo novo e forte, igual ao definido no backoffice para o client `erp-identity` (ver acima) |
+| `ERPAPICLIENT__CLIENTSECRET` | Segredo novo e forte, igual ao definido no backoffice para o client `erp-api` (ver acima) |
 | `ADMINUSER__EMAIL` / `FIRSTNAME` / `LASTNAME` / `PASSWORD` | Conta real de quem administra staging, password forte |
 | `AT__SIGNINGKEYPEM` | Chave RSA 1024 bit própria de staging (`openssl genrsa -out staging-key.pem 1024`), nunca partilhada com produção |
 | `APPLICATIONINSIGHTS__CONNECTIONSTRING` | Connection string do recurso Application Insights de staging |

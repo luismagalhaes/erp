@@ -189,9 +189,9 @@ public class CompanySubscriptionServiceTests
         await act.Should().ThrowAsync<ArgumentException>();
     }
 
-    /// <summary>One row per company: moving to another package rewrites the current one.</summary>
+    /// <summary>A company can be on a free plan today and already have another one scheduled: assigning never overwrites an existing row.</summary>
     [Fact]
-    public async Task AssignAsync_replaces_the_subscription_the_company_already_had()
+    public async Task AssignAsync_adds_a_new_row_instead_of_replacing_an_existing_subscription()
     {
         var plan = GivenPlan(BillingPeriods.Annual);
 
@@ -204,13 +204,37 @@ public class CompanySubscriptionServiceTests
             ExpiresAtUtc = DateTime.UtcNow.AddDays(-1)
         };
 
-        _storage.GetByCompanyIdAsync(_companyId, Arg.Any<CancellationToken>()).Returns(existing);
+        _storage.GetActiveByCompanyIdAsync(_companyId, Arg.Any<CancellationToken>()).Returns((CompanySubscription?)null);
 
         var assigned = await CreateService().AssignAsync(_companyId, new AssignSubscriptionRequest(plan.Id));
 
-        assigned.Id.Should().Be(existing.Id);
-        existing.PlanId.Should().Be(plan.Id);
-        await _storage.DidNotReceive().AddAsync(Arg.Any<CompanySubscription>(), Arg.Any<CancellationToken>());
+        assigned.Id.Should().NotBe(existing.Id);
+        assigned.PlanId.Should().Be(plan.Id);
+        await _storage.Received(1).AddAsync(Arg.Any<CompanySubscription>(), Arg.Any<CancellationToken>());
+    }
+
+    /// <summary>The free plan running today is what GetForCompanyAsync sees, even with an annual one already scheduled for later.</summary>
+    [Fact]
+    public async Task GetForCompanyAsync_returns_the_row_active_today_even_when_another_is_scheduled_later()
+    {
+        var freePlan = GivenPlan(BillingPeriods.Trial, trialDays: 30);
+
+        var active = new CompanySubscription
+        {
+            Id = Guid.NewGuid(),
+            CompanyId = _companyId,
+            PlanId = freePlan.Id,
+            Plan = freePlan,
+            StartedAtUtc = DateTime.UtcNow.AddDays(-1),
+            ExpiresAtUtc = DateTime.UtcNow.AddDays(29)
+        };
+
+        _storage.GetActiveByCompanyIdAsync(_companyId, Arg.Any<CancellationToken>()).Returns(active);
+
+        var result = await CreateService().GetForCompanyAsync(_companyId);
+
+        result.Should().NotBeNull();
+        result!.PlanId.Should().Be(freePlan.Id);
     }
 
     [Fact]
@@ -221,5 +245,31 @@ public class CompanySubscriptionServiceTests
         var act = () => CreateService().AssignAsync(_companyId, new AssignSubscriptionRequest(Guid.NewGuid()));
 
         await act.Should().ThrowAsync<InvalidOperationException>();
+    }
+
+    [Fact]
+    public async Task RemoveAsync_deletes_an_existing_row_and_saves()
+    {
+        var subscriptionId = Guid.NewGuid();
+        var subscription = new CompanySubscription { Id = subscriptionId, CompanyId = _companyId };
+
+        _storage.GetByIdAsync(_companyId, subscriptionId, Arg.Any<CancellationToken>()).Returns(subscription);
+
+        var removed = await CreateService().RemoveAsync(_companyId, subscriptionId);
+
+        removed.Should().BeTrue();
+        _storage.Received(1).Remove(subscription);
+        await _storage.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task RemoveAsync_returns_false_for_an_unknown_row()
+    {
+        _storage.GetByIdAsync(Arg.Any<Guid>(), Arg.Any<Guid>(), Arg.Any<CancellationToken>()).Returns((CompanySubscription?)null);
+
+        var removed = await CreateService().RemoveAsync(_companyId, Guid.NewGuid());
+
+        removed.Should().BeFalse();
+        _storage.DidNotReceive().Remove(Arg.Any<CompanySubscription>());
     }
 }

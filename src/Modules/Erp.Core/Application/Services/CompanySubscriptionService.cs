@@ -12,13 +12,22 @@ public sealed class CompanySubscriptionService(
 {
     public async Task<CompanySubscriptionDto?> GetForCompanyAsync(Guid companyId, CancellationToken cancellationToken = default)
     {
-        var subscription = await storage.GetByCompanyIdAsync(companyId, cancellationToken);
+        var subscription = await storage.GetActiveByCompanyIdAsync(companyId, cancellationToken);
         if (subscription is null)
             return null;
 
         var company = await companyStorage.GetByIdAsync(companyId, cancellationToken);
 
         return Map(subscription, company?.Name ?? string.Empty);
+    }
+
+    public async Task<IReadOnlyList<CompanySubscriptionDto>> GetAllForCompanyAsync(Guid companyId, CancellationToken cancellationToken = default)
+    {
+        var subscriptions = await storage.GetAllByCompanyIdAsync(companyId, cancellationToken);
+        var company = await companyStorage.GetByIdAsync(companyId, cancellationToken);
+        var companyName = company?.Name ?? string.Empty;
+
+        return [.. subscriptions.Select(x => Map(x, companyName))];
     }
 
     public IQueryable<CompanySubscriptionDto> Query() => storage.Query();
@@ -42,31 +51,19 @@ public sealed class CompanySubscriptionService(
         if (expiresAt <= startedAt)
             throw new ArgumentException("A subscription cannot expire before it starts.", nameof(request));
 
-        // One row per company: moving to another package rewrites the current one rather than
-        // piling up history nobody reads.
-        var subscription = await storage.GetByCompanyIdAsync(companyId, cancellationToken);
-
-        if (subscription is null)
+        // Always a new row: a company can be on a free plan today and already have an annual one
+        // scheduled to start later, so an existing subscription is never overwritten.
+        var subscription = new CompanySubscription
         {
-            subscription = new CompanySubscription
-            {
-                Id = Guid.NewGuid(),
-                CompanyId = companyId,
-                PlanId = plan.Id,
-                StartedAtUtc = startedAt,
-                ExpiresAtUtc = expiresAt,
-                CreatedAtUtc = DateTime.UtcNow
-            };
+            Id = Guid.NewGuid(),
+            CompanyId = companyId,
+            PlanId = plan.Id,
+            StartedAtUtc = startedAt,
+            ExpiresAtUtc = expiresAt,
+            CreatedAtUtc = DateTime.UtcNow
+        };
 
-            await storage.AddAsync(subscription, cancellationToken);
-        }
-        else
-        {
-            subscription.PlanId = plan.Id;
-            subscription.StartedAtUtc = startedAt;
-            subscription.ExpiresAtUtc = expiresAt;
-        }
-
+        await storage.AddAsync(subscription, cancellationToken);
         await storage.SaveChangesAsync(cancellationToken);
 
         return new CompanySubscriptionDto(
@@ -79,6 +76,17 @@ public sealed class CompanySubscriptionService(
             plan.BillingPeriod,
             subscription.StartedAtUtc,
             subscription.ExpiresAtUtc);
+    }
+
+    public async Task<bool> RemoveAsync(Guid companyId, Guid subscriptionId, CancellationToken cancellationToken = default)
+    {
+        var subscription = await storage.GetByIdAsync(companyId, subscriptionId, cancellationToken);
+        if (subscription is null)
+            return false;
+
+        storage.Remove(subscription);
+        await storage.SaveChangesAsync(cancellationToken);
+        return true;
     }
 
     /// <summary>How long a package runs: a trial says so itself, the rest are a month or a year.</summary>

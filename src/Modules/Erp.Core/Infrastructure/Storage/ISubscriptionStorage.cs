@@ -18,17 +18,28 @@ public interface ISubscriptionPlanStorage
 }
 
 /// <summary>
-/// One row per company, so this is keyed by company rather than listed per tenant. It carries a
-/// CompanyId, so AppDbContext's tenant filter covers it on its own: a company only ever reads its
-/// own subscription, while the SuperAdmin backoffice — which runs unrestricted — sees them all.
+/// Not unique per company: a company can have several rows over time (expired, currently
+/// running, and already scheduled to start later). This carries a CompanyId, so AppDbContext's
+/// tenant filter covers it on its own: a company only ever reads its own subscriptions, while the
+/// SuperAdmin backoffice — which runs unrestricted — sees them all.
 /// </summary>
 public interface ICompanySubscriptionStorage
 {
-    Task<CompanySubscription?> GetByCompanyIdAsync(Guid companyId, CancellationToken cancellationToken = default);
+    /// <summary>The one currently in effect: StartedAtUtc has passed and ExpiresAtUtc has not, picking the furthest-reaching row if more than one overlaps.</summary>
+    Task<CompanySubscription?> GetActiveByCompanyIdAsync(Guid companyId, CancellationToken cancellationToken = default);
+
+    /// <summary>Every subscription a company has ever had or is scheduled for, oldest first.</summary>
+    Task<IReadOnlyList<CompanySubscription>> GetAllByCompanyIdAsync(Guid companyId, CancellationToken cancellationToken = default);
 
     /// <summary>The backoffice listing, flattened with the company and plan names.</summary>
     IQueryable<CompanySubscriptionDto> Query();
 
     Task AddAsync(CompanySubscription subscription, CancellationToken cancellationToken = default);
+
+    /// <summary>Fetches a single row by id, scoped to its company, for the delete flow below.</summary>
+    Task<CompanySubscription?> GetByIdAsync(Guid companyId, Guid subscriptionId, CancellationToken cancellationToken = default);
+
+    void Remove(CompanySubscription subscription);
+
     Task SaveChangesAsync(CancellationToken cancellationToken = default);
 }

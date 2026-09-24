@@ -212,6 +212,16 @@ public class CoreApiClient(HttpClient http) : ApiClientBase(http)
             : null;
     }
 
+    /// <summary>Every subscription the company has ever had or is scheduled for, oldest first.</summary>
+    public async Task<(IReadOnlyList<CompanySubscription> Items, string? Error)> GetAllCompanySubscriptionsAsync(
+        Guid companyId, CancellationToken cancellationToken = default)
+    {
+        var response = await Http.GetAsync($"api/company-subscriptions/{companyId}/all", cancellationToken);
+        return response.IsSuccessStatusCode
+            ? ((IReadOnlyList<CompanySubscription>?)await response.Content.ReadFromJsonAsync<List<CompanySubscription>>(cancellationToken) ?? [], null)
+            : ([], await ApiResponse.ReadErrorAsync(response, cancellationToken));
+    }
+
     public async Task<string?> AssignCompanySubscriptionAsync(
         Guid companyId,
         AssignSubscriptionRequest request,
@@ -219,6 +229,87 @@ public class CoreApiClient(HttpClient http) : ApiClientBase(http)
     {
         var response = await Http.PutAsJsonAsync($"api/company-subscriptions/{companyId}", request, cancellationToken);
         return response.IsSuccessStatusCode ? null : await ApiResponse.ReadErrorAsync(response, cancellationToken);
+    }
+
+    /// <summary>Removes one of the company's subscription rows entirely.</summary>
+    public async Task<string?> RemoveCompanySubscriptionAsync(
+        Guid companyId,
+        Guid subscriptionId,
+        CancellationToken cancellationToken = default)
+    {
+        var response = await Http.DeleteAsync($"api/company-subscriptions/{companyId}/{subscriptionId}", cancellationToken);
+        return response.IsSuccessStatusCode ? null : await ApiResponse.ReadErrorAsync(response, cancellationToken);
+    }
+
+    /// <summary>A company putting itself on a plan, with no admin involved — see the endpoint's own doc comment.</summary>
+    public async Task<string?> SelfServiceSubscribeAsync(
+        Guid companyId,
+        Guid planId,
+        CancellationToken cancellationToken = default)
+    {
+        var response = await Http.PostAsJsonAsync(
+            $"api/company-subscriptions/{companyId}/self-service",
+            new SelfServiceSubscribeRequest(planId),
+            cancellationToken);
+        return response.IsSuccessStatusCode ? null : await ApiResponse.ReadErrorAsync(response, cancellationToken);
+    }
+
+    // --- Company members ---
+
+    /// <summary>The company's members, and the invitations still waiting for someone to sign up.</summary>
+    public async Task<(CompanyMembers? Members, string? Error)> GetCompanyMembersAsync(
+        Guid companyId,
+        CancellationToken cancellationToken = default)
+    {
+        var response = await Http.GetAsync($"api/companies/{companyId}/members", cancellationToken);
+
+        return response.IsSuccessStatusCode
+            ? (await response.Content.ReadFromJsonAsync<CompanyMembers>(cancellationToken), null)
+            : (null, await ApiResponse.ReadErrorAsync(response, cancellationToken));
+    }
+
+    /// <summary>Adds a person by email: an existing account joins straight away, anyone else is invited.</summary>
+    public async Task<(AddCompanyMemberResult? Result, string? Error)> AddCompanyMemberAsync(
+        Guid companyId,
+        AddCompanyMemberRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        var response = await Http.PostAsJsonAsync($"api/companies/{companyId}/members", request, cancellationToken);
+
+        return response.IsSuccessStatusCode
+            ? (await response.Content.ReadFromJsonAsync<AddCompanyMemberResult>(cancellationToken), null)
+            : (null, await ApiResponse.ReadErrorAsync(response, cancellationToken));
+    }
+
+    public async Task<string?> RemoveCompanyMemberAsync(
+        Guid companyId,
+        Guid membershipId,
+        CancellationToken cancellationToken = default)
+    {
+        var response = await Http.DeleteAsync($"api/companies/{companyId}/members/{membershipId}", cancellationToken);
+        return response.IsSuccessStatusCode ? null : await ApiResponse.ReadErrorAsync(response, cancellationToken);
+    }
+
+    public async Task<string?> CancelCompanyInvitationAsync(
+        Guid companyId,
+        Guid invitationId,
+        CancellationToken cancellationToken = default)
+    {
+        var response = await Http.DeleteAsync($"api/companies/{companyId}/members/invitations/{invitationId}", cancellationToken);
+        return response.IsSuccessStatusCode ? null : await ApiResponse.ReadErrorAsync(response, cancellationToken);
+    }
+
+    /// <summary>
+    /// Turns the invitations waiting for the signed-in user into memberships and returns how many,
+    /// so someone who signed up from an invitation email finds the company already there.
+    /// </summary>
+    public async Task<int> ClaimInvitationsAsync(CancellationToken cancellationToken = default)
+    {
+        var response = await Http.PostAsync("api/access/me/claim-invitations", null, cancellationToken);
+
+        return response.IsSuccessStatusCode
+            ? (await response.Content.ReadFromJsonAsync<ClaimInvitationsResult>(cancellationToken))?.Claimed ?? 0
+            : 0;
     }
 
     // --- Sign-up ---

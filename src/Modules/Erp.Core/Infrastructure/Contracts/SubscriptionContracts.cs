@@ -115,6 +115,13 @@ public sealed record AssignSubscriptionRequest(
 public sealed record OnboardingStatus(bool HasCompany);
 
 /// <summary>
+/// A company subscribing itself to a plan — no admin involved, so unlike
+/// <see cref="AssignSubscriptionRequest"/> there is nothing to override: the dates always come
+/// from the plan, the same way sign-up computes them.
+/// </summary>
+public sealed record SelfServiceSubscribeRequest(Guid PlanId);
+
+/// <summary>
 /// Everything a user with no company needs to send once: the plan they picked, and the company to
 /// create for them. The user is taken from the caller's own token, never from the body.
 /// </summary>

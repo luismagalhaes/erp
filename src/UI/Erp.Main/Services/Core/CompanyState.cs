@@ -62,6 +62,8 @@ public sealed class CompanyState(CoreApiClient coreApi, IStringLocalizer<MainRes
 
             try
             {
+                await ClaimInvitationsOnceAsync(cancellationToken);
+
                 Companies = await coreApi.GetMyCompaniesAsync(cancellationToken);
                 SelectedCompanyId = Companies.FirstOrDefault()?.CompanyId ?? Guid.Empty;
                 LoadError = Companies.Count == 0 ? (string?)localizer["CompanyState_NoCompanyAssociated"] : null;
@@ -86,6 +88,36 @@ public sealed class CompanyState(CoreApiClient coreApi, IStringLocalizer<MainRes
 
             if (loaded)
                 Changed?.Invoke();
+        }
+    }
+
+    /// <summary>
+    /// True when this session just took up an invitation to a company. The roles in the current
+    /// cookie predate it, so the layout signs the user in again to pick them up.
+    /// </summary>
+    public bool InvitationsClaimed { get; private set; }
+
+    private bool _claimAttempted;
+
+    /// <summary>
+    /// A person who signed up from an invitation email has a company waiting for them: the ERP turns
+    /// it into a membership the first time they open the application. Once per session, and never
+    /// fatal: if it fails, the next session tries again.
+    /// </summary>
+    private async Task ClaimInvitationsOnceAsync(CancellationToken cancellationToken)
+    {
+        if (_claimAttempted)
+            return;
+
+        _claimAttempted = true;
+
+        try
+        {
+            InvitationsClaimed = await coreApi.ClaimInvitationsAsync(cancellationToken) > 0;
+        }
+        catch (HttpRequestException)
+        {
+            InvitationsClaimed = false;
         }
     }
 

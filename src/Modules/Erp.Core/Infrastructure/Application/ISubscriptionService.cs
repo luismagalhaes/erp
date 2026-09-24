@@ -21,16 +21,24 @@ public interface ISubscriptionPlanService
 /// <summary>Which company is on which package, and until when.</summary>
 public interface ICompanySubscriptionService
 {
+    /// <summary>The one currently in effect, or null when none of the company's rows covers today.</summary>
     Task<CompanySubscriptionDto?> GetForCompanyAsync(Guid companyId, CancellationToken cancellationToken = default);
+
+    /// <summary>Every subscription the company has ever had or is scheduled for, oldest first.</summary>
+    Task<IReadOnlyList<CompanySubscriptionDto>> GetAllForCompanyAsync(Guid companyId, CancellationToken cancellationToken = default);
 
     /// <summary>The listing as a queryable, so the grid endpoint can push its OData options down.</summary>
     IQueryable<CompanySubscriptionDto> Query();
 
     /// <summary>
-    /// Moves a company onto a plan, replacing whatever it was on. Used both by the sign-up page and
-    /// by a SuperAdmin recording that a company bought a package.
+    /// Adds a new subscription for the company — it never overwrites an existing row, so a company
+    /// can be on a free plan today and already have an annual one scheduled to start later. Used
+    /// both by the sign-up page and by a SuperAdmin recording that a company bought a package.
     /// </summary>
     Task<CompanySubscriptionDto> AssignAsync(Guid companyId, AssignSubscriptionRequest request, CancellationToken cancellationToken = default);
+
+    /// <summary>Removes one of the company's subscription rows. Returns false when it does not exist.</summary>
+    Task<bool> RemoveAsync(Guid companyId, Guid subscriptionId, CancellationToken cancellationToken = default);
 }
 
 /// <summary>

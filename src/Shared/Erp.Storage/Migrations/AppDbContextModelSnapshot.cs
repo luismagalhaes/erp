@@ -167,8 +167,7 @@ namespace Erp.Storage.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("CompanyId")
-                        .IsUnique();
+                    b.HasIndex("CompanyId");
 
                     b.HasIndex("PlanId");
 

@@ -184,7 +184,11 @@ public sealed class CoreModelConfiguration : IModuleModelConfiguration
         modelBuilder.Entity<CompanySubscription>(entity =>
         {
             entity.HasKey(x => x.Id);
-            entity.HasIndex(x => x.CompanyId).IsUnique();
+
+            // Not unique: a company can have several rows over time (an expired one, the one
+            // currently running, and one already scheduled to start later), so history and
+            // future packages are never overwritten.
+            entity.HasIndex(x => x.CompanyId);
 
             entity.HasOne(x => x.Company)
                 .WithMany()

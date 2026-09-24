@@ -6,7 +6,7 @@ namespace Erp.Identity.Dependencies.Configuration;
 /// </summary>
 public sealed class ServiceAuthenticationOptions
 {
-    public const string SectionName = "ServiceAuthentication";
+    public const string SectionName = "ErpIdentityClient";
 
     /// <summary>Token issuer. Defaults to this host, which is the issuer.</summary>
     public string Authority { get; set; } = string.Empty;
@@ -16,7 +16,7 @@ public sealed class ServiceAuthenticationOptions
 
     public string ClientId { get; set; } = string.Empty;
 
-    /// <summary>In the vault as SERVICEAUTHENTICATION__CLIENTSECRET, one value per environment.</summary>
+    /// <summary>In the vault as ERPIDENTITYCLIENT__CLIENTSECRET, one value per environment.</summary>
     public string ClientSecret { get; set; } = string.Empty;
 
     /// <summary>Scope requested for outgoing service calls.</summary>

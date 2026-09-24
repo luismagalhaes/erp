@@ -22,9 +22,9 @@ public sealed class SubscriptionState(CoreApiClient coreApi)
     /// <summary>Raised once the subscription of a newly selected company has been read.</summary>
     public event Action? Changed;
 
-    public async Task EnsureLoadedAsync(Guid companyId, CancellationToken cancellationToken = default)
+    public async Task EnsureLoadedAsync(Guid companyId, bool force = false, CancellationToken cancellationToken = default)
     {
-        if (companyId == Guid.Empty || companyId == _loadedFor)
+        if (companyId == Guid.Empty || (companyId == _loadedFor && !force))
             return;
 
         _loadedFor = companyId;

@@ -137,8 +137,15 @@
         && _attemptCount >= Constants.Recaptcha.AttemptThreshold
         && !string.IsNullOrWhiteSpace(RecaptchaSiteKey);
 
+    /// <summary>Filled in by the link in an invitation email, so the invited address is not retyped.</summary>
+    [SupplyParameterFromQuery]
+    public string? Email { get; set; }
+
     protected override async Task OnInitializedAsync()
     {
+        if (string.IsNullOrWhiteSpace(Input.Email))
+            Input.Email = Email;
+
         _attemptCount = await SignUpAttemptTracker.GetCountAsync(RemoteIp, Constants.Recaptcha.Window);
     }
 

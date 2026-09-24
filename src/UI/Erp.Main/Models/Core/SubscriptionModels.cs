@@ -55,6 +55,9 @@ public sealed record AssignSubscriptionRequest(
     DateTime? StartedAtUtc = null,
     DateTime? ExpiresAtUtc = null);
 
+/// <summary>A company subscribing itself to a plan, with no admin involved.</summary>
+public sealed record SelfServiceSubscribeRequest(Guid PlanId);
+
 /// <summary>Whether the signed-in user still has to go through sign-up.</summary>
 public sealed record OnboardingStatus(bool HasCompany);
 

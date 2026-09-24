@@ -92,6 +92,21 @@ public sealed class WarehouseState : IDisposable
         }
     }
 
+    /// <summary>
+    /// Reloads the list after a warehouse is created or edited, keeping the one the user picked when
+    /// it is still there — a plain reload would fall back to the default.
+    /// </summary>
+    public async Task RefreshAsync(CancellationToken cancellationToken = default)
+    {
+        var previous = SelectedWarehouseId;
+
+        IsLoaded = false;
+        await EnsureLoadedAsync(cancellationToken);
+
+        if (previous != Guid.Empty && Warehouses.Any(warehouse => warehouse.Id == previous))
+            Select(previous);
+    }
+
     public void Select(Guid warehouseId)
     {
         if (warehouseId == SelectedWarehouseId)

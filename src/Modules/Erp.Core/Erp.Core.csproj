@@ -30,6 +30,8 @@
     <!-- For the inventory categories a product may carry, and the single rounding rule. -->
     <ProjectReference Include="..\..\Shared\Erp.FiscalPT\Erp.FiscalPT.csproj" />
     <ProjectReference Include="..\..\Shared\Erp.Storage\Erp.Storage.csproj" />
+    <!-- For the Identity host, an external dependency the company members are looked up and invited through. -->
+    <ProjectReference Include="..\..\Shared\Erp.Dependencies\Erp.Dependencies.csproj" />
   </ItemGroup>
 
 </Project>

@@ -60,7 +60,7 @@ public class SeedDataTests
     {
         var businessScopes = SeedData.ApiScopes
             .Select(scope => scope.Name)
-            .Except([Constants.Scopes.ErpIdentityRead], StringComparer.Ordinal);
+            .Except([Constants.Scopes.ErpIdentityRead, Constants.Scopes.ErpIdentityOnboarding], StringComparer.Ordinal);
 
         SeedData.ApiResources
             .Single(resource => resource.Name == Constants.ApiResources.ErpApi)
@@ -84,7 +84,7 @@ public class SeedDataTests
     [Fact]
     public void The_main_ui_client_uses_authorization_code_with_pkce_and_no_secret()
     {
-        var client = SeedData.Clients.Single(x => x.ClientId == Constants.Clients.BlazorWasmClientId);
+        var client = SeedData.Clients.Single(x => x.ClientId == Constants.Clients.ErpPortalClientId);
 
         client.AllowedGrantTypes.Should().Contain("authorization_code");
         client.RequirePkce.Should().BeTrue();
@@ -100,19 +100,42 @@ public class SeedDataTests
     [Fact]
     public void The_main_ui_client_can_reach_every_api_scope_except_the_service_only_ones()
     {
-        var client = SeedData.Clients.Single(x => x.ClientId == Constants.Clients.BlazorWasmClientId);
+        var client = SeedData.Clients.Single(x => x.ClientId == Constants.Clients.ErpPortalClientId);
 
         var userFacingScopes = SeedData.ApiScopes
             .Select(scope => scope.Name)
-            .Except([Constants.Scopes.ErpNotificationSend], StringComparer.Ordinal);
+            .Except([Constants.Scopes.ErpNotificationSend, Constants.Scopes.ErpIdentityOnboarding], StringComparer.Ordinal);
 
         client.AllowedScopes.Should().Contain(userFacingScopes);
+    }
+
+    /// <summary>
+    /// The ERP API is the authority on who may invite whom, so only it may raise an onboarding
+    /// request: a user token, which any signed-in person holds, must never be enough.
+    /// </summary>
+    [Fact]
+    public void Only_the_erp_api_client_may_raise_onboarding_requests()
+    {
+        var allowed = SeedData.Clients
+            .Where(client => client.AllowedScopes.Contains(Constants.Scopes.ErpIdentityOnboarding))
+            .Select(client => client.ClientId)
+            .ToList();
+
+        allowed.Should().Equal(Constants.Clients.ErpApiClientId);
+    }
+
+    [Fact]
+    public void The_identity_audience_carries_the_onboarding_scope()
+    {
+        SeedData.ApiResources
+            .Single(resource => resource.Name == Constants.ApiResources.IdentityApi)
+            .Scopes.Should().Contain(Constants.Scopes.ErpIdentityOnboarding);
     }
 
     [Fact]
     public void The_main_ui_client_callbacks_match_the_configured_origins()
     {
-        var client = SeedData.Clients.Single(x => x.ClientId == Constants.Clients.BlazorWasmClientId);
+        var client = SeedData.Clients.Single(x => x.ClientId == Constants.Clients.ErpPortalClientId);
 
         client.RedirectUris.Should().Contain(
             Constants.Clients.HttpsLocalhost7019 + Constants.Clients.LoginCallbackPath);
@@ -127,7 +150,8 @@ public class SeedDataTests
     /// environment forever. It must be set from the backoffice after first deploy.
     /// </summary>
     [Theory]
-    [InlineData("identity-service")]
+    [InlineData("erp-api")]
+    [InlineData("erp-identity")]
     public void Machine_clients_use_client_credentials_and_start_with_no_seeded_secret(string clientId)
     {
         var client = SeedData.Clients.Single(x => x.ClientId == clientId);
@@ -140,37 +164,46 @@ public class SeedDataTests
     }
 
     [Fact]
-    public void Only_the_identity_service_may_queue_emails()
+    public void Only_the_erp_identity_client_may_queue_emails()
     {
         var allowed = SeedData.Clients
             .Where(client => client.AllowedScopes.Contains(Constants.Scopes.ErpNotificationSend))
             .Select(client => client.ClientId)
             .ToList();
 
-        allowed.Should().Equal(Constants.Clients.IdentityServiceClientId);
+        allowed.Should().Equal(Constants.Clients.ErpIdentityClientId);
     }
 
     [Fact]
     public void The_user_facing_client_cannot_send_mail_through_the_erp()
     {
-        var client = SeedData.Clients.Single(x => x.ClientId == Constants.Clients.BlazorWasmClientId);
+        var client = SeedData.Clients.Single(x => x.ClientId == Constants.Clients.ErpPortalClientId);
 
         client.AllowedScopes.Should().NotContain(Constants.Scopes.ErpNotificationSend);
         client.AllowedScopes.Should().Contain(Constants.Scopes.ErpRead);
     }
 
     [Fact]
-    public void The_identity_service_client_is_limited_to_queueing_emails()
+    public void The_service_clients_are_limited_to_the_one_scope_of_their_direction()
     {
-        var client = SeedData.Clients.Single(x => x.ClientId == Constants.Clients.IdentityServiceClientId);
+        SeedData.Clients.Single(x => x.ClientId == Constants.Clients.ErpIdentityClientId)
+            .AllowedScopes.Should().Equal(Constants.Scopes.ErpNotificationSend);
 
-        client.AllowedScopes.Should().Equal(Constants.Scopes.ErpNotificationSend);
+        SeedData.Clients.Single(x => x.ClientId == Constants.Clients.ErpApiClientId)
+            .AllowedScopes.Should().Equal(Constants.Scopes.ErpIdentityOnboarding);
+    }
+
+    [Fact]
+    public void There_are_exactly_three_clients_the_portal_and_one_service_client_per_direction()
+    {
+        SeedData.Clients.Select(client => client.ClientId).Should().BeEquivalentTo(
+            [Constants.Clients.ErpPortalClientId, Constants.Clients.ErpApiClientId, Constants.Clients.ErpIdentityClientId]);
     }
 
     [Fact]
     public void The_ui_client_can_read_users_to_assign_them_to_companies()
     {
-        var client = SeedData.Clients.Single(x => x.ClientId == Constants.Clients.BlazorWasmClientId);
+        var client = SeedData.Clients.Single(x => x.ClientId == Constants.Clients.ErpPortalClientId);
 
         client.AllowedScopes.Should().Contain(Constants.Scopes.ErpIdentityRead);
 

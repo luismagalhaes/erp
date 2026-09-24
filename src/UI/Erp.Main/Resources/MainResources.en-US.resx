@@ -287,11 +287,23 @@
   <data name="Subscriptions_StatusColumn" xml:space="preserve"><value>Status</value></data>
   <data name="Subscriptions_ActiveStatus" xml:space="preserve"><value>Active</value></data>
   <data name="Subscriptions_ExpiredStatus" xml:space="preserve"><value>Expired</value></data>
+  <data name="Subscriptions_ScheduledStatus" xml:space="preserve"><value>Scheduled</value></data>
   <data name="Subscriptions_ChangeAction" xml:space="preserve"><value>Change plan</value></data>
   <data name="Subscriptions_ChangeTitle" xml:space="preserve"><value>Change the plan for {0}</value></data>
   <data name="Subscriptions_ChangeHint" xml:space="preserve"><value>Leave the dates empty to have them computed from the chosen plan.</value></data>
   <data name="Subscriptions_Changed" xml:space="preserve"><value>Subscription updated.</value></data>
-  <data name="Subscription_ExpiredWarning" xml:space="preserve"><value>The {0} subscription expired on {1}. Get in touch to move to another plan.</value></data>
+  <data name="Subscriptions_PlanPlaceholder" xml:space="preserve"><value>Choose a plan</value></data>
+  <data name="Subscriptions_DeleteHeading" xml:space="preserve"><value>Remove subscription</value></data>
+  <data name="Subscriptions_DeleteConfirm" xml:space="preserve"><value>Are you sure you want to remove the plan "{0}"? This action cannot be undone.</value></data>
+  <data name="Subscriptions_Deleted" xml:space="preserve"><value>Subscription removed.</value></data>
+  <data name="Subscription_ExpiredWarning" xml:space="preserve"><value>The {0} subscription expired on {1}. Subscribe to a new plan to keep saving data.</value></data>
+  <data name="SubscribeDialog_OpenButton" xml:space="preserve"><value>Subscribe to a plan</value></data>
+  <data name="SubscribeDialog_Title" xml:space="preserve"><value>Choose a plan</value></data>
+  <data name="SubscribeDialog_ConfirmButton" xml:space="preserve"><value>Subscribe</value></data>
+  <data name="SubscribeDialog_Success" xml:space="preserve"><value>Subscription completed successfully.</value></data>
+  <data name="Dashboard_NoSubscriptionAlert" xml:space="preserve"><value>This company has no subscription yet. Subscribe to a plan to keep saving data.</value></data>
+  <data name="Dashboard_ExpiredSubscriptionAlert" xml:space="preserve"><value>The {0} subscription expired on {1}. Subscribe to a new plan to keep saving data.</value></data>
+  <data name="Dashboard_FreeSubscriptionWarning" xml:space="preserve"><value>You are on a free, time-limited plan, valid until {0}. Subscribe to a paid plan before that date to avoid losing access.</value></data>
 
   <data name="Onboarding_PageTitle" xml:space="preserve"><value>Get started</value></data>
   <data name="Onboarding_HeaderTitle" xml:space="preserve"><value>Welcome</value></data>
@@ -353,6 +365,11 @@
   <data name="CompanyEditor_AtTabDescription" xml:space="preserve"><value>The WDT subutilizador this company created at the Portal das Finanças, used to communicate transport documents to the tax authority. Each company has its own — it is not shared with the others.</value></data>
   <data name="CompanyEditor_AtCredentialsRegistered" xml:space="preserve"><value>Credentials registered for subutilizador {0}, updated on {1}</value></data>
   <data name="CompanyEditor_AtCredentialsMissing" xml:space="preserve"><value>This company has no AT credentials configured yet. Transport documents cannot be communicated until this is filled in.</value></data>
+  <data name="CompanyEditor_SubscriptionTab" xml:space="preserve"><value>Subscription</value></data>
+  <data name="CompanyEditor_SubscriptionTabDisabledHint" xml:space="preserve"><value>Save the company before managing its subscription</value></data>
+  <data name="CompanyEditor_SubscriptionTabDescription" xml:space="preserve"><value>Which package this company is on, and until when. There is no payment gateway behind any of this: changing the plan here simply records that the company moved to another one.</value></data>
+  <data name="CompanyEditor_NoSubscriptionMessage" xml:space="preserve"><value>This company has not been put on a package yet.</value></data>
+  <data name="CompanyEditor_LoadSubscriptionError" xml:space="preserve"><value>Could not load the subscription: {0}</value></data>
   <data name="CompanyEditor_AtSubUserIdLabel" xml:space="preserve"><value>Subutilizador number</value></data>
   <data name="CompanyEditor_AtSubUserIdHelperText" xml:space="preserve"><value>Just the number, without the tax id or the slash — the tax id is already the company's, above. E.g. "1", not "{TaxId}/1"</value></data>
   <data name="CompanyEditor_AtPasswordLabel" xml:space="preserve"><value>Subutilizador password</value></data>
@@ -2110,4 +2127,25 @@
   <data name="PaymentMethods_MissingWarning" xml:space="preserve"><value>The methods add up to {0} of {1}: {2} still missing.</value></data>
   <data name="PaymentMethods_ExcessWarning" xml:space="preserve"><value>The methods add up to {0} of {1}: {2} more than the document.</value></data>
   <data name="PaymentMethods_SettleRemainderButton" xml:space="preserve"><value>Settle the difference</value></data>
+  <data name="CompanySettings_UsersDescription" xml:space="preserve"><value>Who has access to this company. If the email already has an account the person joins straight away; otherwise they get an invitation by email to sign up.</value></data>
+  <data name="CompanySettings_UserEmailLabel" xml:space="preserve"><value>Email of the person to add</value></data>
+  <data name="CompanySettings_AddUserButton" xml:space="preserve"><value>Add</value></data>
+  <data name="CompanySettings_UserAdded" xml:space="preserve"><value>{0} now belongs to the company.</value></data>
+  <data name="CompanySettings_UserInvited" xml:space="preserve"><value>An invitation was sent to {0}. They join the company once they sign up.</value></data>
+  <data name="CompanySettings_AddUserError" xml:space="preserve"><value>Could not add the user: {0}</value></data>
+  <data name="CompanySettings_RemoveUserTitle" xml:space="preserve"><value>Remove from company</value></data>
+  <data name="CompanySettings_RemoveUserConfirm" xml:space="preserve"><value>Remove {0} from the company? They lose access to its data.</value></data>
+  <data name="CompanySettings_UserRemoved" xml:space="preserve"><value>User removed from the company.</value></data>
+  <data name="CompanySettings_RemoveUserError" xml:space="preserve"><value>Could not remove the user: {0}</value></data>
+  <data name="CompanySettings_PendingInvitationsTitle" xml:space="preserve"><value>Pending invitations</value></data>
+  <data name="CompanySettings_PendingInvitationsHint" xml:space="preserve"><value>People who were invited and have not signed up yet.</value></data>
+  <data name="CompanySettings_InvitedByColumn" xml:space="preserve"><value>Invited by</value></data>
+  <data name="CompanySettings_LastSentColumn" xml:space="preserve"><value>Last sent</value></data>
+  <data name="CompanySettings_ResendInvitationTitle" xml:space="preserve"><value>Resend invitation</value></data>
+  <data name="CompanySettings_CancelInvitationTitle" xml:space="preserve"><value>Cancel invitation</value></data>
+  <data name="CompanySettings_InvitationCancelled" xml:space="preserve"><value>Invitation cancelled.</value></data>
+  <data name="CompanySettings_InvitationsUnavailable" xml:space="preserve"><value>The pending invitations could not be read right now.</value></data>
+  <data name="CompanySettings_SubscriptionsDescription" xml:space="preserve"><value>This company's plans: running, scheduled and expired.</value></data>
+  <data name="CompanySettings_LoadSubscriptionsError" xml:space="preserve"><value>Could not load the subscriptions: {0}</value></data>
+  <data name="CompanySettings_WarehousesDescription" xml:space="preserve"><value>The warehouses where this company's stock is kept.</value></data>
 </root>

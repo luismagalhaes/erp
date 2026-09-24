@@ -6,6 +6,7 @@
 @using Erp.Main.Services
 @using Erp.Main.Theme
 @using Erp.Main.Resources
+@using Erp.Main.Components.Common
 @using System.Reflection
 @inject NavigationManager Navigation
 @inject CompanyState Company
@@ -118,10 +119,17 @@
                    not a reason to lock them out of their own invoicing. *@
                 <MudAlert Severity="Severity.Warning" Dense="true" Class="mb-4" ShowCloseIcon="true"
                           CloseIconClicked="@(() => _subscriptionWarningDismissed = true)">
-                    @string.Format(
-                        Localizer["Subscription_ExpiredWarning"],
-                        subscription.PlanName,
-                        subscription.ExpiresAtUtc.ToLocalTime().ToString("yyyy-MM-dd"))
+                    <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center">
+                        <MudText>
+                            @string.Format(
+                                Localizer["Subscription_ExpiredWarning"],
+                                subscription.PlanName,
+                                subscription.ExpiresAtUtc.ToLocalTime().ToString("yyyy-MM-dd"))
+                        </MudText>
+                        <MudButton Variant="Variant.Filled" Color="Color.Warning" Size="Size.Small" OnClick="@(() => _subscribeDialogOpen = true)">
+                            @Localizer["SubscribeDialog_OpenButton"]
+                        </MudButton>
+                    </MudStack>
                 </MudAlert>
             }
 
@@ -130,10 +138,13 @@
     </MudMainContent>
 </MudLayout>
 
+<SubscribePlanDialog @bind-Open="_subscribeDialogOpen" CompanyId="Company.SelectedCompanyId" Subscribed="OnSubscribedAsync" />
+
 @code {
     private bool _drawerOpen = true;
     private bool _isDarkMode;
     private bool _subscriptionWarningDismissed;
+    private bool _subscribeDialogOpen;
 
     protected override async Task OnInitializedAsync()
     {
@@ -142,6 +153,14 @@
         Subscription.Changed += OnSubscriptionStateChanged;
 
         await Company.EnsureLoadedAsync();
+
+        // Just taken up an invitation: the role that comes with belonging to a company is only read
+        // at sign-in, so the cookie still says this account has none. Signing in again picks it up.
+        if (Company.InvitationsClaimed)
+        {
+            Navigation.NavigateTo("authentication/login?returnUrl=%2F", forceLoad: true);
+            return;
+        }
 
         // An account that belongs to no company has nothing to show behind this layout: every page
         // would only be able to say the same thing. Sign-up carries its own chrome — no side menu,
@@ -177,6 +196,12 @@
     private void OnWarehouseStateChanged() => InvokeAsync(StateHasChanged);
 
     private void OnSubscriptionStateChanged() => InvokeAsync(StateHasChanged);
+
+    private async Task OnSubscribedAsync()
+    {
+        _subscriptionWarningDismissed = false;
+        await Subscription.EnsureLoadedAsync(Company.SelectedCompanyId, force: true);
+    }
 
     private async Task OpenProfile()
         => await JS.InvokeVoidAsync("open", $"{Configuration["Services:IdentityApi"]}/Profile", "_blank");

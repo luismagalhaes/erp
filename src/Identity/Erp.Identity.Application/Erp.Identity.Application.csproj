@@ -9,6 +9,7 @@
 
   <ItemGroup>
 	  <PackageReference Include="SonarAnalyzer.CSharp" Version="9.32.0.97167" PrivateAssets="all" />
+    <ProjectReference Include="..\Erp.Identity.Common\Erp.Identity.Common.csproj" />
     <ProjectReference Include="..\Erp.Identity.Domain\Erp.Identity.Domain.csproj" />
     <ProjectReference Include="..\Erp.Identity.Infrastructure\Erp.Identity.Infrastructure.csproj" />
   </ItemGroup>

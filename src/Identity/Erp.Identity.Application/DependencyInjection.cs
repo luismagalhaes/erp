@@ -17,6 +17,7 @@ public static class DependencyInjection
         services.AddScoped<IIdentityResourceService, IdentityResourceService>();
         services.AddScoped<IIdentityProviderService, IdentityProviderService>();
         services.AddScoped<ILoginAuditService, LoginAuditService>();
+        services.AddScoped<IOnboardingRequestService, OnboardingRequestService>();
         // Scoped, not Singleton: now backed by ISignUpAttemptStorage (EF Core, itself Scoped) —
         // it stopped being an in-memory cache once the count needed to survive across instances.
         services.AddScoped<ISignUpAttemptTracker, SignUpAttemptTracker>();

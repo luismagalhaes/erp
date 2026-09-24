@@ -17,6 +17,7 @@ public class DependencyInjectionTests
     [InlineData(typeof(IApiResourceService), typeof(ApiResourceService))]
     [InlineData(typeof(IIdentityResourceService), typeof(IdentityResourceService))]
     [InlineData(typeof(IIdentityProviderService), typeof(IdentityProviderService))]
+    [InlineData(typeof(IOnboardingRequestService), typeof(OnboardingRequestService))]
     public void AddIdentityApplication_registers_every_service_as_scoped(Type serviceType, Type implementationType)
     {
         var services = new ServiceCollection();

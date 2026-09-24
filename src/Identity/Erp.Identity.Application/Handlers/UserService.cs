@@ -12,6 +12,9 @@ public sealed class UserService(IUserStorage userStorage) : IUserService
     public Task<UserEditItem?> GetUserAsync(string userId, CancellationToken cancellationToken = default)
         => userStorage.GetUserAsync(userId, cancellationToken);
 
+    public Task<UserEditItem?> FindByEmailAsync(string email, CancellationToken cancellationToken = default)
+        => userStorage.FindByEmailAsync(email, cancellationToken);
+
     public Task UpdateUserRolesAsync(string userId, IReadOnlyCollection<string> roles, CancellationToken cancellationToken = default)
         => userStorage.UpdateUserRolesAsync(userId, roles, cancellationToken);
 

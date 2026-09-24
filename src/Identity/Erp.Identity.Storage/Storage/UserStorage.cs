@@ -80,6 +80,19 @@ public sealed class UserStorage(IDbContextFactory<ApplicationDbContext> dbContex
             user.PreferredLanguage);
     }
 
+    public async Task<UserEditItem?> FindByEmailAsync(string email, CancellationToken cancellationToken = default)
+    {
+        await using var dbContext = await dbContextFactory.CreateDbContextAsync(cancellationToken);
+
+        var normalizedEmail = email.Trim().ToUpperInvariant();
+        var userId = await dbContext.Users
+            .Where(x => x.NormalizedEmail == normalizedEmail)
+            .Select(x => x.Id)
+            .FirstOrDefaultAsync(cancellationToken);
+
+        return userId is null ? null : await GetUserAsync(userId, cancellationToken);
+    }
+
     public async Task UpdateUserLanguageAsync(string userId, string preferredLanguage, CancellationToken cancellationToken = default)
     {
         await using var dbContext = await dbContextFactory.CreateDbContextAsync(cancellationToken);

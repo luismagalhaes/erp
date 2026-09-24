@@ -1,9 +1,13 @@
 @page "/company-settings"
 @attribute [Authorize]
+@using System.Globalization
 @using Microsoft.AspNetCore.Authorization
+@using Microsoft.AspNetCore.Components.Web
 @using Microsoft.Extensions.Localization
 @using MudBlazor
 @using Erp.Common
+@using Erp.Main.Models
+@using Erp.Main.Components.Common
 @using Erp.Main.Models.Core
 @using Erp.Main.Resources
 @using Erp.Main.Services
@@ -11,7 +15,10 @@
 @inject IdentityApiClient IdentityApi
 @inject StockApiClient StockApi
 @inject CompanyState Company
+@inject SubscriptionState Subscription
+@inject WarehouseState WarehouseSelection
 @inject ISnackbar Snackbar
+@inject IDialogService DialogService
 @inject IStringLocalizer<MainResources> Localizer
 @implements IDisposable
 
@@ -87,20 +94,36 @@
                     </MudTabPanel>
 
                     <MudTabPanel Text="@Localizer["CompanyEditor_UsersTab"]" Icon="@Icons.Material.Filled.People">
+                        <MudText Typo="Typo.body2" Color="Color.Secondary" Class="mb-4">
+                            @Localizer["CompanySettings_UsersDescription"]
+                        </MudText>
+
+                        <MudStack Row="true" Spacing="3" AlignItems="AlignItems.Center" Class="mb-4">
+                            <MudTextField @bind-Value="_newUserEmail" @bind-Value:after="StateHasChanged" Immediate="true"
+                                          Label="@Localizer["CompanySettings_UserEmailLabel"]" InputType="InputType.Email"
+                                          Variant="Variant.Outlined" Margin="Margin.Dense" Style="max-width: 420px;"
+                                          OnKeyDown="OnNewUserKeyDownAsync" />
+                            <MudButton Variant="Variant.Filled" Color="Color.Primary"
+                                       StartIcon="@Icons.Material.Filled.PersonAdd"
+                                       Disabled="@(_workingUsers || string.IsNullOrWhiteSpace(_newUserEmail))"
+                                       OnClick="AddUserAsync">
+                                @Localizer["CompanySettings_AddUserButton"]
+                            </MudButton>
+                        </MudStack>
+
                         <MudTable Items="_memberships" Hover="true" Striped="true" Dense="true" Loading="_workingUsers"
                                   Breakpoint="Breakpoint.Sm">
                             <HeaderContent>
                                 <MudTh>@Localizer["CompanyEditor_UserColumn"]</MudTh>
                                 <MudTh>@Localizer["CompanyEditor_EmailColumn"]</MudTh>
-                                <MudTh Style="width: 200px;">@Localizer["CompanyEditor_RoleLabel"]</MudTh>
                                 <MudTh Style="width: 140px;">@Localizer["Common_StatusColumn"]</MudTh>
+                                <MudTh Style="text-align: right;">@Localizer["CompanyEditor_ActionsColumn"]</MudTh>
                             </HeaderContent>
                             <RowTemplate>
                                 <MudTd DataLabel="@Localizer["CompanyEditor_UserColumn"]">@DescribeUser(context.UserId)</MudTd>
                                 <MudTd DataLabel="@Localizer["CompanyEditor_EmailColumn"]">
                                     <MudText Typo="Typo.caption" Color="Color.Secondary">@DescribeEmail(context.UserId)</MudText>
                                 </MudTd>
-                                <MudTd DataLabel="@Localizer["CompanyEditor_RoleLabel"]">@context.Role</MudTd>
                                 <MudTd DataLabel="@Localizer["Common_StatusColumn"]">
                                     @if (context.IsActive)
                                     {
@@ -111,14 +134,62 @@
                                         <MudChip T="string" Size="Size.Small" Color="Color.Default" Variant="Variant.Text">@Localizer["Common_Inactive"]</MudChip>
                                     }
                                 </MudTd>
+                                <MudTd DataLabel="@Localizer["CompanyEditor_ActionsColumn"]" Style="text-align: right;">
+                                    <MudIconButton Icon="@Icons.Material.Filled.PersonRemove" Size="Size.Small" Color="Color.Error"
+                                                   title="@Localizer["CompanySettings_RemoveUserTitle"]"
+                                                   OnClick="@(() => RemoveUserAsync(context))" />
+                                </MudTd>
                             </RowTemplate>
                             <NoRecordsContent>
                                 <MudText Typo="Typo.body2" Color="Color.Secondary">@Localizer["CompanyEditor_NoUsersMessage"]</MudText>
                             </NoRecordsContent>
                         </MudTable>
+
+                        @if (!_invitationsAvailable)
+                        {
+                            <MudAlert Severity="Severity.Warning" Dense="true" Class="mt-4">@Localizer["CompanySettings_InvitationsUnavailable"]</MudAlert>
+                        }
+                        else if (_invitations.Count > 0)
+                        {
+                            <MudText Typo="Typo.subtitle1" Class="mt-6">@Localizer["CompanySettings_PendingInvitationsTitle"]</MudText>
+                            <MudText Typo="Typo.body2" Color="Color.Secondary" Class="mb-2">@Localizer["CompanySettings_PendingInvitationsHint"]</MudText>
+
+                            <MudTable Items="_invitations" Hover="true" Striped="true" Dense="true" Breakpoint="Breakpoint.Sm">
+                                <HeaderContent>
+                                    <MudTh>@Localizer["CompanyEditor_EmailColumn"]</MudTh>
+                                    <MudTh>@Localizer["CompanySettings_InvitedByColumn"]</MudTh>
+                                    <MudTh>@Localizer["CompanySettings_LastSentColumn"]</MudTh>
+                                    <MudTh Style="text-align: right;">@Localizer["CompanyEditor_ActionsColumn"]</MudTh>
+                                </HeaderContent>
+                                <RowTemplate>
+                                    <MudTd DataLabel="@Localizer["CompanyEditor_EmailColumn"]">@context.Email</MudTd>
+                                    <MudTd DataLabel="@Localizer["CompanySettings_InvitedByColumn"]">@(context.InvitedByEmail ?? "—")</MudTd>
+                                    <MudTd DataLabel="@Localizer["CompanySettings_LastSentColumn"]">@context.LastSentAtUtc.ToLocalTime().ToString("yyyy-MM-dd HH:mm")</MudTd>
+                                    <MudTd DataLabel="@Localizer["CompanyEditor_ActionsColumn"]" Style="text-align: right;">
+                                        <MudIconButton Icon="@Icons.Material.Filled.Send" Size="Size.Small"
+                                                       title="@Localizer["CompanySettings_ResendInvitationTitle"]"
+                                                       OnClick="@(() => ResendInvitationAsync(context))" />
+                                        <MudIconButton Icon="@Icons.Material.Filled.Cancel" Size="Size.Small" Color="Color.Error"
+                                                       title="@Localizer["CompanySettings_CancelInvitationTitle"]"
+                                                       OnClick="@(() => CancelInvitationAsync(context))" />
+                                    </MudTd>
+                                </RowTemplate>
+                            </MudTable>
+                        }
                     </MudTabPanel>
 
                     <MudTabPanel Text="@Localizer["CompanyEditor_WarehousesTab"]" Icon="@Icons.Material.Filled.Warehouse">
+                        <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center" Class="mb-4">
+                            <MudText Typo="Typo.body2" Color="Color.Secondary">
+                                @Localizer["CompanySettings_WarehousesDescription"]
+                            </MudText>
+                            <MudButton Variant="Variant.Filled" Color="Color.Primary"
+                                       StartIcon="@Icons.Material.Filled.Add"
+                                       OnClick="@(() => OpenWarehouse(null))">
+                                @Localizer["CompanyEditor_NewWarehouse"]
+                            </MudButton>
+                        </MudStack>
+
                         <MudTable Items="_warehouses" Hover="true" Striped="true" Dense="true"
                                   Loading="_workingWarehouses" Breakpoint="Breakpoint.Sm">
                             <HeaderContent>
@@ -127,6 +198,7 @@
                                 <MudTh>@Localizer["CompanyEditor_CityColumn"]</MudTh>
                                 <MudTh Style="width: 140px;">@Localizer["CompanyEditor_DefaultColumn"]</MudTh>
                                 <MudTh Style="width: 120px;">@Localizer["Common_StatusColumn"]</MudTh>
+                                <MudTh Style="text-align: right;">@Localizer["CompanyEditor_ActionsColumn"]</MudTh>
                             </HeaderContent>
                             <RowTemplate>
                                 <MudTd DataLabel="@Localizer["Common_CodeColumn"]">
@@ -150,9 +222,50 @@
                                         <MudChip T="string" Size="Size.Small" Color="Color.Default" Variant="Variant.Text">@Localizer["Common_Inactive"]</MudChip>
                                     }
                                 </MudTd>
+                                <MudTd DataLabel="@Localizer["CompanyEditor_ActionsColumn"]" Style="text-align: right;">
+                                    <MudIconButton Icon="@Icons.Material.Filled.Edit" Size="Size.Small"
+                                                   title="@Localizer["CompanyEditor_EditWarehouseTitle"]"
+                                                   OnClick="@(() => OpenWarehouse(context))" />
+                                </MudTd>
                             </RowTemplate>
                             <NoRecordsContent>
                                 <MudText Typo="Typo.body2" Color="Color.Secondary">@Localizer["CompanyEditor_NoWarehousesMessage"]</MudText>
+                            </NoRecordsContent>
+                        </MudTable>
+                    </MudTabPanel>
+
+                    <MudTabPanel Text="@Localizer["CompanyEditor_SubscriptionTab"]" Icon="@Icons.Material.Filled.CardMembership">
+                        <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center" Class="mb-4">
+                            <MudText Typo="Typo.body2" Color="Color.Secondary">
+                                @Localizer["CompanySettings_SubscriptionsDescription"]
+                            </MudText>
+                            <MudButton Variant="Variant.Filled" Color="Color.Primary"
+                                       StartIcon="@Icons.Material.Filled.CardMembership"
+                                       OnClick="@(() => _subscribeDialogOpen = true)">
+                                @Localizer["SubscribeDialog_OpenButton"]
+                            </MudButton>
+                        </MudStack>
+
+                        <MudTable T="CompanySubscription" Items="_subscriptions" Hover="true" Striped="true" Dense="true"
+                                  Loading="_workingSubscriptions" Breakpoint="Breakpoint.Sm">
+                            <HeaderContent>
+                                <MudTh>@Localizer["Subscriptions_PlanColumn"]</MudTh>
+                                <MudTh>@Localizer["Common_StatusColumn"]</MudTh>
+                                <MudTh>@Localizer["Subscriptions_StartedColumn"]</MudTh>
+                                <MudTh>@Localizer["Subscriptions_ExpiresColumn"]</MudTh>
+                            </HeaderContent>
+                            <RowTemplate>
+                                <MudTd DataLabel="@Localizer["Subscriptions_PlanColumn"].Value">@context.PlanName</MudTd>
+                                <MudTd DataLabel="@Localizer["Common_StatusColumn"].Value">
+                                    <MudChip T="string" Size="Size.Small" Variant="Variant.Text" Color="@StatusColorFor(context)">
+                                        @StatusLabelFor(context)
+                                    </MudChip>
+                                </MudTd>
+                                <MudTd DataLabel="@Localizer["Subscriptions_StartedColumn"].Value">@context.StartedAtUtc.ToLocalTime().ToString("yyyy-MM-dd")</MudTd>
+                                <MudTd DataLabel="@Localizer["Subscriptions_ExpiresColumn"].Value">@context.ExpiresAtUtc.ToLocalTime().ToString("yyyy-MM-dd")</MudTd>
+                            </RowTemplate>
+                            <NoRecordsContent>
+                                <MudText Typo="Typo.body2" Color="Color.Secondary">@Localizer["CompanyEditor_NoSubscriptionMessage"]</MudText>
                             </NoRecordsContent>
                         </MudTable>
                     </MudTabPanel>
@@ -203,6 +316,72 @@
     }
 </MudStack>
 
+@* --- Armazém --- *@
+<MudDialog @bind-Visible="_warehouseOpen" Options="_dialogOptions">
+    <TitleContent>
+        <MudText Typo="Typo.h6">@(_warehouseId is null ? Localizer["CompanyEditor_NewWarehouseTitle"] : Localizer["CompanyEditor_EditWarehouseTitle"])</MudText>
+    </TitleContent>
+    <DialogContent>
+        <MudGrid Spacing="3">
+            <MudItem xs="12" sm="3" md="3">
+                <MudTextField @bind-Value="_warehouseCode" @bind-Value:after="StateHasChanged" Immediate="true"
+                              Label="@Localizer["Common_CodeColumn"]" Variant="Variant.Outlined" Margin="Margin.Dense" Required="true"
+                              Disabled="@(_warehouseId is not null)"
+                              HelperText="@(_warehouseId is null ? Localizer["CompanyEditor_WarehouseCodeUniqueHint"].Value : Localizer["CompanyEditor_WarehouseCodeHelperText"].Value)" />
+            </MudItem>
+            <MudItem xs="12" sm="9" md="9">
+                <MudTextField @bind-Value="_warehouseName" @bind-Value:after="StateHasChanged" Immediate="true"
+                              Label="@Localizer["Common_NameColumn"]" Variant="Variant.Outlined" Margin="Margin.Dense" Required="true" />
+            </MudItem>
+
+            <MudItem xs="12" sm="6" md="6">
+                <MudTextField @bind-Value="_warehouseAddress" Label="@Localizer["PartnerForm_AddressLabel"]" Variant="Variant.Outlined" Margin="Margin.Dense" />
+            </MudItem>
+            <MudItem xs="12" sm="3" md="3">
+                <PostalCodeField @bind-Value="_warehousePostalCode" Country="@_warehouseCountry"
+                                 LookupResolved="OnWarehousePostalCodeResolvedAsync" StreetSelected="OnWarehouseStreetSelectedAsync"
+                                 Label="@Localizer["PartnerForm_PostalCodeLabel"]" />
+            </MudItem>
+            <MudItem xs="12" sm="3" md="3">
+                <MudTextField @bind-Value="_warehouseCity" Label="@Localizer["CompanyEditor_CityColumn"]" Variant="Variant.Outlined" Margin="Margin.Dense" />
+            </MudItem>
+            <MudItem xs="12" sm="4" md="3">
+                <MudSelect @bind-Value="_warehouseCountry" Label="@Localizer["PartnerForm_CountryLabel"]" Variant="Variant.Outlined" Margin="Margin.Dense">
+                    @foreach (var country in Countries.All)
+                    {
+                        <MudSelectItem T="string" Value="@country.Code">@country.Name</MudSelectItem>
+                    }
+                </MudSelect>
+            </MudItem>
+
+            <MudItem xs="12" sm="4" md="4">
+                <MudSwitch @bind-Value="_warehouseIsDefault" Color="Color.Primary" Label="@Localizer["CompanyEditor_WarehouseIsDefaultLabel"]" />
+                <MudText Typo="Typo.caption" Color="Color.Secondary">
+                    @Localizer["CompanyEditor_WarehouseIsDefaultHint"]
+                </MudText>
+            </MudItem>
+
+            @if (_warehouseId is not null)
+            {
+                <MudItem xs="12" sm="4" md="4">
+                    <MudSwitch @bind-Value="_warehouseIsActive" Color="Color.Primary" Label="@Localizer["CompanyEditor_WarehouseActiveLabel"]" />
+                </MudItem>
+            }
+        </MudGrid>
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="@(() => _warehouseOpen = false)">@Localizer["Common_CancelButton"]</MudButton>
+        <MudButton Variant="Variant.Filled" Color="Color.Primary"
+                   StartIcon="@Icons.Material.Filled.Save"
+                   Disabled="@(_savingWarehouse || !CanSaveWarehouse)"
+                   OnClick="SaveWarehouseAsync">
+            @Localizer["Common_SaveButton"]
+        </MudButton>
+    </DialogActions>
+</MudDialog>
+
+<SubscribePlanDialog @bind-Open="_subscribeDialogOpen" CompanyId="Company.SelectedCompanyId" Subscribed="OnSubscribedAsync" />
+
 @code {
     private bool _loading;
     private bool _saving;
@@ -223,10 +402,30 @@
 
     private bool _workingUsers;
     private List<UserCompanyAdmin> _memberships = [];
+    private List<CompanyInvitation> _invitations = [];
+    private bool _invitationsAvailable = true;
     private List<IdentityUser> _users = [];
+    private string _newUserEmail = string.Empty;
 
     private bool _workingWarehouses;
     private List<Warehouse> _warehouses = [];
+
+    private readonly DialogOptions _dialogOptions = new() { MaxWidth = MaxWidth.Medium, FullWidth = true };
+    private bool _warehouseOpen;
+    private bool _savingWarehouse;
+    private Guid? _warehouseId;
+    private string _warehouseCode = string.Empty;
+    private string _warehouseName = string.Empty;
+    private string _warehouseAddress = string.Empty;
+    private string _warehouseCity = string.Empty;
+    private string _warehousePostalCode = string.Empty;
+    private string _warehouseCountry = "PT";
+    private bool _warehouseIsDefault;
+    private bool _warehouseIsActive = true;
+
+    private bool _workingSubscriptions;
+    private List<CompanySubscription> _subscriptions = [];
+    private bool _subscribeDialogOpen;
 
     private bool _workingAt;
     private CompanyAtCredentialStatus? _atStatus;
@@ -235,6 +434,11 @@
 
     private bool CanSave =>
         !string.IsNullOrWhiteSpace(_name) && !string.IsNullOrWhiteSpace(_taxId);
+
+    private bool CanSaveWarehouse =>
+        !string.IsNullOrWhiteSpace(_warehouseCode)
+        && !string.IsNullOrWhiteSpace(_warehouseName)
+        && PostalCodes.IsValid(_warehousePostalCode, _warehouseCountry);
 
     protected override async Task OnInitializedAsync()
     {
@@ -282,6 +486,7 @@
 
             await LoadUsersAsync(companyId);
             await LoadWarehousesAsync(companyId);
+            await LoadSubscriptionsAsync(companyId);
             await LoadAtCredentialStatusAsync(companyId);
         }
         catch (Exception ex)
@@ -301,8 +506,16 @@
 
         try
         {
-            var (memberships, _) = await CoreApi.GetUserCompaniesAsync(companyId);
-            _memberships = [.. memberships];
+            var (members, error) = await CoreApi.GetCompanyMembersAsync(companyId);
+
+            if (members is null)
+                _error = string.Format(Localizer["CompanyEditor_LoadUsersError"], error);
+            else
+            {
+                _memberships = [.. members.Members];
+                _invitations = [.. members.Invitations];
+                _invitationsAvailable = members.InvitationsAvailable;
+            }
 
             var (users, _) = await IdentityApi.GetUsersAsync();
             _users = [.. users];
@@ -429,6 +642,217 @@
         {
             _saving = false;
         }
+    }
+
+    // --- Users ---
+
+    private async Task OnNewUserKeyDownAsync(KeyboardEventArgs args)
+    {
+        if (args.Key == "Enter" && !string.IsNullOrWhiteSpace(_newUserEmail))
+            await AddUserAsync();
+    }
+
+    private async Task AddUserAsync()
+    {
+        _workingUsers = true;
+        _error = null;
+
+        try
+        {
+            var email = _newUserEmail.Trim();
+
+            var (result, error) = await CoreApi.AddCompanyMemberAsync(
+                Company.SelectedCompanyId,
+                new AddCompanyMemberRequest(email, CultureInfo.CurrentUICulture.Name));
+
+            if (result is null)
+            {
+                _error = string.Format(Localizer["CompanySettings_AddUserError"], error);
+                return;
+            }
+
+            Snackbar.Add(
+                string.Format(
+                    result.Outcome == AddCompanyMemberOutcomes.Added
+                        ? Localizer["CompanySettings_UserAdded"]
+                        : Localizer["CompanySettings_UserInvited"],
+                    email),
+                Severity.Success);
+
+            _newUserEmail = string.Empty;
+        }
+        catch (Exception ex)
+        {
+            _error = string.Format(Localizer["CompanySettings_AddUserError"], ex.Message);
+        }
+        finally
+        {
+            _workingUsers = false;
+        }
+
+        await LoadUsersAsync(Company.SelectedCompanyId);
+    }
+
+    /// <summary>Sending the invitation again is adding the same email again: the host refreshes the pending request.</summary>
+    private async Task ResendInvitationAsync(CompanyInvitation invitation)
+    {
+        _newUserEmail = invitation.Email;
+        await AddUserAsync();
+    }
+
+    private async Task RemoveUserAsync(UserCompanyAdmin membership)
+    {
+        var confirmed = await DialogService.ShowMessageBox(
+            Localizer["CompanySettings_RemoveUserTitle"].Value,
+            string.Format(Localizer["CompanySettings_RemoveUserConfirm"], DescribeEmail(membership.UserId)),
+            yesText: Localizer["Common_DeleteButton"].Value,
+            cancelText: Localizer["Common_CancelButton"].Value);
+
+        if (confirmed != true)
+            return;
+
+        _error = null;
+
+        var error = await CoreApi.RemoveCompanyMemberAsync(Company.SelectedCompanyId, membership.Id);
+
+        if (error is not null)
+        {
+            _error = string.Format(Localizer["CompanySettings_RemoveUserError"], error);
+            return;
+        }
+
+        Snackbar.Add(Localizer["CompanySettings_UserRemoved"].Value, Severity.Success);
+        await LoadUsersAsync(Company.SelectedCompanyId);
+    }
+
+    private async Task CancelInvitationAsync(CompanyInvitation invitation)
+    {
+        _error = null;
+
+        var error = await CoreApi.CancelCompanyInvitationAsync(Company.SelectedCompanyId, invitation.Id);
+
+        if (error is not null)
+        {
+            _error = string.Format(Localizer["CompanySettings_RemoveUserError"], error);
+            return;
+        }
+
+        Snackbar.Add(Localizer["CompanySettings_InvitationCancelled"].Value, Severity.Success);
+        await LoadUsersAsync(Company.SelectedCompanyId);
+    }
+
+    // --- Warehouses ---
+
+    private void OnWarehousePostalCodeResolvedAsync(PostalCodeLookupResult result)
+    {
+        if (string.IsNullOrWhiteSpace(_warehouseCity))
+            _warehouseCity = result.Locality ?? result.Municipality ?? string.Empty;
+    }
+
+    private void OnWarehouseStreetSelectedAsync(string address) => _warehouseAddress = address;
+
+    /// <summary>Opens the dialog on an existing warehouse, or empty for a new one.</summary>
+    private void OpenWarehouse(Warehouse? warehouse)
+    {
+        _warehouseId = warehouse?.Id;
+        _warehouseCode = warehouse?.Code ?? string.Empty;
+        _warehouseName = warehouse?.Name ?? string.Empty;
+        _warehouseAddress = warehouse?.Address ?? string.Empty;
+        _warehouseCity = warehouse?.City ?? string.Empty;
+        _warehousePostalCode = warehouse?.PostalCode ?? string.Empty;
+        _warehouseCountry = string.IsNullOrWhiteSpace(warehouse?.Country) ? "PT" : warehouse.Country;
+        _warehouseIsDefault = warehouse?.IsDefault ?? _warehouses.Count == 0;
+        _warehouseIsActive = warehouse?.IsActive ?? true;
+        _warehouseOpen = true;
+    }
+
+    private async Task SaveWarehouseAsync()
+    {
+        _savingWarehouse = true;
+        _error = null;
+
+        try
+        {
+            var address = Trimmed(_warehouseAddress);
+            var city = Trimmed(_warehouseCity);
+            var postalCode = Trimmed(_warehousePostalCode);
+            var country = NormalizeCountry(_warehouseCountry);
+
+            var error = _warehouseId is { } id
+                ? await StockApi.UpdateWarehouseAsync(id, new UpdateWarehouseRequest(
+                    _warehouseName.Trim(), address, city, postalCode, country,
+                    _warehouseIsDefault, _warehouseIsActive))
+                : await StockApi.CreateWarehouseAsync(new CreateWarehouseRequest(
+                    Company.SelectedCompanyId, _warehouseCode.Trim(), _warehouseName.Trim(), address, city, postalCode,
+                    country, _warehouseIsDefault));
+
+            if (error is not null)
+            {
+                _error = error;
+                return;
+            }
+
+            Snackbar.Add(string.Format(Localizer["CompanyEditor_WarehouseSaved"], _warehouseCode), Severity.Success);
+            _warehouseOpen = false;
+            await LoadWarehousesAsync(Company.SelectedCompanyId);
+
+            // The header's warehouse picker reads from the same list.
+            await WarehouseSelection.RefreshAsync();
+        }
+        catch (Exception ex)
+        {
+            _error = string.Format(Localizer["CompanyEditor_SaveWarehouseError"], ex.Message);
+        }
+        finally
+        {
+            _savingWarehouse = false;
+        }
+    }
+
+    // --- Subscriptions ---
+
+    private async Task LoadSubscriptionsAsync(Guid companyId)
+    {
+        _workingSubscriptions = true;
+
+        try
+        {
+            var (subscriptions, error) = await CoreApi.GetAllCompanySubscriptionsAsync(companyId);
+            _subscriptions = [.. subscriptions.OrderByDescending(x => x.StartedAtUtc)];
+
+            if (error is not null)
+                _error = string.Format(Localizer["CompanySettings_LoadSubscriptionsError"], error);
+        }
+        catch (Exception ex)
+        {
+            _error = string.Format(Localizer["CompanySettings_LoadSubscriptionsError"], ex.Message);
+        }
+        finally
+        {
+            _workingSubscriptions = false;
+        }
+    }
+
+    private async Task OnSubscribedAsync()
+    {
+        await LoadSubscriptionsAsync(Company.SelectedCompanyId);
+        await Subscription.EnsureLoadedAsync(Company.SelectedCompanyId, force: true);
+    }
+
+    private static Color StatusColorFor(CompanySubscription subscription)
+    {
+        if (subscription.StartedAtUtc > DateTime.UtcNow)
+            return Color.Info;
+
+        return subscription.IsExpired ? Color.Error : Color.Success;
+    }
+
+    private LocalizedString StatusLabelFor(CompanySubscription subscription)
+    {
+        if (subscription.StartedAtUtc > DateTime.UtcNow)
+            return Localizer["Subscriptions_ScheduledStatus"];
+
+        return subscription.IsExpired ? Localizer["Subscriptions_ExpiredStatus"] : Localizer["Subscriptions_ActiveStatus"];
     }
 
     public void Dispose() => Company.Changed -= OnCompanyChanged;

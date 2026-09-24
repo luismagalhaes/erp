@@ -1,7 +1,10 @@
+using Erp.Dependencies.IdentityOnboarding;
 using Erp.Dependencies.PostalCodes;
 using Erp.Dependencies.VatNumbers;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
+using Microsoft.Extensions.Options;
 
 namespace Erp.Dependencies;
 
@@ -31,6 +34,25 @@ public static class DependencyInjection
         {
             httpClient.BaseAddress = new Uri(vatNumberValidationBaseAddress);
         });
+
+        // The Identity host, reached on this API's own behalf (client credentials, as the erp-api
+        // client, configured under ErpApiClient) to look people up
+        // and invite them to a company.
+        services.Configure<IdentityServiceOptions>(configuration.GetSection(IdentityServiceOptions.SectionName));
+
+        services.TryAddSingleton(TimeProvider.System);
+        services.AddHttpClient(IdentityServiceTokenProvider.HttpClientName);
+        services.AddSingleton<IdentityServiceTokenProvider>();
+        services.AddTransient<IdentityServiceTokenHandler>();
+
+        services.AddHttpClient<IIdentityOnboardingClient, IdentityOnboardingClient>((serviceProvider, httpClient) =>
+            {
+                var options = serviceProvider.GetRequiredService<IOptions<IdentityServiceOptions>>().Value;
+
+                if (!string.IsNullOrWhiteSpace(options.Authority))
+                    httpClient.BaseAddress = new Uri(options.Authority.TrimEnd('/') + "/");
+            })
+            .AddHttpMessageHandler<IdentityServiceTokenHandler>();
 
         return services;
     }

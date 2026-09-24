@@ -45,12 +45,16 @@ builder.Services.AddErpDependencies(builder.Configuration);
 // asked for — see its own doc comment for why that check cannot live in the database layer.
 // TenantAwareNotFoundFilter covers what that one cannot: a {id:guid} action carries no companyId
 // of its own to check before running, so it turns an already-safe 404 (the tenant filter already
-// hid the row) into an explicit 403 when the row exists for another company.
+// hid the row) into an explicit 403 when the row exists for another company. RequireActiveSubscriptionFilter
+// runs last, after the caller is known to belong to the company: it refuses every write action
+// (POST/PUT/PATCH/DELETE) for a company with no active subscription — see its own doc comment for
+// the handful of endpoints exempted from it.
 builder.Services.AddControllers(options =>
     {
         options.Filters.Add<RequestLoggingFilter>();
         options.Filters.Add<RequireCompanyAccessFilter>();
         options.Filters.Add<TenantAwareNotFoundFilter>();
+        options.Filters.Add<RequireActiveSubscriptionFilter>();
     })
     .AddOData(options => options
         .Select()

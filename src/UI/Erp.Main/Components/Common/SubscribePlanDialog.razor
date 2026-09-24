@@ -1,0 +1,139 @@
+@* A company subscribing itself to a plan, no admin involved — this is what the expired/missing
+   subscription alerts (Dashboard, MainLayout banner) open so a customer is never stuck waiting
+   on a SuperAdmin just to keep saving data. *@
+@using MudBlazor
+@using Erp.Main.Models.Core
+@using Erp.Main.Resources
+@using Erp.Main.Services
+@using Microsoft.Extensions.Localization
+@inject CoreApiClient CoreApi
+@inject ISnackbar Snackbar
+@inject IStringLocalizer<MainResources> L
+
+<MudDialog Visible="Open" VisibleChanged="OnVisibleChangedAsync" Options="_dialogOptions">
+    <TitleContent>
+        <MudText Typo="Typo.h6">@L["SubscribeDialog_Title"]</MudText>
+    </TitleContent>
+    <DialogContent>
+        @if (!string.IsNullOrWhiteSpace(_error))
+        {
+            <MudAlert Severity="Severity.Error" Dense="true" Class="mb-3">@_error</MudAlert>
+        }
+
+        @if (_loading)
+        {
+            <MudProgressLinear Indeterminate="true" Color="Color.Primary" />
+        }
+        else if (_plans.Count == 0)
+        {
+            <MudAlert Severity="Severity.Warning">@L["Onboarding_NoPlansWarning"]</MudAlert>
+        }
+        else
+        {
+            <MudStack Spacing="3">
+                @foreach (var plan in _plans)
+                {
+                    <MudPaper Outlined="true" Class="@("pa-3 " + (plan.Id == _planId ? "erp-selected-plan" : string.Empty))">
+                        <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center">
+                            <MudStack Spacing="0">
+                                <MudText Typo="Typo.subtitle1">@plan.Name</MudText>
+                                <MudText Typo="Typo.body2" Color="Color.Secondary">@plan.Price.ToString("N2") €</MudText>
+                            </MudStack>
+                            <MudButton Variant="@(plan.Id == _planId ? Variant.Filled : Variant.Outlined)" Color="Color.Primary"
+                                       OnClick="@(() => _planId = plan.Id)">
+                                @L["Onboarding_SelectPlanButton"]
+                            </MudButton>
+                        </MudStack>
+                    </MudPaper>
+                }
+            </MudStack>
+        }
+    </DialogContent>
+    <DialogActions>
+        <MudButton Variant="Variant.Text" OnClick="@(() => OnVisibleChangedAsync(false))">@L["Common_CancelButton"]</MudButton>
+        <MudButton Variant="Variant.Filled" Color="Color.Primary" Disabled="@(_saving || _planId == Guid.Empty)"
+                   OnClick="SubscribeAsync">
+            @L["SubscribeDialog_ConfirmButton"]
+        </MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [Parameter] public bool Open { get; set; }
+
+    [Parameter] public EventCallback<bool> OpenChanged { get; set; }
+
+    [Parameter] public Guid CompanyId { get; set; }
+
+    /// <summary>Raised once the company has been put on the plan chosen; the dialog closes itself before this fires.</summary>
+    [Parameter] public EventCallback Subscribed { get; set; }
+
+    private readonly DialogOptions _dialogOptions = new() { MaxWidth = MaxWidth.Small, FullWidth = true };
+
+    private List<SubscriptionPlan> _plans = [];
+    private Guid _planId;
+    private bool _previousOpen;
+    private bool _loading;
+    private bool _saving;
+    private string? _error;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (Open && !_previousOpen)
+            await LoadPlansAsync();
+
+        _previousOpen = Open;
+    }
+
+    private async Task LoadPlansAsync()
+    {
+        _loading = true;
+        _error = null;
+        _planId = Guid.Empty;
+
+        try
+        {
+            var (plans, error) = await CoreApi.GetSubscriptionPlansAsync(activeOnly: true);
+            _plans = [.. plans];
+            _error = error;
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private async Task SubscribeAsync()
+    {
+        if (_planId == Guid.Empty)
+            return;
+
+        _saving = true;
+        _error = null;
+
+        try
+        {
+            var error = await CoreApi.SelfServiceSubscribeAsync(CompanyId, _planId);
+
+            if (error is not null)
+            {
+                _error = error;
+                return;
+            }
+
+            Snackbar.Add(L["SubscribeDialog_Success"].Value, Severity.Success);
+            await OnVisibleChangedAsync(false);
+            await Subscribed.InvokeAsync();
+        }
+        finally
+        {
+            _saving = false;
+        }
+    }
+
+    private async Task OnVisibleChangedAsync(bool visible)
+    {
+        Open = visible;
+        await OpenChanged.InvokeAsync(visible);
+    }
+}

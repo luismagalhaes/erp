@@ -287,11 +287,23 @@
   <data name="Subscriptions_StatusColumn" xml:space="preserve"><value>Estado</value></data>
   <data name="Subscriptions_ActiveStatus" xml:space="preserve"><value>Ativa</value></data>
   <data name="Subscriptions_ExpiredStatus" xml:space="preserve"><value>Expirada</value></data>
+  <data name="Subscriptions_ScheduledStatus" xml:space="preserve"><value>Agendada</value></data>
   <data name="Subscriptions_ChangeAction" xml:space="preserve"><value>Mudar de pacote</value></data>
   <data name="Subscriptions_ChangeTitle" xml:space="preserve"><value>Mudar o pacote de {0}</value></data>
   <data name="Subscriptions_ChangeHint" xml:space="preserve"><value>As datas ficam em branco para serem calculadas a partir do pacote escolhido.</value></data>
   <data name="Subscriptions_Changed" xml:space="preserve"><value>Subscrição atualizada.</value></data>
-  <data name="Subscription_ExpiredWarning" xml:space="preserve"><value>A subscrição {0} expirou em {1}. Contacte-nos para escolher um novo pacote.</value></data>
+  <data name="Subscriptions_PlanPlaceholder" xml:space="preserve"><value>Escolha um pacote</value></data>
+  <data name="Subscriptions_DeleteHeading" xml:space="preserve"><value>Remover subscrição</value></data>
+  <data name="Subscriptions_DeleteConfirm" xml:space="preserve"><value>Tem a certeza que quer remover o pacote "{0}"? Esta ação não pode ser desfeita.</value></data>
+  <data name="Subscriptions_Deleted" xml:space="preserve"><value>Subscrição removida.</value></data>
+  <data name="Subscription_ExpiredWarning" xml:space="preserve"><value>A subscrição {0} expirou em {1}. Subscreva um novo pacote para continuar a gravar dados.</value></data>
+  <data name="Dashboard_NoSubscriptionAlert" xml:space="preserve"><value>Esta empresa ainda não tem uma subscrição. Subscreva um pacote para poder continuar a gravar dados.</value></data>
+  <data name="Dashboard_ExpiredSubscriptionAlert" xml:space="preserve"><value>A subscrição {0} expirou em {1}. Subscreva um novo pacote para continuar a gravar dados.</value></data>
+  <data name="Dashboard_FreeSubscriptionWarning" xml:space="preserve"><value>Está a usar um pacote gratuito com tempo limitado, válido até {0}. Subscreva um pacote pago antes dessa data para não perder o acesso.</value></data>
+  <data name="SubscribeDialog_OpenButton" xml:space="preserve"><value>Subscrever pacote</value></data>
+  <data name="SubscribeDialog_Title" xml:space="preserve"><value>Escolher um pacote</value></data>
+  <data name="SubscribeDialog_ConfirmButton" xml:space="preserve"><value>Subscrever</value></data>
+  <data name="SubscribeDialog_Success" xml:space="preserve"><value>Subscrição efetuada com sucesso.</value></data>
 
   <data name="Onboarding_PageTitle" xml:space="preserve"><value>Começar</value></data>
   <data name="Onboarding_HeaderTitle" xml:space="preserve"><value>Bem-vindo</value></data>
@@ -353,6 +365,11 @@
   <data name="CompanyEditor_AtTabDescription" xml:space="preserve"><value>Subutilizador WDT que esta empresa criou no Portal das Finanças, usado para comunicar guias de transporte à AT. Cada empresa tem o seu — não é partilhado com as outras.</value></data>
   <data name="CompanyEditor_AtCredentialsRegistered" xml:space="preserve"><value>Credenciais registadas para o subutilizador {0}, atualizadas em {1}</value></data>
   <data name="CompanyEditor_AtCredentialsMissing" xml:space="preserve"><value>Esta empresa ainda não tem credenciais AT configuradas. As guias de transporte não podem ser comunicadas até isto ser preenchido.</value></data>
+  <data name="CompanyEditor_SubscriptionTab" xml:space="preserve"><value>Subscrição</value></data>
+  <data name="CompanyEditor_SubscriptionTabDisabledHint" xml:space="preserve"><value>Guarde a empresa antes de gerir a subscrição</value></data>
+  <data name="CompanyEditor_SubscriptionTabDescription" xml:space="preserve"><value>O pacote em que esta empresa está, e até quando. Não há nenhuma passarela de pagamento por trás disto: mudar o pacote aqui é apenas registar que a empresa passou para outro.</value></data>
+  <data name="CompanyEditor_NoSubscriptionMessage" xml:space="preserve"><value>Esta empresa ainda não foi colocada em nenhum pacote.</value></data>
+  <data name="CompanyEditor_LoadSubscriptionError" xml:space="preserve"><value>Não foi possível carregar a subscrição: {0}</value></data>
   <data name="CompanyEditor_AtSubUserIdLabel" xml:space="preserve"><value>Número do subutilizador</value></data>
   <data name="CompanyEditor_AtSubUserIdHelperText" xml:space="preserve"><value>Só o número, sem o NIF nem a barra — o NIF já é o da empresa acima. Por exemplo "1", não "{NIF}/1"</value></data>
   <data name="CompanyEditor_AtPasswordLabel" xml:space="preserve"><value>Senha do subutilizador</value></data>
@@ -2110,4 +2127,25 @@
   <data name="PaymentMethods_MissingWarning" xml:space="preserve"><value>Os meios somam {0} de {1}: faltam {2}.</value></data>
   <data name="PaymentMethods_ExcessWarning" xml:space="preserve"><value>Os meios somam {0} de {1}: são mais {2} do que o documento.</value></data>
   <data name="PaymentMethods_SettleRemainderButton" xml:space="preserve"><value>Acertar diferença</value></data>
+  <data name="CompanySettings_UsersDescription" xml:space="preserve"><value>Quem tem acesso a esta empresa. Se o email já tem conta, a pessoa é associada de imediato; caso contrário recebe um convite por email para se registar.</value></data>
+  <data name="CompanySettings_UserEmailLabel" xml:space="preserve"><value>Email da pessoa a adicionar</value></data>
+  <data name="CompanySettings_AddUserButton" xml:space="preserve"><value>Adicionar</value></data>
+  <data name="CompanySettings_UserAdded" xml:space="preserve"><value>{0} foi associado à empresa.</value></data>
+  <data name="CompanySettings_UserInvited" xml:space="preserve"><value>Foi enviado um convite para {0}. A pessoa fica associada à empresa quando se registar.</value></data>
+  <data name="CompanySettings_AddUserError" xml:space="preserve"><value>Não foi possível adicionar o utilizador: {0}</value></data>
+  <data name="CompanySettings_RemoveUserTitle" xml:space="preserve"><value>Remover da empresa</value></data>
+  <data name="CompanySettings_RemoveUserConfirm" xml:space="preserve"><value>Remover {0} da empresa? Deixa de ter acesso aos seus dados.</value></data>
+  <data name="CompanySettings_UserRemoved" xml:space="preserve"><value>Utilizador removido da empresa.</value></data>
+  <data name="CompanySettings_RemoveUserError" xml:space="preserve"><value>Não foi possível remover o utilizador: {0}</value></data>
+  <data name="CompanySettings_PendingInvitationsTitle" xml:space="preserve"><value>Convites pendentes</value></data>
+  <data name="CompanySettings_PendingInvitationsHint" xml:space="preserve"><value>Pessoas convidadas que ainda não se registaram.</value></data>
+  <data name="CompanySettings_InvitedByColumn" xml:space="preserve"><value>Convidado por</value></data>
+  <data name="CompanySettings_LastSentColumn" xml:space="preserve"><value>Último envio</value></data>
+  <data name="CompanySettings_ResendInvitationTitle" xml:space="preserve"><value>Reenviar convite</value></data>
+  <data name="CompanySettings_CancelInvitationTitle" xml:space="preserve"><value>Cancelar convite</value></data>
+  <data name="CompanySettings_InvitationCancelled" xml:space="preserve"><value>Convite cancelado.</value></data>
+  <data name="CompanySettings_InvitationsUnavailable" xml:space="preserve"><value>Não foi possível consultar os convites pendentes neste momento.</value></data>
+  <data name="CompanySettings_SubscriptionsDescription" xml:space="preserve"><value>Os pacotes desta empresa: em curso, agendados e já expirados.</value></data>
+  <data name="CompanySettings_LoadSubscriptionsError" xml:space="preserve"><value>Não foi possível carregar as subscrições: {0}</value></data>
+  <data name="CompanySettings_WarehousesDescription" xml:space="preserve"><value>Os armazéns onde o stock desta empresa é mantido.</value></data>
 </root>

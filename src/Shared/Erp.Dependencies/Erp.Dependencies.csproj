@@ -13,4 +13,9 @@
 	<PackageReference Include="Microsoft.Extensions.Http" Version="10.*" />
   </ItemGroup>
 
+  <ItemGroup>
+	<!-- For the scope the service token asks for (Constants.Scopes). -->
+	<ProjectReference Include="..\Erp.Common\Erp.Common.csproj" />
+  </ItemGroup>
+
 </Project>

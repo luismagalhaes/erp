@@ -1,15 +1,56 @@
 @page "/"
+@implements IDisposable
 @attribute [Authorize]
 @using Microsoft.AspNetCore.Authorization
 @using Microsoft.AspNetCore.Components.Web
 @using Microsoft.Extensions.Localization
 @using MudBlazor
+@using Erp.Main.Models.Core
 @using Erp.Main.Resources
+@using Erp.Main.Services
+@using Erp.Main.Components.Common
+@inject CompanyState Company
+@inject SubscriptionState Subscription
 @inject IStringLocalizer<MainResources> Localizer
 
 <PageTitle>@Localizer["Dashboard_PageTitle"]</PageTitle>
 
 <MudText Typo="Typo.h4" Class="mb-4">@Localizer["Dashboard_Heading"]</MudText>
+
+@if (Subscription.Current is null || Subscription.IsExpired)
+{
+    <MudAlert Severity="Severity.Error" Dense="true" Class="mb-4" Icon="@Icons.Material.Filled.ErrorOutline">
+        <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center">
+            <MudText>
+                @(Subscription.Current is null
+                    ? Localizer["Dashboard_NoSubscriptionAlert"]
+                    : string.Format(Localizer["Dashboard_ExpiredSubscriptionAlert"].Value,
+                        Subscription.Current.PlanName,
+                        Subscription.Current.ExpiresAtUtc.ToLocalTime().ToString("yyyy-MM-dd")))
+            </MudText>
+            <MudButton Variant="Variant.Filled" Color="Color.Error" Size="Size.Small" OnClick="@(() => _subscribeDialogOpen = true)">
+                @Localizer["SubscribeDialog_OpenButton"]
+            </MudButton>
+        </MudStack>
+    </MudAlert>
+}
+else if (Subscription.Current.BillingPeriod == BillingPeriods.Trial)
+{
+    <MudAlert Severity="Severity.Warning" Dense="true" Class="mb-4" Icon="@Icons.Material.Filled.HourglassTop">
+        <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center">
+            <MudText>
+                @string.Format(
+                    Localizer["Dashboard_FreeSubscriptionWarning"].Value,
+                    Subscription.Current.ExpiresAtUtc.ToLocalTime().ToString("yyyy-MM-dd"))
+            </MudText>
+            <MudButton Variant="Variant.Filled" Color="Color.Warning" Size="Size.Small" OnClick="@(() => _subscribeDialogOpen = true)">
+                @Localizer["SubscribeDialog_OpenButton"]
+            </MudButton>
+        </MudStack>
+    </MudAlert>
+}
+
+<SubscribePlanDialog @bind-Open="_subscribeDialogOpen" CompanyId="Company.SelectedCompanyId" Subscribed="OnSubscribedAsync" />
 
 <MudGrid>
     <MudItem xs="12" sm="6" md="3">
@@ -57,3 +98,20 @@
         </MudPaper>
     </MudItem>
 </MudGrid>
+
+@code {
+    private bool _subscribeDialogOpen;
+
+    protected override async Task OnInitializedAsync()
+    {
+        Subscription.Changed += OnSubscriptionChanged;
+        await Company.EnsureLoadedAsync();
+        await Subscription.EnsureLoadedAsync(Company.SelectedCompanyId);
+    }
+
+    private void OnSubscriptionChanged() => InvokeAsync(StateHasChanged);
+
+    private async Task OnSubscribedAsync() => await Subscription.EnsureLoadedAsync(Company.SelectedCompanyId, force: true);
+
+    public void Dispose() => Subscription.Changed -= OnSubscriptionChanged;
+}

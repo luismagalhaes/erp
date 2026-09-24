@@ -167,6 +167,17 @@ public sealed class CompaniesController(
     private string? GetCurrentUserId() =>
         User.FindFirstValue(Constants.Claims.Subject) ?? User.FindFirstValue(ClaimTypes.NameIdentifier);
 
+    /// <summary>A SuperAdmin, or a member of the company: the same reach <see cref="Update"/> grants.</summary>
+    private async Task<bool> CanManageCompanyAsync(Guid companyId, CancellationToken cancellationToken)
+    {
+        if (User.IsInRole(Constants.Roles.SuperAdmin))
+            return true;
+
+        var userId = GetCurrentUserId();
+        return !string.IsNullOrWhiteSpace(userId)
+            && await userCompanyService.CanAccessCompanyAsync(userId, companyId, cancellationToken);
+    }
+
     /// <summary>
     /// Updates a company. A SuperAdmin can update any company; a regular user can only update the
     /// company they belong to \u2014 they cannot create a new one, that stays SuperAdmin-only.
@@ -221,22 +232,30 @@ public sealed class CompaniesController(
     public async Task<ActionResult<CompanyAtCredentialStatus>> GetAtCredentialStatus(
         Guid id, CancellationToken cancellationToken)
     {
+        if (!await CanManageCompanyAsync(id, cancellationToken))
+            return Forbid();
+
         var status = await companyAtCredentialService.GetStatusAsync(id, cancellationToken);
         return status is null ? NotFound() : Ok(status);
     }
 
     /// <summary>
     /// Registers or replaces the company's WDT subutilizador. Write-only: the password is never
-    /// returned by this or any other endpoint once saved.
+    /// returned by this or any other endpoint once saved. A SuperAdmin or any member of the company
+    /// may set it: they are the ones who hold the credential at the Portal das Finanças.
     /// </summary>
     [HttpPut("{id:guid}/at-credentials")]
-    [Authorize(Policy = Policies.Admin)]
+    [Authorize(Policy = Policies.Write)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> SetAtCredentials(
         Guid id, [FromBody] SetCompanyAtCredentialsRequest request, CancellationToken cancellationToken)
     {
+        if (!await CanManageCompanyAsync(id, cancellationToken))
+            return Forbid();
+
         if (string.IsNullOrWhiteSpace(request?.SubUserId) || string.IsNullOrWhiteSpace(request.Password))
             return BadRequest(new { error = "SubUserId and Password are required." });
 

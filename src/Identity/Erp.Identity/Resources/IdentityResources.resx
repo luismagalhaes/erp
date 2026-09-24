@@ -1014,4 +1014,67 @@
   <data name="Backoffice_Clients_Deleted" xml:space="preserve">
     <value>Cliente eliminado.</value>
   </data>
+  <data name="NavMenu_OnboardingRequests" xml:space="preserve">
+    <value>Pedidos de Onboarding</value>
+  </data>
+  <data name="Backoffice_OnboardingRequests_PageTitle" xml:space="preserve">
+    <value>Pedidos de Onboarding</value>
+  </data>
+  <data name="Backoffice_OnboardingRequests_PageDescription" xml:space="preserve">
+    <value>Convites enviados pelas empresas a pessoas que ainda não têm conta.</value>
+  </data>
+  <data name="Backoffice_OnboardingRequests_ItemsLabel" xml:space="preserve">
+    <value>pedidos</value>
+  </data>
+  <data name="Backoffice_OnboardingRequests_EmailColumn" xml:space="preserve">
+    <value>Email convidado</value>
+  </data>
+  <data name="Backoffice_OnboardingRequests_CompanyColumn" xml:space="preserve">
+    <value>Empresa</value>
+  </data>
+  <data name="Backoffice_OnboardingRequests_RoleColumn" xml:space="preserve">
+    <value>Perfil</value>
+  </data>
+  <data name="Backoffice_OnboardingRequests_InvitedByColumn" xml:space="preserve">
+    <value>Convidado por</value>
+  </data>
+  <data name="Backoffice_OnboardingRequests_StatusColumn" xml:space="preserve">
+    <value>Estado</value>
+  </data>
+  <data name="Backoffice_OnboardingRequests_CreatedColumn" xml:space="preserve">
+    <value>Criado em</value>
+  </data>
+  <data name="Backoffice_OnboardingRequests_LastSentColumn" xml:space="preserve">
+    <value>Último envio</value>
+  </data>
+  <data name="Backoffice_OnboardingRequests_Pending" xml:space="preserve">
+    <value>Pendente</value>
+  </data>
+  <data name="Backoffice_OnboardingRequests_Completed" xml:space="preserve">
+    <value>Concluído</value>
+  </data>
+  <data name="Backoffice_OnboardingRequests_Cancelled" xml:space="preserve">
+    <value>Cancelado</value>
+  </data>
+  <data name="Backoffice_OnboardingRequests_CancelAction" xml:space="preserve">
+    <value>Cancelar pedido</value>
+  </data>
+  <data name="Backoffice_OnboardingRequests_Cancelled_Message" xml:space="preserve">
+    <value>Pedido cancelado.</value>
+  </data>
+  <data name="Onboarding_Email_Subject" xml:space="preserve">
+    <value>Foi convidado para a empresa {0} no ERP</value>
+  </data>
+  <data name="Onboarding_Email_Greeting" xml:space="preserve">
+    <value>Olá,</value>
+  </data>
+  <data name="Onboarding_Email_Body" xml:space="preserve">
+    <value>{0} convidou-o para aceder à empresa {1} no ERP. Crie a sua conta com este email para aceitar o convite.</value>
+  </data>
+  <data name="Onboarding_Email_InviterFallback" xml:space="preserve">
+    <value>Um colega</value>
+  </data>
+  <data name="Onboarding_Email_Link" xml:space="preserve">
+    <value>Criar conta</value>
+  </data>
 </root>

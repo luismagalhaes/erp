@@ -1,3 +1,5 @@
+using Erp.Common;
+
 namespace Erp.Core.Domain;
 
 /// <summary>How the fee is worked out: a flat amount per unit sold, or an amount per kilogram of
@@ -16,6 +18,7 @@ public enum EcoFeeCalculationBasis
 /// VAT like any other line, marked <c>IsEcoFee</c> and built straight from <see cref="Code"/>,
 /// <see cref="Description"/> and <see cref="Rate"/> — it needs no catalog article of its own.
 /// </summary>
+[SurvivesCompanyReset]
 public sealed class EcoFeeType
 {
     public Guid Id { get; set; } = Guid.NewGuid();

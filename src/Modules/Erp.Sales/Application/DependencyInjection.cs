@@ -18,6 +18,7 @@ public static class DependencyInjection
         services.AddScoped<IPaymentService, PaymentService>();
         services.AddScoped<ICustomerStatementService, CustomerStatementService>();
         services.AddScoped<ISaftSummaryService, SaftSummaryService>();
+        services.AddScoped<ISalesAnalyticsService, SalesAnalyticsService>();
 
         // What this module puts into the billing SAF-T. Registered as one source among however
         // many there turn out to be.

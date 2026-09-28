@@ -1,3 +1,5 @@
+using Erp.Common;
+
 namespace Erp.Core.Domain;
 
 /// <summary>
@@ -5,6 +7,7 @@ namespace Erp.Core.Domain;
 /// warehouse, Sales ships from one and Purchasing receives into one. Modules refer to it by id
 /// without a physical foreign key, the same way they refer to the company.
 /// </summary>
+[SurvivesCompanyReset]
 public sealed class Warehouse
 {
     public Guid Id { get; set; } = Guid.NewGuid();

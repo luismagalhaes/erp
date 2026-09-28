@@ -171,6 +171,24 @@ builder.Services.AddHttpClient<IdentityApiClient>(client =>
 builder.Services.ConfigureAll<Microsoft.Extensions.Http.HttpClientFactoryOptions>(options =>
     options.HttpClientActions.Add(client => client.Timeout = TimeSpan.FromSeconds(20)));
 
+// Registered after the default above on purpose: the actions run in registration order, and an
+// answer that has the model reading several figures takes far longer than a page load, so this
+// client's own timeout has to be the one that stays.
+builder.Services.AddHttpClient<AssistantApiClient>(client =>
+    {
+        client.BaseAddress = apiBaseAddress;
+        client.Timeout = TimeSpan.FromSeconds(120);
+    })
+    .AddUserAccessTokenHandler();
+
+// Same reason: issuing two years of demo documents is a request of many seconds.
+builder.Services.AddHttpClient<DemoHistoryApiClient>(client =>
+    {
+        client.BaseAddress = apiBaseAddress;
+        client.Timeout = TimeSpan.FromMinutes(5);
+    })
+    .AddUserAccessTokenHandler();
+
 // Company currently selected in the header, shared by every page of the circuit.
 builder.Services.AddScoped<CompanyState>();
 builder.Services.AddScoped<WarehouseState>();

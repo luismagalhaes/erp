@@ -12,6 +12,8 @@
 @using Erp.Main.Resources
 @using Erp.Main.Services
 @inject CoreApiClient CoreApi
+@inject DemoHistoryApiClient DemoHistoryApi
+@inject IWebHostEnvironment HostEnvironment
 @inject IdentityApiClient IdentityApi
 @inject StockApiClient StockApi
 @inject LookupApiClient Lookups
@@ -42,6 +44,22 @@
                                OnClick="ApplyDemoDataAsync">
                         @Localizer["CompanyEditor_ApplyDemoDataButton"]
                     </MudButton>
+                    <MudButton Variant="Variant.Outlined" Color="Color.Secondary"
+                               StartIcon="@Icons.Material.Filled.History"
+                               Disabled="@_applyingDemoHistory"
+                               OnClick="ApplyDemoHistoryAsync">
+                        @Localizer["CompanyEditor_ApplyDemoHistoryButton"]
+                    </MudButton>
+                    @if (HostEnvironment.IsDevelopment())
+                    {
+                        @* Wiping issued fiscal documents is a development tool: the API refuses it anywhere else. *@
+                        <MudButton Variant="Variant.Outlined" Color="Color.Error"
+                                   StartIcon="@Icons.Material.Filled.DeleteForever"
+                                   Disabled="@_purgingData"
+                                   OnClick="PurgeDataAsync">
+                            @Localizer["CompanyEditor_PurgeDataButton"]
+                        </MudButton>
+                    }
                 </AuthorizeView>
             }
             <MudButton Variant="Variant.Text" StartIcon="@Icons.Material.Filled.ArrowBack"
@@ -573,6 +591,70 @@
         finally
         {
             _applyingDemoData = false;
+        }
+    }
+
+    private bool _applyingDemoHistory;
+    private bool _purgingData;
+
+    private async Task PurgeDataAsync()
+    {
+        var confirmed = await DialogService.ShowMessageBox(
+            Localizer["CompanyEditor_PurgeDataButton"].Value,
+            string.Format(Localizer["CompanyEditor_PurgeDataConfirm"], _name),
+            yesText: Localizer["CompanyEditor_PurgeDataConfirmYes"].Value,
+            cancelText: Localizer["Common_CancelButton"].Value);
+
+        if (confirmed != true)
+            return;
+
+        _purgingData = true;
+
+        try
+        {
+            var (rows, error) = await DemoHistoryApi.PurgeAsync(Id!.Value, _taxId);
+
+            Snackbar.Add(
+                error ?? string.Format(Localizer["CompanyEditor_PurgeDataDone"], rows),
+                error is null ? Severity.Success : Severity.Error);
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add(string.Format(Localizer["CompanyEditor_PurgeDataError"], ex.Message), Severity.Error);
+        }
+        finally
+        {
+            _purgingData = false;
+        }
+    }
+
+    private async Task ApplyDemoHistoryAsync()
+    {
+        _applyingDemoHistory = true;
+
+        try
+        {
+            var (result, error) = await DemoHistoryApi.ApplyAsync(Id!.Value);
+
+            if (error is not null)
+            {
+                Snackbar.Add(error, Severity.Error);
+                return;
+            }
+
+            Snackbar.Add(
+                result is { Applied: true }
+                    ? string.Format(Localizer["CompanyEditor_DemoHistoryApplied"], result.Invoices, result.CreditNotes, result.PurchaseInvoices)
+                    : Localizer["CompanyEditor_DemoHistoryAlreadyApplied"].Value,
+                Severity.Success);
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add(string.Format(Localizer["CompanyEditor_DemoHistoryError"], ex.Message), Severity.Error);
+        }
+        finally
+        {
+            _applyingDemoHistory = false;
         }
     }
 

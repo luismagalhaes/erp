@@ -1,3 +1,5 @@
+using Erp.Common;
+
 namespace Erp.Core.Domain;
 
 /// <summary>
@@ -5,6 +7,7 @@ namespace Erp.Core.Domain;
 /// replaces it, there is no history kept of past plans (no payment gateway sits behind this; a
 /// SuperAdmin or the company's own owner just records which plan applies and until when).
 /// </summary>
+[SurvivesCompanyReset]
 public sealed class CompanySubscription
 {
     public Guid Id { get; set; } = Guid.NewGuid();

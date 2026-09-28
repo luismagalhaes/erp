@@ -345,6 +345,15 @@
   <data name="CompanyEditor_DemoDataApplied" xml:space="preserve"><value>Demo data created: {0} products and {1} series communicated.</value></data>
   <data name="CompanyEditor_DemoDataAlreadyApplied" xml:space="preserve"><value>This company already has demo data applied.</value></data>
   <data name="CompanyEditor_DemoDataError" xml:space="preserve"><value>Could not apply demo data: {0}</value></data>
+  <data name="CompanyEditor_ApplyDemoHistoryButton" xml:space="preserve"><value>Generate history (2 years)</value></data>
+  <data name="CompanyEditor_DemoHistoryApplied" xml:space="preserve"><value>History created: {0} invoices, {1} credit notes and {2} purchase invoices.</value></data>
+  <data name="CompanyEditor_DemoHistoryAlreadyApplied" xml:space="preserve"><value>This company already has the demo history.</value></data>
+  <data name="CompanyEditor_PurgeDataButton" xml:space="preserve"><value>Wipe company data</value></data>
+  <data name="CompanyEditor_PurgeDataConfirm" xml:space="preserve"><value>Delete ALL data of {0}: invoices, purchases, stock, products, customers, suppliers and series. The company, its users, warehouses and subscription stay. This cannot be undone.</value></data>
+  <data name="CompanyEditor_PurgeDataConfirmYes" xml:space="preserve"><value>Delete everything</value></data>
+  <data name="CompanyEditor_PurgeDataDone" xml:space="preserve"><value>Data deleted: {0} rows. You can apply the demo and generate the history again.</value></data>
+  <data name="CompanyEditor_PurgeDataError" xml:space="preserve"><value>Could not wipe the data: {0}</value></data>
+  <data name="CompanyEditor_DemoHistoryError" xml:space="preserve"><value>Could not generate the history: {0}</value></data>
   <data name="CompanyEditor_UsersTab" xml:space="preserve"><value>Users</value></data>
   <data name="CompanyEditor_UsersTabDisabledHint" xml:space="preserve"><value>Save the company before assigning users</value></data>
   <data name="CompanyEditor_UsersTabDescription" xml:space="preserve"><value>Who has access to this company. This list feeds the company selector in the header.</value></data>
@@ -2148,4 +2157,20 @@
   <data name="CompanySettings_SubscriptionsDescription" xml:space="preserve"><value>This company's plans: running, scheduled and expired.</value></data>
   <data name="CompanySettings_LoadSubscriptionsError" xml:space="preserve"><value>Could not load the subscriptions: {0}</value></data>
   <data name="CompanySettings_WarehousesDescription" xml:space="preserve"><value>The warehouses where this company's stock is kept.</value></data>
+  <data name="Assistant_Title" xml:space="preserve"><value>Assistant</value></data>
+  <data name="Assistant_Open" xml:space="preserve"><value>Open the assistant</value></data>
+  <data name="Assistant_Close" xml:space="preserve"><value>Close</value></data>
+  <data name="Assistant_Clear" xml:space="preserve"><value>New conversation</value></data>
+  <data name="Assistant_Welcome" xml:space="preserve"><value>Hi! I can analyse the company's sales: compare months, compare them with the previous year or suggest how to sell more.</value></data>
+  <data name="Assistant_Placeholder" xml:space="preserve"><value>Ask about your sales…</value></data>
+  <data name="Assistant_Send" xml:space="preserve"><value>Send</value></data>
+  <data name="Assistant_Thinking" xml:space="preserve"><value>Analysing the data…</value></data>
+  <data name="Assistant_Disclaimer" xml:space="preserve"><value>AI generated answers based on issued sales. Check important figures against the documents.</value></data>
+  <data name="Assistant_Suggestion_YearOverYear" xml:space="preserve"><value>Compare this year's sales with last year's</value></data>
+  <data name="Assistant_Suggestion_WeakMonths" xml:space="preserve"><value>Which months sold less than last year?</value></data>
+  <data name="Assistant_Suggestion_TopCustomers" xml:space="preserve"><value>Who are my best customers this year?</value></data>
+  <data name="Assistant_Suggestion_SellMore" xml:space="preserve"><value>How can I sell more?</value></data>
+  <data name="Assistant_NotConfigured" xml:space="preserve"><value>The assistant is not enabled yet. Ask the administrator to set it up.</value></data>
+  <data name="Assistant_Unavailable" xml:space="preserve"><value>Could not get an answer right now. Please try again shortly.</value></data>
+  <data name="Assistant_EmptyReply" xml:space="preserve"><value>The assistant could not answer this question. Try rephrasing it.</value></data>
 </root>

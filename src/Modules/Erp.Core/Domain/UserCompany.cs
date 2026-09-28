@@ -4,6 +4,7 @@ namespace Erp.Core.Domain;
 
 /// <summary>Exempt from the tenant filter — see <see cref="SkipTenantFilterAttribute"/>.</summary>
 [SkipTenantFilter]
+[SurvivesCompanyReset]
 public class UserCompany
 {
     public Guid Id { get; set; }

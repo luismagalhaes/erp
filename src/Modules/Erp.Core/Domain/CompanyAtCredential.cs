@@ -1,3 +1,5 @@
+using Erp.Common;
+
 namespace Erp.Core.Domain;
 
 /// <summary>
@@ -7,6 +9,7 @@ namespace Erp.Core.Domain;
 /// producer's client certificate is. The password is kept encrypted at rest (Data Protection) and
 /// is never returned to a caller once saved.
 /// </summary>
+[SurvivesCompanyReset]
 public sealed class CompanyAtCredential
 {
     public Guid CompanyId { get; set; }

@@ -24,6 +24,7 @@ public static class DependencyInjection
 
         services.AddDbContext<AppDbContext>(options => options.UseSqlServer(connectionString));
         services.AddScoped<IUnitOfWork, UnitOfWork>();
+        services.AddScoped<CompanyDataPurger>();
         services.AddScoped<ITenantExistenceChecker>(sp => sp.GetRequiredService<AppDbContext>());
 
         // TryAdd: a host that knows about HTTP requests (Erp.Api) overrides this with one that

@@ -4,6 +4,7 @@ using Erp.Common;
 using Erp.Core.Infrastructure.Application;
 using Erp.Core.Infrastructure.Contracts;
 using Erp.SeriesRegistry.Infrastructure.Application;
+using Erp.Storage;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.OData.Query;
@@ -19,6 +20,9 @@ public sealed class CompaniesController(
     ISeriesService seriesService,
     ICompanyAtCredentialService companyAtCredentialService,
     DemoDataService demoDataService,
+    DemoHistoryService demoHistoryService,
+    CompanyDataPurger companyDataPurger,
+    IWebHostEnvironment environment,
     IUserCompanyService userCompanyService,
     IOnboardingService onboardingService,
     ILogger<CompaniesController> logger) : ControllerBase
@@ -295,6 +299,86 @@ public sealed class CompaniesController(
         catch (Exception ex)
         {
             logger.LogError(ex, "{Controller}.{Method} failed to apply demo data to company {CompanyId}.", nameof(CompaniesController), nameof(ApplyDemoData), id);
+            return Problem(ex.Message);
+        }
+    }
+
+    /// <summary>
+    /// Deletes everything the company has done and set up — documents, stock, master data, series —
+    /// and keeps the company, its members, warehouses, subscription and AT credentials. For
+    /// development: it defeats the immutability of issued fiscal documents, so anywhere else it is
+    /// refused.
+    /// </summary>
+    /// <param name="confirmTaxId">
+    /// The company's own tax id, repeated. A mistyped or replayed request for the wrong company
+    /// fails here instead of emptying it.
+    /// </param>
+    [HttpPost("{id:guid}/purge-data")]
+    [Authorize(Policy = Policies.Admin)]
+    [ProducesResponseType<IReadOnlyDictionary<string, int>>(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<IReadOnlyDictionary<string, int>>> PurgeData(
+        Guid id,
+        [FromQuery] string? confirmTaxId)
+    {
+        if (!environment.IsDevelopment())
+            return StatusCode(StatusCodes.Status403Forbidden, new { error = "Wiping a company's data is only available in development." });
+
+        var company = await companyAdminService.GetByIdAsync(id, CancellationToken.None);
+        if (company is null)
+            return NotFound();
+
+        if (!string.Equals(company.TaxId, confirmTaxId?.Trim(), StringComparison.Ordinal))
+            return BadRequest(new { error = "The tax id does not match this company." });
+
+        try
+        {
+            // Not tied to the request: stopping halfway would not be a smaller wipe, only a
+            // rolled back one that the caller was told nothing about.
+            var deleted = await companyDataPurger.PurgeAsync(id, CancellationToken.None);
+
+            logger.LogWarning("Wiped the data of company {CompanyId}: {Tables} tables, {Rows} rows.", id, deleted.Count, deleted.Values.Sum());
+
+            return Ok(deleted);
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "{Controller}.{Method} failed to wipe company {CompanyId}.", nameof(CompaniesController), nameof(PurgeData), id);
+            return Problem(ex.Message);
+        }
+    }
+
+    /// <summary>
+    /// Issues two years of sales, credit notes and purchases for the company, so reports and the
+    /// assistant have something to read. It goes through the real issuing path, so it needs no
+    /// setup beyond the company existing, and it does nothing once the history is there.
+    /// </summary>
+    /// <remarks>
+    /// Deliberately not tied to the request's cancellation: a browser that gives up halfway would
+    /// leave a history with a hole in it, and the run refuses to start again once its series exist.
+    /// </remarks>
+    [HttpPost("{id:guid}/apply-demo-history")]
+    [Authorize(Policy = Policies.Admin)]
+    [ProducesResponseType<DemoHistoryResult>(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<DemoHistoryResult>> ApplyDemoHistory(Guid id)
+    {
+        var company = await companyAdminService.GetByIdAsync(id, CancellationToken.None);
+        if (company is null)
+            return NotFound();
+
+        try
+        {
+            var result = await demoHistoryService.ApplyAsync(
+                id, GetCurrentUserId(), DateOnly.FromDateTime(DateTime.Today), CancellationToken.None);
+
+            return Ok(result);
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "{Controller}.{Method} failed to apply demo history to company {CompanyId}.", nameof(CompaniesController), nameof(ApplyDemoHistory), id);
             return Problem(ex.Message);
         }
     }

@@ -51,6 +51,7 @@ public static class Modules
 
         // Demo/training data, composed from the catalogue and the series registry.
         services.AddScoped<DemoDataService>();
+        services.AddScoped<DemoHistoryService>();
 
         // What every module that issues fiscal documents shares: the signing key, the signer, and
         // the SAF-T exporter, which collects from whichever modules register an ISaftDocumentSource.

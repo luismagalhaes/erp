@@ -6,6 +6,7 @@
 @using Erp.Main.Services
 @using Erp.Main.Theme
 @using Erp.Main.Resources
+@using Erp.Main.Components.Assistant
 @using Erp.Main.Components.Common
 @using System.Reflection
 @inject NavigationManager Navigation
@@ -137,6 +138,9 @@
         </MudContainer>
     </MudMainContent>
 </MudLayout>
+
+@* On every page of the app: the layout wraps them all, and outlives navigation, so the chat keeps its conversation. *@
+<AssistantChat />
 
 <SubscribePlanDialog @bind-Open="_subscribeDialogOpen" CompanyId="Company.SelectedCompanyId" Subscribed="OnSubscribedAsync" />
 

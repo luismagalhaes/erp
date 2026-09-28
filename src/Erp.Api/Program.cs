@@ -1,5 +1,6 @@
 using Erp.Api.Security;
 using Erp.Api.Services;
+using Erp.Api.Services.Assistant;
 using Erp.Api.Telemetry;
 using Erp.Common;
 using Erp.Common.Configuration;
@@ -32,6 +33,10 @@ builder.AddErpOpenTelemetry(Constants.ApiResources.ErpApi);
 builder.Services.AddModules(
     builder.Configuration,
     allowDevelopmentKeyGeneration: builder.Environment.IsDevelopment());
+
+// The chat assistant. It lives in the host, not in a module, because it reads across modules; it
+// only reads, and it is switched on by the presence of Assistant:ApiKey in the vault.
+builder.Services.AddAssistant(builder.Configuration);
 
 // Free, keyless external lookups (postal codes, VIES NIF validation) used by the master data
 // editors; they carry no per-module dependency, so they are registered once for the whole host.

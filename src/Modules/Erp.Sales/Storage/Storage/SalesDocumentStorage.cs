@@ -96,6 +96,27 @@ public sealed class SalesDocumentStorage(AppDbContext dbContext) : ISalesDocumen
             .ToListAsync(cancellationToken);
     }
 
+    public async Task<IReadOnlyList<SalesFigure>> GetSalesFiguresAsync(
+        Guid companyId,
+        DateOnly startDate,
+        DateOnly endDate,
+        CancellationToken cancellationToken = default)
+    {
+        // Built on the listing query so "voided" means the same thing here as it does on screen:
+        // the latest status change, not the status the document was issued with.
+        return await Query(companyId)
+            .Where(x => x.DocumentDate >= startDate && x.DocumentDate <= endDate)
+            .Where(x => x.Status != DocumentStatuses.Voided)
+            .Select(x => new SalesFigure(
+                x.DocumentDate,
+                x.DocumentType,
+                x.CustomerName,
+                x.CustomerTaxId,
+                x.NetTotal,
+                x.GrossTotal))
+            .ToListAsync(cancellationToken);
+    }
+
     /// <summary>
     /// Locks the document row, then loads it. Two statements on purpose: the lock has to come from
     /// raw SQL, because EF has no way to express a hint, and the entity is needed with its status

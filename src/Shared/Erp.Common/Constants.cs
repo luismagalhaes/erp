@@ -175,6 +175,26 @@ public static class Constants
     }
 
     /// <summary>
+    /// The chat assistant: the roles a message can have and the limits the API puts on a
+    /// conversation. The UI trims what it sends to the same numbers, so a long chat degrades by
+    /// forgetting its oldest turns instead of being refused.
+    /// </summary>
+    public static class Assistant
+    {
+        public static class MessageRoles
+        {
+            public const string User = "user";
+            public const string Assistant = "assistant";
+        }
+
+        /// <summary>How many of the latest messages of a conversation are sent to the model.</summary>
+        public const int MaxHistoryMessages = 20;
+
+        /// <summary>Longest a single message may be, in characters.</summary>
+        public const int MaxMessageLength = 2000;
+    }
+
+    /// <summary>
     /// Where a line of a current account statement comes from. The API writes it and the UI reads it
     /// to know which page opens the document.
     /// </summary>

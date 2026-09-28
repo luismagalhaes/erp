@@ -204,6 +204,7 @@ Controllers/Inventory/      Stock, InventoryCounts, InventoryFile
 Controllers/Purchasing/     PurchaseOrders, GoodsReceipts, SupplierReturns, PurchaseInvoices,
                            SelfBilledInvoices, SupplierPayments, SupplierStatements
 Controllers/Notification/   Notifications
+Controllers/Assistant/      Assistant
 Controllers/HealthController.cs
 ```
 
@@ -917,9 +918,28 @@ O [`EmailQueueWorker`](src/Modules/Erp.Notification/Application/Services/EmailQu
 
 ---
 
+### Assistente de IA
+
+| Método | Rota | Autorização |
+|---|---|---|
+| `POST` | `/api/assistant/chat?companyId=` | `Read` |
+
+Um chat sempre presente em todas as páginas do `Erp.Main` (botão flutuante no canto inferior direito, montado uma só vez no [`MainLayout`](src/UI/Erp.Main/Layout/MainLayout.razor) pelo componente [`AssistantChat`](src/UI/Erp.Main/Components/Assistant/AssistantChat.razor), por isso a conversa sobrevive à navegação e reinicia ao mudar de empresa). Responde a perguntas sobre as vendas — "como posso vender mais?", "compara o mês de março com fevereiro", "compara este ano com o anterior" — através do Claude.
+
+- **Só lê.** O modelo não emite, altera nem apaga nada: tem três ferramentas, todas de leitura, definidas em [`AssistantTools`](src/Erp.Api/Services/Assistant/AssistantTools.cs) — `get_monthly_sales`, `compare_sales_years` e `get_top_customers` — que chamam o [`ISalesAnalyticsService`](src/Modules/Erp.Sales/Infrastructure/Application/ISalesAnalyticsService.cs) do módulo Sales. As contas (diferenças e percentagens) fazem-se no código, não no modelo.
+- **"Vendas" são vendas líquidas:** sem IVA, com as notas de crédito abatidas e os documentos anulados de fora (o estado é o efetivo, o mesmo que a listagem mostra). Um mês sem vendas aparece com zero, e a percentagem de um mês que no ano anterior não vendeu nada vem vazia em vez de infinita.
+- **Multi-tenant por construção:** nenhuma ferramenta recebe a empresa como parâmetro. Vem do `companyId` do pedido, que o `RequireCompanyAccessFilter` já verificou contra o utilizador, pelo que um modelo induzido a pedir outra empresa não tem forma de a nomear.
+- **Sem estado no servidor:** a UI envia a conversa (as últimas `Constants.Assistant.MaxHistoryMessages` mensagens) e cada resposta volta a ler os dados. Não bloqueia empresas sem subscrição ativa (`[AllowWithoutSubscription]`), porque não escreve nada.
+- **Opcional:** sem `Assistant:ApiKey` o host arranca normalmente e o endpoint responde `503`; a UI mostra "o assistente ainda não está ativado". Um erro do fornecedor fica no log e o utilizador vê uma mensagem genérica.
+- **Dados para testar:** na ficha da empresa (SuperAdmin), o botão **Gerar histórico (2 anos)** — `POST /api/companies/{id}/apply-demo-history` — emite pelos serviços normais os últimos 24 meses de faturas, notas de crédito, anulações e faturas de compra ([`DemoHistoryService`](src/Erp.Api/Services/DemoHistoryService.cs)). Os números têm sazonalidade, crescimento anual, um março fraco este ano, uma promoção em novembro do ano passado, dois clientes que deixaram de comprar e um que apareceu — há por onde o assistente encontrar respostas. Usa séries próprias (`HIST{ano}`) sem efeito no stock, e as compras não entram em stock; não repete se as séries já existirem.
+- **Limpar dados (só em Development):** o botão **Limpar dados da empresa** — `POST /api/companies/{id}/purge-data?confirmTaxId=` — apaga tudo o que a empresa fez e configurou (documentos, compras, stock, artigos, clientes, fornecedores, séries e contadores) e mantém a empresa, os utilizadores, os armazéns, a subscrição e as credenciais da AT. O [`CompanyDataPurger`](src/Shared/Erp.Storage/CompanyDataPurger.cs) descobre as tabelas e a ordem a partir do modelo do EF (uma tabela é da empresa se tem `CompanyId` ou é filha obrigatória de uma que tem), por isso não há lista para esquecer; o que sobrevive marca-se com `[SurvivesCompanyReset]`. Corre numa transação. **Derrota a imutabilidade dos documentos fiscais** — daí a API recusá-lo fora de Development, exigir o NIF da empresa como confirmação, e uma base endurecida com `harden-sales-permissions.sql` também o recusar. Depois de limpar, "Aplicar Demo" e "Gerar histórico" voltam a funcionar.
+- **Limites conhecidos:** só conhece vendas (não stock, compras nem margens — o modelo é instruído a dizê-lo em vez de inventar); o texto vem em texto simples, sem *markdown*; o modelo é configurável em `Assistant:Model` (`claude-opus-5` por omissão; `claude-sonnet-5` é mais barato e rápido para este uso).
+
+---
+
 ## Interface (Erp.Main)
 
-A empresa ativa escolhe-se no cabeçalho e é partilhada por todas as páginas ([CompanyState](src/UI/Erp.Main/Services/Core/CompanyState.cs)).
+A empresa ativa escolhe-se no cabeçalho e é partilhada por todas as páginas ([CompanyState](src/UI/Erp.Main/Services/Core/CompanyState.cs)). Em todas elas está também o botão do [assistente de IA](#assistente-de-ia), no canto inferior direito.
 
 | Rota | Página |
 |---|---|
@@ -1073,7 +1093,7 @@ Os nomes dos secrets no Infisical seguem a convenção de variável de ambiente 
 
 | Host | Fica em `appsettings.*.json` (não secreto) | Vem do cofre |
 |---|---|---|
-| Erp.Api | `IdentityServer:Authority`, `ErpApiClient:Authority`/`ClientId`, `AT:SeriesUrl`, `AT:TransportDocumentsUrl`, `Smtp:Host`/`Port`/`UseSsl`/`FromEmail`/`FromName`, `NotificationWorker:BatchSize`/`PollingIntervalSeconds`, `Fiscal:IssuerTaxId`/`CertificateNumber`/`KeyVersion`, `Dependencies:PostalCodeBaseAddress`/`VatNumberValidationBaseAddress` | `ConnectionStrings:ErpDb`, `Smtp:UserName`, `Smtp:Password`, `AT:ClientCertificateBase64`, `AT:ClientCertificatePassword`, `AT:SigningKeyPem`, `AT:PublicKeyPem`, `ErpApiClient:ClientSecret`, `ApplicationInsights:ConnectionString` |
+| Erp.Api | `IdentityServer:Authority`, `ErpApiClient:Authority`/`ClientId`, `AT:SeriesUrl`, `AT:TransportDocumentsUrl`, `Smtp:Host`/`Port`/`UseSsl`/`FromEmail`/`FromName`, `NotificationWorker:BatchSize`/`PollingIntervalSeconds`, `Fiscal:IssuerTaxId`/`CertificateNumber`/`KeyVersion`, `Dependencies:PostalCodeBaseAddress`/`VatNumberValidationBaseAddress`, `Assistant:Model`/`MaxTokens`/`MaxToolRounds` | `ConnectionStrings:ErpDb`, `Smtp:UserName`, `Smtp:Password`, `AT:ClientCertificateBase64`, `AT:ClientCertificatePassword`, `AT:SigningKeyPem`, `AT:PublicKeyPem`, `ErpApiClient:ClientSecret`, `ApplicationInsights:ConnectionString`, `Assistant:ApiKey` (opcional) |
 | Erp.Identity | `IdentityServer:Authority`, `ErpApi:BaseUrl`, `ErpIdentityClient:Authority`/`ClientId`/`Scope`, `Authentication:Google:ClientId`, `Authentication:Microsoft:ClientId`, `Recaptcha:SiteKey` | `ConnectionStrings:IdentityDb`, `ErpIdentityClient:ClientSecret`, `AdminUser:Email`/`FirstName`/`LastName`/`Password`, `ApplicationInsights:ConnectionString`, `Authentication:Google:ClientSecret`, `Authentication:Microsoft:ClientSecret`, `Recaptcha:SecretKey` |
 | Erp.Main | `OidcConfiguration:*`, `Services:Api`/`IdentityApi` | — (`erp-portal` é um client público, sem secret) |
 
@@ -1084,6 +1104,8 @@ Os nomes dos secrets no Infisical seguem a convenção de variável de ambiente 
 **A comunicação à AT está implementada para guias de transporte e para séries** ([`AtTransportDocumentClient`](src/Shared/Erp.FiscalPT/AtWebservice/TransportDocuments/AtTransportDocumentClient.cs), [`AtSeriesClient`](src/Shared/Erp.FiscalPT/AtWebservice/Series/AtSeriesClient.cs)), mas as credenciais do subutilizador (utilizador/senha do Portal das Finanças que assina o cabeçalho SOAP) não vivem no cofre — são **por empresa**, porque cada sujeito passivo cria o seu próprio subutilizador, com as permissões `WDT` (guias) e `WSE` (séries) atribuídas ao mesmo subutilizador. Ficam cifradas na tabela `CompanyAtCredential` via `Microsoft.AspNetCore.DataProtection` ([`CompanyAtCredentialService`](src/Modules/Erp.Core/Application/Services/CompanyAtCredentialService.cs)), geridas em `Backoffice → Empresas → separador AT`. Isto é a única exceção à regra "cada segredo novo vive no cofre" — é um segredo por linha na base de dados, não por ambiente.
 
 A única exceção com *fallback* de desenvolvimento é `ErpIdentityClient:ClientSecret`: se não estiver configurada, o [Program.cs](src/Identity/Erp.Identity/Program.cs) do Identity usa `Constants.Clients.ErpIdentityDevelopmentSecret` **só quando `IsDevelopment()`**, para a máquina local funcionar sem preparação nenhuma. Fora de Development esta chave é obrigatória.
+
+**O assistente de IA também é opcional.** `Assistant:ApiKey` é uma chave da [Anthropic API](https://console.anthropic.com/) (Claude) e só existe no cofre. [`AddAssistant`](src/Erp.Api/Services/Assistant/DependencyInjection.cs) só regista o cliente da Anthropic quando ela está preenchida — sem ela o `Erp.Api` arranca normalmente e `POST /api/assistant/chat` responde `503` (ver [Assistente de IA](#assistente-de-ia)). `Assistant:Model` (por omissão `claude-opus-5`), `Assistant:MaxTokens` (4096) e `Assistant:MaxToolRounds` (6) não são secretos e vivem em `appsettings.json`. Cada pergunta ao assistente é uma chamada paga à Anthropic, por empresa e por utilizador, sem limite próprio de utilização por agora.
 
 **Login com Google e com Microsoft são opcionais, e seguem o mesmo padrão.** [`Program.cs`](src/Identity/Erp.Identity/Program.cs) só regista `AddGoogle`/`AddMicrosoftAccount` quando o `ClientId`/`ClientSecret` desse provedor estão ambos preenchidos — sem eles o `Erp.Identity` arranca normalmente e [`SignIn.razor`](src/Identity/Erp.Identity/Pages/Account/SignIn.razor) esconde o botão correspondente. Em ambos os casos, `ClientId` não é secreto (fica em `appsettings.*.json`) e `ClientSecret` vai para o cofre. A lógica de callback é partilhada (`HandleExternalLoginCallbackAsync` em [`AuthenticationEndpoints.cs`](src/Identity/Erp.Identity/Endpoints/AuthenticationEndpoints.cs)): o primeiro login de uma conta externa desconhecida cria automaticamente um novo utilizador (email já confirmado, porque o provedor já o verificou) — o mesmo modelo de registo aberto que o `SignUp.razor` já usa por password; se o email já existir, a conta externa fica apenas associada a essa conta existente como mais uma forma de entrar.
 
@@ -1122,6 +1144,7 @@ Environments do Infisical: `dev`, `staging` e (quando existir) `prod` — os mes
 | `AUTHENTICATION__GOOGLE__CLIENTSECRET` | Vazio até se querer testar o login com Google em dev — sem ela o botão fica escondido |
 | `AUTHENTICATION__MICROSOFT__CLIENTSECRET` | Vazio até se querer testar o login com Microsoft em dev — sem ela o botão fica escondido |
 | `RECAPTCHA__SECRETKEY` | Vazio até se querer testar o reCAPTCHA em dev — sem ela nunca é exigido, mesmo ao fim de 3 tentativas |
+| `ASSISTANT__APIKEY` | Vazio até se querer testar o assistente de IA em dev — sem ela o chat responde que ainda não está ativado |
 
 **`staging`** — todas obrigatórias assim que `Infisical:*` estiver configurado nas Web Apps de staging:
 
@@ -1140,6 +1163,7 @@ Environments do Infisical: `dev`, `staging` e (quando existir) `prod` — os mes
 | `AUTHENTICATION__GOOGLE__CLIENTSECRET` | Client secret do OAuth client de staging na Google Cloud Console (o `ClientId` correspondente vai em `appsettings.Staging.json`, não é secreto) |
 | `AUTHENTICATION__MICROSOFT__CLIENTSECRET` | Client secret da app registration de staging no Entra admin center (o `ClientId` correspondente vai em `appsettings.Staging.json`, não é secreto) |
 | `RECAPTCHA__SECRETKEY` | Secret key do site reCAPTCHA v3 de staging (o `SiteKey` correspondente vai em `appsettings.Staging.json`, não é secreto) |
+| `ASSISTANT__APIKEY` | *(opcional)* Chave da Anthropic API do assistente de IA, própria de staging (com limite de gasto definido na consola da Anthropic) — sem ela o chat fica desativado |
 
 `prod` segue a mesma lista, com os seus próprios valores — nunca os mesmos de staging.
 

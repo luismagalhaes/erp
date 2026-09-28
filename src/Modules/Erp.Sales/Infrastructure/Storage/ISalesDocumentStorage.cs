@@ -36,6 +36,16 @@ public interface ISalesDocumentStorage
         CancellationToken cancellationToken = default);
 
     /// <summary>
+    /// The figures of the documents issued in a period, voided ones left out. Read by sales
+    /// analysis, which aggregates them: the database only has to return the columns it needs.
+    /// </summary>
+    Task<IReadOnlyList<SalesFigure>> GetSalesFiguresAsync(
+        Guid companyId,
+        DateOnly startDate,
+        DateOnly endDate,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
     /// Takes an update lock on the document row for the rest of the transaction, and returns it
     /// fully loaded. This is what serializes crediting: two credit notes issued at the same time
     /// against the same document queue up here, so the second one sees the first one's credit.

@@ -1,0 +1,186 @@
+@implements IDisposable
+@using MudBlazor
+@using Microsoft.Extensions.Localization
+@using Erp.Main.Models.Assistant
+@using Erp.Main.Resources
+@using Erp.Main.Services
+@inject AssistantApiClient Api
+@inject CompanyState Company
+@inject IStringLocalizer<MainResources> Localizer
+
+@* Mounted once, by MainLayout, so it is on every page and keeps the conversation while the user
+   navigates. Nothing is shown until there is a company to ask about. *@
+@if (Company.HasCompany)
+{
+    <div class="erp-assistant">
+        @if (_open)
+        {
+            <MudPaper Elevation="8" Class="erp-assistant-panel" role="dialog" aria-label="@Localizer["Assistant_Title"]">
+                <div class="erp-assistant-header">
+                    <MudIcon Icon="@Icons.Material.Filled.AutoAwesome" Color="Color.Primary" />
+                    <MudText Typo="Typo.subtitle1" Class="erp-assistant-title">@Localizer["Assistant_Title"]</MudText>
+                    <MudTooltip Text="@Localizer["Assistant_Clear"]">
+                        <MudIconButton Icon="@Icons.Material.Filled.DeleteSweep" Size="Size.Small"
+                                       Disabled="@(_messages.Count == 0 || _busy)" OnClick="Clear" />
+                    </MudTooltip>
+                    <MudTooltip Text="@Localizer["Assistant_Close"]">
+                        <MudIconButton Icon="@Icons.Material.Filled.Close" Size="Size.Small" OnClick="Toggle" />
+                    </MudTooltip>
+                </div>
+
+                <div class="erp-assistant-messages">
+                    <div class="erp-assistant-thread">
+                        @if (_messages.Count == 0)
+                        {
+                            <div class="erp-assistant-bubble erp-assistant-bubble-assistant">@Localizer["Assistant_Welcome"]</div>
+
+                            <div class="erp-assistant-suggestions">
+                                @foreach (var suggestion in Suggestions)
+                                {
+                                    <MudChip T="string" Size="Size.Small" Variant="Variant.Outlined" Color="Color.Primary"
+                                             OnClick="@(() => SendAsync(suggestion))">@suggestion</MudChip>
+                                }
+                            </div>
+                        }
+
+                        @foreach (var message in _messages)
+                        {
+                            <div class="erp-assistant-bubble @BubbleClass(message)">@message.Content</div>
+                        }
+
+                        @if (_busy)
+                        {
+                            <div class="erp-assistant-bubble erp-assistant-bubble-assistant erp-assistant-pending">
+                                <MudProgressCircular Size="Size.Small" Indeterminate="true" />
+                                <span>@Localizer["Assistant_Thinking"]</span>
+                            </div>
+                        }
+
+                        @if (_failure is { } failure)
+                        {
+                            <MudAlert Severity="Severity.Warning" Dense="true" Variant="Variant.Outlined">@FailureText(failure)</MudAlert>
+                        }
+                    </div>
+                </div>
+
+                <div class="erp-assistant-input">
+                    <MudTextField T="string" @bind-Value="_input" Immediate="true" Variant="Variant.Outlined" Margin="Margin.Dense"
+                                  Placeholder="@Localizer["Assistant_Placeholder"]" MaxLength="Constants.Assistant.MaxMessageLength"
+                                  Disabled="_busy" OnKeyDown="OnKeyDown" Adornment="Adornment.End"
+                                  AdornmentIcon="@Icons.Material.Filled.Send" AdornmentAriaLabel="@Localizer["Assistant_Send"]"
+                                  OnAdornmentClick="@(() => SendAsync())" />
+                    <MudText Typo="Typo.caption" Color="Color.Secondary">@Localizer["Assistant_Disclaimer"]</MudText>
+                </div>
+            </MudPaper>
+        }
+
+        <MudTooltip Text="@Localizer["Assistant_Open"]" Placement="Placement.Left">
+            <MudFab Color="Color.Primary" StartIcon="@(_open ? Icons.Material.Filled.Close : Icons.Material.Filled.AutoAwesome)"
+                    OnClick="Toggle" aria-label="@Localizer["Assistant_Open"]" />
+        </MudTooltip>
+    </div>
+}
+
+@code {
+    private readonly List<AssistantMessage> _messages = [];
+    private readonly CancellationTokenSource _cts = new();
+    private bool _open;
+    private bool _busy;
+    private string? _input;
+    private AssistantFailure? _failure;
+
+    private string[] Suggestions =>
+    [
+        Localizer["Assistant_Suggestion_YearOverYear"],
+        Localizer["Assistant_Suggestion_WeakMonths"],
+        Localizer["Assistant_Suggestion_TopCustomers"],
+        Localizer["Assistant_Suggestion_SellMore"]
+    ];
+
+    protected override void OnInitialized()
+    {
+        Company.Changed += OnCompanyChanged;
+    }
+
+    private void Toggle() => _open = !_open;
+
+    private void Clear()
+    {
+        _messages.Clear();
+        _failure = null;
+    }
+
+    // What was asked was about the previous company, and so is every figure in the answers.
+    private void OnCompanyChanged() =>
+        InvokeAsync(() =>
+        {
+            Clear();
+            StateHasChanged();
+        });
+
+    private async Task OnKeyDown(KeyboardEventArgs args)
+    {
+        if (args.Key == "Enter" && !args.ShiftKey)
+            await SendAsync();
+    }
+
+    private async Task SendAsync(string? text = null)
+    {
+        text = (text ?? _input)?.Trim();
+
+        if (string.IsNullOrEmpty(text) || _busy)
+            return;
+
+        _messages.Add(new AssistantMessage(Constants.Assistant.MessageRoles.User, text));
+        _input = null;
+        _failure = null;
+        _busy = true;
+
+        var companyId = Company.SelectedCompanyId;
+
+        try
+        {
+            var reply = await Api.ChatAsync(
+                companyId,
+                [.. _messages.TakeLast(Constants.Assistant.MaxHistoryMessages)],
+                _cts.Token);
+
+            // The user may have switched company while the model was thinking: that answer is
+            // about another one.
+            if (companyId != Company.SelectedCompanyId)
+                return;
+
+            if (reply.Text is { } answer)
+                _messages.Add(new AssistantMessage(Constants.Assistant.MessageRoles.Assistant, answer));
+            else
+                _failure = reply.Failure;
+        }
+        catch (OperationCanceledException)
+        {
+            // The circuit is going away; nothing is left to show.
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+
+    private static string BubbleClass(AssistantMessage message) =>
+        message.Role == Constants.Assistant.MessageRoles.User
+            ? "erp-assistant-bubble-user"
+            : "erp-assistant-bubble-assistant";
+
+    private string FailureText(AssistantFailure failure) => failure switch
+    {
+        AssistantFailure.NotConfigured => Localizer["Assistant_NotConfigured"],
+        AssistantFailure.Empty => Localizer["Assistant_EmptyReply"],
+        _ => Localizer["Assistant_Unavailable"]
+    };
+
+    public void Dispose()
+    {
+        Company.Changed -= OnCompanyChanged;
+        _cts.Cancel();
+        _cts.Dispose();
+    }
+}

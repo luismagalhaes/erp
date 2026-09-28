@@ -345,6 +345,15 @@
   <data name="CompanyEditor_DemoDataApplied" xml:space="preserve"><value>Dados de demonstração criados: {0} produtos e {1} séries comunicadas.</value></data>
   <data name="CompanyEditor_DemoDataAlreadyApplied" xml:space="preserve"><value>Esta empresa já tem dados de demonstração aplicados.</value></data>
   <data name="CompanyEditor_DemoDataError" xml:space="preserve"><value>Não foi possível aplicar os dados de demonstração: {0}</value></data>
+  <data name="CompanyEditor_ApplyDemoHistoryButton" xml:space="preserve"><value>Gerar histórico (2 anos)</value></data>
+  <data name="CompanyEditor_DemoHistoryApplied" xml:space="preserve"><value>Histórico criado: {0} faturas, {1} notas de crédito e {2} faturas de compra.</value></data>
+  <data name="CompanyEditor_DemoHistoryAlreadyApplied" xml:space="preserve"><value>Esta empresa já tem o histórico de demonstração.</value></data>
+  <data name="CompanyEditor_PurgeDataButton" xml:space="preserve"><value>Limpar dados da empresa</value></data>
+  <data name="CompanyEditor_PurgeDataConfirm" xml:space="preserve"><value>Apagar TODOS os dados de {0}: faturas, compras, stock, artigos, clientes, fornecedores e séries. A empresa, os utilizadores, os armazéns e a subscrição ficam. Não pode ser desfeito.</value></data>
+  <data name="CompanyEditor_PurgeDataConfirmYes" xml:space="preserve"><value>Apagar tudo</value></data>
+  <data name="CompanyEditor_PurgeDataDone" xml:space="preserve"><value>Dados apagados: {0} linhas. Pode aplicar a demo e gerar o histórico de novo.</value></data>
+  <data name="CompanyEditor_PurgeDataError" xml:space="preserve"><value>Não foi possível limpar os dados: {0}</value></data>
+  <data name="CompanyEditor_DemoHistoryError" xml:space="preserve"><value>Não foi possível gerar o histórico: {0}</value></data>
   <data name="CompanyEditor_UsersTab" xml:space="preserve"><value>Utilizadores</value></data>
   <data name="CompanyEditor_UsersTabDisabledHint" xml:space="preserve"><value>Guarde a empresa antes de associar utilizadores</value></data>
   <data name="CompanyEditor_UsersTabDescription" xml:space="preserve"><value>Quem tem acesso a esta empresa. É esta lista que alimenta o seletor de empresa no cabeçalho.</value></data>
@@ -2148,4 +2157,20 @@
   <data name="CompanySettings_SubscriptionsDescription" xml:space="preserve"><value>Os pacotes desta empresa: em curso, agendados e já expirados.</value></data>
   <data name="CompanySettings_LoadSubscriptionsError" xml:space="preserve"><value>Não foi possível carregar as subscrições: {0}</value></data>
   <data name="CompanySettings_WarehousesDescription" xml:space="preserve"><value>Os armazéns onde o stock desta empresa é mantido.</value></data>
+  <data name="Assistant_Title" xml:space="preserve"><value>Assistente</value></data>
+  <data name="Assistant_Open" xml:space="preserve"><value>Abrir o assistente</value></data>
+  <data name="Assistant_Close" xml:space="preserve"><value>Fechar</value></data>
+  <data name="Assistant_Clear" xml:space="preserve"><value>Nova conversa</value></data>
+  <data name="Assistant_Welcome" xml:space="preserve"><value>Olá! Posso analisar as vendas da empresa: comparar meses, compará-las com o ano anterior ou sugerir como vender mais.</value></data>
+  <data name="Assistant_Placeholder" xml:space="preserve"><value>Pergunte sobre as suas vendas…</value></data>
+  <data name="Assistant_Send" xml:space="preserve"><value>Enviar</value></data>
+  <data name="Assistant_Thinking" xml:space="preserve"><value>A analisar os dados…</value></data>
+  <data name="Assistant_Disclaimer" xml:space="preserve"><value>Respostas geradas por IA a partir das vendas emitidas. Confirme os valores importantes nos documentos.</value></data>
+  <data name="Assistant_Suggestion_YearOverYear" xml:space="preserve"><value>Compara as vendas deste ano com as do ano passado</value></data>
+  <data name="Assistant_Suggestion_WeakMonths" xml:space="preserve"><value>Que meses venderam menos do que no ano passado?</value></data>
+  <data name="Assistant_Suggestion_TopCustomers" xml:space="preserve"><value>Quem são os meus melhores clientes este ano?</value></data>
+  <data name="Assistant_Suggestion_SellMore" xml:space="preserve"><value>Como posso vender mais?</value></data>
+  <data name="Assistant_NotConfigured" xml:space="preserve"><value>O assistente ainda não está ativado. Peça ao administrador para o configurar.</value></data>
+  <data name="Assistant_Unavailable" xml:space="preserve"><value>Não foi possível obter uma resposta agora. Tente novamente daqui a pouco.</value></data>
+  <data name="Assistant_EmptyReply" xml:space="preserve"><value>O assistente não conseguiu responder a esta pergunta. Tente reformulá-la.</value></data>
 </root>

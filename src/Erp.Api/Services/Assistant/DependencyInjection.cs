@@ -1,14 +1,15 @@
-using Anthropic;
-using Erp.Sales.Infrastructure.Application;
+using System.ClientModel;
+using Microsoft.Extensions.AI;
+using OpenAI;
 
 namespace Erp.Api.Services.Assistant;
 
 public static class DependencyInjection
 {
     /// <summary>
-    /// Registers the chat assistant. The Anthropic client is only created when an API key is
-    /// configured, so a host without one starts normally and <see cref="AssistantService"/> reports
-    /// itself as not configured.
+    /// Registers the chat assistant on top of <see cref="IChatClient"/>. The client is only created
+    /// when an endpoint and a model are configured, so a host without them starts normally and
+    /// <see cref="AssistantService"/> reports itself as not configured.
     /// </summary>
     public static IServiceCollection AddAssistant(this IServiceCollection services, IConfiguration configuration)
     {
@@ -18,7 +19,19 @@ public static class DependencyInjection
         var options = section.Get<AssistantOptions>() ?? new AssistantOptions();
 
         if (options.IsConfigured)
-            services.AddSingleton(new AnthropicClient { ApiKey = options.ApiKey });
+        {
+            services.AddSingleton<IChatClient>(provider =>
+                new ChatClientBuilder(
+                        new OpenAIClient(
+                                new ApiKeyCredential(string.IsNullOrWhiteSpace(options.ApiKey) ? "none" : options.ApiKey),
+                                new OpenAIClientOptions { Endpoint = new Uri(options.Endpoint!) })
+                            .GetChatClient(options.Model)
+                            .AsIChatClient())
+                    .UseFunctionInvocation(
+                        provider.GetRequiredService<ILoggerFactory>(),
+                        client => client.MaximumIterationsPerRequest = options.MaxToolRounds)
+                    .Build());
+        }
 
         // The tools read through the analytics service of the Sales module, so they follow its scope.
         services.AddScoped<AssistantTools>();

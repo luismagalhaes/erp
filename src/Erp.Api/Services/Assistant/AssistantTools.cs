@@ -1,7 +1,9 @@
+using System.ComponentModel;
 using System.Globalization;
 using System.Text.Json;
-using Anthropic.Models.Messages;
 using Erp.Sales.Infrastructure.Application;
+using Erp.Sales.Infrastructure.Contracts;
+using Microsoft.Extensions.AI;
 
 namespace Erp.Api.Services.Assistant;
 
@@ -26,113 +28,96 @@ public sealed class AssistantTools(ISalesAnalyticsService salesAnalytics)
 
     private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web);
 
-    public static IReadOnlyList<ToolUnion> Definitions { get; } =
+    /// <summary>
+    /// The tools bound to one company. Built per request, so the company never appears in a tool's
+    /// schema: the model can only ask questions about the company it is talking in.
+    /// </summary>
+    public IList<AITool> CreateFunctions(Guid companyId) =>
     [
-        new Tool
-        {
-            Name = MonthlySales,
-            Description =
-                "Net sales (without VAT) and gross sales (with VAT) of the company, month by month, " +
-                "between two dates. Credit notes are already deducted and voided documents left out. " +
-                "Months with no sales are returned with zero. Use it to compare months or to see a trend.",
-            InputSchema = new()
-            {
-                Properties = new Dictionary<string, JsonElement>
+        AIFunctionFactory.Create(
+            ([Description("First day of the period, as YYYY-MM-DD.")] string startDate,
+             [Description("Last day of the period, as YYYY-MM-DD.")] string endDate,
+             CancellationToken cancellationToken) =>
+                RunAsync(() =>
                 {
-                    ["start_date"] = Schema("string", "First day of the period, as YYYY-MM-DD."),
-                    ["end_date"] = Schema("string", "Last day of the period, as YYYY-MM-DD.")
-                },
-                Required = ["start_date", "end_date"]
-            }
-        },
-        new Tool
-        {
-            Name = CompareYears,
-            Description =
-                "Net sales of one calendar year against another, month by month and in total, with the " +
-                "difference and the percentage change already computed. Use it for any 'this year " +
-                "versus last year' question.",
-            InputSchema = new()
-            {
-                Properties = new Dictionary<string, JsonElement>
+                    var start = Period(startDate, endDate, out var end);
+
+                    return salesAnalytics.GetMonthlySalesAsync(companyId, start, end, cancellationToken);
+                }),
+            MonthlySales,
+            "Net sales (without VAT) and gross sales (with VAT) of the company, month by month, " +
+            "between two dates. Credit notes are already deducted and voided documents left out. " +
+            "Months with no sales are returned with zero. Use it to compare months or to see a trend."),
+
+        AIFunctionFactory.Create(
+            ([Description("The year being analysed, e.g. the current year.")] int year,
+             [Description("The year to compare against. Defaults to year - 1.")] int? previousYear = null,
+             CancellationToken cancellationToken = default) =>
+                RunAsync(() => CompareYearsAsync(companyId, year, previousYear, cancellationToken)),
+            CompareYears,
+            "Net sales of one calendar year against another, month by month and in total, with the " +
+            "difference and the percentage change already computed. Use it for any 'this year " +
+            "versus last year' question."),
+
+        AIFunctionFactory.Create(
+            ([Description("First day of the period, as YYYY-MM-DD.")] string startDate,
+             [Description("Last day of the period, as YYYY-MM-DD.")] string endDate,
+             [Description("How many customers to return, up to 50. Defaults to 10.")] int? count = null,
+             CancellationToken cancellationToken = default) =>
+                RunAsync(() =>
                 {
-                    ["year"] = Schema("integer", "The year being analysed, e.g. the current year."),
-                    ["previous_year"] = Schema("integer", "The year to compare against. Defaults to year - 1.")
-                },
-                Required = ["year"]
-            }
-        },
-        new Tool
-        {
-            Name = TopCustomers,
-            Description =
-                "The customers that bought the most (net of credit notes, without VAT) between two dates, " +
-                "best first. Call it for two different periods to find customers that stopped buying.",
-            InputSchema = new()
-            {
-                Properties = new Dictionary<string, JsonElement>
-                {
-                    ["start_date"] = Schema("string", "First day of the period, as YYYY-MM-DD."),
-                    ["end_date"] = Schema("string", "Last day of the period, as YYYY-MM-DD."),
-                    ["count"] = Schema("integer", $"How many customers to return, up to {MaxCustomers}. Defaults to {DefaultCustomers}.")
-                },
-                Required = ["start_date", "end_date"]
-            }
-        }
+                    var start = Period(startDate, endDate, out var end);
+
+                    return salesAnalytics.GetTopCustomersAsync(
+                        companyId,
+                        start,
+                        end,
+                        Math.Clamp(count ?? DefaultCustomers, 1, MaxCustomers),
+                        cancellationToken);
+                }),
+            TopCustomers,
+            "The customers that bought the most (net of credit notes, without VAT) between two dates, " +
+            "best first. Call it for two different periods to find customers that stopped buying.")
     ];
 
     /// <summary>
-    /// Runs a tool and returns what to hand back to the model, as JSON. Throws
-    /// <see cref="ArgumentException"/> for input the tool cannot use, which the caller reports to
-    /// the model so it can correct itself.
+    /// Runs one tool and returns what the model reads, as JSON. Input the tool cannot use comes back
+    /// as an error text instead of an exception, so the model can correct itself; any other failure
+    /// still throws and is never shown to the model.
     /// </summary>
-    public async Task<string> ExecuteAsync(
-        Guid companyId,
-        string name,
-        IReadOnlyDictionary<string, JsonElement> input,
-        CancellationToken cancellationToken)
+    private static async Task<string> RunAsync<T>(Func<Task<T>> query)
     {
-        object result = name switch
+        try
         {
-            MonthlySales => await salesAnalytics.GetMonthlySalesAsync(
-                companyId, Period(input, out var end), end, cancellationToken),
-
-            CompareYears => await CompareYearsAsync(companyId, input, cancellationToken),
-
-            TopCustomers => await salesAnalytics.GetTopCustomersAsync(
-                companyId,
-                Period(input, out var customersEnd),
-                customersEnd,
-                Math.Clamp(OptionalInt(input, "count") ?? DefaultCustomers, 1, MaxCustomers),
-                cancellationToken),
-
-            _ => throw new ArgumentException($"Unknown tool '{name}'.")
-        };
-
-        return JsonSerializer.Serialize(result, JsonOptions);
+            return JsonSerializer.Serialize(await query(), JsonOptions);
+        }
+        catch (ArgumentException ex)
+        {
+            return $"Error: {ex.Message}";
+        }
     }
 
-    private Task<Erp.Sales.Infrastructure.Contracts.YearComparisonDto> CompareYearsAsync(
+    private Task<YearComparisonDto> CompareYearsAsync(
         Guid companyId,
-        IReadOnlyDictionary<string, JsonElement> input,
+        int year,
+        int? previousYear,
         CancellationToken cancellationToken)
     {
-        var year = OptionalInt(input, "year") ?? throw new ArgumentException("'year' is required.");
-        var previousYear = OptionalInt(input, "previous_year") ?? year - 1;
+        var previous = previousYear ?? year - 1;
 
-        if (year is < 1970 or > 2200 || previousYear is < 1970 or > 2200)
+        if (year is < 1970 or > 2200 || previous is < 1970 or > 2200)
             throw new ArgumentException("The years must be between 1970 and 2200.");
 
-        return salesAnalytics.CompareYearsAsync(companyId, year, previousYear, cancellationToken);
+        return salesAnalytics.CompareYearsAsync(companyId, year, previous, cancellationToken);
     }
 
-    private static DateOnly Period(IReadOnlyDictionary<string, JsonElement> input, out DateOnly end)
+    private static DateOnly Period(string startDate, string endDate, out DateOnly end)
     {
-        var start = RequiredDate(input, "start_date");
-        end = RequiredDate(input, "end_date");
+        var start = ParseDate(startDate, "startDate");
+        end = ParseDate(endDate, "endDate");
 
         if (end < start)
-            throw new ArgumentException("'end_date' is before 'start_date'.");
+            throw new ArgumentException("'endDate' is before 'startDate'.");
 
         var months = (end.Year - start.Year) * 12 + end.Month - start.Month + 1;
 
@@ -142,29 +127,8 @@ public sealed class AssistantTools(ISalesAnalyticsService salesAnalytics)
         return start;
     }
 
-    private static DateOnly RequiredDate(IReadOnlyDictionary<string, JsonElement> input, string key)
-    {
-        if (input.TryGetValue(key, out var value)
-            && value.ValueKind == JsonValueKind.String
-            && DateOnly.TryParseExact(value.GetString(), "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out var date))
-        {
-            return date;
-        }
-
-        throw new ArgumentException($"'{key}' is required and must be a date as YYYY-MM-DD.");
-    }
-
-    private static int? OptionalInt(IReadOnlyDictionary<string, JsonElement> input, string key)
-    {
-        if (!input.TryGetValue(key, out var value) || value.ValueKind == JsonValueKind.Null)
-            return null;
-
-        if (value.ValueKind == JsonValueKind.Number && value.TryGetInt32(out var number))
-            return number;
-
-        throw new ArgumentException($"'{key}' must be an integer.");
-    }
-
-    private static JsonElement Schema(string type, string description) =>
-        JsonSerializer.SerializeToElement(new { type, description });
+    private static DateOnly ParseDate(string? value, string name) =>
+        DateOnly.TryParseExact(value, "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out var date)
+            ? date
+            : throw new ArgumentException($"'{name}' is required and must be a date as YYYY-MM-DD.");
 }

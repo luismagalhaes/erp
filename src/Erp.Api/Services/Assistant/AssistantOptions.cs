@@ -1,19 +1,23 @@
 namespace Erp.Api.Services.Assistant;
 
 /// <summary>
-/// Settings of the chat assistant, bound from the <c>Assistant</c> section. The assistant is
-/// optional: without an <see cref="ApiKey"/> the host starts as usual and the endpoint answers
-/// that the feature is not configured.
+/// Settings of the chat assistant, bound from the <c>Assistant</c> section. The assistant talks to
+/// any OpenAI-compatible API (Ollama Cloud, a local Ollama, OpenRouter, Gemini), so changing
+/// provider or model is configuration only. It is optional: without an endpoint and a model the
+/// host starts as usual and the chat answers that the feature is not configured.
 /// </summary>
 public sealed class AssistantOptions
 {
     public const string SectionName = "Assistant";
 
-    /// <summary>Anthropic API key. Vault secret <c>Assistant:ApiKey</c>, never in appsettings.</summary>
+    /// <summary>Base address of the OpenAI-compatible API.</summary>
+    public string? Endpoint { get; set; }
+
+    /// <summary>API key of the provider. Vault secret <c>Assistant:ApiKey</c>, never in appsettings.</summary>
     public string? ApiKey { get; set; }
 
-    /// <summary>Model that answers. Plain configuration, so it can change without a deploy of code.</summary>
-    public string Model { get; set; } = "claude-opus-5";
+    /// <summary>Model that answers. Plain configuration: hosted models are retired from time to time.</summary>
+    public string? Model { get; set; }
 
     /// <summary>Upper bound for one answer, in tokens.</summary>
     public int MaxTokens { get; set; } = 4096;
@@ -24,5 +28,7 @@ public sealed class AssistantOptions
     /// </summary>
     public int MaxToolRounds { get; set; } = 6;
 
-    public bool IsConfigured => !string.IsNullOrWhiteSpace(ApiKey);
+    /// <summary>The key is not part of it: a local Ollama needs none.</summary>
+    public bool IsConfigured =>
+        !string.IsNullOrWhiteSpace(Endpoint) && !string.IsNullOrWhiteSpace(Model);
 }

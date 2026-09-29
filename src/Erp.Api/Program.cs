@@ -9,9 +9,11 @@ using Erp.Storage;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.OData;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using Scalar.AspNetCore;
+using System.Threading.RateLimiting;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -103,6 +105,25 @@ builder.Services.AddDataProtection()
 
 builder.Services.AddOpenApi();
 
+// Partitioned by IP rather than by user, so a flood of unauthenticated requests is throttled
+// too; QueueLimit stays 0 because queueing an over-limit caller still spends memory holding its
+// connection open, which defeats the point of the limiter during an actual flood.
+builder.Services.AddRateLimiter(options =>
+{
+    options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+    options.GlobalLimiter = PartitionedRateLimiter.Create<HttpContext, string>(httpContext =>
+    {
+        var clientKey = httpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown";
+        return RateLimitPartition.GetFixedWindowLimiter(clientKey, _ => new FixedWindowRateLimiterOptions
+        {
+            PermitLimit = Constants.RateLimiting.PermitLimit,
+            Window = TimeSpan.FromSeconds(Constants.RateLimiting.WindowSeconds),
+            QueueLimit = 0,
+            QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
+        });
+    });
+});
+
 var app = builder.Build();
 
 // Applying pending migrations is never destructive, so it runs on every startup, in every
@@ -138,6 +159,11 @@ app.MapScalarApiReference(options =>
 app.MapGet("/", () => Results.Redirect("/scalar"));
 
 app.UseHttpsRedirection();
+
+// Before authentication: a flood of requests is rejected on the IP check alone, without paying
+// for JWT validation on every one of them.
+app.UseRateLimiter();
+
 app.UseAuthentication();
 app.UseAuthorization();
 

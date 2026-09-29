@@ -3,6 +3,7 @@ using Erp.Api.Services.Assistant;
 using Erp.Sales.Infrastructure.Application;
 using Erp.Sales.Infrastructure.Contracts;
 using FluentAssertions;
+using Microsoft.Extensions.AI;
 using NSubstitute;
 
 namespace Erp.Api.Tests;
@@ -18,10 +19,20 @@ public class AssistantToolsTests
 
     private AssistantTools CreateTools() => new(_analytics);
 
-    private static IReadOnlyDictionary<string, JsonElement> Input(object value) =>
-        JsonSerializer.SerializeToElement(value)
+    private AIFunction Tool(string name) =>
+        CreateTools().CreateFunctions(_companyId).OfType<AIFunction>().Single(function => function.Name == name);
+
+    /// <summary>Calls a tool the way the function invocation middleware does, with the model's arguments.</summary>
+    private async Task<string> CallAsync(string name, object arguments)
+    {
+        var values = JsonSerializer.SerializeToElement(arguments)
             .EnumerateObject()
-            .ToDictionary(property => property.Name, property => property.Value.Clone());
+            .ToDictionary(property => property.Name, property => (object?)property.Value.Clone());
+
+        var result = await Tool(name).InvokeAsync(new AIFunctionArguments(values));
+
+        return ((JsonElement)result!).GetString()!;
+    }
 
     [Fact]
     public async Task Monthly_sales_asks_for_the_callers_company_and_returns_camel_case_json()
@@ -29,11 +40,8 @@ public class AssistantToolsTests
         _analytics.GetMonthlySalesAsync(_companyId, new DateOnly(2026, 1, 1), new DateOnly(2026, 2, 28), Arg.Any<CancellationToken>())
             .Returns([new MonthlySalesDto(2026, 1, 100m, 123m, 2)]);
 
-        var json = await CreateTools().ExecuteAsync(
-            _companyId,
-            AssistantTools.MonthlySales,
-            Input(new { start_date = "2026-01-01", end_date = "2026-02-28" }),
-            CancellationToken.None);
+        var json = await CallAsync(
+            AssistantTools.MonthlySales, new { startDate = "2026-01-01", endDate = "2026-02-28" });
 
         using var document = JsonDocument.Parse(json);
         var month = document.RootElement[0];
@@ -48,8 +56,7 @@ public class AssistantToolsTests
         _analytics.CompareYearsAsync(_companyId, 2026, 2025, Arg.Any<CancellationToken>())
             .Returns(new YearComparisonDto(2026, 2025, [], 0m, 0m, 0m, null));
 
-        await CreateTools().ExecuteAsync(
-            _companyId, AssistantTools.CompareYears, Input(new { year = 2026 }), CancellationToken.None);
+        await CallAsync(AssistantTools.CompareYears, new { year = 2026 });
 
         await _analytics.Received(1).CompareYearsAsync(_companyId, 2026, 2025, Arg.Any<CancellationToken>());
     }
@@ -60,11 +67,8 @@ public class AssistantToolsTests
         _analytics.GetTopCustomersAsync(Arg.Any<Guid>(), Arg.Any<DateOnly>(), Arg.Any<DateOnly>(), Arg.Any<int>(), Arg.Any<CancellationToken>())
             .Returns([]);
 
-        await CreateTools().ExecuteAsync(
-            _companyId,
-            AssistantTools.TopCustomers,
-            Input(new { start_date = "2026-01-01", end_date = "2026-12-31", count = 100000 }),
-            CancellationToken.None);
+        await CallAsync(
+            AssistantTools.TopCustomers, new { startDate = "2026-01-01", endDate = "2026-12-31", count = 100000 });
 
         await _analytics.Received(1).GetTopCustomersAsync(
             _companyId, new DateOnly(2026, 1, 1), new DateOnly(2026, 12, 31), 50, Arg.Any<CancellationToken>());
@@ -75,25 +79,13 @@ public class AssistantToolsTests
     [InlineData("not a date", "2026-02-28")]
     [InlineData("2026-03-01", "2026-02-28")]
     [InlineData("2000-01-01", "2026-12-31")]
-    public async Task Monthly_sales_refuses_dates_it_cannot_use(string start, string end)
+    public async Task Monthly_sales_tells_the_model_about_dates_it_cannot_use(string start, string end)
     {
-        var act = () => CreateTools().ExecuteAsync(
-            _companyId,
-            AssistantTools.MonthlySales,
-            Input(new { start_date = start, end_date = end }),
-            CancellationToken.None);
+        var result = await CallAsync(AssistantTools.MonthlySales, new { startDate = start, endDate = end });
 
-        await act.Should().ThrowAsync<ArgumentException>();
+        result.Should().StartWith("Error:");
         await _analytics.DidNotReceiveWithAnyArgs()
             .GetMonthlySalesAsync(default, default, default, CancellationToken.None);
-    }
-
-    [Fact]
-    public async Task An_unknown_tool_is_refused()
-    {
-        var act = () => CreateTools().ExecuteAsync(_companyId, "delete_everything", Input(new { }), CancellationToken.None);
-
-        await act.Should().ThrowAsync<ArgumentException>();
     }
 
     [Fact]
@@ -101,11 +93,15 @@ public class AssistantToolsTests
     {
         // The company comes from the request, which has been checked against the caller. A tool
         // that accepted one would let the model name someone else's.
-        foreach (var tool in AssistantTools.Definitions)
+        var tools = CreateTools().CreateFunctions(_companyId).OfType<AIFunction>().ToList();
+
+        tools.Should().HaveCount(3);
+
+        foreach (var tool in tools)
         {
-            tool.TryPickTool(out var definition).Should().BeTrue();
-            definition!.InputSchema.Properties!.Keys
-                .Should().NotContain(key => key.Contains("company", StringComparison.OrdinalIgnoreCase));
+            tool.JsonSchema.GetProperty("properties").EnumerateObject()
+                .Select(property => property.Name)
+                .Should().NotContain(name => name.Contains("company", StringComparison.OrdinalIgnoreCase));
         }
     }
 }

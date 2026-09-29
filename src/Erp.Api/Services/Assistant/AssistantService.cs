@@ -1,135 +1,121 @@
-using Anthropic;
-using Anthropic.Models.Messages;
+using System.Runtime.CompilerServices;
 using Erp.Common;
+using Microsoft.Extensions.AI;
 using Microsoft.Extensions.Options;
 
 namespace Erp.Api.Services.Assistant;
 
 /// <summary>
-/// Answers a user's question about their company by letting Claude call <see cref="AssistantTools"/>
+/// Answers a user's question about their company by letting the model call <see cref="AssistantTools"/>
 /// until it has the figures it needs.
 /// </summary>
 /// <remarks>
 /// Stateless on purpose: the UI sends the conversation each time, and every answer re-reads the
 /// data instead of trusting figures quoted earlier, which may be a day old by the time a chat is
-/// picked up again. Nothing here writes to the ERP; the assistant only reads.
+/// picked up again. Nothing here writes to the ERP; the assistant only reads. The tool loop is the
+/// function invocation middleware of the <see cref="IChatClient"/>, not code in this class.
 /// </remarks>
 public sealed class AssistantService(
     IOptions<AssistantOptions> options,
     AssistantTools tools,
     ILogger<AssistantService> logger,
-    AnthropicClient? client = null)
+    IChatClient? client = null)
 {
     private readonly AssistantOptions _options = options.Value;
 
     public bool IsConfigured => client is not null && _options.IsConfigured;
 
     /// <summary>Replies to the last message of <paramref name="history"/>.</summary>
-    /// <exception cref="InvalidOperationException">The assistant has no API key configured.</exception>
+    /// <exception cref="InvalidOperationException">The assistant has no provider configured.</exception>
     public async Task<string> ChatAsync(
         Guid companyId,
         IReadOnlyList<AssistantMessage> history,
         CancellationToken cancellationToken)
     {
+        var (chat, messages, chatOptions) = Prepare(companyId, history);
+
+        var response = await chat.GetResponseAsync(messages, chatOptions, cancellationToken);
+
+        if (response.FinishReason == ChatFinishReason.ContentFilter)
+            return string.Empty;
+
+        var text = response.Text.Trim();
+
+        if (text.Length == 0)
+        {
+            logger.LogWarning(
+                "The assistant returned no text for company {CompanyId} (finish reason {FinishReason}); it may have hit the {Rounds}-round tool limit.",
+                companyId,
+                response.FinishReason,
+                _options.MaxToolRounds);
+        }
+
+        return text;
+    }
+
+    /// <summary>
+    /// Same as <see cref="ChatAsync"/>, but hands the answer over as the model writes it. Tools run
+    /// between the pieces, so the first one may take a while; nothing is yielded meanwhile.
+    /// </summary>
+    /// <exception cref="InvalidOperationException">The assistant has no provider configured.</exception>
+    public async IAsyncEnumerable<string> ChatStreamAsync(
+        Guid companyId,
+        IReadOnlyList<AssistantMessage> history,
+        [EnumeratorCancellation] CancellationToken cancellationToken)
+    {
+        var (chat, messages, chatOptions) = Prepare(companyId, history);
+
+        var started = false;
+
+        await foreach (var update in chat.GetStreamingResponseAsync(messages, chatOptions, cancellationToken))
+        {
+            var piece = update.Text;
+
+            // The blank lines some models open with are not part of the answer.
+            if (!started)
+                piece = piece.TrimStart();
+
+            if (piece.Length == 0)
+                continue;
+
+            started = true;
+
+            yield return piece;
+        }
+
+        if (!started)
+        {
+            logger.LogWarning(
+                "The assistant streamed no text for company {CompanyId}; it may have hit the {Rounds}-round tool limit.",
+                companyId,
+                _options.MaxToolRounds);
+        }
+    }
+
+    private (IChatClient Client, List<ChatMessage> Messages, ChatOptions Options) Prepare(
+        Guid companyId,
+        IReadOnlyList<AssistantMessage> history)
+    {
         if (client is null || !_options.IsConfigured)
             throw new InvalidOperationException("The assistant is not configured.");
 
-        List<MessageParam> messages =
+        // The system prompt is its own message and the user's text never joins it.
+        List<ChatMessage> messages =
         [
-            .. history.Select(message => new MessageParam
-            {
-                Role = message.Role == Constants.Assistant.MessageRoles.Assistant ? Role.Assistant : Role.User,
-                Content = message.Content
-            })
+            new(ChatRole.System, BuildSystemPrompt(DateOnly.FromDateTime(DateTime.UtcNow))),
+            .. history.Select(message => new ChatMessage(
+                message.Role == Constants.Assistant.MessageRoles.Assistant ? ChatRole.Assistant : ChatRole.User,
+                message.Content))
         ];
 
-        for (var round = 0; round <= _options.MaxToolRounds; round++)
+        var options = new ChatOptions
         {
-            var response = await client.Messages.Create(
-                new MessageCreateParams
-                {
-                    Model = _options.Model,
-                    MaxTokens = _options.MaxTokens,
-                    System = BuildSystemPrompt(DateOnly.FromDateTime(DateTime.UtcNow)),
-                    Tools = [.. AssistantTools.Definitions],
-                    Messages = messages
-                },
-                cancellationToken);
+            ModelId = _options.Model,
+            MaxOutputTokens = _options.MaxTokens,
+            Tools = tools.CreateFunctions(companyId)
+        };
 
-            if (response.StopReason == StopReason.Refusal)
-                return string.Empty;
-
-            List<ContentBlockParam> assistantContent = [];
-            List<ContentBlockParam> toolResults = [];
-            List<string> text = [];
-
-            foreach (var block in response.Content)
-            {
-                if (block.TryPickText(out var textBlock))
-                {
-                    assistantContent.Add(new TextBlockParam { Text = textBlock.Text });
-                    text.Add(textBlock.Text);
-                }
-                else if (block.TryPickThinking(out var thinking))
-                {
-                    // Sent back untouched, signature included: the API rejects a tampered block.
-                    assistantContent.Add(new ThinkingBlockParam
-                    {
-                        Thinking = thinking.Thinking,
-                        Signature = thinking.Signature
-                    });
-                }
-                else if (block.TryPickRedactedThinking(out var redacted))
-                {
-                    assistantContent.Add(new RedactedThinkingBlockParam { Data = redacted.Data });
-                }
-                else if (block.TryPickToolUse(out var toolUse))
-                {
-                    assistantContent.Add(new ToolUseBlockParam
-                    {
-                        ID = toolUse.ID,
-                        Name = toolUse.Name,
-                        Input = toolUse.Input
-                    });
-
-                    toolResults.Add(await RunToolAsync(companyId, toolUse, cancellationToken));
-                }
-            }
-
-            if (toolResults.Count == 0)
-                return string.Join("\n\n", text).Trim();
-
-            // One result per tool call, all in one message: the API rejects the follow-up otherwise.
-            messages.Add(new MessageParam { Role = Role.Assistant, Content = assistantContent });
-            messages.Add(new MessageParam { Role = Role.User, Content = toolResults });
-        }
-
-        logger.LogWarning(
-            "The assistant was still calling tools after {Rounds} rounds for company {CompanyId}; giving up.",
-            _options.MaxToolRounds,
-            companyId);
-
-        return string.Empty;
-    }
-
-    private async Task<ToolResultBlockParam> RunToolAsync(
-        Guid companyId,
-        ToolUseBlock toolUse,
-        CancellationToken cancellationToken)
-    {
-        try
-        {
-            return new ToolResultBlockParam
-            {
-                ToolUseID = toolUse.ID,
-                Content = await tools.ExecuteAsync(companyId, toolUse.Name, toolUse.Input, cancellationToken)
-            };
-        }
-        catch (ArgumentException ex)
-        {
-            // The model's mistake, not ours: say what was wrong so it can ask again.
-            return new ToolResultBlockParam { ToolUseID = toolUse.ID, Content = ex.Message, IsError = true };
-        }
+        return (client, messages, options);
     }
 
     private static string BuildSystemPrompt(DateOnly today) =>

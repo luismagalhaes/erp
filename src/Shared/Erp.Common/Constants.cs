@@ -74,6 +74,19 @@ public static class Constants
         public const int MaxPageSize = 500;
     }
 
+    /// <summary>
+    /// Caps applied to inbound traffic on every host, to blunt request floods (accidental or
+    /// malicious) before they reach the database.
+    /// </summary>
+    public static class RateLimiting
+    {
+        /// <summary>How many requests a single client (IP address) may make within <see cref="WindowSeconds"/>.</summary>
+        public const int PermitLimit = 100;
+
+        /// <summary>The width, in seconds, of the fixed window <see cref="PermitLimit"/> applies to.</summary>
+        public const int WindowSeconds = 10;
+    }
+
     public static class Scopes
     {
         public const string OpenId = "openid";
@@ -189,6 +202,22 @@ public static class Constants
 
         /// <summary>How many of the latest messages of a conversation are sent to the model.</summary>
         public const int MaxHistoryMessages = 20;
+
+        /// <summary>
+        /// Most characters of history sent to the model, whatever the number of messages. A rough
+        /// stand-in for a token budget: long turns push the oldest ones out before short chats do.
+        /// </summary>
+        public const int MaxHistoryCharacters = 12000;
+
+        /// <summary>Names of the server-sent events of <c>POST /api/assistant/chat/stream</c>.</summary>
+        public static class StreamEvents
+        {
+            /// <summary>The model failed after the answer had started. Its data carries no detail.</summary>
+            public const string Error = "error";
+
+            /// <summary>The answer is complete.</summary>
+            public const string Done = "done";
+        }
 
         /// <summary>Longest a single message may be, in characters.</summary>
         public const int MaxMessageLength = 2000;
